@@ -1767,8 +1767,41 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
           </div>{" "}
           <form
             className="grid grid-cols-1 md:grid-cols-2 gap-8"
-            onSubmit={(e) => e.preventDefault()}
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.currentTarget;
+              const formData = new FormData(form);
+              const data = Object.fromEntries(formData.entries());
+              
+              const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+              if (btn) {
+                btn.disabled = true;
+                btn.textContent = "جاري الإرسال...";
+              }
+
+              try {
+                await fetch("https://formsubmit.co/ajax/farz101083@gmail.com", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                  },
+                  body: JSON.stringify(data)
+                });
+                alert("تم إرسال طلبك بنجاح. شكراً لتواصلك معنا!");
+                form.reset();
+              } catch (err) {
+                alert("حدث خطأ أثناء الإرسال، يرجى المحاولة لاحقاً.");
+              } finally {
+                if (btn) {
+                  btn.disabled = false;
+                  btn.textContent = "إرسال طلب التواصل";
+                }
+              }
+            }}
           >
+            <input type="hidden" name="_captcha" value="false" />
+            <input type="hidden" name="_subject" value="رسالة جديدة من نموذج التواصل - منصة سحاب" />
             {" "}
             <div className="space-y-3">
               {" "}
@@ -1783,6 +1816,8 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
                 />{" "}
                 <input
                   type="text"
+                  name="الاسم_الكامل"
+                  required
                   placeholder="أدخل اسمك"
                   className="w-full pr-12 pl-5 py-4 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                 />{" "}
@@ -1801,6 +1836,8 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
                 />{" "}
                 <input
                   type="tel"
+                  name="رقم_الجوال"
+                  required
                   placeholder="05xxxxxxxx"
                   dir="ltr"
                   className="w-full pr-12 pl-5 py-4 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-right font-medium"
@@ -1820,6 +1857,8 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
                 />{" "}
                 <input
                   type="email"
+                  name="email"
+                  required
                   placeholder="example@domain.com"
                   className="w-full pr-12 pl-5 py-4 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                 />{" "}
@@ -1833,6 +1872,7 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
               <div className="relative">
                 {" "}
                 <textarea
+                  name="الرسالة"
                   placeholder="اكتب تفاصيل طلبك أو استفسارك هنا..."
                   rows={4}
                   className="w-full p-5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium resize-none"
@@ -1841,7 +1881,7 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
             </div>{" "}
             <div className="md:col-span-2 mt-4">
               {" "}
-              <button className="w-full bg-primary text-white py-6 rounded-[24px] text-xl font-bold hover:shadow-[0_20px_50px_rgba(13,148,136,0.3)] transition-all active:scale-95">
+              <button type="submit" className="w-full bg-primary text-white py-6 rounded-[24px] text-xl font-bold hover:shadow-[0_20px_50px_rgba(13,148,136,0.3)] transition-all active:scale-95">
                 {" "}
                 إرسال طلب التواصل{" "}
               </button>{" "}

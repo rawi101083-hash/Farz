@@ -257,7 +257,7 @@ export const Dashboard = ({
 
   let jobLimit = 0;
   let cvLimit = 0;
-  if (plan === 'free') { jobLimit = 1; cvLimit = 50; }
+  if (plan === 'free') { jobLimit = 0; cvLimit = 0; }
   else if (plan === 'one-time') { jobLimit = 1; cvLimit = 500; }
   else if (plan === 'growth') { jobLimit = 3; cvLimit = 1000; }
   else if (plan === 'business') { jobLimit = 10; cvLimit = 5000; }
@@ -780,13 +780,38 @@ export const Dashboard = ({
                   </button>
                 )}
                 <button
-                  onClick={onCreateJob}
-                  className="bg-primary text-white px-4 md:px-8 py-3 md:py-4 rounded-2xl font-bold hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap"
+                  onClick={() => {
+                    if (plan === 'free' || plan === 'none') {
+                      setToastMessage("يجب الاشتراك في إحدى الباقات لإضافة إعلان وظيفي");
+                      setActiveTab("باقات فرز");
+                      setTimeout(() => setToastMessage(null), 3000);
+                      return;
+                    }
+                    if (activeCount >= jobLimit) {
+                      setToastMessage(`وصلت للحد الأقصى للوظائف المسموحة في باقتك (${jobLimit} وظائف)`);
+                      setTimeout(() => setToastMessage(null), 3000);
+                      return;
+                    }
+                    onCreateJob();
+                  }}
+                  className={`px-4 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap ${(plan === 'free' || plan === 'none') ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30'}`}
                 >
                   <Briefcase size={20} /> <span className="hidden md:inline">إنشاء إعلان وظيفي</span>
                 </button>
               </div>
             </header>
+            {cvsUsed >= cvLimit && plan !== 'free' && plan !== 'none' && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center gap-3 shadow-sm mb-6">
+                <AlertTriangle className="text-red-500 shrink-0" size={24} />
+                <p className="text-sm font-bold text-red-700 dark:text-red-400 leading-relaxed flex-1">
+                  تنبيه: لقد استنفدت رصيد السير الذاتية المسموح به في باقتك ({cvLimit} سيرة). 
+                  سيتم الاحتفاظ بالسير الجديدة بحالة (قيد الانتظار) ولن تُفرز تلقائياً بالذكاء الاصطناعي.
+                </p>
+                <button onClick={() => setActiveTab('باقات فرز')} className="mt-3 md:mt-0 px-4 py-2 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300 rounded-lg text-xs font-bold hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors whitespace-nowrap">
+                  ترقية الباقة
+                </button>
+              </div>
+            )}
             <GlobalJobSelector
               jobs={jobs}
               selectedFilter={jobFilter}
@@ -1528,7 +1553,8 @@ export const Dashboard = ({
           </div>
         );
       case "الحساب":
-        return <SettingsPage darkMode={darkMode} setDarkMode={setDarkMode} userProfile={userProfile} setUserProfile={setUserProfile} userEmail={userEmail || ""} />;
+      case "باقات فرز":
+        return <SettingsPage darkMode={darkMode} setDarkMode={setDarkMode} userProfile={userProfile} setUserProfile={setUserProfile} userEmail={userEmail || ""} initialTab={activeTab === "باقات فرز" ? "باقات فرز" : "الملف الشخصي"} />;
       default:
         return null;
     }
@@ -1750,7 +1776,6 @@ export const Dashboard = ({
               <div className="overflow-hidden flex-1">
                 <p className="text-sm font-bold truncate text-white">{userProfile.name || "مستخدم جديد"}</p>
                 {userProfile.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile.title}</p>}
-                {userEmail && <p className="text-[10px] text-slate-500 truncate mt-0.5">{userEmail}</p>}
               </div>
               <button 
                 onClick={async () => await supabase.auth.signOut()} 

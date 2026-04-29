@@ -1303,11 +1303,11 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
             label: "إجمالي المتقدمين",
             value: totalApplicants.toString(),
             icon: <Users size={20} />,
-            color: "text-teal-600",
-            bg: "bg-teal-50",
+            color: "text-primary",
+            bg: "bg-primary/10",
             subtitle: totalApplicants > 0 ? (
               <span className="flex items-center gap-1.5 justify-center">
-                <Sparkles size={14} className="text-emerald-500 fill-emerald-500" />
+                <Sparkles size={14} className="text-primary fill-primary/20" />
                 <span>تم استبعاد {Math.round((autoRejectedCount / totalApplicants) * 100)}% آلياً.</span>
               </span>
             ) : undefined,
@@ -1342,7 +1342,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
             <p className="text-slate-500 dark:text-slate-400 font-bold text-sm uppercase tracking-widest mb-2">
               {metric.label}
             </p>{" "}
-            <h3 className="text-3xl font-bold text-navy dark:text-white">
+            <h3 className="text-3xl font-black text-navy dark:text-white">
               {metric.value}
             </h3>{" "}
             {metric.subtitle && (
@@ -1512,27 +1512,27 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
               >
                 <defs>
                   <linearGradient id="emeraldGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#34d399" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="#10b981" stopOpacity={1} />
+                    <stop offset="0%" stopColor="#2dd4bf" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#0d9488" stopOpacity={1} />
                   </linearGradient>
                   <filter id="emeraldShadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#10b981" floodOpacity="0.3" />
+                    <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#0d9488" floodOpacity="0.3" />
                   </filter>
 
                   <linearGradient id="amberGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={1} />
+                    <stop offset="0%" stopColor="#64748b" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#334155" stopOpacity={1} />
                   </linearGradient>
                   <filter id="amberShadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#f59e0b" floodOpacity="0.3" />
+                    <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#334155" floodOpacity="0.3" />
                   </filter>
 
                   <linearGradient id="roseGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#fb7185" stopOpacity={0.9} />
-                    <stop offset="100%" stopColor="#f43f5e" stopOpacity={1} />
+                    <stop offset="0%" stopColor="#cbd5e1" stopOpacity={0.9} />
+                    <stop offset="100%" stopColor="#94a3b8" stopOpacity={1} />
                   </linearGradient>
                   <filter id="roseShadow" x="-20%" y="-20%" width="140%" height="140%">
-                    <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#f43f5e" floodOpacity="0.3" />
+                    <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#94a3b8" floodOpacity="0.3" />
                   </filter>
                 </defs>
                 <CartesianGrid
@@ -1607,15 +1607,37 @@ export const SettingsPage = ({
   darkMode,
   setDarkMode,
   userProfile,
-  setUserProfile
+  setUserProfile,
+  userEmail,
+  initialTab = "الملف الشخصي"
 }: {
   darkMode: boolean;
   setDarkMode: (val: boolean) => void;
   userProfile: any;
   setUserProfile: any;
+  userEmail?: string;
+  initialTab?: string;
 }) => {
-  const [activeTab, setActiveTab] = useState("الملف الشخصي");
-  const [isYearly, setIsYearly] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  useEffect(() => {
+    const newErrors: Record<string, string> = {};
+    if (userProfile.entityType === 'company') {
+      if (userProfile.commercialRegistration && !/^\d{10}$/.test(userProfile.commercialRegistration)) {
+        newErrors.cr = "يجب أن يتكون السجل التجاري من 10 أرقام بالضبط";
+      }
+      if (userProfile.taxNumber && !/^\d{15}$/.test(userProfile.taxNumber)) {
+        newErrors.tax = "يجب أن يتكون الرقم الضريبي من 15 رقماً بالضبط";
+      }
+    } else if (userProfile.entityType === 'freelance') {
+      if (userProfile.freelanceDocument && !/^[A-Za-z0-9\-]{6,15}$/.test(userProfile.freelanceDocument)) {
+        newErrors.freelance = "يجب أن تتكون الوثيقة من 6 إلى 15 خانة (أحرف إنجليزية وأرقام وشرطة فقط)";
+      }
+    }
+    setErrors(newErrors);
+  }, [userProfile.commercialRegistration, userProfile.taxNumber, userProfile.freelanceDocument, userProfile.entityType]);
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [billingCycle, setBillingCycle] = useState<'subscription' | 'one-time'>('subscription');
   return (
     <div className="space-y-10">
       {" "}
@@ -1727,6 +1749,7 @@ export const SettingsPage = ({
                       className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                       dir="ltr"
                     />
+                    {errors.cr && <p className="text-red-500 text-xs mt-1 font-bold">{errors.cr}</p>}
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -1739,6 +1762,7 @@ export const SettingsPage = ({
                       className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                       dir="ltr"
                     />
+                    {errors.freelance && <p className="text-red-500 text-xs mt-1 font-bold">{errors.freelance}</p>}
                   </div>
                 )}
 
@@ -1769,129 +1793,176 @@ export const SettingsPage = ({
                   />{" "}
                 </div>{" "}
               </div>{" "}
-              <button className="bg-primary text-white px-10 py-4 rounded-2xl font-bold hover:shadow-lg hover:shadow-primary/30 transition-all active:scale-95">
+              <button 
+                disabled={Object.keys(errors).length > 0}
+                className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 ${Object.keys(errors).length > 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30'}`}
+              >
                 حفظ التغييرات
               </button>{" "}
             </div>
           )}{" "}
           {activeTab === "باقات فرز" && (
-            <div className="space-y-12">
-              <div className="text-center space-y-4">
-                <h2 className="text-3xl font-black text-navy dark:text-white">باقات الاشتراك</h2>
-                <p className="text-slate-500 font-medium">اختر الباقة التي تناسب حجم أعمالك واحتياجك الوظيفي</p>
-                <div className="flex items-center justify-center gap-3 mt-6">
-                  <span className={`text-sm font-bold ${!isYearly ? "text-primary" : "text-slate-400"}`}>شهري</span>
-                  <button 
-                    onClick={() => setIsYearly(!isYearly)}
-                    className="relative w-14 h-8 rounded-full bg-slate-200 dark:bg-slate-700 transition-colors"
+            <div className="space-y-8 pb-10 flex flex-col items-center">
+              
+              {/* Header Toggles & Pill */}
+              <div className="flex flex-col items-center gap-5 mb-6">
+                {/* Pulsing Pill (Small and delicate, exactly like old picture) */}
+                <div className="border border-[#0D9488] text-[#0D9488] px-4 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 bg-white shadow-sm">
+                  <div className="w-2 h-2 rounded-full bg-[#0D9488] animate-pulse"></div>
+                  باقتك الحالية: {userProfile?.subscription_tier === 'startup' ? 'انطلاق' : userProfile?.subscription_tier === 'business' ? 'أعمال' : userProfile?.subscription_tier === 'enterprise' ? 'احترافية' : 'لا يوجد'}
+                </div>
+                
+                {/* Toggle Wrapper - Very Rectangular */}
+                <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex gap-1 shadow-inner">
+                  <button
+                    onClick={() => setBillingCycle('subscription')}
+                    className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'subscription' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
                   >
-                    <div className={`absolute top-1 w-6 h-6 rounded-full bg-primary transition-all ${isYearly ? "left-1" : "right-1"}`} />
+                    اشتراكات مستمرة
                   </button>
-                  <span className={`text-sm font-bold ${isYearly ? "text-primary" : "text-slate-400"}`}>سنوي <span className="text-emerald-500 text-xs ml-1">(وفر قيمة شهرين)</span></span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap justify-center gap-6 items-center">
-                {/* 1. انطلاق */}
-                <div className="w-full max-w-[340px] bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/20">
-                  <h3 className="text-xl font-bold text-navy dark:text-white mb-2">انطلاق</h3>
-                  <p className="text-sm text-slate-500 mb-6">للشركات الناشئة والصغيرة</p>
-                  <div className="mb-6">
-                    <span className="text-4xl font-black text-navy dark:text-white">{isYearly ? "4,990" : "499"}</span>
-                    <span className="text-slate-400 font-bold ml-1">ريال / {isYearly ? "سنوياً" : "شهرياً"}</span>
-                  </div>
-                  {isYearly && <div className="bg-emerald-50 text-emerald-600 text-xs font-bold px-3 py-1 rounded-lg w-fit mb-6">وفر قيمة شهرين!</div>}
-                  <ul className="space-y-4 mb-8">
-                    {[
-                      "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين", "نشر وظيفتين نشطة", "فرز 500 سيرة ذاتية"
-                    ].map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-3 text-sm font-bold text-slate-600 dark:text-slate-300">
-                        <div className="w-5 h-5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 shrink-0"><CheckCircle size={12} /></div>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <button className="w-full py-4 rounded-2xl font-bold bg-slate-50 text-navy hover:bg-slate-100 transition-colors border border-slate-200 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                    {userProfile?.subscription_tier === 'startup' ? 'باقتك الحالية' : 'اشترك الآن'}
-                  </button>
-                </div>
-
-                {/* 2. أعمال */}
-                <div className="w-full max-w-[360px] bg-white dark:bg-slate-800 rounded-3xl p-8 border-2 border-primary shadow-2xl shadow-primary/20 relative transform md:-translate-y-4">
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">الأكثر شيوعاً</div>
-                  <h3 className="text-2xl font-black text-navy dark:text-white mb-2">أعمال</h3>
-                  <p className="text-sm text-slate-500 mb-6">للشركات المتوسطة والمتنامية</p>
-                  <div className="mb-6">
-                    <span className="text-5xl font-black text-primary">{isYearly ? "14,990" : "1,499"}</span>
-                    <span className="text-slate-400 font-bold ml-1">ريال / {isYearly ? "سنوياً" : "شهرياً"}</span>
-                  </div>
-                  {isYearly && <div className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-lg w-fit mb-6">وفر 2,990 ريال!</div>}
-                  <ul className="space-y-4 mb-8">
-                    {[
-                      "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين", "نشر 10 وظائف نشطة", "فرز 5,000 سيرة ذاتية", "تصدير البيانات", "دعم فني أولوية"
-                    ].map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-3 text-sm font-bold text-slate-700 dark:text-slate-200">
-                        <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary shrink-0"><CheckCircle size={12} /></div>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <button className="w-full py-4 rounded-2xl font-bold bg-primary text-white hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
-                    {userProfile?.subscription_tier === 'business' ? 'باقتك الحالية' : 'اشترك الآن'}
-                  </button>
-                </div>
-
-                {/* 3. شركات كبرى */}
-                <div className="w-full max-w-[340px] bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/20">
-                  <h3 className="text-xl font-bold text-navy dark:text-white mb-2">احترافية</h3>
-                  <p className="text-sm text-slate-500 mb-6">للمنظمات ذات التوظيف الكثيف</p>
-                  <div className="mb-6">
-                    <span className="text-4xl font-black text-navy dark:text-white">{isYearly ? "34,990" : "3,499"}</span>
-                    <span className="text-slate-400 font-bold ml-1">ريال / {isYearly ? "سنوياً" : "شهرياً"}</span>
-                  </div>
-                  {isYearly && <div className="bg-emerald-50 text-emerald-600 text-xs font-bold px-3 py-1 rounded-lg w-fit mb-6">وفر قيمة شهرين!</div>}
-                  <ul className="space-y-4 mb-8">
-                    {[
-                      "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين", "نشر وظائف غير محدود", "فرز سير ذاتية غير محدود", "واجهة برمجة تطبيقات API", "مدير حساب مخصص"
-                    ].map((feature, idx) => (
-                      <li key={idx} className="flex items-center gap-3 text-sm font-bold text-slate-600 dark:text-slate-300">
-                        <div className="w-5 h-5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-500 shrink-0"><CheckCircle size={12} /></div>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <button className="w-full py-4 rounded-2xl font-bold bg-slate-50 text-navy hover:bg-slate-100 transition-colors border border-slate-200 dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                    {userProfile?.subscription_tier === 'enterprise' ? 'باقتك الحالية' : 'تواصل معنا'}
+                  <button
+                    onClick={() => setBillingCycle('one-time')}
+                    className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'one-time' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
+                  >
+                    توظيف لمرة واحدة
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-center py-6">
-                <div className="h-px bg-slate-200 dark:bg-slate-700 w-1/4"></div>
-                <span className="px-4 text-slate-400 text-sm font-bold">أو</span>
-                <div className="h-px bg-slate-200 dark:bg-slate-700 w-1/4"></div>
-              </div>
-
-              {/* One-Time Plan Banner */}
-              <div className="max-w-4xl mx-auto bg-gradient-to-r from-slate-900 to-navy text-white rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl relative overflow-hidden mb-12">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl"></div>
-                <div className="z-10 relative">
-                  <div className="bg-white/10 text-white px-3 py-1 rounded-full text-xs font-bold w-fit mb-3 border border-white/20">الدفع لمرة واحدة</div>
-                  <h3 className="text-2xl font-black mb-2">باقة الإعلان الواحد</h3>
-                  <p className="text-slate-300 text-sm max-w-sm">مثالية إذا كان لديك احتياج فوري لتوظيف منصب واحد ولا ترغب بالالتزام باشتراك شهري. تتضمن فرز 50 سيرة ذاتية.</p>
-                </div>
-                <div className="flex flex-col items-center md:items-end z-10 relative shrink-0">
-                  <div className="mb-4 text-center md:text-right">
-                    <span className="text-4xl font-black">199</span>
-                    <span className="text-slate-300 font-bold ml-1">ريال / للإعلان</span>
+              {billingCycle === 'subscription' && (
+                <div className="flex flex-col md:flex-row justify-center gap-6 items-center w-full max-w-5xl mx-auto mt-2">
+                  
+                  {/* احترافية (Left) */}
+                  <div className="w-full max-w-[260px] bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 flex flex-col items-center">
+                    <h3 className="text-xl font-black text-navy dark:text-white mb-2">احترافية</h3>
+                    <p className="text-[11px] font-bold text-slate-500 mb-6 text-center">للشركات الكبرى والتوظيف المكثف.</p>
+                    
+                    <div className="flex flex-col items-center mb-3">
+                      <span className="text-4xl font-black text-navy dark:text-white mb-1">3,499</span>
+                      <span className="text-slate-400 font-bold text-[10px]">ريال / شهر</span>
+                    </div>
+                    
+                    {/* Rectangular badge, stronger green */}
+                    <div className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-3 py-1 rounded mb-8 text-center w-fit">
+                      شهرين مجاناً بالدفع السنوي
+                    </div>
+                    
+                    <ul className="space-y-3 mb-8 w-full px-1">
+                      {[
+                        "وظائف غير محدودة", "15,000 سيرة ذاتية للفرز", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
+                      ].map((feature, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <CheckCircle size={16} className="text-[#0D9488] shrink-0" strokeWidth={2.5} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    
+                    <button className="w-full py-3 rounded-lg text-[13px] font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors mt-auto">
+                      اختيار الباقة
+                    </button>
                   </div>
-                  <button className="px-8 py-3 rounded-2xl font-bold bg-white text-navy hover:bg-slate-100 transition-colors shadow-lg flex items-center gap-2">
-                    <Zap size={18} className="text-amber-500" /> شراء الإعلان
-                  </button>
+
+                  {/* أعمال (Center) */}
+                  <div className="w-full max-w-[280px] bg-white dark:bg-slate-800 rounded-2xl p-8 border-2 border-[#0D9488] shadow-2xl shadow-[#0D9488]/20 flex flex-col items-center transform md:-translate-y-3 relative z-10">
+                    <h3 className="text-2xl font-black text-[#0D9488] mb-2">أعمال</h3>
+                    <p className="text-[11px] font-bold text-slate-500 mb-6 text-center">للشركات المتوسطة والاحتياج المستمر.</p>
+                    
+                    <div className="flex flex-col items-center mb-3">
+                      <span className="text-5xl leading-none font-black text-navy dark:text-white mb-1">1,499</span>
+                      <span className="text-slate-400 font-bold text-[10px]">ريال / شهر</span>
+                    </div>
+                    
+                    {/* Rectangular badge, stronger green */}
+                    <div className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-3 py-1 rounded mb-8 text-center w-fit">
+                      شهرين مجاناً بالدفع السنوي
+                    </div>
+                    
+                    <ul className="space-y-3 mb-8 w-full px-1">
+                      {[
+                        "10 وظائف متزامنة", "5,000 سيرة ذاتية للفرز", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
+                      ].map((feature, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <CheckCircle size={18} className="text-[#0D9488] shrink-0" strokeWidth={2.5} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    
+                    <button className="w-full py-3.5 rounded-lg text-[13px] font-bold bg-[#0D9488] text-white hover:bg-[#0b7a70] transition-colors shadow-lg shadow-[#0D9488]/30 mt-auto">
+                      اختيار الباقة
+                    </button>
+                  </div>
+
+                  {/* انطلاق (Right) */}
+                  <div className="w-full max-w-[260px] bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-100 dark:border-slate-700 shadow-xl shadow-slate-200/50 flex flex-col items-center">
+                    <h3 className="text-xl font-black text-navy dark:text-white mb-2">انطلاق</h3>
+                    <p className="text-[11px] font-bold text-slate-500 mb-6 text-center">للشركات الناشئة في طور التوسع.</p>
+                    
+                    <div className="flex flex-col items-center mb-3">
+                      <span className="text-4xl font-black text-navy dark:text-white mb-1">499</span>
+                      <span className="text-slate-400 font-bold text-[10px]">ريال / شهر</span>
+                    </div>
+                    
+                    {/* Rectangular badge, stronger green */}
+                    <div className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-3 py-1 rounded mb-8 text-center w-fit">
+                      شهرين مجاناً بالدفع السنوي
+                    </div>
+                    
+                    <ul className="space-y-3 mb-8 w-full px-1">
+                      {[
+                        "3 وظائف متزامنة", "1,000 سيرة ذاتية للفرز", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
+                      ].map((feature, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <CheckCircle size={16} className="text-[#0D9488] shrink-0" strokeWidth={2.5} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    
+                    <button className="w-full py-3 rounded-lg text-[13px] font-bold bg-slate-50 text-slate-400 border border-slate-100 cursor-not-allowed mt-auto">
+                      باقتك الحالية
+                    </button>
+                  </div>
+
                 </div>
-              </div>
+              )}
+
+              {billingCycle === 'one-time' && (
+                <div className="flex justify-center w-full mt-2">
+                  {/* إعلان لمرة واحدة */}
+                  <div className="w-full max-w-[280px] bg-white dark:bg-slate-800 rounded-2xl p-8 border-2 border-[#0D9488] shadow-2xl shadow-[#0D9488]/20 flex flex-col items-center">
+                    <h3 className="text-2xl font-black text-[#0D9488] mb-2">إعلان لمرة واحدة</h3>
+                    <p className="text-[11px] font-bold text-slate-500 mb-6 text-center">مثالية لاحتياج فوري لمنصب واحد.</p>
+                    
+                    <div className="flex flex-col items-center mb-3">
+                      <span className="text-5xl leading-none font-black text-navy dark:text-white mb-1">199</span>
+                      <span className="text-slate-400 font-bold text-[10px]">ريال / إعلان</span>
+                    </div>
+                    
+                    <div className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-3 py-1 rounded mb-8 text-center w-fit">
+                      دفع لمرة واحدة
+                    </div>
+                    
+                    <ul className="space-y-3 mb-8 w-full px-1">
+                      {[
+                        "نشر إعلان وظيفي واحد", "50 سيرة ذاتية للفرز", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "دعم فني"
+                      ].map((feature, idx) => (
+                        <li key={idx} className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <CheckCircle size={18} className="text-[#0D9488] shrink-0" strokeWidth={2.5} />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    
+                    <button className="w-full py-3.5 rounded-lg text-[13px] font-bold bg-[#0D9488] text-white hover:bg-[#0b7a70] transition-colors shadow-lg shadow-[#0D9488]/30 mt-auto">
+                      شراء الإعلان
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}{" "}
+          )}
           {activeTab === "المظهر" && (
             <div className="max-w-2xl space-y-8">
               {" "}
