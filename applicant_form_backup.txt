@@ -1,0 +1,412 @@
+const ApplicantForm = ({ job, onSubmit }: { job: Job | null, onSubmit: () => void }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [formDataState, setFormDataState] = useState({ fullName: '', phone: '', email: '' });
+
+  const titlesToRender = job?.titles || (job?.title ? job.title.split('، ') : ['قيد التحديث']);
+  const customQuestions = job?.customQuestions || [];
+  const requiredAttachments = job?.requiredAttachments || ['سيرة ذاتية PDF'];
+  const hasResume = requiredAttachments.includes('سيرة ذاتية PDF') || requiredAttachments.includes('لا يتطلب مرفقات') === false;
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
+    if ('preventDefault' in e) e.preventDefault();
+    setIsDragging(false);
+    
+    setIsParsing(true);
+    setTimeout(() => {
+      setFormDataState(prev => ({
+        ...prev,
+        fullName: 'عبدالله محمد',
+        phone: '0501234567',
+        email: 'abdullah@example.com'
+      }));
+      setIsParsing(false);
+    }, 1500);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormDataState(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    const formData = new FormData(e.currentTarget);
+    const submitData = Object.fromEntries(formData.entries());
+
+    const customAnswers = customQuestions.map((q, idx) => ({
+      question: q.text,
+      answer: submitData[`customQuestion_${idx}`]
+    }));
+
+    customQuestions.forEach((_, idx) => delete submitData[`customQuestion_${idx}`]);
+
+    const finalPayload = {
+      type: 'ApplicantSubmission',
+      jobId: job?.id,
+      ...submitData,
+      customAnswers
+    };
+
+    try {
+      await fetch('https://circular-struggle-ethical-membership.trycloudflare.com/webhook-test/2489027f-d077-4af4-9d3d-fc0dd9f38953', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(finalPayload),
+      });
+    } catch (error) {
+      console.error('Webhook error:', error);
+    }
+
+    setTimeout(() => {
+      onSubmit();
+    }, 1500);
+  };
+
+  return (
+    <div className="min-h-screen pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 -z-10 translate-x-1/2" />
+      
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white/80 backdrop-blur-xl w-full max-w-2xl p-10 md:p-14 rounded-[40px] shadow-2xl border border-white"
+      >
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold mb-4 text-navy">خطوتك الأولى نحو فرصتك القادمة</h2>
+          <p className="text-slate-500 font-medium leading-relaxed">
+            ارفع سيرتك الذاتية وسنقوم بتعبئة بياناتك الأساسية تلقائياً لتوفير وقتك. أكمل النواقص، وفالك التوفيق!
+          </p>
+        </div>
+
+        <form className="grid grid-cols-1 md:grid-cols-2 gap-8" onSubmit={handleSubmit}>
+          {hasResume && (
+            <div className="md:col-span-2 space-y-3">
+              <label className="text-sm font-bold text-navy mr-1">إرفاق السيرة الذاتية (للتعبئة التلقائية)</label>
+              <div 
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleFileUpload}
+                className={`relative border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer overflow-hidden group ${isDragging ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary hover:bg-slate-50'}`}
+              >
+                <input 
+                  type="file" 
+                  accept=".pdf" 
+                  onChange={handleFileUpload} 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                {!isParsing ? (
+                  <>
+                    <div className={`w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center transition-all ${isDragging ? 'bg-primary text-white scale-110' : 'bg-slate-100 text-slate-400 group-hover:text-primary group-hover:bg-primary/10'}`}>
+                      <Upload size={32} />
+                    </div>
+                    <p className="text-navy font-bold text-lg mb-2">اسحب ملف السيرة (PDF) هنا</p>
+                    <p className="text-sm text-slate-500 font-medium">أو انقر لاختيار ملف من جهازك</p>
+                  </>
+                ) : (
+                  <div className="py-6 space-y-4">
+                    <div className="w-16 h-16 mx-auto border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    <p className="text-primary font-bold animate-pulse">جاري قراءة البيانات بذكاء...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <label className="text-sm font-bold text-navy mr-1">الاسم الكامل</label>
+            <input 
+              required
+              name="fullName"
+              type="text" 
+              value={formDataState.fullName}
+              onChange={handleInputChange}
+              placeholder="أحمد محمد علي"
+              className="w-full px-6 py-4 bg-slate-100/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-bold text-navy mr-1">رقم الجوال</label>
+            <input 
+              required
+              name="phone"
+              type="tel" 
+              value={formDataState.phone}
+              onChange={handleInputChange}
+              placeholder="05xxxxxxxx"
+              dir="ltr"
+              className="w-full px-6 py-4 bg-slate-100/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-right font-medium"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-bold text-navy mr-1">البريد الإلكتروني</label>
+            <input 
+              required
+              name="email"
+              type="email" 
+              value={formDataState.email}
+              onChange={handleInputChange}
+              placeholder="example@domain.com"
+              dir="ltr"
+              className="w-full px-6 py-4 bg-slate-100/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-right font-medium"
+            />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-bold text-navy mr-1">الوظيفة المتقدم عليها</label>
+            <div className="relative">
+              <select name="jobField" className="w-full px-6 py-4 bg-slate-100/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all appearance-none cursor-pointer font-medium">
+                {titlesToRender.map((t, idx) => (
+                  <option key={idx} value={t}>{t}</option>
+                ))}
+              </select>
+              <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <ArrowLeft size={18} className="-rotate-90" />
+              </div>
+            </div>
+          </div>
+
+          {customQuestions.map((q, idx) => {
+            const options = Array.isArray(q.options) && q.options.length > 0 ? q.options : ['نعم', 'لا'];
+            return (
+              <div key={idx} className="md:col-span-2 space-y-3">
+                <label className="text-sm font-bold text-navy mr-1">{q.text}</label>
+                {q.type === 'نص طويل' ? (
+                  <textarea 
+                    required
+                    name={`customQuestion_${idx}`}
+                    rows={4}
+                    placeholder="اكتب إجابتك هنا..."
+                    className="w-full px-6 py-4 bg-slate-100/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium resize-none"
+                  />
+                ) : q.type === 'خيارات متعددة' ? (
+                  <div className="relative">
+                    <select name={`customQuestion_${idx}`} required className="w-full px-6 py-4 bg-slate-100/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all appearance-none cursor-pointer font-medium">
+                      <option value="">اختر إجابة</option>
+                      {options.map((opt, i) => (
+                        <option key={i} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                      <ArrowLeft size={18} className="-rotate-90" />
+                    </div>
+                  </div>
+                ) : (
+                  <input 
+                    required
+                    name={`customQuestion_${idx}`}
+                    type="text" 
+                    placeholder="إجابة قصيرة..."
+                    className="w-full px-6 py-4 bg-slate-100/50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
+                  />
+                )}
+              </div>
+            );
+          })}
+
+          {!hasResume && requiredAttachments.filter(a => a !== 'لا يتطلب مرفقات').length > 0 && (
+            <div className="md:col-span-2 space-y-3">
+              <label className="text-sm font-bold text-navy mr-1">{requiredAttachments.filter(a => a !== 'لا يتطلب مرفقات').join(' و ')}</label>
+              <div 
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                className={`border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer group ${isDragging ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary hover:bg-slate-50'}`}
+              >
+                <div className={`w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center transition-all ${isDragging ? 'bg-primary text-white scale-110' : 'bg-slate-100 text-slate-400 group-hover:text-primary group-hover:bg-primary/10'}`}>
+                  <Upload size={32} />
+                </div>
+                <p className="text-navy font-bold text-lg mb-2">اسحب ملفك هنا</p>
+                <p className="text-sm text-slate-500 font-medium">أو انقر لاختيار ملف من جهازك</p>
+              </div>
+            </div>
+          )}
+
+          <button 
+            type="submit"
+            disabled={isSubmitting}
+            className="md:col-span-2 bg-primary text-white py-5 rounded-2xl text-lg font-bold hover:shadow-2xl hover:shadow-primary/40 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-3 disabled:opacity-70"
+          >
+            {isSubmitting ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                جاري تحليل البيانات...
+              </>
+            ) : (
+              'إرسال الطلب الآن'
+            )}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+const TalentPool = ({ jobs, shortlistedIds, onToggleShortlist, onCreateJob }: { jobs: Job[], shortlistedIds: string[], onToggleShortlist: (id: string) => void, onCreateJob: () => void }) => {
+  const [jobFilter, setJobFilter] = useState('all');
+  const [showOnlyShortlisted, setShowOnlyShortlisted] = useState(false);
+
+  if (jobs.length === 0) {
+    return (
+      <div className="space-y-10">
+        <header>
+          <h1 className="text-4xl font-bold mb-3 text-navy">بنك الكفاءات</h1>
+          <p className="text-slate-500 font-medium">استكشف جميع المتقدمين عبر كافة الوظائف المتاحة.</p>
+        </header>
+        <EmptyState 
+          title="لوحة التحكم بانتظارك! لم تقم بإنشاء أي شواغر وظيفية حتى الآن."
+          actionLabel="أنشئ أول وظيفة الآن"
+          onAction={onCreateJob}
+        />
+      </div>
+    );
+  }
+
+  const talents = [
+    { id: 't1', name: "أحمد علي", job: "مهندس برمجيات", score: "95%", skills: ["React", "Node.js"], email: "ahmed@example.com", phone: "966500000001" },
+    { id: 't2', name: "سارة محمد", job: "مصممة واجهات", score: "88%", skills: ["Figma", "UI/UX"], email: "sara@example.com", phone: "966500000002" },
+    { id: 't3', name: "خالد عبدالله", job: "محلل بيانات", score: "76%", skills: ["Python", "SQL"], email: "khaled@example.com", phone: "966500000003" },
+    { id: 't4', name: "ليلى حسن", job: "مديرة مشاريع", score: "92%", skills: ["Agile", "Scrum"], email: "layla@example.com", phone: "966500000004" },
+    { id: 't5', name: "عمر فاروق", job: "مطور تطبيقات", score: "84%", skills: ["Flutter", "Dart"], email: "omar@example.com", phone: "966500000005" },
+    { id: 't6', name: "نورة السعد", job: "أخصائية HR", score: "91%", skills: ["Recruitment", "ERP"], email: "noura@example.com", phone: "966500000006" },
+  ];
+
+  const filteredTalents = talents.filter(t => {
+    const matchesJob = jobFilter === 'all' || t.job.includes(jobs.find(j => j.id === jobFilter)?.title || '');
+    const matchesShortlist = !showOnlyShortlisted || shortlistedIds.includes(t.id);
+    return matchesJob && matchesShortlist;
+  });
+
+  return (
+    <div className="space-y-10">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-4xl font-bold mb-3 text-navy">بنك الكفاءات</h1>
+          <p className="text-slate-500 font-medium">استكشف جميع المتقدمين عبر كافة الوظائف المتاحة.</p>
+        </div>
+        <div className="flex bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
+          <button 
+            onClick={() => setShowOnlyShortlisted(false)}
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${!showOnlyShortlisted ? 'bg-navy text-white shadow-lg shadow-navy/20' : 'text-slate-400 hover:text-navy'}`}
+          >
+            الكل
+          </button>
+          <button 
+            onClick={() => setShowOnlyShortlisted(true)}
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${showOnlyShortlisted ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-slate-400 hover:text-navy'}`}
+          >
+            <Star size={16} fill={showOnlyShortlisted ? "currentColor" : "none"} />
+            المفضلين
+          </button>
+        </div>
+      </header>
+
+      <GlobalJobSelector 
+        jobs={jobs} 
+        selectedFilter={jobFilter} 
+        onFilterChange={setJobFilter} 
+      />
+
+      <div className="bg-white p-8 rounded-[32px] border border-white shadow-xl shadow-slate-200/40">
+        <div className="flex flex-col md:flex-row gap-6">
+          <div className="flex-1 relative">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+            <input 
+              type="text" 
+              placeholder="ابحث عن مهارة، اسم، أو مسمى وظيفي..."
+              className="w-full pr-12 pl-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+            />
+          </div>
+          <div className="flex gap-4">
+            <div className="relative">
+              <Filter className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <select className="pr-12 pl-10 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all appearance-none cursor-pointer font-medium min-w-[160px]">
+                <option>المهارة</option>
+                <option>React</option>
+                <option>Node.js</option>
+                <option>UI/UX</option>
+              </select>
+            </div>
+            <div className="relative">
+              <Sparkles className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <select className="pr-12 pl-10 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all appearance-none cursor-pointer font-medium min-w-[160px]">
+                <option>التقييم</option>
+                <option>+90%</option>
+                <option>+80%</option>
+                <option>+70%</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {filteredTalents.map((talent) => (
+          <motion.div 
+            key={talent.id}
+            whileHover={{ y: -5 }}
+            className="bg-white p-8 rounded-[32px] border border-white shadow-xl shadow-slate-200/40 group relative overflow-hidden"
+          >
+            <button 
+              onClick={() => onToggleShortlist(talent.id)}
+              className={`absolute top-6 left-6 p-2 rounded-xl transition-all ${shortlistedIds.includes(talent.id) ? 'bg-yellow-100 text-yellow-500 shadow-lg shadow-yellow-200/50' : 'bg-slate-50 text-slate-300 hover:text-yellow-500'}`}
+            >
+              <Star size={20} fill={shortlistedIds.includes(talent.id) ? "currentColor" : "none"} />
+            </button>
+
+            <div className="flex items-center justify-between mb-6">
+              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center font-bold text-slate-500 shadow-inner-3d group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                {talent.name.charAt(0)}
+              </div>
+              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold">
+                {talent.score} مطابقة
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-navy mb-1">{talent.name}</h3>
+            <p className="text-slate-500 text-sm font-medium mb-6">{talent.job}</p>
+            
+            <div className="flex flex-wrap gap-2 mb-8">
+              {talent.skills.map(skill => (
+                <span key={skill} className="bg-slate-50 text-slate-500 px-3 py-1 rounded-lg text-[10px] font-bold border border-slate-100">
+                  {skill}
+                </span>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3 pt-6 border-t border-slate-50">
+              <a 
+                href={`https://wa.me/${talent.phone}`} 
+                target="_blank" 
+                rel="noreferrer"
+                className="flex-1 flex items-center justify-center gap-2 bg-green-500 text-white py-3 rounded-xl font-bold text-xs hover:shadow-lg hover:shadow-green-200 transition-all active:scale-95"
+              >
+                <MessageCircle size={16} />
+                واتساب
+              </a>
+              <a 
+                href={`mailto:${talent.email}`}
+                className="flex-1 flex items-center justify-center gap-2 bg-navy text-white py-3 rounded-xl font-bold text-xs hover:shadow-lg hover:shadow-navy/20 transition-all active:scale-95"
+              >
+                <Mail size={16} />
+                إيميل
+              </a>
+            </div>
+          </motion.div>
+        ))}
+        {filteredTalents.length === 0 && (
+          <div className="col-span-full py-20 text-center bg-white rounded-[40px] border border-dashed border-slate-200">
+            <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Users size={32} className="text-slate-300" />
+            </div>
+            <h3 className="text-xl font-bold text-navy mb-2">لا يوجد مرشحين مطابقين</h3>
+            <p className="text-slate-500 font-medium">حاول تغيير معايير البحث أو الفلترة.</p>
+          </div>
+        )}
+      </div>
+    </div>

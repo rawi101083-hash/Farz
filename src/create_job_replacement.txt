@@ -1,0 +1,392 @@
+const CreateJob = ({ createJobType = 'single', onBack, onSubmit }: { createJobType?: 'single'|'campaign', onBack: () => void, onSubmit: (job: Omit<Job, 'id' | 'applicants' | 'status' | 'createdAt'>) => void }) => {
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  
+  // Campaign Meta
+  const [campaignTitle, setCampaignTitle] = useState('');
+  const [campaignDescription, setCampaignDescription] = useState('');
+  
+  // Common
+  const [company, setCompany] = useState('');
+  const [type, setType] = useState('دوام كامل');
+
+  // Role Form
+  const [roleTitle, setRoleTitle] = useState('');
+  const [roleDesc, setRoleDesc] = useState('');
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [customSkill, setCustomSkill] = useState('');
+  
+  const [customQuestions, setCustomQuestions] = useState<{text: string, type: string, options?: string[]}[]>([]);
+  const [newQuestionText, setNewQuestionText] = useState('');
+  const [newQuestionType, setNewQuestionType] = useState('نص قصير');
+  const [newQuestionOptions, setNewQuestionOptions] = useState<string[]>([]);
+  const [newOptionInput, setNewOptionInput] = useState('');
+  const [requiredAttachments, setRequiredAttachments] = useState<string[]>(['سيرة ذاتية PDF']);
+
+  const [roles, setRoles] = useState<Role[]>([]);
+
+  const getSuggestions = () => {
+    const normalizedTitle = roleTitle.trim() || '';
+    const suggestions = SKILL_SUGGESTIONS[normalizedTitle] || [];
+    return suggestions.filter(s => !selectedSkills.includes(s));
+  };
+
+  const toggleSkill = (skill: string) => {
+    if (selectedSkills.includes(skill)) {
+      setSelectedSkills(selectedSkills.filter(s => s !== skill));
+    } else {
+      setSelectedSkills([...selectedSkills, skill]);
+    }
+  };
+
+  const addCustomSkill = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customSkill.trim() && !selectedSkills.includes(customSkill.trim())) {
+      setSelectedSkills([...selectedSkills, customSkill.trim()]);
+      setCustomSkill('');
+    }
+  };
+
+  const addCustomQuestion = () => {
+    if (newQuestionText.trim()) {
+      setCustomQuestions([...customQuestions, { 
+        text: newQuestionText.trim(), 
+        type: newQuestionType,
+        ...(newQuestionType === 'خيارات متعددة' ? { options: newQuestionOptions } : {})
+      }]);
+      setNewQuestionText('');
+      setNewQuestionType('نص قصير');
+      setNewQuestionOptions([]);
+    }
+  };
+
+  const addQuestionOption = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newOptionInput.trim() && !newQuestionOptions.includes(newOptionInput.trim())) {
+      setNewQuestionOptions([...newQuestionOptions, newOptionInput.trim()]);
+      setNewOptionInput('');
+    }
+  };
+
+  const removeQuestionOption = (opt: string) => {
+    setNewQuestionOptions(newQuestionOptions.filter(o => o !== opt));
+  };
+
+  const removeCustomQuestion = (index: number) => {
+    setCustomQuestions(customQuestions.filter((_, i) => i !== index));
+  };
+
+  const toggleAttachment = (attachment: string) => {
+    if (attachment === 'لا يتطلب مرفقات') {
+      setRequiredAttachments(['لا يتطلب مرفقات']);
+      return;
+    }
+    
+    let newAttachments = requiredAttachments.filter(a => a !== 'لا يتطلب مرفقات');
+    if (newAttachments.includes(attachment)) {
+      newAttachments = newAttachments.filter(a => a !== attachment);
+    } else {
+      newAttachments.push(attachment);
+    }
+    setRequiredAttachments(newAttachments.length > 0 ? newAttachments : ['لا يتطلب مرفقات']);
+  };
+
+  const handleAddRole = () => {
+    if (!roleTitle.trim() || !roleDesc.trim()) {
+      alert('يرجى تعبئة المسمى الوظيفي والوصف أولاً');
+      return;
+    }
+    setRoles([...roles, {
+      id: Math.random().toString(36).substr(2, 9),
+      title: roleTitle.trim(),
+      description: roleDesc.trim(),
+      skills: [...selectedSkills],
+      customQuestions: [...customQuestions],
+      requiredAttachments: [...requiredAttachments]
+    }]);
+
+    setRoleTitle('');
+    setRoleDesc('');
+    setSelectedSkills([]);
+    setCustomQuestions([]);
+    setRequiredAttachments(['سيرة ذاتية PDF']);
+  };
+
+  const handleRemoveRole = (id: string) => {
+    setRoles(roles.filter(r => r.id !== id));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    let finalRoles = [...roles];
+    if (createJobType === 'campaign' && finalRoles.length === 0 && roleTitle.trim()) {
+        finalRoles.push({
+          id: Math.random().toString(36).substr(2, 9),
+          title: roleTitle.trim(),
+          description: roleDesc.trim(),
+          skills: [...selectedSkills],
+          customQuestions: [...customQuestions],
+          requiredAttachments: [...requiredAttachments]
+        });
+    }
+
+    if (createJobType === 'campaign' && finalRoles.length === 0) {
+      alert('يرجى إضافة دور وظيفي واحد على الأقل للحملة');
+      return;
+    }
+
+    if (createJobType === 'single') {
+       finalRoles = [{
+          id: Math.random().toString(36).substr(2, 9),
+          title: roleTitle.trim() || 'شاغر جديد',
+          description: roleDesc.trim(),
+          skills: selectedSkills,
+          customQuestions,
+          requiredAttachments
+       }];
+    }
+
+    const mainTitle = createJobType === 'campaign' ? campaignTitle : roleTitle;
+    const mainDesc = createJobType === 'campaign' ? campaignDescription : roleDesc;
+
+    const baseJobData: Omit<Job, 'id' | 'applicants' | 'status' | 'createdAt'> = { 
+      recordType: createJobType,
+      campaignTitle: createJobType === 'campaign' ? campaignTitle : undefined,
+      campaignDescription: createJobType === 'campaign' ? campaignDescription : undefined,
+      roles: finalRoles,
+      
+      company, 
+      type, 
+      description: mainDesc,
+      title: mainTitle,
+      skills: selectedSkills, 
+      customQuestions, 
+      requiredAttachments
+    };
+    
+    try {
+      await fetch('https://circular-struggle-ethical-membership.trycloudflare.com/webhook-test/2489027f-d077-4af4-9d3d-fc0dd9f38953', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'CreateJob', ...baseJobData }),
+      });
+    } catch (error) {
+      console.error('Webhook error:', error);
+    }
+
+    onSubmit(baseJobData);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] p-8 pt-24 lg:pt-10">
+      <div className="max-w-3xl mx-auto">
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-slate-500 hover:text-primary font-bold mb-8 transition-colors group"
+        >
+          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center group-hover:border-primary transition-all">
+            <ArrowLeft size={18} className="rotate-180" />
+          </div>
+          العودة للوحة التحكم
+        </button>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-[40px] shadow-xl shadow-slate-200/50 border border-white overflow-hidden"
+        >
+          <div className="p-10 border-b border-slate-50 bg-slate-50/50">
+            <h2 className="text-3xl font-bold text-navy">
+              {createJobType === 'single' ? 'إنشاء شاغر وظيفي مفرد' : 'إنشاء حملة توظيف متعددة'}
+            </h2>
+            <p className="text-slate-500 mt-2 font-medium">أدخل تفاصيل الوظيفة لبدء استقبال المتقدمين وفرزهم آلياً بذكاء.</p>
+          </div>
+
+          <form className="p-10 space-y-8" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-navy mr-1">اسم الشركة / الفرع</label>
+                <input 
+                  required
+                  type="text" 
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="مثال: الرياض"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-navy mr-1">نوع العمل</label>
+                <div className="relative">
+                  <select 
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none font-medium"
+                  >
+                    <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام كامل</option>
+                    <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام جزئي</option>
+                    <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">عن بعد</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {createJobType === 'campaign' && (
+              <div className="space-y-6 pt-6 border-t border-slate-100">
+                <h3 className="text-xl font-bold text-navy">الواجهة الترحيبية للحملة (Campaign Meta)</h3>
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-navy mr-1">عنوان الحملة</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={campaignTitle}
+                    onChange={(e) => setCampaignTitle(e.target.value)}
+                    placeholder="مثال: حملة توظيف كفاءات المبيعات 2026"
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-medium"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-navy mr-1">الوصف العام للحملة</label>
+                  <textarea 
+                    required
+                    rows={3}
+                    value={campaignDescription}
+                    onChange={(e) => setCampaignDescription(e.target.value)}
+                    placeholder="اكتب رسالة ترحيبية يراها المتقدم..."
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none font-medium resize-none"
+                  />
+                </div>
+                
+                {roles.length > 0 && (
+                  <div className="mt-8 space-y-4">
+                    <h3 className="font-bold text-navy">الأدوار المضافة ({roles.length}):</h3>
+                    <div className="grid gap-4">
+                      {roles.map(r => (
+                        <div key={r.id} className="p-4 bg-white border border-slate-200 rounded-2xl flex items-center justify-between shadow-sm">
+                          <div>
+                            <p className="font-bold text-navy">{r.title}</p>
+                            <p className="text-sm text-slate-500 line-clamp-1">{r.description}</p>
+                          </div>
+                          <button type="button" onClick={() => handleRemoveRole(r.id)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shrink-0">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-6 pt-6 border-t border-slate-100 bg-slate-50/50 -mx-10 px-10 pb-6 rounded-b-[40px]">
+              <h3 className="text-xl font-bold text-navy mb-4">
+                {createJobType === 'single' ? 'تفاصيل الوظيفة' : 'إضافة تفاصيل دور وظيفي للحملة'}
+              </h3>
+              
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-navy mr-1">المسمى الوظيفي (Role)</label>
+                <input 
+                  required={createJobType === 'single'}
+                  type="text" 
+                  value={roleTitle}
+                  onChange={(e) => setRoleTitle(e.target.value)}
+                  placeholder="مثال: مندوب مبيعات"
+                  className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none font-medium"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-navy mr-1">وصف العمل والمتطلبات</label>
+                <textarea 
+                  required={createJobType === 'single'}
+                  rows={4}
+                  value={roleDesc}
+                  onChange={(e) => setRoleDesc(e.target.value)}
+                  placeholder="مهام الدور ومتطلباته..."
+                  className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none font-medium resize-none"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <label className="text-sm font-bold text-navy mr-1">المهارات المطلوبة</label>
+                <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-white border border-slate-200 rounded-2xl">
+                  {selectedSkills.length === 0 && <span className="text-sm text-slate-400 py-2">لا توجد مهارات.</span>}
+                  <AnimatePresence>
+                    {selectedSkills.map(skill => (
+                      <motion.button layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.8, opacity: 0 }} key={skill} type="button" onClick={() => toggleSkill(skill)} className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-all">
+                        {skill} <X size={14} />
+                      </motion.button>
+                    ))}
+                  </AnimatePresence>
+                </div>
+                <div className="relative">
+                  <input type="text" value={customSkill} onChange={(e) => setCustomSkill(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomSkill(e); } }} placeholder="أضف مهارة..." className="w-full pr-6 pl-14 py-4 bg-white border border-slate-200 rounded-2xl outline-none font-medium" />
+                  <button type="button" onClick={addCustomSkill} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Plus size={20} /></button>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-6 border-t border-slate-200/60">
+                <label className="text-sm font-bold text-navy mr-1">الأسئلة الإضافية (خاصة بهذا الدور)</label>
+                {customQuestions.map((q, idx) => (
+                  <div key={idx} className="flex flex-col md:flex-row p-4 bg-white border border-slate-200 rounded-2xl gap-4">
+                    <div className="space-y-1 flex-1">
+                      <p className="font-bold text-navy text-sm">{q.text}</p>
+                      <p className="text-xs text-primary font-medium">نوع الإجابة: {q.type}</p>
+                    </div>
+                    <button type="button" onClick={() => removeCustomQuestion(idx)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0"><Trash2 size={14} /></button>
+                  </div>
+                ))}
+                <div className="flex flex-col md:flex-row gap-4">
+                  <input type="text" value={newQuestionText} onChange={(e) => setNewQuestionText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomQuestion(); } }} placeholder="اكتب سؤالك هنا..." className="flex-1 px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none" />
+                  <div className="relative min-w-[150px]">
+                    <select value={newQuestionType} onChange={(e) => { setNewQuestionType(e.target.value); if (e.target.value !== 'خيارات متعددة') setNewQuestionOptions([]); }} className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none appearance-none font-medium">
+                      <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">نص قصير</option>
+                      <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">نص طويل</option>
+                      <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">خيارات متعددة</option>
+                    </select>
+                  </div>
+                  <button type="button" onClick={addCustomQuestion} className="bg-navy text-white px-6 py-4 rounded-2xl font-bold flex items-center justify-center"><Plus size={18} /></button>
+                </div>
+                {newQuestionType === 'خيارات متعددة' && (
+                  <div className="p-4 border border-slate-200 rounded-2xl bg-white space-y-3">
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {newQuestionOptions.map(opt => (
+                        <span key={opt} className="bg-primary/10 text-primary px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2">{opt} <button type="button" onClick={() => removeQuestionOption(opt)}><Trash2 size={12} /></button></span>
+                      ))}
+                    </div>
+                    <div className="relative max-w-sm">
+                      <input type="text" value={newOptionInput} onChange={e => setNewOptionInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addQuestionOption(e); } }} placeholder="اضف خيار واضغط Enter" className="w-full pr-4 py-2 bg-slate-50 border rounded-xl" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+                {['سيرة ذاتية PDF', 'رابط معرض أعمال/Portfolio', 'لا يتطلب مرفقات'].map((opt) => (
+                  <label key={opt} className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer ${requiredAttachments.includes(opt) ? 'bg-primary/5 border-primary text-primary' : 'bg-white border-slate-200'}`}>
+                    <input type="checkbox" className="hidden" checked={requiredAttachments.includes(opt)} onChange={() => toggleAttachment(opt)} />
+                    <span className="font-bold text-sm">{opt}</span>
+                  </label>
+                ))}
+              </div>
+
+              {createJobType === 'campaign' && (
+                <div className="pt-6 border-t border-slate-200 flex justify-end">
+                  <button type="button" onClick={handleAddRole} className="bg-mint text-employer-green px-8 py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl flex items-center gap-2 transition-all">
+                    <Plus size={20} />
+                    حفظ الدور في الحملة
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <button type="submit" className="w-full bg-primary text-white py-5 rounded-2xl text-lg font-bold hover:shadow-xl transition-all mt-6">
+              {createJobType === 'single' ? 'حفظ وإنشاء رابط التقديم' : 'إنشاء وحفظ الحملة التوظيفية'}
+            </button>
+          </form>
+        </motion.div>
+      </div>
+    </div>
+  );
+};

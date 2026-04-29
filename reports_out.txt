@@ -1,0 +1,200 @@
+9758:       case "التقارير":
+9759:         return (
+9760:           <div className="space-y-6">
+9761:             {" "}
+9762:             <GlobalJobSelector
+9763:               jobs={jobs}
+9764:               selectedFilter={jobFilter}
+9765:               onFilterChange={setJobFilter}
+9766:             />{" "}
+9767:             <Reports jobs={jobs} filterId={jobFilter} />{" "}
+9768:           </div>
+9769:         );
+9770:       case "الحساب":
+9771:         return <SettingsPage darkMode={darkMode} setDarkMode={setDarkMode} userProfile={userProfile} setUserProfile={setUserProfile} />;
+9772:       default:
+9773:         return null;
+9774:     }
+9775:   };
+9776:   return (
+9777:     <>
+9778:       <AnimatePresence>
+9779:         {draftToDelete && (
+9780:           <motion.div
+9781:             key="draft-modal"
+9782:             initial={{ opacity: 0 }}
+9783:             animate={{ opacity: 1 }}
+9784:             exit={{ opacity: 0 }}
+9785:             className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm"
+9786:             onClick={() => setDraftToDelete(null)}
+9787:           >
+9788:             <motion.div
+9789:               initial={{ opacity: 0, scale: 0.95, y: 10 }}
+9790:               animate={{ opacity: 1, scale: 1, y: 0 }}
+9791:               exit={{ opacity: 0, scale: 0.95, y: 10 }}
+9792:               onClick={(e) => e.stopPropagation()}
+9793:               className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
+9794:             >
+9795:               <h2 className="text-2xl font-black text-red-600 dark:text-red-400 text-center mb-4">
+9796:                 تأكيد حذف المسودة
+9797:               </h2>
+9798:               <p className="text-slate-500 dark:text-slate-400 text-center mb-8 font-medium">
+9799:                 هل أنت متأكد من حذف هذه المسودة نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.
+9800:               </p>
+9801:               <div className="flex gap-4">
+9802:                 <button
+9803:                   type="button"
+9804:                   onClick={() => setDraftToDelete(null)}
+9805:                   className="flex-1 px-4 py-3 rounded-xl font-bold border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+9806:                 >
+9807:                   إلغاء
+9808:                 </button>
+9809:                 <button
+9810:                   type="button"
+9811:                   onClick={() => {
+9812:                     if (onDeleteJob) onDeleteJob(draftToDelete);
+9813:                     setDraftToDelete(null);
+9814:                   }}
+9815:                   className="flex-1 px-4 py-3 rounded-xl font-bold bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg transition-all"
+9816:                 >
+9817:                   نعم، احذف
+9818:                 </button>
+9819:               </div>
+9820:             </motion.div>
+9821:           </motion.div>
+9822:         )}
+9823: 
+9824:         {showBulkDeleteDraftsModal && (
+9825:           <motion.div
+9826:             key="bulk-draft-modal"
+9827:             initial={{ opacity: 0 }}
+9828:             animate={{ opacity: 1 }}
+9829:             exit={{ opacity: 0 }}
+9830:             className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm"
+9831:             onClick={() => setShowBulkDeleteDraftsModal(false)}
+9832:           >
+9833:             <motion.div
+9834:               initial={{ opacity: 0, scale: 0.95, y: 10 }}
+9835:               animate={{ opacity: 1, scale: 1, y: 0 }}
+9836:               exit={{ opacity: 0, scale: 0.95, y: 10 }}
+9837:               onClick={(e) => e.stopPropagation()}
+9838:               className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
+9839:             >
+9840:               <h2 className="text-2xl font-black text-red-600 dark:text-red-400 text-center mb-4">
+9841:                 مسح جماعي للمسودات
+9842:               </h2>
+9843:               <p className="text-slate-500 dark:text-slate-400 text-center mb-8 font-medium">
+9844:                 هل أنت متأكد من مسح جميع المسودات بشكل نهائي؟ هذا الإجراء لا يمكن التراجع عنه.
+9845:               </p>
+9846:               <div className="flex gap-4">
+9847:                 <button
+9848:                   type="button"
+9849:                   onClick={() => setShowBulkDeleteDraftsModal(false)}
+9850:                   className="flex-1 px-4 py-3 rounded-xl font-bold border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+9851:                 >
+9852:                   إلغاء
+9853:                 </button>
+9854:                 <button
+9855:                   type="button"
+9856:                   onClick={() => {
+9857:                     if (onDeleteAllDrafts) onDeleteAllDrafts();
+9858:                     setShowBulkDeleteDraftsModal(false);
+9859:                   }}
+9860:                   className="flex-1 px-4 py-3 rounded-xl font-bold bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg transition-all"
+9861:                 >
+9862:                   نعم، امسح مسوداتي
+9863:                 </button>
+9864:               </div>
+9865:             </motion.div>
+9866:           </motion.div>
+9867:         )}
+9868: 
+9869:         {toastMessage && (
+9870:           <motion.div
+9871:             key="toast-msg"
+9872:             initial={{ opacity: 0, y: -50 }}
+9873:             animate={{ opacity: 1, y: 0 }}
+9874:             exit={{ opacity: 0, y: -50 }}
+9875:             className="fixed top-6 left-1/2 -translate-x-1/2 bg-navy text-white border border-slate-700/50 px-6 py-4 rounded-2xl shadow-2xl z-[100] flex items-center gap-3 font-bold"
+9876:           >
+9877:             <CheckCircle size={20} className="text-primary" />
+9878:             {toastMessage}
+9879:           </motion.div>
+9880:         )}
+9881: 
+9882:         {crossNominateApplicant && (
+9883:           <motion.div
+9884:             initial={{ opacity: 0 }}
+9885:             animate={{ opacity: 1 }}
+9886:             exit={{ opacity: 0 }}
+9887:             className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+9888:           >
+9889:             <motion.div
+9890:               initial={{ opacity: 0, scale: 0.95, y: 20 }}
+9891:               animate={{ opacity: 1, scale: 1, y: 0 }}
+9892:               exit={{ opacity: 0, scale: 0.95, y: 20 }}
+9893:               className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 dark:border-slate-700"
+9894:             >
+9895:               <div className="flex justify-between items-center mb-6">
+9896:                 <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-2">
+9897:                   <Briefcase size={24} className="text-primary" /> ترشيح لوظيفة أخرى
+9898:                 </h3>
+9899:                 <button
+9900:                   onClick={() => {
+9901:                     setCrossNominateApplicant(null);
+9902:                     setCrossNominateJobId("");
+9903:                   }}
+9904:                   className="text-slate-400 hover:text-red-500 transition-colors p-2"
+9905:                 >
+9906:                   <X size={20} />
+9907:                 </button>
+9908:               </div>
+9909: 
+9910:               <div className="mb-6">
+9911:                 <p className="text-slate-600 dark:text-slate-400 font-medium mb-4">
+9912:                   اختر الوظيفة التي تود ترشيح المتقدم <span className="text-primary font-bold">{crossNominateApplicant.name}</span> لها:
+9913:                 </p>
+9914:                 
+9915:                 <select
+9916:                   value={crossNominateJobId}
+9917:                   onChange={(e) => setCrossNominateJobId(e.target.value)}
+9918:                   className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:border-primary font-medium"
+9919:                 >
+9920:                   <option value="" disabled className="bg-white text-navy dark:bg-slate-800 dark:text-white">-- اختر وظيفة نشطة --</option>
+9921:                   {jobs.filter(j => j.status === "نشط").map(j => (
+9922:                     <option key={j.id} value={j.id} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{j.title}</option>
+9923:                   ))}
+9924:                 </select>
+9925:               </div>
+9926: 
+9927:               <div className="flex items-center gap-3">
+9928:                 <button
+9929:                   onClick={handleCrossNominate}
+9930:                   disabled={!crossNominateJobId}
+9931:                   className="flex-1 bg-primary text-white py-4 rounded-xl font-bold text-sm lg:text-base hover:shadow-lg hover:shadow-primary/30 transition-all disabled:opacity-50"
+9932:                 >
+9933:                   تأكيد الترشيح
+9934:                 </button>
+9935:                 <button
+9936:                   onClick={() => {
+9937:                     setCrossNominateApplicant(null);
+9938:                     setCrossNominateJobId("");
+9939:                   }}
+9940:                   className="flex-1 bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 py-4 rounded-xl font-bold text-sm lg:text-base hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
+9941:                 >
+9942:                   إلغاء
+9943:                 </button>
+9944:               </div>
+9945:             </motion.div>
+9946:           </motion.div>
+9947:         )}
+9948:       </AnimatePresence>
+9949:       <div className="flex min-h-screen bg-slate-100 dark:bg-slate-900">
+9950:         {" "}
+9951:       {/* Sidebar */}{" "}
+9952:       <aside className="w-80 bg-navy text-white p-8 hidden lg:flex flex-col fixed h-full right-0 shadow-2xl z-20">
+9953:         {" "}
+9954:         <div className="flex items-center gap-4 mb-16 px-2">
+9955:           {" "}
+9956:           <LogoIcon />{" "}
+9957:           <span className="text-3xl font-black tracking-tighter text-white">

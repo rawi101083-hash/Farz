@@ -1,0 +1,296 @@
+const ApplicantForm = ({ job, onSubmit }: { job: Job | null, onSubmit: () => void }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isParsing, setIsParsing] = useState(false);
+  const [isParsed, setIsParsed] = useState(false);
+  const [formDataState, setFormDataState] = useState({ fullName: '', phone: '', email: '' });
+  const [selectedRoleId, setSelectedRoleId] = useState<string>('');
+
+  const isCampaign = job?.recordType === 'campaign';
+  const roles = job?.roles || [];
+  
+  const activeRole = isCampaign 
+    ? roles.find(r => r.id === selectedRoleId) 
+    : (roles && roles.length > 0 ? roles[0] : job);
+
+  const customQuestions = activeRole?.customQuestions || [];
+  const requiredAttachments = activeRole?.requiredAttachments || ['سيرة ذاتية PDF'];
+  const hasResumeOption = requiredAttachments.includes('سيرة ذاتية PDF') || requiredAttachments.includes('لا يتطلب مرفقات') === false;
+
+  const showUploadStep = !isCampaign || (isCampaign && selectedRoleId);
+  const shouldShowFormInputs = !hasResumeOption || isParsed;
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) => {
+    if ('preventDefault' in e) e.preventDefault();
+    setIsDragging(false);
+    
+    setIsParsing(true);
+    setTimeout(() => {
+      setFormDataState({
+        fullName: 'عبدالله محمد',
+        phone: '0501234567',
+        email: 'abdullah@example.com'
+      });
+      setIsParsing(false);
+      setIsParsed(true);
+    }, 1500);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormDataState(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    if (isCampaign && !selectedRoleId) {
+      alert('يرجى اختيار المسمى الوظيفي المطلوب');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const submitData = Object.fromEntries(formData.entries());
+
+    const customAnswers = customQuestions.map((q: any, idx: number) => ({
+      question: q.text,
+      answer: submitData[`customQuestion_${idx}`]
+    }));
+
+    customQuestions.forEach((_: any, idx: number) => delete submitData[`customQuestion_${idx}`]);
+
+    const finalPayload = {
+      type: 'ApplicantSubmission',
+      campaignId: isCampaign ? job?.id : undefined,
+      jobId: activeRole?.id || job?.id,
+      jobTitle: activeRole?.title || job?.title,
+      ...submitData,
+      customAnswers
+    };
+
+    try {
+      await fetch('https://circular-struggle-ethical-membership.trycloudflare.com/webhook-test/2489027f-d077-4af4-9d3d-fc0dd9f38953', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(finalPayload),
+      });
+    } catch (error) {
+      console.error('Webhook error:', error);
+    }
+
+    setTimeout(() => {
+      onSubmit();
+    }, 1500);
+  };
+
+  return (
+    <div className="min-h-screen pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 -z-10 translate-x-1/2" />
+      
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white/80 backdrop-blur-xl w-full max-w-2xl p-10 md:p-14 rounded-[40px] shadow-2xl border border-white"
+      >
+        <div className="text-center mb-12">
+          {isCampaign ? (
+            <>
+              <h2 className="text-4xl font-bold mb-4 text-navy">{job?.campaignTitle || 'حملة توظيف'}</h2>
+              <p className="text-slate-500 font-medium leading-relaxed whitespace-pre-wrap">{job?.campaignDescription}</p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-4xl font-bold mb-4 text-navy">خطوتك الأولى نحو فرصتك القادمة</h2>
+              <p className="text-slate-500 font-medium leading-relaxed">
+                ارفع سيرتك الذاتية وسنقوم بتعبئة بياناتك الأساسية تلقائياً لتوفير وقتك. أكمل النواقص، وفالك التوفيق!
+              </p>
+            </>
+          )}
+        </div>
+
+        <form className="grid grid-cols-1 md:grid-cols-2 gap-8" onSubmit={handleSubmit}>
+          
+          {isCampaign && (
+            <div className="md:col-span-2 space-y-3 bg-primary/5 p-6 rounded-[32px] border border-primary/10">
+              <label className="text-sm font-bold text-navy mr-1">المسمى الوظيفي المطلوب</label>
+              <div className="relative">
+                <select 
+                  value={selectedRoleId}
+                  onChange={(e) => { setSelectedRoleId(e.target.value); setIsParsed(false); setFormDataState({fullName: '', phone: '', email: ''}); }}
+                  className="w-full px-6 py-4 bg-white border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all appearance-none cursor-pointer font-medium"
+                >
+                  <option value="">-- اختر الدور الوظيفي --</option>
+                  {roles.map((r) => (
+                    <option key={r.id} value={r.id}>{r.title}</option>
+                  ))}
+                </select>
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <ArrowLeft size={18} className="-rotate-90" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showUploadStep && hasResumeOption && !isParsed && (
+            <div className="md:col-span-2 space-y-3">
+              <label className="text-sm font-bold text-navy mr-1">إرفاق السيرة الذاتية (للتعبئة التلقائية)</label>
+              <div 
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleFileUpload}
+                className={`relative border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer overflow-hidden group ${isDragging ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary hover:bg-slate-50'}`}
+              >
+                <input 
+                  type="file" 
+                  accept=".pdf" 
+                  onChange={handleFileUpload} 
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                />
+                {!isParsing ? (
+                  <>
+                    <div className={`w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center transition-all ${isDragging ? 'bg-primary text-white scale-110' : 'bg-slate-100 text-slate-400 group-hover:text-primary group-hover:bg-primary/10'}`}>
+                      <Upload size={32} />
+                    </div>
+                    <p className="text-navy font-bold text-lg mb-2">اسحب ملف السيرة (PDF) هنا</p>
+                    <p className="text-sm text-slate-500 font-medium">أو انقر لاختيار ملف من جهازك</p>
+                  </>
+                ) : (
+                  <div className="py-6 space-y-4">
+                    <div className="w-16 h-16 mx-auto border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                    <p className="text-primary font-bold animate-pulse">جاري قراءة البيانات بذكاء...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {showUploadStep && shouldShowFormInputs && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8">
+              
+              {isParsed && hasResumeOption && (
+                <div className="md:col-span-2 bg-green-50 text-green-700 p-4 rounded-2xl flex items-center gap-3 border border-green-200">
+                  <CheckCircle size={20} />
+                  <p className="text-sm font-bold">تم استخراج البيانات من السيرة الذاتية بنجاح! راجعها للحفظ.</p>
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-navy mr-1">الاسم الكامل</label>
+                <input 
+                  required
+                  name="fullName"
+                  type="text" 
+                  value={formDataState.fullName}
+                  onChange={handleInputChange}
+                  placeholder="أحمد محمد علي"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-navy mr-1">رقم الجوال</label>
+                <input 
+                  required
+                  name="phone"
+                  type="tel" 
+                  value={formDataState.phone}
+                  onChange={handleInputChange}
+                  placeholder="05xxxxxxxx"
+                  dir="ltr"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-right font-medium"
+                />
+              </div>
+
+              <div className="space-y-3 md:col-span-2">
+                <label className="text-sm font-bold text-navy mr-1">البريد الإلكتروني</label>
+                <input 
+                  required
+                  name="email"
+                  type="email" 
+                  value={formDataState.email}
+                  onChange={handleInputChange}
+                  placeholder="example@domain.com"
+                  dir="ltr"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-right font-medium"
+                />
+              </div>
+
+              {customQuestions.map((q: any, idx: number) => {
+                const options = Array.isArray(q.options) && q.options.length > 0 ? q.options : ['نعم', 'لا'];
+                return (
+                  <div key={idx} className="md:col-span-2 space-y-3">
+                    <label className="text-sm font-bold text-navy mr-1">{q.text}</label>
+                    {q.type === 'نص طويل' ? (
+                      <textarea 
+                        required
+                        name={`customQuestion_${idx}`}
+                        rows={4}
+                        placeholder="اكتب إجابتك هنا..."
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium resize-none"
+                      />
+                    ) : q.type === 'خيارات متعددة' ? (
+                      <div className="relative">
+                        <select name={`customQuestion_${idx}`} required className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all appearance-none cursor-pointer font-medium">
+                          <option value="">اختر إجابة</option>
+                          {options.map((opt: string, i: number) => (
+                            <option key={i} value={opt}>{opt}</option>
+                          ))}
+                        </select>
+                        <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                          <ArrowLeft size={18} className="-rotate-90" />
+                        </div>
+                      </div>
+                    ) : (
+                      <input 
+                        required
+                        name={`customQuestion_${idx}`}
+                        type="text" 
+                        placeholder="إجابة قصيرة..."
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+
+              {!hasResumeOption && requiredAttachments.filter(a => a !== 'لا يتطلب مرفقات').length > 0 && (
+                <div className="md:col-span-2 space-y-3">
+                  <label className="text-sm font-bold text-navy mr-1">{requiredAttachments.filter(a => a !== 'لا يتطلب مرفقات').join(' و ')}</label>
+                  <div 
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    className={`border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer group ${isDragging ? 'border-primary bg-primary/5' : 'border-slate-200 hover:border-primary hover:bg-slate-50'}`}
+                  >
+                    <div className={`w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center transition-all ${isDragging ? 'bg-primary text-white scale-110' : 'bg-slate-100 text-slate-400 group-hover:text-primary group-hover:bg-primary/10'}`}>
+                      <Upload size={32} />
+                    </div>
+                    <p className="text-navy font-bold text-lg mb-2">اسحب المرفق الخاص المتطلب هنا</p>
+                    <p className="text-sm text-slate-500 font-medium">أو انقر لاختيار ملف من جهازك</p>
+                  </div>
+                </div>
+              )}
+
+              <button 
+                type="submit"
+                disabled={isSubmitting}
+                className="md:col-span-2 bg-primary text-white py-5 rounded-2xl text-lg font-bold hover:shadow-2xl hover:shadow-primary/40 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-3 disabled:opacity-70"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    جاري إرسال البيانات...
+                  </>
+                ) : (
+                  'إرسال الطلب الآن'
+                )}
+              </button>
+            </motion.div>
+          )}
+
+        </form>
+      </motion.div>
+    </div>
+  );
+};

@@ -1,0 +1,491 @@
+      {actionLabel}
+      <Plus size={20} />
+    </button>
+  </motion.div>
+);
+
+const SKILL_SUGGESTIONS: Record<string, string[]> = {
+  'كاشير': ['خدمة عملاء', 'نقاط البيع POS', 'سرعة الحساب', 'التعامل مع النقد', 'اللباقة'],
+  'بائع': ['مهارات البيع', 'الإقناع', 'خدمة عملاء', 'ترتيب المعروضات', 'العمل الجماعي'],
+  'مهندس برمجيات': ['React', 'Node.js', 'TypeScript', 'SQL', 'حل المشكلات', 'Git'],
+  'مصمم': ['Figma', 'Adobe Photoshop', 'UI/UX', 'الإبداع', 'التفكير التصميمي'],
+  'محاسب': ['Excel', 'التقارير المالية', 'التدقيق', 'الأنظمة المحاسبية', 'الدقة'],
+  'خدمة عملاء': ['اللباقة', 'حل المشكلات', 'إدارة الوقت', 'التواصل الفعال', 'الصبر'],
+};
+
+const CreateJob = ({ onBack, onSubmit }: { onBack: () => void, onSubmit: (job: Omit<Job, 'id' | 'applicants' | 'status' | 'createdAt'>) => void }) => {
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(true);
+  const [titles, setTitles] = useState<string[]>([]);
+  const [customTitle, setCustomTitle] = useState('');
+  const [company, setCompany] = useState('');
+  const [type, setType] = useState('دوام كامل');
+  const [description, setDescription] = useState('');
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [customSkill, setCustomSkill] = useState('');
+  
+  const [customQuestions, setCustomQuestions] = useState<{text: string, type: string, options?: string[]}[]>([]);
+  const [newQuestionText, setNewQuestionText] = useState('');
+  const [newQuestionType, setNewQuestionType] = useState('نص قصير');
+  const [newQuestionOptions, setNewQuestionOptions] = useState<string[]>([]);
+  const [newOptionInput, setNewOptionInput] = useState('');
+  const [requiredAttachments, setRequiredAttachments] = useState<string[]>(['سيرة ذاتية PDF']);
+
+  const getSuggestions = () => {
+    const normalizedTitle = titles.length > 0 ? titles[0].trim() : '';
+    const suggestions = SKILL_SUGGESTIONS[normalizedTitle] || [];
+    return suggestions.filter(s => !selectedSkills.includes(s));
+  };
+
+  const toggleSkill = (skill: string) => {
+    if (selectedSkills.includes(skill)) {
+      setSelectedSkills(selectedSkills.filter(s => s !== skill));
+    } else {
+      setSelectedSkills([...selectedSkills, skill]);
+    }
+  };
+
+  const addCustomQuestion = () => {
+    if (newQuestionText.trim()) {
+      setCustomQuestions([...customQuestions, { 
+        text: newQuestionText.trim(), 
+        type: newQuestionType,
+        ...(newQuestionType === 'خيارات متعددة' ? { options: newQuestionOptions } : {})
+      }]);
+      setNewQuestionText('');
+      setNewQuestionType('نص قصير');
+      setNewQuestionOptions([]);
+    }
+  };
+
+  const addQuestionOption = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newOptionInput.trim() && !newQuestionOptions.includes(newOptionInput.trim())) {
+      setNewQuestionOptions([...newQuestionOptions, newOptionInput.trim()]);
+      setNewOptionInput('');
+    }
+  };
+
+  const removeQuestionOption = (opt: string) => {
+    setNewQuestionOptions(newQuestionOptions.filter(o => o !== opt));
+  };
+
+  const removeCustomQuestion = (index: number) => {
+    setCustomQuestions(customQuestions.filter((_, i) => i !== index));
+  };
+
+  const toggleAttachment = (attachment: string) => {
+    if (attachment === 'لا يتطلب مرفقات') {
+      setRequiredAttachments(['لا يتطلب مرفقات']);
+      return;
+    }
+    
+    let newAttachments = requiredAttachments.filter(a => a !== 'لا يتطلب مرفقات');
+    if (newAttachments.includes(attachment)) {
+      newAttachments = newAttachments.filter(a => a !== attachment);
+    } else {
+      newAttachments.push(attachment);
+    }
+    setRequiredAttachments(newAttachments.length > 0 ? newAttachments : ['لا يتطلب مرفقات']);
+  };
+
+  const addCustomSkill = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customSkill.trim() && !selectedSkills.includes(customSkill.trim())) {
+      setSelectedSkills([...selectedSkills, customSkill.trim()]);
+      setCustomSkill('');
+    }
+  };
+
+  const addCustomTitle = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customTitle.trim() && !titles.includes(customTitle.trim())) {
+      setTitles([...titles, customTitle.trim()]);
+      setCustomTitle('');
+    }
+  };
+
+  const removeTitle = (titleToRemove: string) => {
+    setTitles(titles.filter(t => t !== titleToRemove));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const baseJobData = { company, type, description, skills: selectedSkills, customQuestions, requiredAttachments };
+    const webhookPayload = { type: 'CreateJob', ...baseJobData, titles };
+    
+    try {
+      await fetch('https://circular-struggle-ethical-membership.trycloudflare.com/webhook-test/2489027f-d077-4af4-9d3d-fc0dd9f38953', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(webhookPayload),
+      });
+    } catch (error) {
+      console.error('Webhook error:', error);
+    }
+
+    if (titles.length === 0) {
+      alert('يرجى إضافة مسمى وظيفي واحد على الأقل');
+      return;
+    }
+
+    onSubmit({ ...baseJobData, title: titles.join('، '), titles });
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] p-8 pt-24 lg:pt-10">
+      <div className="max-w-3xl mx-auto">
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-slate-500 hover:text-primary font-bold mb-8 transition-colors group"
+        >
+          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center group-hover:border-primary transition-all">
+            <ArrowLeft size={18} className="rotate-180" />
+          </div>
+          العودة للوحة التحكم
+        </button>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-[40px] shadow-xl shadow-slate-200/50 border border-white overflow-hidden"
+        >
+          <div className="p-10 border-b border-slate-50 bg-slate-50/50">
+            <h2 className="text-3xl font-bold text-navy">إنشاء شاغر وظيفي جديد</h2>
+            <p className="text-slate-500 mt-2 font-medium">أدخل تفاصيل الوظيفة لبدء استقبال المتقدمين وفرزهم بالذكاء الاصطناعي.</p>
+          </div>
+
+          <form className="p-10 space-y-8" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-navy mr-1">اسم الشركة</label>
+                <input 
+                  required
+                  type="text" 
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="مثال: فرع الرياض"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none hover:border-[#15803D] focus:ring-4 focus:ring-primary/10 focus:border-[#15803D] transition-all font-medium"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-navy mr-1">المدينة</label>
+                <input 
+                  required
+                  name="city"
+                  type="text" 
+                  placeholder="مثال: جدة"
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none hover:border-[#15803D] focus:ring-4 focus:ring-primary/10 focus:border-[#15803D] transition-all font-medium"
+                />
+              </div>
+
+              <div className="space-y-3 md:col-span-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-bold text-navy mr-1">المسميات الوظيفية</label>
+                  <span className="text-xs text-slate-400 font-medium">أضف عدة مسميات للشاغر</span>
+                </div>
+                
+                <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                  {titles.length === 0 && (
+                    <span className="text-sm text-slate-400 py-2">مثال: محاسب، كاشير...</span>
+                  )}
+                  <AnimatePresence>
+                    {titles.map(t => (
+                      <motion.button
+                        layout
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.8, opacity: 0 }}
+                        key={t}
+                        type="button"
+                        onClick={() => removeTitle(t)}
+                        className="flex items-center gap-2 bg-navy text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-navy/90 transition-all"
+                      >
+                        {t}
+                        <X size={14} />
+                      </motion.button>
+                    ))}
+                  </AnimatePresence>
+                </div>
+
+                <div className="relative">
+                  <input 
+                    type="text" 
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addCustomTitle(e);
+                      }
+                    }}
+                    placeholder="اكتب المسمى واضغط Enter..."
+                    className="w-full pr-6 pl-14 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none hover:border-[#15803D] focus:ring-4 focus:ring-primary/10 focus:border-[#15803D] transition-all font-medium"
+                  />
+                  <button 
+                    type="button"
+                    onClick={addCustomTitle}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:border-[#15803D] hover:text-[#15803D] transition-all"
+                  >
+                    <Plus size={20} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-navy mr-1">وصف الوظيفة والمتطلبات</label>
+              <textarea 
+                required
+                rows={4}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="اكتب وصفاً مختصراً للمهام والمتطلبات الأساسية..."
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none hover:border-[#15803D] focus:ring-4 focus:ring-primary/10 focus:border-[#15803D] transition-all font-medium resize-none"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-sm font-bold text-navy mr-1">نوع العمل</label>
+              <div className="relative">
+                <select 
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none hover:border-[#15803D] focus:ring-4 focus:ring-primary/10 focus:border-[#15803D] transition-all appearance-none cursor-pointer font-medium"
+                >
+                  <option>دوام كامل</option>
+                  <option>دوام جزئي</option>
+                  <option>عن بعد</option>
+                </select>
+                <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <ArrowLeft size={18} className="-rotate-90" />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold text-navy mr-1">المهارات والتفضيلات</label>
+                <span className="text-xs text-slate-400 font-medium">اختر المهارات المطلوبة لهذا الشاغر</span>
+              </div>
+              
+              <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                {selectedSkills.length === 0 && (
+                  <span className="text-sm text-slate-400 py-2">لم يتم اختيار مهارات بعد...</span>
+                )}
+                <AnimatePresence>
+                  {selectedSkills.map(skill => (
+                    <motion.button
+                      layout
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      exit={{ scale: 0.8, opacity: 0 }}
+                      key={skill}
+                      type="button"
+                      onClick={() => toggleSkill(skill)}
+                      className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
+                    >
+                      {skill}
+                      <X size={14} />
+                    </motion.button>
+                  ))}
+                </AnimatePresence>
+              </div>
+
+              {getSuggestions().length > 0 && (
+                <div className="space-y-3 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                  <p className="text-xs font-bold text-primary mr-1 flex items-center gap-2">
+                    <Sparkles size={14} />
+                    اقتراحات ذكية بناءً على المسمى الوظيفي:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {getSuggestions().map(suggestion => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => toggleSkill(suggestion)}
+                        className="bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold hover:border-primary hover:text-primary transition-all shadow-sm"
+                      >
+                        + {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="relative">
+                <input 
+                  type="text" 
+                  value={customSkill}
+                  onChange={(e) => setCustomSkill(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomSkill(e);
+                    }
+                  }}
+                  placeholder="أضف مهارة مخصصة..."
+                  className="w-full pr-6 pl-14 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                />
+                <button 
+                  type="button"
+                  onClick={addCustomSkill}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-primary hover:border-primary transition-all"
+                >
+                  <Plus size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-6 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold text-navy mr-1">الأسئلة المخصصة (اختياري)</label>
+                <span className="text-xs text-slate-400 font-medium">أضف أسئلة إضافية للمتقدمين</span>
+              </div>
+              
+              {customQuestions.length > 0 && (
+                <div className="space-y-3 mb-4">
+                  {customQuestions.map((q, idx) => (
+                    <div key={idx} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl gap-4">
+                      <div className="space-y-1">
+                        <p className="font-bold text-navy text-sm">{q.text}</p>
+                        <p className="text-xs text-primary font-medium">نوع الإجابة: {q.type}</p>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => removeCustomQuestion(idx)}
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex flex-col md:flex-row gap-4">
+                <input 
+                  type="text" 
+                  value={newQuestionText}
+                  onChange={(e) => setNewQuestionText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addCustomQuestion();
+                    }
+                  }}
+                  placeholder="اكتب سؤالك هنا..."
+                  className="flex-1 px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                />
+                <div className="relative min-w-[200px]">
+                  <select 
+                    value={newQuestionType}
+                    onChange={(e) => {
+                      setNewQuestionType(e.target.value);
+                      if (e.target.value !== 'خيارات متعددة') setNewQuestionOptions([]);
+                    }}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all appearance-none cursor-pointer font-medium"
+                  >
+                    <option>نص قصير</option>
+                    <option>نص طويل</option>
+                    <option>خيارات متعددة</option>
+                  </select>
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <ArrowLeft size={18} className="-rotate-90" />
+                  </div>
+                </div>
+                <button 
+                  type="button"
+                  onClick={addCustomQuestion}
+                  className="bg-navy text-white px-6 py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all shadow-sm flex items-center gap-2 justify-center shrink-0"
+                >
+                  <Plus size={18} />
+                  إضافة السؤال
+                </button>
+              </div>
+
+              {newQuestionType === 'خيارات متعددة' && (
+                <div className="mt-4 p-4 border border-slate-200 rounded-2xl bg-white space-y-3">
+                  <p className="text-sm font-bold text-navy">خيارات الإجابة:</p>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {newQuestionOptions.map(opt => (
+                      <span key={opt} className="bg-primary/10 text-primary px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2">
+                        {opt}
+                        <button type="button" onClick={() => removeQuestionOption(opt)} className="hover:bg-primary/20 w-5 h-5 rounded-md flex items-center justify-center transition-colors">
+                          <Trash2 size={12} />
+                        </button>
+                      </span>
+                    ))}
+                    {newQuestionOptions.length === 0 && <span className="text-xs text-slate-400">أضف خيارات للسؤال (اختياري، في حال الرفض سيُعرض نعم / لا افتراضياً)</span>}
+                  </div>
+                  <div className="relative max-w-sm">
+                    <input 
+                      type="text"
+                      value={newOptionInput}
+                      onChange={e => setNewOptionInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addQuestionOption(e);
+                        }
+                      }}
+                      placeholder="اكتب الخيار واضغط Enter..."
+                      className="w-full pr-4 pl-12 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary transition-all text-sm font-medium"
+                    />
+                    <button 
+                      type="button"
+                      onClick={addQuestionOption}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-primary transition-colors"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4 pt-6 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-bold text-navy mr-1">المرفقات المطلوبة</label>
+                <span className="text-xs text-slate-400 font-medium">حدد ما يجب على المتقدم إرفاقه</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {['سيرة ذاتية PDF', 'رابط معرض أعمال/Portfolio', 'لا يتطلب مرفقات'].map((opt) => (
+                  <label key={opt} className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${requiredAttachments.includes(opt) ? 'bg-primary/5 border-primary text-primary shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-primary/50'}`}>
+                    <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${requiredAttachments.includes(opt) ? 'bg-primary border-primary' : 'bg-white border-2 border-slate-300'}`}>
+                      {requiredAttachments.includes(opt) && (
+                        <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-white" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      )}
+                    </div>
+                    <span className="font-bold text-sm">{opt}</span>
+                    <input 
+                      type="checkbox" 
+                      className="hidden" 
+                      checked={requiredAttachments.includes(opt)}
+                      onChange={() => toggleAttachment(opt)}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between p-6 bg-slate-50 rounded-[32px] border border-slate-100 mt-6">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isVoiceEnabled ? 'bg-primary/10 text-primary' : 'bg-slate-200 text-slate-400'}`}>
+                  <Play size={20} fill={isVoiceEnabled ? 'currentColor' : 'none'} />
+                </div>
+                <div>
+                  <p className="font-bold text-navy">تفعيل اختبار الواتساب الصوتي للمتقدمين</p>
+                  <p className="text-xs text-slate-500 font-medium">سيطلب النظام من المتقدمين إرسال رد صوتي عبر واتساب لتقييمه.</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsVoiceEnabled(!isVoiceEnabled)}
+                className={`w-14 h-8 rounded-full relative transition-all ${isVoiceEnabled ? 'bg-primary' : 'bg-slate-300'}`}
+              >
+                <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${isVoiceEnabled ? 'left-1' : 'left-7'}`} />
+              </button>
+            </div>

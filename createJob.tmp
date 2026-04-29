@@ -1,0 +1,1238 @@
+const CreateJob = ({
+  createJobType = "single",
+  initialData = null,
+  onBack,
+  onSubmit,
+  onAutoSaveDraft,
+  userProfile,
+  onGoToSettings,
+}: {
+  createJobType?: "single" | "campaign" | "quick_link";
+  initialData?: Job | null;
+  onBack: () => void;
+  onSubmit: (
+    job: Omit<Job, "id" | "applicants" | "status" | "createdAt" | "draftId">,
+    existingDraftId?: string
+  ) => string | null | undefined;
+  onAutoSaveDraft?: (job: Omit<Job, "id" | "applicants" | "status" | "createdAt" | "draftId">, ds?: string | null) => string;
+  userProfile?: any;
+  onGoToSettings?: () => void;
+}) => {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+
+  const handleBackAttempt = () => {
+    const hasChanges = () => {
+      const safeBaseRole = initialData?.recordType === "single" ? initialData.roles?.[0] || initialData : null;
+      if (roleTitle.trim() !== (safeBaseRole?.title || "")) return true;
+      if (roleDesc.trim() !== (safeBaseRole?.description || "")) return true;
+      if (aiInstructions.trim() !== (safeBaseRole?.aiInstructions || "")) return true;
+      
+      if (campaignTitle.trim() !== (initialData?.campaignTitle || "")) return true;
+      if (campaignDescription.trim() !== (initialData?.campaignDescription || "")) return true;
+
+      const defaultCompany = initialData?.company || "شركة التوظيف الذكي";
+      if (company.trim() !== defaultCompany) return true;
+      
+      const defaultLocation = initialData?.location || "";
+      if (location.trim() !== defaultLocation) return true;
+
+      if (selectedSkills.length !== (safeBaseRole?.skills?.length || 0)) return true;
+      if (selectedLanguages.length !== (safeBaseRole?.languages?.length || 0)) return true;
+      if (customQuestions.length !== (safeBaseRole?.customQuestions?.length || 0)) return true;
+      
+      const initialRolesCount = initialData?.recordType === "campaign" && initialData.roles ? initialData.roles.length : 0;
+      if (roles.length !== initialRolesCount) return true;
+
+      return false;
+    };
+
+    if (hasChanges()) {
+      setShowUnsavedModal(true);
+    } else {
+      if (typeof onBack === "function") onBack();
+    }
+  };
+  const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
+  const [isVoiceEnabled, setIsVoiceEnabled] = useState(
+    initialData?.requireVoiceInterview ?? true,
+  );
+  const [voiceInterviewTemplate, setVoiceInterviewTemplate] = useState<"general" | "sales" | "custom">(
+    initialData?.voiceInterviewTemplate || "general"
+  );
+  const [voiceInterviewQuestions, setVoiceInterviewQuestions] = useState<string[]>(
+    initialData?.voiceInterviewQuestions || ["", ""]
+  );
+  const [directUpload, setDirectUpload] = useState(
+    initialData?.directUpload || false,
+  );
+  const [photoRequirement, setPhotoRequirement] = useState<"hidden" | "optional" | "required">(
+    initialData?.photoRequirement || "hidden"
+  );
+  const [isLivePreview, setIsLivePreview] = useState(false);
+  const [isQuestionsExpanded, setIsQuestionsExpanded] = useState(false);
+  const [isAttachmentsExpanded, setIsAttachmentsExpanded] = useState(false);
+
+  // Campaign Meta
+  const [campaignTitle, setCampaignTitle] = useState(
+    initialData?.campaignTitle || "",
+  );
+  const [campaignDescription, setCampaignDescription] = useState(
+    initialData?.campaignDescription || "",
+  );
+  const [adType, setAdType] = useState<"single" | "campaign">(createJobType === "campaign" || initialData?.recordType === "campaign" ? "campaign" : "single");
+
+  const [enableWelcomeUI, setEnableWelcomeUI] = useState<boolean>(!!initialData?.campaignTitle);
+  // Common
+  const [company, setCompany] = useState(
+    initialData?.company || "شركة التوظيف الذكي",
+  );
+  const [companyLogo, setCompanyLogo] = useState<string | null>(() => {
+    if (initialData?.companyLogo && !initialData.companyLogo.startsWith("blob:")) return initialData.companyLogo;
+    const saved = localStorage.getItem("savedCompanyLogo");
+    if (saved && saved.startsWith("blob:")) {
+      localStorage.removeItem("savedCompanyLogo");
+      return null;
+    }
+    return saved || null;
+  });
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(initialData?.status === "مسودة" ? initialData.id : null);
+  // Profile Data Mock
+  const [type, setType] = useState(initialData?.type || "دوام كامل");
+  const [location, setLocation] = useState(initialData?.location || "");
+  const [locations, setLocations] = useState<string[]>(
+    initialData?.locations || (initialData?.location ? [initialData.location] : [])
+  );
+  const [experience, setExperience] = useState(initialData?.experience || "بدون خبرة");
+  const [qualification, setQualification] = useState(initialData?.qualification || "ثانوي");
+  const [salaryMin, setSalaryMin] = useState(initialData?.salaryMin || "");
+  const [salaryMax, setSalaryMax] = useState(initialData?.salaryMax || "");
+  const [isSalaryHidden, setIsSalaryHidden] = useState(initialData?.isSalaryHidden || false);
+  const defaultStart = new Date().toISOString().slice(0, 16);
+  const defaultEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 16);
+  const [startDate, setStartDate] = useState(
+    initialData?.startDate || defaultStart,
+  );
+  const [endDate, setEndDate] = useState(initialData?.endDate || defaultEnd);
+  const [isOpenEnded, setIsOpenEnded] = useState(initialData ? !initialData.endDate : false);
+  // Role Form
+  const baseRole =
+    initialData?.recordType === "single"
+      ? initialData.roles?.[0] || initialData
+      : null;
+  const [roleTitle, setRoleTitle] = useState(baseRole?.title || "");
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
+  const [roleDesc, setRoleDesc] = useState(baseRole?.description || "");
+  const [roleSummary, setRoleSummary] = useState(baseRole?.roleSummary || "");
+  const [responsibilities, setResponsibilities] = useState(baseRole?.responsibilities || "");
+  const [qualifications, setQualifications] = useState(baseRole?.qualifications || "");
+  const [benefits, setBenefits] = useState(baseRole?.benefits || "");
+  const [targetMajors, setTargetMajors] = useState<string[]>(
+    baseRole?.targetMajors || initialData?.targetMajors || []
+  );
+  const [newMajorInput, setNewMajorInput] = useState("");
+  const [aiInstructions, setAiInstructions] = useState(baseRole?.aiInstructions || "");
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(
+    baseRole?.skills || [],
+  );
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>(
+    baseRole?.languages || [],
+  );
+  const [customSkill, setCustomSkill] = useState("");
+  const [customQuestions, setCustomQuestions] = useState<
+    { text: string; type: string; options?: string[]; required?: boolean }[]
+  >(baseRole?.customQuestions || []);
+  const [newQuestionText, setNewQuestionText] = useState("");
+  const [newQuestionType, setNewQuestionType] = useState("نص قصير");
+  const [newQuestionOptions, setNewQuestionOptions] = useState<string[]>([]);
+  const [newOptionInput, setNewOptionInput] = useState("");
+  const [newQuestionRequired, setNewQuestionRequired] = useState(false);
+
+  const [isAdvancedSettingsOpen, setIsAdvancedSettingsOpen] = useState(() => {
+    if (initialData && initialData.status === "مسودة") return false;
+    return true;
+  });
+
+  useEffect(() => {
+    if (localStorage.getItem("hasSeenAdvancedSettings") !== "true") {
+      localStorage.setItem("hasSeenAdvancedSettings", "true");
+    }
+  }, []);
+
+  const [knockoutQuestions, setKnockoutQuestions] = useState<
+    { text: string; type: "yes_no" | "options"; options?: string[]; requiredAnswer: string }[]
+  >(baseRole?.knockoutQuestions || []);
+  const [isKnockoutExpanded, setIsKnockoutExpanded] = useState(true);
+  const [newKqText, setNewKqText] = useState("");
+  const [newKqType, setNewKqType] = useState<"yes_no" | "options">("yes_no");
+  const [newKqOptions, setNewKqOptions] = useState<string[]>([]);
+  const [newKqOptionInput, setNewKqOptionInput] = useState("");
+  const [newKqRequiredAnswer, setNewKqRequiredAnswer] = useState("نعم");
+
+  const [requiredAttachments, setRequiredAttachments] = useState<string[]>(
+    baseRole?.requiredAttachments || ["سيرة ذاتية PDF"],
+  );
+  const [portfolioRequirement, setPortfolioRequirement] = useState<"required" | "optional">(
+    baseRole?.portfolioRequirement || "optional"
+  );
+  const [customAttachments, setCustomAttachments] = useState<
+    CustomAttachment[]
+  >(baseRole?.customAttachments || []);
+  const [newAttachmentName, setNewAttachmentName] = useState("");
+  const [newAttachmentType, setNewAttachmentType] = useState<"file" | "link" | "image" | "video" | "document" | "mixed_file" | "">("");
+  const [newAttachmentRequired, setNewAttachmentRequired] = useState(false);
+  const [roles, setRoles] = useState<Role[]>(() => {
+    if (initialData?.recordType === "campaign" && initialData.roles) {
+      return initialData.roles.map((r) => ({
+        ...r,
+        id: Math.random().toString(36).substr(2, 9),
+      }));
+    }
+    return [];
+  });
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [roleToastMessage, setRoleToastMessage] = useState<string | null>(null);
+
+  const handleSwitchToMultiple = () => {
+    if (adType === "single" && (roleTitle.trim() || roleDesc.trim()) && roles.length === 0) {
+      setRoles([
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          title: roleTitle || "شاغر غير مسمى",
+          description: roleDesc,
+          aiInstructions,
+          type,
+          location,
+          experience,
+          qualification,
+          salaryMin,
+          salaryMax,
+          isSalaryHidden,
+          knockoutQuestions,
+          skills: selectedSkills,
+          languages: selectedLanguages,
+          requireVoiceInterview: isVoiceEnabled,
+          voiceInterviewTemplate,
+          voiceInterviewQuestions,
+          photoRequirement,
+          directUpload
+        }
+      ]);
+      setRoleTitle("");
+      setRoleDesc("");
+      setAiInstructions("");
+      setSelectedSkills([]);
+      setSelectedLanguages([]);
+      setKnockoutQuestions([]);
+      setRoleToastMessage("تم تحويل بيانات الشاغر لتكون الدور الأول في الحملة");
+      setTimeout(() => setRoleToastMessage(null), 3500);
+    }
+    setAdType("campaign");
+  };
+
+  const handleSwitchToSingle = () => {
+    if (adType === "campaign" && roles.length > 0) {
+      const firstRole = roles[0];
+      setRoleTitle(firstRole.title === "شاغر غير مسمى" ? "" : firstRole.title);
+      setRoleDesc(firstRole.description || "");
+      if (firstRole.aiInstructions) setAiInstructions(firstRole.aiInstructions);
+      if (firstRole.type) setType(firstRole.type);
+      if (firstRole.location) setLocation(firstRole.location);
+      if (firstRole.experience) setExperience(firstRole.experience);
+      if (firstRole.qualification) setQualification(firstRole.qualification);
+      if (firstRole.salaryMin) setSalaryMin(firstRole.salaryMin);
+      if (firstRole.salaryMax) setSalaryMax(firstRole.salaryMax);
+      if (firstRole.isSalaryHidden !== undefined) setIsSalaryHidden(firstRole.isSalaryHidden);
+      if (firstRole.knockoutQuestions) setKnockoutQuestions(firstRole.knockoutQuestions);
+      if (firstRole.skills) setSelectedSkills(firstRole.skills);
+      if (firstRole.languages) setSelectedLanguages(firstRole.languages);
+      if (firstRole.requireVoiceInterview !== undefined) setIsVoiceEnabled(firstRole.requireVoiceInterview);
+      if (firstRole.voiceInterviewTemplate) setVoiceInterviewTemplate(firstRole.voiceInterviewTemplate);
+      if (firstRole.voiceInterviewQuestions) setVoiceInterviewQuestions(firstRole.voiceInterviewQuestions);
+      if (firstRole.photoRequirement !== undefined) setPhotoRequirement(firstRole.photoRequirement);
+      if (firstRole.directUpload !== undefined) setDirectUpload(firstRole.directUpload);
+      
+      setRoleToastMessage("تم اعتماد بيانات الوظيفة الأولى فقط للإعلان الفردي");
+      setTimeout(() => setRoleToastMessage(null), 3500);
+    }
+    setAdType("single");
+  };
+
+  const getSuggestions = () => {
+    const normalizedTitle = roleTitle.trim();
+    if (!normalizedTitle) return [];
+
+    const matchedSkills = new Set<string>();
+    
+    // Fuzzy matching against the skills dictionary
+    for (const [key, skills] of Object.entries(skillsDictionary)) {
+      if (
+        normalizedTitle.toLowerCase().includes(key.toLowerCase()) || 
+        key.toLowerCase().includes(normalizedTitle.toLowerCase())
+      ) {
+        skills.forEach(s => matchedSkills.add(s));
+      }
+    }
+
+    // Fuzzy matching against user's previously saved custom skills
+    const userSaved = getUserSavedSkills();
+    for (const [key, skills] of Object.entries(userSaved)) {
+      if (
+        normalizedTitle.toLowerCase().includes(key.toLowerCase()) || 
+        key.toLowerCase().includes(normalizedTitle.toLowerCase())
+      ) {
+        skills.forEach(s => matchedSkills.add(s));
+      }
+    }
+
+    const suggestions = Array.from(matchedSkills);
+    return suggestions.filter((s) => !selectedSkills.includes(s));
+  };
+  const toggleSkill = (skill: string) => {
+    if (selectedSkills.includes(skill)) {
+      setSelectedSkills(selectedSkills.filter((s) => s !== skill));
+    } else {
+      setSelectedSkills([...selectedSkills, skill]);
+    }
+  };
+  const addCustomSkill = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (customSkill.trim() && !selectedSkills.includes(customSkill.trim())) {
+      setSelectedSkills([...selectedSkills, customSkill.trim()]);
+      setCustomSkill("");
+    }
+  };
+  const addCustomQuestion = () => {
+    if (newQuestionText.trim()) {
+      setCustomQuestions([
+        ...customQuestions,
+        {
+          text: newQuestionText.trim(),
+          type: newQuestionType,
+          required: newQuestionRequired,
+          ...(newQuestionType === "خيارات متعددة"
+            ? { options: newQuestionOptions }
+            : newQuestionType === "نعم / لا"
+            ? { options: ["نعم", "لا"] }
+            : {}),
+        },
+      ]);
+      setNewQuestionText("");
+      setNewQuestionType("نص قصير");
+      setNewQuestionOptions([]);
+      setNewQuestionRequired(false);
+    }
+  };
+  const addQuestionOption = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      newOptionInput.trim() &&
+      !newQuestionOptions.includes(newOptionInput.trim())
+    ) {
+      setNewQuestionOptions([...newQuestionOptions, newOptionInput.trim()]);
+      setNewOptionInput("");
+    }
+  };
+  const removeQuestionOption = (opt: string) => {
+    setNewQuestionOptions(newQuestionOptions.filter((o) => o !== opt));
+  };
+  const removeCustomQuestion = (index: number) => {
+    setCustomQuestions(customQuestions.filter((_, i) => i !== index));
+  };
+  const toggleAttachment = (attachment: string) => {
+    if (attachment === "لا يتطلب مرفقات") {
+      setRequiredAttachments(["لا يتطلب مرفقات"]);
+      return;
+    }
+    let newAttachments = requiredAttachments.filter(
+      (a) => a !== "لا يتطلب مرفقات",
+    );
+    if (newAttachments.includes(attachment)) {
+      newAttachments = newAttachments.filter((a) => a !== attachment);
+    } else {
+      newAttachments.push(attachment);
+    }
+    setRequiredAttachments(
+      newAttachments.length > 0 ? newAttachments : ["لا يتطلب مرفقات"],
+    );
+  };
+  const addCustomAttachment = () => {
+    if (!newAttachmentName.trim()) {
+      alert("يرجى إدخال اسم المرفق.");
+      return;
+    }
+    if (!newAttachmentType) {
+      alert("يرجى تحديد الصيغة المطلوبة للمرفق.");
+      return;
+    }
+    setCustomAttachments([
+      ...customAttachments,
+      {
+        attachment_name: newAttachmentName.trim(),
+        attachment_type: newAttachmentType,
+        required: newAttachmentRequired,
+      },
+    ]);
+    setNewAttachmentName("");
+    setNewAttachmentType("");
+    setNewAttachmentRequired(false);
+  };
+  const removeCustomAttachment = (idx: number) => {
+    setCustomAttachments(customAttachments.filter((_, i) => i !== idx));
+  };
+  const handleEditRole = (role: Role) => {
+    if (editingRoleId === role.id) {
+      setIsAddingRole(false);
+      setEditingRoleId(null);
+      setRoleTitle("");
+      setRoleDesc("");
+      setRoleSummary("");
+      setResponsibilities("");
+      setQualifications("");
+      setBenefits("");
+      setAiInstructions("");
+      setSelectedSkills([]);
+      setSelectedLanguages([]);
+      setCustomQuestions([]);
+      setRequiredAttachments(["سيرة ذاتية PDF"]);
+      setCustomAttachments([]);
+      setKnockoutQuestions([]);
+      setIsVoiceEnabled(true);
+      setVoiceInterviewTemplate("general");
+      setVoiceInterviewQuestions(["", ""]);
+      setPhotoRequirement("hidden");
+      setType("دوام كامل");
+      setLocation("");
+      setExperience("");
+      setQualification("");
+      setLocations([]);
+      setTargetMajors([]);
+      return;
+    }
+
+    setEditingRoleId(role.id);
+    setIsAdvancedSettingsOpen(false);
+    setRoleTitle(role.title);
+    setRoleDesc(role.description || "");
+    setRoleSummary(role.roleSummary || "");
+    setResponsibilities(role.responsibilities || "");
+    setQualifications(role.qualifications || "");
+    setBenefits(role.benefits || "");
+    setAiInstructions(role.aiInstructions || "");
+    setIsVoiceEnabled(role.requireVoiceInterview ?? false);
+    setVoiceInterviewTemplate(role.voiceInterviewTemplate || "general");
+    setVoiceInterviewQuestions(role.voiceInterviewQuestions || ["", ""]);
+    setPhotoRequirement(role.photoRequirement || "none");
+    setSelectedSkills(role.skills || []);
+    setSelectedLanguages(role.languages || []);
+    setCustomQuestions(role.customQuestions || []);
+    setRequiredAttachments(role.requiredAttachments || ["سيرة ذاتية PDF"]);
+    setCustomAttachments(role.customAttachments || []);
+    
+    if (role.type) setType(role.type);
+    if (role.location) setLocation(role.location);
+    if (role.experience) setExperience(role.experience);
+    if (role.qualification) setQualification(role.qualification);
+    if (role.salaryMin) setSalaryMin(role.salaryMin);
+    if (role.salaryMax) setSalaryMax(role.salaryMax);
+    if (role.isSalaryHidden !== undefined) setIsSalaryHidden(role.isSalaryHidden);
+    if (role.knockoutQuestions) setKnockoutQuestions(role.knockoutQuestions);
+    setLocations(role.locations && role.locations.length > 0 ? role.locations : (role.location ? [role.location] : []));
+    setTargetMajors(role.targetMajors || []);
+  };
+
+  const handleSaveRole = () => {
+    if (!roleTitle.trim() || !roleSummary.trim()) {
+      alert("يرجى تعبئة المسمى الوظيفي ونبذة عن الدور أولاً");
+      return;
+    }
+    if (selectedSkills.length === 0) {
+      alert("الرجاء إضافة مهارة واحدة على الأقل. هذه البيانات أساسية لعمل محرك الفرز بدقة.");
+      return;
+    }
+    
+    if (editingRoleId) {
+      setRoles(roles.map(r => r.id === editingRoleId ? {
+        ...r,
+        title: roleTitle.trim(),
+        description: "",
+        roleSummary: roleSummary.trim(),
+        responsibilities: responsibilities.trim(),
+        qualifications: qualifications.trim(),
+        benefits: benefits.trim(),
+        aiInstructions: aiInstructions.trim(),
+        skills: [...selectedSkills],
+        languages: [...selectedLanguages],
+        customQuestions: [...customQuestions],
+        requiredAttachments: [...requiredAttachments],
+        portfolioRequirement: requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined,
+        customAttachments: [...customAttachments],
+        type,
+        location,
+        experience,
+        qualification,
+        salaryMin,
+        salaryMax,
+        isSalaryHidden,
+        knockoutQuestions,
+        directUpload,
+        requireVoiceInterview: isVoiceEnabled,
+        voiceInterviewTemplate,
+        voiceInterviewQuestions,
+        photoRequirement,
+        locations: [...locations],
+        targetMajors: [...targetMajors],
+      } : r));
+      setEditingRoleId(null);
+    } else {
+      setRoles([
+        ...roles,
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          title: roleTitle.trim(),
+          description: "",
+          roleSummary: roleSummary.trim(),
+          responsibilities: responsibilities.trim(),
+          qualifications: qualifications.trim(),
+          benefits: benefits.trim(),
+          aiInstructions: aiInstructions.trim(),
+          skills: [...selectedSkills],
+          languages: [...selectedLanguages],
+          customQuestions: [...customQuestions],
+          requiredAttachments: [...requiredAttachments],
+          portfolioRequirement: requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined,
+          customAttachments: [...customAttachments],
+          type,
+          location,
+          experience,
+          qualification,
+          salaryMin,
+          salaryMax,
+          isSalaryHidden,
+          knockoutQuestions,
+          directUpload,
+          requireVoiceInterview: isVoiceEnabled,
+          voiceInterviewTemplate,
+          voiceInterviewQuestions,
+          photoRequirement,
+          locations: [...locations],
+          targetMajors: [...targetMajors],
+        },
+      ]);
+    }
+    setRoleTitle("");
+    setRoleDesc("");
+    setRoleSummary("");
+    setResponsibilities("");
+    setQualifications("");
+    setBenefits("");
+    setAiInstructions("");
+    setDirectUpload(false);
+    setIsVoiceEnabled(false);
+    setPhotoRequirement("none");
+    setSelectedSkills([]);
+    setCustomQuestions([]);
+    setRequiredAttachments(["سيرة ذاتية PDF"]);
+    setCustomAttachments([]);
+
+    setType("دوام كامل");
+    setLocation("");
+    setExperience("بدون خبرة");
+    setQualification("ثانوي");
+    setSalaryMin("");
+    setSalaryMax("");
+    setLocations([]);
+    setTargetMajors([]);
+    setIsAddingRole(false);
+
+    setRoleToastMessage(editingRoleId ? "تم حفظ التعديلات بنجاح" : "تمت إضافة الدور بنجاح");
+    setTimeout(() => setRoleToastMessage(null), 3500);
+  };
+  const handleRemoveRole = (id: string) => {
+    setRoles(roles.filter((r) => r.id !== id));
+  };
+  const executePublishJob = async () => {
+    setShowConfirmModal(false);
+    let finalRoles = [...roles];
+    
+    let currentCampaignTitle = enableWelcomeUI ? campaignTitle : "";
+    let currentCampaignDesc = enableWelcomeUI ? campaignDescription : "";
+
+    if (adType === "campaign" && finalRoles.length === 0 && roleTitle.trim()) {
+      finalRoles.push({
+        id: Math.random().toString(36).substr(2, 9),
+        title: roleTitle.trim(),
+        description: "",
+        roleSummary: roleSummary.trim(),
+        responsibilities: responsibilities.trim(),
+        qualifications: qualifications.trim(),
+        benefits: benefits.trim(),
+        aiInstructions: aiInstructions.trim(),
+        skills: [...selectedSkills],
+        customQuestions: [...customQuestions],
+        requiredAttachments: [...requiredAttachments],
+        portfolioRequirement: requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined,
+        customAttachments: [...customAttachments],
+        type,
+        location,
+        experience,
+        qualification,
+        salaryMin,
+        salaryMax,
+        isSalaryHidden,
+        knockoutQuestions,
+      });
+    }
+
+    if (adType === "single" || createJobType === "quick_link") {
+      finalRoles = [
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          title: roleTitle.trim() || "شاغر جديد",
+          description: "",
+          roleSummary: roleSummary.trim(),
+          responsibilities: responsibilities.trim(),
+          qualifications: qualifications.trim(),
+          benefits: benefits.trim(),
+          aiInstructions: createJobType === "quick_link" ? "" : aiInstructions.trim(),
+          skills: createJobType === "quick_link" ? [] : selectedSkills,
+          customQuestions: createJobType === "quick_link" ? [] : customQuestions,
+          requiredAttachments: createJobType === "quick_link" ? ["سيرة ذاتية PDF"] : requiredAttachments,
+          portfolioRequirement: createJobType === "quick_link" ? undefined : (requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined),
+          customAttachments: createJobType === "quick_link" ? [] : customAttachments,
+          type,
+          location,
+          locations,
+          targetMajors,
+          experience,
+          qualification,
+          salaryMin,
+          salaryMax,
+          isSalaryHidden,
+          knockoutQuestions,
+        },
+      ];
+      if (!enableWelcomeUI && adType === "single" && createJobType !== "quick_link") {
+        currentCampaignTitle = roleTitle.trim();
+        currentCampaignDesc = roleDesc.trim();
+      }
+    }
+    const currentDateStr = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' });
+    const defaultTitle = `إعلان غير مسمى - ${currentDateStr}`;
+    const mainTitle = (adType === "campaign" ? currentCampaignTitle : roleTitle) || defaultTitle;
+    const mainDesc = adType === "campaign" ? currentCampaignDesc : "";
+    const baseJobData: Omit<Job, "id" | "applicants" | "status" | "createdAt"> =
+      {
+        recordType: adType === "single" && createJobType === "quick_link" ? "quick_link" : adType,
+        campaignTitle: enableWelcomeUI ? campaignTitle : undefined,
+        campaignDescription: enableWelcomeUI ? campaignDescription : undefined,
+        roleSummary: roleSummary.trim(),
+        responsibilities: responsibilities.trim(),
+        qualifications: qualifications.trim(),
+        benefits: benefits.trim(),
+        description: mainDesc,
+        roles: finalRoles,
+        startDate,
+        endDate: isOpenEnded ? undefined : endDate,
+        company: userProfile?.companyName || company,
+        entityType: userProfile?.entityType,
+        city: userProfile?.city,
+        location: createJobType === "quick_link" ? "غير محدد" : location,
+        locations: createJobType === "quick_link" ? [] : locations,
+        targetMajors,
+        experience: createJobType === "quick_link" ? "غير محدد" : experience,
+        qualification: createJobType === "quick_link" ? "غير محدد" : qualification,
+        salaryMin: createJobType === "quick_link" ? undefined : salaryMin,
+        salaryMax: createJobType === "quick_link" ? undefined : salaryMax,
+        isSalaryHidden: createJobType === "quick_link" ? false : isSalaryHidden,
+        knockoutQuestions: createJobType === "quick_link" ? [] : knockoutQuestions,
+        type: createJobType === "quick_link" ? "دوام كامل" : type,
+        aiInstructions: createJobType === "quick_link" ? "" : aiInstructions.trim(),
+        title: mainTitle,
+        companyLogo: companyLogo || undefined,
+        skills: createJobType === "quick_link" ? [] : selectedSkills,
+        languages: selectedLanguages,
+        customQuestions: createJobType === "quick_link" ? [] : customQuestions,
+        requiredAttachments: createJobType === "quick_link" ? ["سيرة ذاتية PDF"] : requiredAttachments,
+        directUpload: createJobType === "quick_link" ? false : directUpload,
+        requireVoiceInterview: createJobType === "quick_link" ? false : isVoiceEnabled,
+        voiceInterviewTemplate: createJobType === "quick_link" ? undefined : voiceInterviewTemplate,
+        voiceInterviewQuestions: createJobType === "quick_link" ? undefined : voiceInterviewQuestions,
+        photoRequirement: createJobType === "quick_link" ? "optional" : photoRequirement,
+        portfolioRequirement: createJobType === "quick_link" ? undefined : (requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined),
+      };
+    try {
+      await fetch(
+        "https://circular-struggle-ethical-membership.trycloudflare.com/webhook-test/2489027f-d077-4af4-9d3d-fc0dd9f38953",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "CreateJob", ...baseJobData }),
+        },
+      );
+    } catch (error) {
+      console.error("Webhook error:", error);
+    }
+    saveUserSkills(mainTitle || roleTitle, selectedSkills);
+    const draftId = onSubmit(baseJobData, currentDraftId || undefined);
+    if (draftId) {
+      setCurrentDraftId(draftId);
+    }
+  };
+
+  const handleSaveAsDraft = () => {
+    if (!roleTitle.trim() && !campaignTitle.trim() && company === "شركة التوظيف الذكي") {
+      alert("يرجى إدخال بعض البيانات للحفظ المسودة.");
+      return;
+    }
+
+    const finalRoles =
+      adType === "single"
+        ? [
+            {
+              id: editingRoleId || Math.random().toString(36).substr(2, 9),
+              title: roleTitle.trim() || "شاغر جديد",
+              description: "",
+              roleSummary: roleSummary.trim(),
+              responsibilities: responsibilities.trim(),
+              qualifications: qualifications.trim(),
+              benefits: benefits.trim(),
+              aiInstructions,
+              skills: selectedSkills,
+              languages: selectedLanguages,
+              customQuestions,
+              requiredAttachments,
+              customAttachments,
+              location,
+              locations,
+              targetMajors,
+              type,
+              experience,
+              qualification,
+              salaryMin,
+              salaryMax,
+              isSalaryHidden,
+              knockoutQuestions,
+              directUpload,
+              requireVoiceInterview: isVoiceEnabled,
+              voiceInterviewTemplate,
+              voiceInterviewQuestions,
+              photoRequirement,
+            },
+          ]
+        : roles.length > 0 ? roles : [];
+
+    if (finalRoles.length === 0) return;
+
+    const mainTitle = adType === "single" ? roleTitle : campaignTitle;
+    const mainDesc = adType === "single" ? roleDesc : campaignDescription;
+
+    const draftData: Omit<Job, "id" | "applicants" | "status" | "createdAt" | "draftId"> = {
+      recordType: adType === "single" && createJobType === "quick_link" ? "quick_link" : adType,
+      campaignTitle: enableWelcomeUI ? campaignTitle : undefined,
+      campaignDescription: enableWelcomeUI ? campaignDescription : undefined,
+      roleSummary: roleSummary.trim(),
+      responsibilities: responsibilities.trim(),
+      qualifications: qualifications.trim(),
+      benefits: benefits.trim(),
+      roles: finalRoles,
+      company,
+      companyLogo: companyLogo || undefined,
+      type,
+      location,
+      locations,
+      targetMajors,
+      experience,
+      qualification,
+      salaryMin,
+      salaryMax,
+      isSalaryHidden,
+      description: mainDesc,
+      title: mainTitle,
+      aiInstructions,
+      skills: selectedSkills,
+      languages: selectedLanguages,
+      customQuestions,
+      requiredAttachments,
+      customAttachments,
+      directUpload,
+      photoRequirement: createJobType === "single" ? photoRequirement : undefined,
+      portfolioRequirement,
+      startDate: startDate || undefined,
+      endDate: isOpenEnded ? undefined : (endDate || undefined),
+    };
+
+    if (onSubmit) {
+       onSubmit({...draftData, status: "مسودة"} as any, currentDraftId || undefined);
+       alert("تم حفظ المسودة بنجاح");
+       if (typeof onBack === "function") onBack();
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if ((adType === "single" || createJobType === "quick_link" || (adType === "campaign" && roles.length === 0 && roleTitle.trim())) && selectedSkills.length === 0) {
+      alert("الرجاء إضافة مهارة واحدة على الأقل. هذه البيانات أساسية لعمل محرك الفرز بدقة.");
+      return;
+    }
+    let finalRoles = [...roles];
+    if (
+      adType === "campaign" &&
+      finalRoles.length === 0 &&
+      roleTitle.trim()
+    ) {
+      // just logic checking for campaign roles validation
+    } else if (adType === "campaign" && finalRoles.length === 0) {
+      alert("يرجى إضافة دور وظيفي واحد على الأقل للحملة");
+      return;
+    }
+    if (!isOpenEnded && endDate && new Date(endDate) <= new Date(startDate)) {
+      alert("تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء");
+      return;
+    }
+
+    setShowConfirmModal(true);
+  };
+  const showRoleForm = adType === "single" || createJobType === "quick_link" || isAddingRole || editingRoleId !== null || roles.length === 0;
+
+  return (
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 p-8 pt-24 lg:pt-10">
+      {" "}
+      <AnimatePresence>
+
+        {showConfirmModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
+            >
+              <h2 className="text-2xl font-black text-navy dark:text-white text-center mb-4">
+                تأكيد النشر
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-center mb-8 font-medium">
+                هل أنت متأكد من رغبتك في نشر هذا الإعلان؟ لن تتمكن من تعديل بعض الحقول الأساسية بعد النشر.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                >
+                  تراجع
+                </button>
+                <button
+                  type="button"
+                  onClick={executePublishJob}
+                  className="flex-1 bg-emerald-500 text-white px-4 py-3 rounded-xl font-bold hover:shadow-lg hover:shadow-emerald-500/30 transition-all"
+                >
+                  نعم، انشر الإعلان
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {showUnsavedModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
+            >
+              <h2 className="text-2xl font-black text-navy dark:text-white text-center mb-4">
+                تغييرات غير محفوظة!
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-center mb-8 font-medium leading-relaxed">
+                لقد قمت بإجراء تغييرات. إذا غادرت الآن، سيتم فقدان جميع البيانات التي أدخلتها.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSaveAsDraft();
+                    setShowUnsavedModal(false);
+                  }}
+                  className="w-full px-4 py-3.5 rounded-xl font-bold bg-primary text-white hover:bg-teal-600 shadow-md hover:shadow-lg transition-all"
+                >
+                  حفظ المسودة والمغادرة
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowUnsavedModal(false)}
+                  className="w-full px-4 py-3.5 rounded-xl font-bold bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200 border-2 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                >
+                  البقاء في الصفحة
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (typeof onBack === "function") onBack();
+                  }}
+                  className="w-full px-4 py-3.5 rounded-xl font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all"
+                >
+                  مغادرة وتجاهل التغييرات
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+        {roleToDelete && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative"
+            >
+              <div className="flex flex-col items-center text-center space-y-4 mb-6">
+                <div className="w-16 h-16 bg-red-100 dark:bg-red-900/50 text-red-500 rounded-full flex items-center justify-center mb-2">
+                  <Trash2 size={32} />
+                </div>
+                <h3 className="text-2xl font-black text-navy dark:text-white">تأكيد الحذف</h3>
+                <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed">هل أنت متأكد من رغبتك في حذف هذا الدور؟ لا يمكن التراجع عن هذا الإجراء.</p>
+              </div>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setRoleToDelete(null)}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleRemoveRole(roleToDelete);
+                    setRoleToDelete(null);
+                  }}
+                  className="flex-1 bg-red-500 text-white px-4 py-3 rounded-xl font-bold hover:shadow-lg hover:shadow-red-500/30 transition-all"
+                >
+                  حذف الدور
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      <div className="max-w-5xl mx-auto pb-32">
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); handleBackAttempt(); }}
+          className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-primary font-bold mb-8 transition-colors group"
+        >
+          <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white flex items-center justify-center group-hover:border-primary transition-all">
+            <ArrowLeft size={18} className="rotate-180" />
+          </div>
+          العودة للوحة التحكم
+        </button>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col gap-6"
+        >
+          {" "}
+          <div className="p-10 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700">
+            {" "}
+            <h2 className="text-3xl font-bold text-navy dark:text-white">
+              {" "}
+              {createJobType === "single"
+                ? "إنشاء شاغر وظيفي"
+                : createJobType === "quick_link"
+                ? "إنشاء رابط توظيف سريع ⚡"
+                : "إنشاء إعلان وظيفي"}{" "}
+            </h2>{" "}
+            <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">
+              أدخل تفاصيل الوظيفة لبدء استقبال المتقدمين وفرزهم تلقائياً بكفاءة عالية.
+            </p>{" "}
+          </div>{" "}
+
+          {createJobType !== "quick_link" && (
+            <div className="mb-6">
+              <div className="flex bg-white dark:bg-slate-800 p-1.5 gap-1.5 rounded-2xl w-full shadow-sm border border-slate-200 dark:border-slate-700">
+                <button
+                  type="button"
+                  onClick={handleSwitchToSingle}
+                  className={`flex items-center justify-center gap-2.5 flex-1 px-8 py-3.5 rounded-xl font-bold text-sm md:text-base whitespace-nowrap transition-all ${adType === "single" ? "bg-primary text-white shadow-md" : "text-slate-500 hover:text-navy dark:hover:text-white"}`}
+                >
+                  إعلان لشاغر واحد
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSwitchToMultiple}
+                  className={`flex items-center justify-center gap-2.5 flex-1 px-8 py-3.5 rounded-xl font-bold text-sm md:text-base whitespace-nowrap transition-all ${adType === "campaign" ? "bg-primary text-white shadow-md" : "text-slate-500 hover:text-navy dark:hover:text-white"}`}
+                >
+                  إعلان لعدة شواغر (حملة توظيف)
+                </button>
+              </div>
+            </div>
+          )}
+
+          <form className="space-y-6" id="createJobForm" onSubmit={handleSubmit}>
+
+            
+
+            {createJobType !== "quick_link" && (
+              <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 mb-8 space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <Sparkles className="text-primary" size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-navy dark:text-white">
+                        واجهة الترحيب للمتقدمين <span className="text-slate-400 font-normal text-sm">(اختياري)</span>
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">صفحة هبوط مخصصة لاستقبال المتقدمين قبل تعبئة النموذج</p>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer select-none">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={enableWelcomeUI} 
+                      onChange={(e) => setEnableWelcomeUI(e.target.checked)} 
+                    />
+                    <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary shrink-0"></div>
+                    <span className="mr-3 text-sm font-bold text-slate-700 dark:text-slate-300">تفعيل هذه الواجهة</span>
+                  </label>
+                </div>
+                {enableWelcomeUI && (
+                  <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-6">
+                    {adType === "campaign" && (
+                      <div className="space-y-3">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                          عنوان الإعلان / البوابة <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          required
+                          type="text"
+                          value={campaignTitle}
+                          onChange={(e) => setCampaignTitle(e.target.value)}
+                          placeholder="مثال: وظيفة شاغرة - مبيعات 2026..."
+                          className="w-full px-6 py-4 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                        رسالة الترحيب <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={campaignDescription}
+                        onChange={(e) => setCampaignDescription(e.target.value)}
+                        placeholder="مثال: نبذة مختصرة للترحيب..."
+                        className="w-full px-6 py-4 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium resize-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {createJobType === "quick_link" && (
+              <div className="bg-cyan-50 dark:bg-cyan-900/20 border-2 border-cyan-100 dark:border-cyan-800/50 p-6 rounded-3xl flex flex-col md:flex-row items-center md:items-start gap-5 shadow-sm mb-4">
+                <div className="w-12 h-12 bg-cyan-100 dark:bg-cyan-900/50 rounded-full flex items-center justify-center shrink-0 text-cyan-600 dark:text-cyan-400">
+                  <Sparkles className="animate-pulse" size={24} />
+                </div>
+                <div className="text-center md:text-right flex-1">
+                  <h3 className="font-bold text-cyan-800 dark:text-cyan-400 text-lg mb-2 flex items-center justify-center md:justify-start gap-2">
+                    💡 تنبيه هام لمرشح الذكاء الاصطناعي
+                  </h3>
+                  <p className="text-cyan-700 dark:text-cyan-300 font-medium text-[13px] leading-relaxed max-w-3xl border-r-2 border-cyan-200 dark:border-cyan-800/50 pr-4">
+                    أداة الفرز السريع مصممة لإعطاء <span className="font-bold bg-cyan-100 dark:bg-cyan-900/50 px-1 rounded">(تقييم مبدئي لمدى المطابقة)</span> بناءً على القراءة السطحية للسير الذاتية وتوفير وقتك.
+                    للحصول على <strong>مطابقة وتحليل دقيق 100%</strong> للمهارات العميقة، يرجى استخدام مسار (بوابة التوظيف الشاملة).
+                  </p>
+                </div>
+              </div>
+            )}
+            
+
+            
+            {/* Card 1: Basic Info */}
+            {createJobType !== "quick_link" && (
+            <>
+            <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
+              <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3 mb-6">
+                <Briefcase className="text-primary" size={24} /> المعلومات الأساسية
+              </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="flex items-center gap-6 md:col-span-2 mb-2 p-5 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                <div 
+                  className={`relative overflow-hidden w-20 h-20 p-0 rounded-2xl bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex items-center justify-center border-2 ${companyLogo ? "border-solid border-primary/20 cursor-pointer hover:border-primary/50" : "border-dashed"} transition-colors shrink-0 shadow-sm`}
+                  onClick={() => { if(companyLogo) setLightboxPhoto(companyLogo); }}
+                >
+                  {!companyLogo && (
+                    <label className="absolute inset-0 flex items-center justify-center cursor-pointer group">
+                      <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                              const file = e.target.files[0];
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                  const base64Url = reader.result as string;
+                                  setCompanyLogo(base64Url);
+                                  localStorage.setItem("savedCompanyLogo", base64Url);
+                              };
+                              reader.readAsDataURL(file);
+                          }
+                      }} />
+                      <Upload className="text-slate-400 group-hover:text-primary transition-colors" />
+                    </label>
+                  )}
+                  {companyLogo && (
+                    <img src={companyLogo} className="w-full h-full object-cover rounded-[inherit] drop-shadow-sm" alt="Company Logo" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-bold text-navy dark:text-white mb-1">شعار جهة التوظيف</h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">يرفق هذا الشعار في صفحة تفاصيل الوظيفة (اختياري)</p>
+                  
+                  <div className="flex items-center gap-4">
+                    {companyLogo && (
+                      <label className="text-xs font-bold text-primary hover:text-primary/80 cursor-pointer transition-colors">
+                        تغيير الشعار
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                            if (e.target.files && e.target.files[0]) {
+                                const file = e.target.files[0];
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    const base64Url = reader.result as string;
+                                    setCompanyLogo(base64Url);
+                                    localStorage.setItem("savedCompanyLogo", base64Url);
+                                };
+                                reader.readAsDataURL(file);
+                            }
+                        }} />
+                      </label>
+                    )}
+                    {companyLogo && (
+                      <button type="button" onClick={() => { setCompanyLogo(null); localStorage.removeItem("savedCompanyLogo"); }} className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors">إزالة الشعار</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              {" "}
+              <div className="space-y-3">
+                {" "}
+                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                  اسم الشركة / الفرع <span className="text-red-500">*</span>
+                </label>{" "}
+                <input
+                  required
+                  type="text"
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  placeholder="مثال: شركة الحلول الذكية..."
+                  className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                />{" "}
+              </div>{" "}
+            </div>
+              </div>
+                {roles.length > 0 && (
+                  <div className="mt-8 space-y-4">
+                    <div className="flex items-center justify-between font-bold text-navy dark:text-white">
+                      <h3>الشواغر المطلوبة ({roles.length}):</h3>
+                      <AnimatePresence>
+                        {roleToastMessage && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg"
+                          >
+                            <CheckCircle size={16} />
+                            {roleToastMessage}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <div className="grid gap-4">
+                      {roles.map((r) => (
+                        <div
+                          key={r.id}
+                          className="p-4 bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 rounded-2xl flex items-center justify-between shadow-sm"
+                        >
+                          {" "}
+                          <div>
+                            {" "}
+                            <p className="font-bold text-navy dark:text-white">
+                              {r.title}
+                            </p>{" "}
+                            <p className="text-sm text-slate-500 dark:text-slate-300 line-clamp-1 mt-1">
+                              {r.description}
+                            </p>{" "}
+                          </div>{" "}
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleEditRole(r as any);
+                              }}
+                              className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 dark:bg-indigo-900/40 text-slate-500 dark:text-indigo-300 hover:bg-primary dark:hover:bg-indigo-600 hover:text-white dark:hover:text-white transition-all shrink-0"
+                            >
+                              {" "}
+                              <Pencil size={16} />{" "}
+                            </button>{" "}
+                            <button
+                              type="button"
+                              onClick={() => setRoleToDelete(r.id)}
+                              className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shrink-0"
+                            >
+                              {" "}
+                              <Trash2 size={16} />{" "}
+                            </button>{" "}
+                          </div>
+                        </div>
+                      ))}{" "}
+                    </div>{" "}
+                    {!showRoleForm && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                            setIsAddingRole(true);
+                            setIsAdvancedSettingsOpen(true);
+                            setEditingRoleId(null);
+                            setType("دوام كامل");
+                            setLocation("");
+                            setExperience("بدون خبرة");
+                            setQualification("ثانوي");
+                            setSalaryMin("");
+                            setSalaryMax("");
+                            setRoleTitle("");
+                            setRoleDesc("");
+                            setRoleSummary("");
+                            setResponsibilities("");
+                            setQualifications("");
+                            setBenefits("");
+                            setAiInstructions("");
+                            setSelectedSkills([]);
+                            setCustomQuestions([]);
+                            setRequiredAttachments(["سيرة ذاتية PDF"]);
+                            setCustomAttachments([]);
+                        }}
+                        className="mt-6 border-2 border-dashed border-primary/30 text-primary hover:bg-primary hover:text-white font-bold py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 w-full shadow-sm"
+                      >
+                        <Plus size={20} /> إضافة دور وظيفي جديد
+                      </button>
+                    )}
+                  </div>
+                )}{" "}
+            </>
+            )}
+
+            {/* Card 3: Requirements and Roles */}
+            {showRoleForm && (
+            <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
+              <h3 className="text-xl font-bold text-navy dark:text-white flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <Users className="text-primary" size={24} /> تفاصيل الأدوار والمتطلبات
+                </div>
