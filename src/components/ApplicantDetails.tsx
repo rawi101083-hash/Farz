@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
 const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () => void, applicant?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void }) => {
@@ -12,7 +12,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
   const [showAcceptOptions, setShowAcceptOptions] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  
+
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [interviewDate, setInterviewDate] = useState(() => {
     const d = new Date();
@@ -38,7 +38,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
     d.setDate(d.getDate() + 7);
     return d.toISOString().split("T")[0]; // YYYY-MM-DD
   });
-  
+
   type NoteItem = { id: string; text: string; date: string; author: string };
   const [notesList, setNotesList] = useState<NoteItem[]>([]);
   const [newNoteText, setNewNoteText] = useState("");
@@ -49,6 +49,8 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
   const [isNoteSaved, setIsNoteSaved] = useState(false);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     if (applicant?.id) {
       if (applicant.hr_notes) {
         try {
@@ -85,7 +87,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
         .from('applicants')
         .update({ hr_notes: JSON.stringify(updatedNotes) })
         .eq('id', applicant.id);
-        
+
       if (error) {
         console.warn("Supabase Sync Failed:", error);
       }
@@ -100,7 +102,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
 
   const handleDeleteNote = async (noteId: string) => {
     if (!applicant?.id) return;
-    
+
     const updatedNotes = notesList.filter(n => n.id !== noteId);
     setNotesList(updatedNotes);
 
@@ -110,7 +112,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
         .from('applicants')
         .update({ hr_notes: JSON.stringify(updatedNotes) })
         .eq('id', applicant.id);
-        
+
       if (error) {
         console.warn("Supabase Sync Failed:", error);
       }
@@ -121,7 +123,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
 
   const handleUpdateNote = async (noteId: string) => {
     if (!applicant?.id || !editNoteText.trim()) return;
-    
+
     const updatedNotes = notesList.map(n => n.id === noteId ? { ...n, text: editNoteText.trim(), date: new Date().toISOString() } : n);
     setNotesList(updatedNotes);
     setEditingNoteId(null);
@@ -137,7 +139,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
       console.warn("Could not update note in Supabase", err);
     }
   };
-  
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isScheduling, setIsScheduling] = useState(false);
 
@@ -178,7 +180,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
 
   const handleUpdateDecision = async (newDecision: string, reason: string = "") => {
     if (!applicant) return;
-    
+
     // Optimistic UI Update
     applicant.decision = newDecision as any;
     if (reason) applicant.rejection_reason = reason;
@@ -188,7 +190,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
     if (newDecision === "accepted") decisionText = "المقبولين";
     else if (newDecision === "rejected") decisionText = "المرفوضين";
     else if (newDecision === "interview" || newDecision === "interviewing") decisionText = "المقابلات";
-    
+
     setToastMessage(`تم نقل المتقدم إلى قائمة ${decisionText} بنجاح!`);
     setTimeout(() => setToastMessage(null), 3000);
 
@@ -233,6 +235,16 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
   };
   const matchColorClass = getMatchColor(displayMatch);
 
+  const skillsMatch = applicant?.skills_match ?? Math.min(100, Math.round(displayMatch * 1.05));
+  const expMatch = applicant?.experience_match ?? Math.max(0, Math.round(displayMatch * 0.95));
+  const eduMatch = applicant?.education_match ?? Math.min(100, Math.round(displayMatch * 1.10));
+
+  const getBarColor = (val: number) => {
+    if (val >= 80) return "bg-emerald-500";
+    if (val >= 60) return "bg-yellow-500";
+    return "bg-red-500";
+  };
+
 
 
   const companyName = applicant?.companyName || applicant?.company || "شركتنا";
@@ -267,7 +279,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
             </div>{" "}
             العودة للوحة التحكم{" "}
           </button>
-          
+
           <div className="flex items-center gap-3">
             <button
               onClick={() => { if (applicant) setShowOfferModal(true); }}
@@ -322,41 +334,40 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
             <div className="bg-white dark:bg-slate-800 p-10 rounded-[40px] shadow-xl shadow-slate-200/50 border border-white dark:border-slate-700 relative overflow-hidden">
               {" "}
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
-                  <div>
-                    <h2 className="text-4xl font-bold text-navy dark:text-white mb-2">
-                      {actualName}
-                    </h2>{" "}
-                    <div className="flex items-center flex-wrap gap-3">
-                      <p className="text-primary font-bold text-lg">
-                        {actualJob}
-                      </p>
-                      {applicant?.expectedSalary && (applicant?.askExpectedSalary === "open" || applicant?.askExpectedSalary === "ranges") && (
-                        <>
-                          <span className="text-slate-400 dark:text-slate-500">•</span>
-                          <span className="text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1 rounded-xl text-sm font-bold flex items-center gap-1.5 shadow-sm border border-emerald-100 dark:border-emerald-800/30">
-                            💰 متوقع: {applicant.expectedSalary} {applicant.expectedSalary.includes("ريال") ? "" : "ريال"}
-                          </span>
-                        </>
-                      )}
-
-                    </div>
+                <div>
+                  <h2 className="text-4xl font-bold text-navy dark:text-white mb-2">
+                    {actualName}
+                  </h2>{" "}
+                  <div className="flex items-center flex-wrap gap-3">
+                    <p className="text-primary font-bold text-lg">
+                      {actualJob}
+                    </p>
                   </div>
-                </div>{" "}
-              <div className="flex flex-col items-center justify-center py-8 bg-slate-50 dark:bg-slate-800/50 rounded-[32px] mb-10 border border-slate-100 dark:border-slate-700">
+                </div>
+              </div>{" "}
+              <div className="flex flex-col items-center justify-center py-5 bg-white dark:bg-slate-800/80 rounded-[28px] mb-6 border border-slate-100 dark:border-slate-700 shadow-sm border-b-[4px] border-b-slate-100/80 dark:border-b-slate-700/80 transition-all hover:-translate-y-0.5">
                 {" "}
-                <div className="relative w-40 h-40 mb-6">
+                <div className="relative w-28 h-28 mb-3">
                   {" "}
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    {" "}
+                  <svg className="w-full h-full drop-shadow-md" viewBox="0 0 100 100">
+                    <defs>
+                      <linearGradient id="matchGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="currentColor" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
+                      </linearGradient>
+                      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="4" floodOpacity="0.15" />
+                      </filter>
+                    </defs>
                     <circle
-                      className="text-slate-200 stroke-current"
+                      className="text-slate-100 dark:text-slate-700 stroke-current"
                       strokeWidth="8"
                       cx="50"
                       cy="50"
                       r="40"
                       fill="transparent"
                     />{" "}
-                    <circle
+                    <motion.circle
                       className={`${matchColorClass} stroke-current`}
                       strokeWidth="8"
                       strokeLinecap="round"
@@ -364,23 +375,56 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
                       cy="50"
                       r="40"
                       fill="transparent"
+                      filter="url(#glow)"
+                      stroke="url(#matchGradient)"
                       strokeDasharray="251.2"
-                      strokeDashoffset={251.2 * (1 - strokeOffsetMatch)}
+                      initial={{ strokeDashoffset: 251.2 }}
+                      animate={{ strokeDashoffset: 251.2 * (1 - strokeOffsetMatch) }}
+                      transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
                     />{" "}
                   </svg>{" "}
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     {" "}
-                    <span className={`text-3xl font-bold ${matchColorClass}`}>
+                    <span className={`text-2xl font-bold ${matchColorClass}`}>
                       {displayMatch}%
                     </span>{" "}
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
                       مطابقة
                     </span>{" "}
                   </div>{" "}
                 </div>{" "}
-                <p className="text-navy dark:text-white font-bold">
+                <p className="text-sm text-navy dark:text-white font-bold mb-4">
                   توافق عالي جداً مع متطلبات الوظيفة
                 </p>{" "}
+                <div className="w-full px-6 md:px-10 space-y-3.5 mb-2">
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                      <span className="text-slate-500 dark:text-slate-400">تطابق المهارات</span>
+                      <span className="text-navy dark:text-white">{skillsMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${skillsMatch}%` }} transition={{ duration: 1, delay: 0.3 }} className={`h-full rounded-full ${getBarColor(skillsMatch)}`} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                      <span className="text-slate-500 dark:text-slate-400">تطابق الخبرة</span>
+                      <span className="text-navy dark:text-white">{expMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${expMatch}%` }} transition={{ duration: 1, delay: 0.4 }} className={`h-full rounded-full ${getBarColor(expMatch)}`} />
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                      <span className="text-slate-500 dark:text-slate-400">تطابق التعليم</span>
+                      <span className="text-navy dark:text-white">{eduMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${eduMatch}%` }} transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${getBarColor(eduMatch)}`} />
+                    </div>
+                  </div>
+                </div>
               </div>{" "}
               <div className="flex bg-slate-50 dark:bg-slate-800/30 p-1.5 rounded-2xl mb-8 border border-slate-100 dark:border-slate-700 overflow-x-auto">
                 <button
@@ -404,14 +448,25 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
               </div>
 
               {activeTab === "analysis" && isAILoading && (
-                <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="flex flex-col items-center justify-center py-20">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20">
                   <div className="w-16 h-16 border-4 border-slate-200 border-t-primary rounded-full animate-spin mb-6"></div>
                   <h3 className="text-xl font-bold text-navy dark:text-white mb-2">جاري تحليل البيانات بواسطة نظام فرز... ⏳</h3>
                   <p className="text-slate-500 dark:text-slate-400 font-medium">يقوم النظام بقراءة وتقييم البيانات حالياً.</p>
                 </motion.div>
               )}
               {activeTab === "analysis" && !isAILoading && (
-                <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="space-y-6">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+
+                  {applicant?.expectedSalary && (applicant?.askExpectedSalary === "open" || applicant?.askExpectedSalary === "ranges") && (
+                    <div className="bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 p-3.5 rounded-2xl flex items-center gap-3 shadow-sm mb-4">
+                      <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/30">
+                        <DollarSign size={16} />
+                      </div>
+                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                        الراتب المتوقع بناءً على إجابة المتقدم: <span className="text-navy dark:text-white font-black ml-1 text-sm">{applicant.expectedSalary} {applicant.expectedSalary.toString().includes("ريال") ? "" : "ريال"}</span>
+                      </p>
+                    </div>
+                  )}
 
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700">
                     <h3 className="text-lg font-bold text-navy dark:text-white mb-6 flex items-center gap-2">
@@ -424,31 +479,31 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
 
                   <div className="grid grid-cols-1 gap-4">
                     <div className="bg-[#F0FDF4] dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 p-6 rounded-[32px]">
-                       <h4 className="font-bold text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
-                         <CheckCircle size={18} /> أبرز نقاط القوة
-                       </h4>
-                       <ul className="space-y-2">
-                         {actualStrengths.map((str, i) => (
-                           <li key={i} className="flex gap-2 text-sm text-green-800 dark:text-green-300/90 leading-relaxed font-bold">
-                             <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 shrink-0" />
-                             {str}
-                           </li>
-                         ))}
-                       </ul>
+                      <h4 className="font-bold text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                        <CheckCircle size={18} /> أبرز نقاط القوة
+                      </h4>
+                      <ul className="space-y-2">
+                        {actualStrengths.map((str, i) => (
+                          <li key={i} className="flex gap-2 text-sm text-green-800 dark:text-green-300/90 leading-relaxed font-bold">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 shrink-0" />
+                            {str}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
 
                     <div className="bg-[#FFF7ED] dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800/30 p-6 rounded-[32px]">
-                       <h4 className="font-bold text-orange-700 dark:text-orange-400 mb-3 flex items-center gap-2">
-                         <Zap size={18} /> فجوات ونقاط الانتباه
-                       </h4>
-                       <ul className="space-y-2">
-                         {actualWeaknesses.map((weak, i) => (
-                           <li key={i} className="flex gap-2 text-sm text-orange-800 dark:text-orange-300/90 leading-relaxed font-bold">
-                             <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-2 shrink-0" />
-                             {weak}
-                           </li>
-                         ))}
-                       </ul>
+                      <h4 className="font-bold text-orange-700 dark:text-orange-400 mb-3 flex items-center gap-2">
+                        <Zap size={18} /> فجوات ونقاط الانتباه
+                      </h4>
+                      <ul className="space-y-2">
+                        {actualWeaknesses.map((weak, i) => (
+                          <li key={i} className="flex gap-2 text-sm text-orange-800 dark:text-orange-300/90 leading-relaxed font-bold">
+                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-2 shrink-0" />
+                            {weak}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   </div>
 
@@ -481,7 +536,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
               )}
 
               {activeTab === "notes" && (
-                <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="space-y-6">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700 w-full flex flex-col">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
@@ -492,59 +547,59 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
                         <p className="text-xs text-slate-500 dark:text-slate-400">خاصة بفريق التوظيف (سجل الملاحظات)</p>
                       </div>
                     </div>
-                    
+
                     <div className="mb-6 space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                       {notesList.map((note) => (
                         <div key={note.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm relative group">
-                           <div className="flex justify-between items-start mb-3">
-                             <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-lg">{note.author}</span>
-                             <div className="flex items-center gap-3">
-                               <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{new Date(note.date).toLocaleString('ar-SA')}</span>
-                               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                 <button 
-                                 onClick={() => {
-                                   setEditingNoteId(note.id);
-                                   setEditNoteText(note.text);
-                                 }} 
-                                 className="p-1.5 text-slate-300 hover:text-blue-500 transition-colors bg-white dark:bg-slate-900 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30" 
-                                 title="تعديل الملاحظة"
-                               >
-                                 <Edit2 size={16} />
-                               </button>
-                               <button 
-                                 onClick={() => setNoteToDelete(note.id)} 
-                                 className="p-1.5 text-slate-300 hover:text-red-500 transition-colors bg-white dark:bg-slate-900 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30" 
-                                 title="حذف الملاحظة"
-                               >
-                                 <Trash2 size={16} />
-                               </button>
-                             </div>
-                           </div>
-                           </div>
-                           {noteToDelete === note.id ? (
-                             <div className="space-y-3 mt-2 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl">
-                               <p className="text-sm font-bold text-red-600 dark:text-red-400">هل أنت متأكد من حذف هذه الملاحظة نهائياً؟</p>
-                               <div className="flex justify-end gap-2">
-                                 <button onClick={() => setNoteToDelete(null)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
-                                 <button onClick={() => { handleDeleteNote(note.id); setNoteToDelete(null); }} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition-colors">نعم، احذفها</button>
-                               </div>
-                             </div>
-                           ) : editingNoteId === note.id ? (
-                             <div className="space-y-3 mt-2">
-                               <textarea
-                                 value={editNoteText}
-                                 onChange={(e) => setEditNoteText(e.target.value)}
-                                 rows={3}
-                                 className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all resize-none"
-                               />
-                               <div className="flex justify-end gap-2">
-                                 <button onClick={() => setEditingNoteId(null)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
-                                 <button onClick={() => handleUpdateNote(note.id)} disabled={!editNoteText.trim() || editNoteText === note.text} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">حفظ التعديل</button>
-                               </div>
-                             </div>
-                           ) : (
-                             <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{note.text}</p>
-                           )}
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-lg">{note.author}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{new Date(note.date).toLocaleString('ar-SA')}</span>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => {
+                                    setEditingNoteId(note.id);
+                                    setEditNoteText(note.text);
+                                  }}
+                                  className="p-1.5 text-slate-300 hover:text-blue-500 transition-colors bg-white dark:bg-slate-900 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                  title="تعديل الملاحظة"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                                <button
+                                  onClick={() => setNoteToDelete(note.id)}
+                                  className="p-1.5 text-slate-300 hover:text-red-500 transition-colors bg-white dark:bg-slate-900 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30"
+                                  title="حذف الملاحظة"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          {noteToDelete === note.id ? (
+                            <div className="space-y-3 mt-2 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl">
+                              <p className="text-sm font-bold text-red-600 dark:text-red-400">هل أنت متأكد من حذف هذه الملاحظة نهائياً؟</p>
+                              <div className="flex justify-end gap-2">
+                                <button onClick={() => setNoteToDelete(null)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
+                                <button onClick={() => { handleDeleteNote(note.id); setNoteToDelete(null); }} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition-colors">نعم، احذفها</button>
+                              </div>
+                            </div>
+                          ) : editingNoteId === note.id ? (
+                            <div className="space-y-3 mt-2">
+                              <textarea
+                                value={editNoteText}
+                                onChange={(e) => setEditNoteText(e.target.value)}
+                                rows={3}
+                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all resize-none"
+                              />
+                              <div className="flex justify-end gap-2">
+                                <button onClick={() => setEditingNoteId(null)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
+                                <button onClick={() => handleUpdateNote(note.id)} disabled={!editNoteText.trim() || editNoteText === note.text} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">حفظ التعديل</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{note.text}</p>
+                          )}
                         </div>
                       ))}
                       {notesList.length === 0 && (
@@ -553,7 +608,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="relative pt-4 border-t border-slate-200 dark:border-slate-700">
                       <textarea
                         value={newNoteText}
@@ -562,16 +617,15 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
                         rows={3}
                         className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm font-medium outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all resize-none mb-4"
                       />
-                      
+
                       <div className="flex justify-end">
-                        <button 
+                        <button
                           onClick={handleSaveNote}
                           disabled={isSavingNote || !newNoteText.trim()}
-                          className={`px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${
-                            isNoteSaved 
-                              ? "bg-green-500 text-white" 
-                              : "bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                          }`}
+                          className={`px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${isNoteSaved
+                            ? "bg-green-500 text-white"
+                            : "bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                            }`}
                         >
                           {isSavingNote ? (
                             <>
@@ -594,7 +648,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
               )}
 
               {activeTab === "questions" && (
-                <motion.div initial={{opacity: 0, y: 10}} animate={{opacity: 1, y: 0}} className="space-y-4">
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                   <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 p-5 rounded-[24px] mb-6">
                     <p className="text-sm font-bold text-blue-700 dark:text-blue-400 flex items-center gap-3">
                       <MessageCircle size={20} />
@@ -616,16 +670,16 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
                     }
                   ].map((item, idx) => (
                     <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                       <h4 className="font-bold text-navy dark:text-white mb-4 text-sm leading-relaxed flex items-start gap-3">
-                         <span className="w-8 h-8 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
-                           {idx + 1}
-                         </span>
-                         <span className="pt-1">{item.q}</span>
-                       </h4>
-                       <p className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 inline-block px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700">
-                         <span className="text-primary mr-1 text-sm bg-primary/10 px-2 py-0.5 rounded-lg ml-2">الهدف</span> 
-                         {item.reason}
-                       </p>
+                      <h4 className="font-bold text-navy dark:text-white mb-4 text-sm leading-relaxed flex items-start gap-3">
+                        <span className="w-8 h-8 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="pt-1">{item.q}</span>
+                      </h4>
+                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 inline-block px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700">
+                        <span className="text-primary mr-1 text-sm bg-primary/10 px-2 py-0.5 rounded-lg ml-2">الهدف</span>
+                        {item.reason}
+                      </p>
                     </div>
                   ))}
                 </motion.div>
@@ -665,15 +719,15 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
               <div className="flex justify-center mb-6">
                 {applicant?.cv_file_url ? (
                   <button onClick={() => setIsFullscreenCV(true)} className="bg-slate-800 dark:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-900 transition-all shadow-md cursor-pointer">
-                     <FileText size={18} /> عرض المستند بالحجم الكامل
+                    <FileText size={18} /> عرض المستند بالحجم الكامل
                   </button>
                 ) : (
                   <button disabled className="bg-slate-300 dark:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-md cursor-not-allowed opacity-50">
-                     <FileText size={18} /> عرض المستند بالحجم الكامل
+                    <FileText size={18} /> عرض المستند بالحجم الكامل
                   </button>
                 )}
               </div>
-              
+
               {/* Contact Icons - Bottom of CV Wrapper */}
               <div className="flex items-center justify-center gap-3 px-8 pb-8">
                 {candidate.linkedin && (
@@ -684,7 +738,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
                 {candidate.whatsapp && (
                   <a href={`https://wa.me/${candidate.whatsapp}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded-xl flex items-center justify-center hover:bg-green-500 hover:text-white transition-all shadow-sm" title="واتساب">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.878-.788-1.47-1.761-1.643-2.059-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/>
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.878-.788-1.47-1.761-1.643-2.059-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
                     </svg>
                   </a>
                 )}
@@ -721,7 +775,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
                 onClick={() => setIsFullscreenCV(false)}
                 className="w-10 h-10 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-red-500/20 flex items-center justify-center transition-all"
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
               </button>
             </div>
             <div className="flex-1 w-full h-full p-4 md:p-8">
@@ -731,7 +785,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
         )}
       </AnimatePresence>
 
-      
+
 
       <AnimatePresence>
         {showOfferModal && (

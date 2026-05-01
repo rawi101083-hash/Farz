@@ -37,7 +37,7 @@ class ErrorBoundary extends React.Component<any, any> {
 }
 import { supabase } from "./lib/supabaseClient";
 import { motion, AnimatePresence } from "motion/react";
-import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap } from 'lucide-react';
+import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target } from 'lucide-react';
 import skillsDictionaryRaw from "./skillsDictionary.json";
 ;
 const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPublishDraft }: { isOpen: boolean; onClose: () => void; userProfile: any; setUserProfile: any; onPublishDraft?: () => void; }) => {
@@ -1121,9 +1121,11 @@ const LogoIcon = () => (
 const Navbar = ({
   setStep,
   currentStep,
+  onOpenBookingModal,
 }: {
   setStep: (s: FlowStep) => void;
   currentStep: FlowStep;
+  onOpenBookingModal?: () => void;
 }) => {
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [activeSection, setActiveSection] = React.useState("");
@@ -1181,7 +1183,6 @@ const Navbar = ({
               {" "}
               {[
                 { id: "features", label: "المميزات" },
-                { id: "testimonials", label: "شركاء النجاح" },
                 { id: "contact", label: "تواصل معنا" },
               ].map((link) => (
                 <a
@@ -1193,6 +1194,12 @@ const Navbar = ({
                   {link.label}{" "}
                 </a>
               ))}{" "}
+              <button
+                onClick={onOpenBookingModal}
+                className="text-sm font-bold text-primary bg-primary/10 hover:bg-primary hover:text-white transition-all px-4 py-2 rounded-xl hidden sm:flex items-center ml-2 shadow-sm"
+              >
+                احجز اجتماع
+              </button>
             </div>
           ) : (
             <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
@@ -1459,7 +1466,7 @@ const LoginPage = ({
     </div>
   );
 };
-const LandingPage = ({ onStart }: { onStart: () => void }) => {
+const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onOpenBookingModal?: () => void }) => {
   const [showVideoModal, setShowVideoModal] = useState(false);
   return (
     <div className="pt-40 pb-20 px-4 overflow-hidden bg-watermark min-h-screen">
@@ -1484,15 +1491,14 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
           className="inline-flex items-center gap-2 bg-white dark:bg-slate-800/80 backdrop-blur-sm border border-white dark:border-slate-700 px-6 py-2.5 rounded-full text-sm font-bold text-primary mb-10 shadow-xl shadow-primary/5"
         >
           {" "}
-          <Sparkles size={16} className="animate-spin-slow" /> ثورة في عالم
-          التوظيف الذكي{" "}
+          <Target size={16} /> ارتقِ بعمليات الموارد البشرية{" "}
         </motion.div>{" "}
         <h1 className="text-4xl md:text-5xl lg:text-[64px] font-semibold mt-6 mb-8 lg:mb-10 leading-snug lg:leading-[1.4] text-navy dark:text-white tracking-tight text-center">
           {" "}
-          وظف الكفاءات الصح <br />{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-teal-600 relative font-bold inline-block">
+          فلتر آلاف المتقدمين في ثوانٍ، <br />{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-teal-600 relative font-bold inline-block mt-2">
             {" "}
-            ووفر وقتك وجهدك مع فرز{" "}
+            واتخذ قرار التوظيف بثقة تامة{" "}
             <svg
               className="absolute -bottom-4 left-0 w-full h-4 text-primary/20"
               viewBox="0 0 100 10"
@@ -1508,10 +1514,9 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
             </svg>{" "}
           </span>{" "}
         </h1>{" "}
-        <p className="text-xl md:text-2xl text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-14 max-w-xl mx-auto leading-relaxed font-medium text-center">
+        <p className="text-xl md:text-2xl text-slate-500 dark:text-slate-400 mb-14 max-w-3xl mx-auto leading-relaxed font-medium text-center">
           {" "}
-          منصة ترتب لك عمليات التوظيف، تفرز السير الذاتية، وتطلع لك الخلاصة عشان
-          تختار الأنسب لفريقك بدون حوسة وتعب.{" "}
+          تخلص من الفرز اليدوي المرهق. منصة (فرز) تقرأ وتصنف السير الذاتية بمختلف صيغها، لتستخرج لك الكفاءات المطابقة لمعاييرك، مما يمنحك الوقت الكافي لاختيار الأنسب لثقافة شركتك.{" "}
         </p>{" "}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
           {" "}
@@ -1638,14 +1643,9 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
           {" "}
           {[
             {
-              title: "مقابلات صوتية مدمجة",
-              desc: "نظام ذكي يسجل ويحلل إجابات المتقدمين صوتياً داخل المنصة مباشرة لاستخراج أفضل الكفاءات دون عناء.",
-              icon: (
-                <ShieldCheck
-                  className="text-primary fill-primary/20"
-                  size={32}
-                />
-              ),
+              title: "محرك استخراج البيانات (Data Parsing)",
+              desc: "تحويل السير الذاتية المعقدة بمختلف صيغها إلى بيانات منظمة وجداول جاهزة للتحليل في ثوانٍ.",
+              icon: <FileText className="text-primary fill-primary/20" size={32} />,
               color: "bg-primary/10",
             },
             {
@@ -1685,61 +1685,37 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
       {/* Testimonials */}{" "}
       <section
         id="testimonials"
-        className="max-w-7xl mx-auto mb-40 bg-navy rounded-[40px] p-16 md:p-24 relative overflow-hidden"
+        className="max-w-7xl mx-auto mb-40 bg-slate-50 dark:bg-slate-800/50 rounded-[40px] p-16 md:p-24 relative overflow-hidden border border-slate-100 dark:border-slate-700"
       >
         {" "}
-        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />{" "}
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-          {" "}
-          <div>
-            {" "}
-            <h2 className="text-4xl md:text-6xl font-bold text-white mb-8 leading-tight">
-              ماذا يقول <br /> شركاء النجاح؟
-            </h2>{" "}
-            <p className="text-slate-400 dark:text-slate-500 text-xl font-medium mb-12">
-              انضم للشركات التي اختصرت 70% من وقت التوظيف واعتمدت على الذكاء
-              الاصطناعي لاختيار أفضل الكفاءات.
-            </p>{" "}
-            <div className="flex gap-4">
-              {" "}
-              <div className="w-16 h-1 bg-primary rounded-full" />{" "}
-              <div className="w-4 h-1 bg-white dark:bg-slate-800/20 rounded-full" />{" "}
-              <div className="w-4 h-1 bg-white dark:bg-slate-800/20 rounded-full" />{" "}
-            </div>{" "}
-          </div>{" "}
-          <div className="bg-white dark:bg-slate-800/5 backdrop-blur-xl p-12 rounded-[40px] border border-white dark:border-slate-700/10 relative">
-            {" "}
-            <div className="absolute -top-10 -right-10 w-20 h-20 bg-primary rounded-full flex items-center justify-center text-white shadow-2xl">
-              {" "}
-              <Sparkles size={32} />{" "}
-            </div>{" "}
-            <p className="text-2xl font-medium text-white mb-10 leading-relaxed italic">
-              {" "}
-              "لقد وفر لنا هذا النظام أكثر من 70% من الوقت المستغرق في فرز السير
-              الذاتية. النتائج كانت مذهلة والمرشحون الذين تم اختيارهم كانوا
-              الأفضل على الإطلاق."{" "}
-            </p>{" "}
-            <div className="flex items-center gap-6">
-              {" "}
-              <div className="w-16 h-16 rounded-2xl bg-slate-700 overflow-hidden border-2 border-primary">
-                {" "}
-                <img
-                  src="https://picsum.photos/seed/ceo/100/100"
-                  alt="CEO"
-                  referrerPolicy="no-referrer"
-                />{" "}
-              </div>{" "}
-              <div>
-                {" "}
-                <h4 className="text-xl font-bold text-white">
-                  م. فهد السعد
-                </h4>{" "}
-                <p className="text-primary font-bold">
-                  الرئيس التنفيذي - شركة الحلول المتكاملة
-                </p>{" "}
-              </div>{" "}
-            </div>{" "}
-          </div>{" "}
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] dark:opacity-5" />{" "}
+        <div className="relative z-10 text-center">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-navy dark:text-white mb-6 leading-tight">الفرز اليدوي انتهى. لغة الأرقام تتحدث.</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-xl font-medium mb-16 max-w-3xl mx-auto">نظام (فرز) ليس مجرد أداة، بل هو ترقية كاملة لقسم الموارد البشرية لديك.</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Clock size={32} />
+              </div>
+              <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">3 ثوانٍ فقط</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">لتحليل السيرة واستخراج البيانات.</p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Target size={32} />
+              </div>
+              <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">99% دقة مطابقة</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">خوارزميات ترشح الكفاءات بدون تحيز.</p>
+            </div>
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm hover:shadow-md transition-shadow">
+              <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <Briefcase size={32} />
+              </div>
+              <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">القضاء على الهدر</h3>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">وفر ميزانيتك المهدرة في الفرز اليدوي.</p>
+            </div>
+          </div>
         </div>{" "}
       </section>{" "}
       {/* Contact Section */}{" "}
@@ -1748,146 +1724,24 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="max-w-4xl mx-auto mt-32 bg-primary/5 rounded-[40px] p-12 relative overflow-hidden shadow-sm border border-primary/20"
+        className="max-w-4xl mx-auto mt-32 mb-32 bg-primary/5 rounded-[40px] p-12 relative overflow-hidden shadow-sm border border-primary/20"
       >
-        {" "}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />{" "}
-        <div className="relative z-10">
-          {" "}
-          <div className="text-center mb-12">
-            {" "}
-            <h2 className="text-4xl font-bold text-navy dark:text-white mb-4">
-              هل لديك احتياجات توظيف ضخمة أو استفسارات أعمال؟
-            </h2>{" "}
-            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 max-w-xl mx-auto font-medium text-lg">
-              {" "}
-              فريق المبيعات لدينا جاهز لتقديم عرض توضيحي مخصص وتصميم باقة تناسب
-              حجم أعمالك. اترك بياناتك وسنتواصل معك.{" "}
-            </p>{" "}
-          </div>{" "}
-          <form
-            className="grid grid-cols-1 md:grid-cols-2 gap-8"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              const form = e.currentTarget;
-              const formData = new FormData(form);
-              const data = Object.fromEntries(formData.entries());
-              
-              const btn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-              if (btn) {
-                btn.disabled = true;
-                btn.textContent = "جاري الإرسال...";
-              }
-
-              try {
-                await fetch("https://formsubmit.co/ajax/farz101083@gmail.com", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                  },
-                  body: JSON.stringify(data)
-                });
-                alert("تم إرسال طلبك بنجاح. شكراً لتواصلك معنا!");
-                form.reset();
-              } catch (err) {
-                alert("حدث خطأ أثناء الإرسال، يرجى المحاولة لاحقاً.");
-              } finally {
-                if (btn) {
-                  btn.disabled = false;
-                  btn.textContent = "إرسال طلب التواصل";
-                }
-              }
-            }}
-          >
-            <input type="hidden" name="_captcha" value="false" />
-            <input type="hidden" name="_subject" value="رسالة جديدة من نموذج التواصل - منصة سحاب" />
-            {" "}
-            <div className="space-y-3">
-              {" "}
-              <label className="text-sm font-bold text-navy dark:text-white mr-1">
-                الاسم الكامل
-              </label>{" "}
-              <div className="relative">
-                {" "}
-                <Users
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-                  size={20}
-                />{" "}
-                <input
-                  type="text"
-                  name="الاسم_الكامل"
-                  required
-                  placeholder="أدخل اسمك"
-                  className="w-full pr-12 pl-5 py-4 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
-                />{" "}
-              </div>{" "}
-            </div>{" "}
-            <div className="space-y-3">
-              {" "}
-              <label className="text-sm font-bold text-navy dark:text-white mr-1">
-                رقم الجوال
-              </label>{" "}
-              <div className="relative">
-                {" "}
-                <Phone
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-                  size={20}
-                />{" "}
-                <input
-                  type="tel"
-                  name="رقم_الجوال"
-                  required
-                  placeholder="05xxxxxxxx"
-                  dir="ltr"
-                  className="w-full pr-12 pl-5 py-4 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all text-right font-medium"
-                />{" "}
-              </div>{" "}
-            </div>{" "}
-            <div className="md:col-span-2 space-y-3">
-              {" "}
-              <label className="text-sm font-bold text-navy dark:text-white mr-1">
-                البريد الإلكتروني
-              </label>{" "}
-              <div className="relative">
-                {" "}
-                <Mail
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-                  size={20}
-                />{" "}
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  placeholder="example@domain.com"
-                  className="w-full pr-12 pl-5 py-4 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
-                />{" "}
-              </div>{" "}
-            </div>{" "}
-            <div className="md:col-span-2 space-y-3">
-              {" "}
-              <label className="text-sm font-bold text-navy dark:text-white mr-1">
-                استفسارك أو رسالتك <span className="font-normal text-xs text-slate-400">(اختياري)</span>
-              </label>{" "}
-              <div className="relative">
-                {" "}
-                <textarea
-                  name="الرسالة"
-                  placeholder="اكتب تفاصيل طلبك أو استفسارك هنا..."
-                  rows={4}
-                  className="w-full p-5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium resize-none"
-                />{" "}
-              </div>{" "}
-            </div>{" "}
-            <div className="md:col-span-2 mt-4">
-              {" "}
-              <button type="submit" className="w-full bg-primary text-white py-6 rounded-[24px] text-xl font-bold hover:shadow-[0_20px_50px_rgba(13,148,136,0.3)] transition-all active:scale-95">
-                {" "}
-                إرسال طلب التواصل{" "}
-              </button>{" "}
-            </div>{" "}
-          </form>{" "}
-        </div>{" "}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="relative z-10 text-center">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-navy dark:text-white mb-4">
+              جاهز لأتمتة التوظيف في شركتك؟
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto font-medium text-lg mt-4">
+              انضم للشركات الرائدة التي تبني فرق عمل استثنائية بوقت وجهد أقل وبدقة متناهية.
+            </p>
+          </div>
+          <div className="flex flex-col items-center justify-center mt-8">
+            <button onClick={onOpenBookingModal} className="w-full sm:w-auto bg-primary text-white px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-[0_10px_30px_rgba(13,148,136,0.3)] transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3">
+              <Calendar size={22} /> احجز عرضاً توضيحياً
+            </button>
+          </div>
+        </div>
       </motion.section>{" "}
       {/* Video Showcase Modal */}{" "}
       <AnimatePresence>
@@ -1914,23 +1768,29 @@ const LandingPage = ({ onStart }: { onStart: () => void }) => {
                 {" "}
                 <X size={24} />{" "}
               </button>{" "}
-              <div className="text-center">
-                {" "}
-                <div className="w-20 h-20 bg-white dark:bg-slate-800/5 rounded-full flex items-center justify-center mx-auto mb-6">
-                  {" "}
-                  <Play
-                    size={32}
-                    className="text-white/50 fill-white/20 ml-2"
-                  />{" "}
-                </div>{" "}
-                <p className="text-white/60 font-medium text-lg">
-                  مكان عرض فيديو شرح المنصة (Video Player)
-                </p>{" "}
+              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-slate-400 p-8">
+                <div className="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                  <Play size={32} className="text-slate-500 ml-2" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">شاهد كيف نعمل</h3>
+                <p className="text-slate-400 text-lg text-center max-w-sm">(مساحة مخصصة لعرض فيديو توضيحي قصير أو صورة متحركة GIF مدتها 10-12 ثانية)</p>
               </div>{" "}
             </motion.div>{" "}
           </motion.div>
         )}{" "}
       </AnimatePresence>{" "}
+      <motion.a 
+        href="https://wa.me/message/IAOWRM4I5MJAL1" 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        animate={{ y: [0, -8, 0] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        className="fixed bottom-6 right-6 z-[9999] bg-primary text-white p-3.5 rounded-full no-underline shadow-[0_8px_20px_rgba(13,148,136,0.3)] hover:opacity-90 transition-all flex items-center justify-center group"
+      >
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" className="relative z-10 group-hover:scale-110 transition-transform">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+        </svg>
+      </motion.a>
     </div>
   );
 };
@@ -2040,6 +1900,54 @@ const UpdatePasswordPage = ({ onComplete }: { onComplete: () => void }) => {
   );
 };
 
+const BookingModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => {
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      setIsLoading(true);
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => { document.body.style.overflow = 'auto'; };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+      <button onClick={onClose} className="absolute top-4 right-4 md:top-6 md:right-6 text-white hover:text-red-400 z-[10000] font-light text-4xl w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors backdrop-blur-md">
+        &times;
+      </button>
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl w-full max-w-5xl h-[85vh] relative shadow-2xl flex flex-col overflow-hidden"
+      >
+
+        {isLoading && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-white z-[5000]">
+            <div className="animate-spin mb-6">
+              <LogoIcon />
+            </div>
+            <h3 className="text-xl font-bold text-navy animate-pulse">جاري عرض مواعيد فرز...</h3>
+          </div>
+        )}
+
+        <iframe 
+          src="https://calendar.google.com/appointments/schedules/AcZssZ23hdcsfWvLfxKZLZw_UewmtjWQvj6JYrsjOkVGed9XcDPRs0Gim8_m9pHrqmvH1_IN8Z05byHM?gv=true" 
+          style={{ border: 0, width: '100%', height: '100%', borderRadius: '16px', opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s ease-in-out' }} 
+          frameBorder="0"
+          onLoad={() => setIsLoading(false)}
+        ></iframe>
+      </motion.div>
+    </div>
+  );
+};
+
 export default function App() {
   const [talentPool, setTalentPool] = useState<Applicant[]>([]);
   const [applicantSelectedRoleId, setApplicantSelectedRoleId] = useState<string | null>(null);
@@ -2067,6 +1975,7 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [showOnboardingGlobal, setShowOnboardingGlobal] = useState(false);
   const [globalPendingDraftId, setGlobalPendingDraftId] = useState<string | null>(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark");
@@ -2440,16 +2349,14 @@ export default function App() {
     
     if (limit === 0) {
       alert("عذراً، يجب عليك اختيار باقة اشتراك لتمكين إضافة الإعلانات.");
-      setDashboardTab("الحساب");
-      setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 100);
+      setDashboardTab("باقات فرز");
       setStep("dashboard");
       return;
     }
 
     if (activeCount >= limit) {
       alert("عذراً، لقد وصلت للحد الأقصى للوظائف المسموح بها في باقتك الحالية. يرجى ترقية باقتك للتمكن من إضافة وظائف جديدة.");
-      setDashboardTab("الحساب");
-      setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 100);
+      setDashboardTab("باقات فرز");
       setStep("dashboard");
       return;
     }
@@ -2471,7 +2378,7 @@ export default function App() {
         }
       }} userProfile={userProfile} setUserProfile={setUserProfile} onPublishDraft={handlePublishDraft} />
       {step === "landing" && (
-        <Navbar setStep={setStep} currentStep={step} />
+        <Navbar setStep={setStep} currentStep={step} onOpenBookingModal={() => setShowBookingModal(true)} />
       )}{" "}
       {" "}
 
@@ -2554,7 +2461,7 @@ export default function App() {
           >
             {" "}
             {step === "landing" && (
-              <LandingPage onStart={() => setStep("registerCompany")} />
+              <LandingPage onStart={() => setStep("registerCompany")} onOpenBookingModal={() => setShowBookingModal(true)} />
             )}{" "}
 
             {step === "dashboard" && (
@@ -2562,7 +2469,11 @@ export default function App() {
                 activeTab={dashboardTab}
                 setActiveTab={setDashboardTab}
                 userEmail={session?.user?.email || ""}
-                onViewDetails={(app) => { setSelectedApplicantForDetails(app); setStep("applicantDetails"); }}
+                onViewDetails={(app) => { 
+                  sessionStorage.setItem('dashboardScroll', window.scrollY.toString());
+                  setSelectedApplicantForDetails(app); 
+                  setStep("applicantDetails"); 
+                }}
                 onCreateJob={() => {
                   setClonedJob(null);
                   startJobCreation("single");
@@ -2709,22 +2620,7 @@ export default function App() {
           onClose={() => setPreviewJobState(null)}
         />
       )}{" "}
-      {/* Demo Helper - Subtle indicator */}{" "}
-      {/* <div className="fixed bottom-6 right-6 z-[100] flex flex-col items-end gap-2">
-        <button
-          onClick={() => setStep("superAdmin")}
-          className="bg-navy/10 dark:bg-slate-800 hover:bg-navy/20 dark:hover:bg-slate-700 backdrop-blur px-4 py-2 rounded-full border border-navy/5 dark:border-slate-700 transition-all shadow-sm"
-        >
-          <p className="text-[10px] font-bold text-navy dark:text-slate-300 uppercase tracking-widest">
-            دخول المسؤول (Super Admin)
-          </p>
-        </button>
-        <div className="bg-navy/10 dark:bg-slate-800/80 backdrop-blur px-4 py-2 rounded-full border border-navy/5 dark:border-slate-700">
-          <p className="text-[10px] font-bold text-navy dark:text-slate-400 uppercase tracking-widest">
-            وضع التجربة النشط
-          </p>
-        </div>
-      </div> */}{" "}
+      <BookingModal isOpen={showBookingModal} onClose={() => setShowBookingModal(false)} />
     </div>
   );
 }

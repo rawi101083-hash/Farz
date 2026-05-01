@@ -255,13 +255,16 @@ export const Dashboard = ({
   let plan = userProfile?.subscription_tier || 'free';
   if (isPreviewMode) plan = 'free';
 
+  const [isYearlyDev, setIsYearlyDev] = useState(false);
+  const isYearly = import.meta.env.DEV ? isYearlyDev : (userProfile?.is_yearly || false);
+
   let jobLimit = 0;
   let cvLimit = 0;
   if (plan === 'free') { jobLimit = 0; cvLimit = 0; }
   else if (plan === 'one-time') { jobLimit = 1; cvLimit = 500; }
-  else if (plan === 'growth') { jobLimit = 3; cvLimit = 1000; }
-  else if (plan === 'business') { jobLimit = 10; cvLimit = 5000; }
-  else if (plan === 'enterprise') { jobLimit = Infinity; cvLimit = 15000; }
+  else if (plan === 'startup' || plan === 'growth') { jobLimit = 3; cvLimit = isYearly ? 12000 : 1000; }
+  else if (plan === 'business') { jobLimit = 10; cvLimit = isYearly ? 60000 : 5000; }
+  else if (plan === 'enterprise') { jobLimit = Infinity; cvLimit = isYearly ? 180000 : 15000; }
   const cvsUsed = userProfile?.cvs_processed_count || 0;
   let cvsRemaining = Math.max(0, cvLimit - cvsUsed);
   if (isPreviewMode) cvsRemaining = 0;
@@ -290,6 +293,18 @@ export const Dashboard = ({
   };
   const [applicants, setApplicantsState] = useState<Applicant[]>([]);
   const [isLoadingApplicants, setIsLoadingApplicants] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (!isLoadingApplicants) {
+      const scrollY = sessionStorage.getItem('dashboardScroll');
+      if (scrollY) {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: parseInt(scrollY), behavior: 'instant' });
+          sessionStorage.removeItem('dashboardScroll');
+        });
+      }
+    }
+  }, [isLoadingApplicants]);
 
   const setApplicants = (updater: any) => {
     setApplicantsState(prev => {
@@ -361,7 +376,7 @@ export const Dashboard = ({
 
         // --- FAKE APPLICANTS LOGIC (Valid for 24h) ---
         if (jobs.length > 0) {
-          const MOCK_DATA_KEY = "sahab_mock_applicants_24h";
+          const MOCK_DATA_KEY = "sahab_mock_applicants_24h_v3";
           let mockApplicantsObj = null;
           try {
             mockApplicantsObj = window.localStorage ? JSON.parse(window.localStorage.getItem(MOCK_DATA_KEY) || "null") : null;
@@ -376,8 +391,8 @@ export const Dashboard = ({
                job_id: jobs[0]?.id || "",
                rating: 95 - (idx * 3),
                status: "متاح فوراً",
-               expectedSalary: "10,000",
-               askExpectedSalary: false,
+               expectedSalary: idx === 0 ? "10,000" : (8000 + (idx * 500)).toString(),
+               askExpectedSalary: "open",
                color: "emerald",
                phone: "050000000" + idx,
                email: `applicant${idx}@example.com`,
@@ -386,7 +401,10 @@ export const Dashboard = ({
                aiSummary: "مرشح مميز (بيانات وهمية للتجربة) يمتلك خبرة ممتازة وتتطابق مهاراته مع متطلبات الوظيفة بشكل عالٍ، ومناسب جداً للثقافة المؤسسية.",
                voiceEval: "",
                voiceEvalUrl: "",
-               customAnswers: [],
+               customAnswers: idx === 0 ? [
+                 { question: "لماذا ترغب بالانضمام إلى فريقنا؟", answer: "أبحث عن بيئة عمل طموحة تتيح لي تطوير مهاراتي والمساهمة في مشاريع نوعية تعود بالأثر الإيجابي." },
+                 { question: "ما هو أكبر تحدي واجهته في عملك السابق وكيف تغلبت عليه؟", answer: "واجهت تحدياً في تسليم مشروع تقني معقد خلال فترة زمنية قصيرة. تغلبت عليه من خلال تقسيم المهام وإعادة جدولة الأولويات والتواصل المستمر مع الفريق." }
+               ] : [],
                decision: "pending",
                rejection_reason: "",
                hr_notes: "بيانات تجريبية، سيتم حذفها تلقائياً بعد 24 ساعة.",
@@ -804,8 +822,7 @@ export const Dashboard = ({
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center gap-3 shadow-sm mb-6">
                 <AlertTriangle className="text-red-500 shrink-0" size={24} />
                 <p className="text-sm font-bold text-red-700 dark:text-red-400 leading-relaxed flex-1">
-                  تنبيه: لقد استنفدت رصيد السير الذاتية المسموح به في باقتك ({cvLimit} سيرة). 
-                  سيتم الاحتفاظ بالسير الجديدة بحالة (قيد الانتظار) ولن تُفرز تلقائياً بالذكاء الاصطناعي.
+                  <span className="font-black">تنبيه:</span> لقد استنفدت رصيد السير الذاتية المسموح به في باقتك. سيتم الاحتفاظ بالسير الجديدة بحالة (قيد الانتظار) ولن تُفرز تلقائياً حتى يتم ترقية الباقة أو شحن رصيد إضافي.
                 </p>
                 <button onClick={() => setActiveTab('باقات فرز')} className="mt-3 md:mt-0 px-4 py-2 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300 rounded-lg text-xs font-bold hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors whitespace-nowrap">
                   ترقية الباقة
@@ -1786,8 +1803,13 @@ export const Dashboard = ({
               </button>
             </div>
 
+
             {/* Usage Widget */}
-            <div className="bg-slate-800/40 rounded-2xl p-4 border border-slate-700/50 space-y-4">
+            <div className="bg-slate-800/40 rounded-2xl p-4 pt-5 border border-slate-700/50 space-y-4 relative mt-3">
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#1b2537] border border-slate-700 px-3 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1.5 shadow-md whitespace-nowrap">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_5px_rgba(13,148,136,0.8)]"></div>
+                {plan === 'startup' || plan === 'growth' ? 'نمو' : plan === 'business' ? 'أعمال' : plan === 'enterprise' ? 'الشركات الكبرى' : 'المجانية'}
+              </div>
               <div className="flex justify-between items-center text-xs font-bold text-slate-300">
                 <span>الوظائف النشطة</span>
                 <span>{plan === 'enterprise' ? '∞' : `${activeCount} / ${jobLimit}`}</span>
@@ -1799,10 +1821,16 @@ export const Dashboard = ({
                 />
               </div>
 
-              <div className="flex justify-between items-center text-xs font-bold text-slate-300 pt-2 border-t border-slate-700/50">
+              <div className={`flex justify-between items-center text-xs font-bold text-slate-300 pt-2 ${plan === 'free' && cvsRemaining === 0 ? 'mt-2' : 'border-t border-slate-700/50'}`}>
                 {plan === 'free' ? (
                   cvsRemaining === 0 ? (
-                    <span className="text-red-400 w-full text-center text-[10.5px] leading-relaxed">لقد انتهت العيّنة المجانية. يرجى الترقية الآن للاستمرار!</span>
+                    <div 
+                      onClick={() => setActiveTab('باقات فرز')}
+                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 text-red-400 py-2.5 px-2 rounded-xl cursor-pointer hover:from-red-500/20 hover:to-orange-500/20 transition-all active:scale-95 shadow-sm group"
+                    >
+                      <Lock size={14} className="group-hover:scale-110 transition-transform" />
+                      <span className="text-[11px] font-bold">انتهت الفترة التجريبية! بادر بالترقية الآن</span>
+                    </div>
                   ) : (
                     <>
                       <span>الباقة التجريبية</span>

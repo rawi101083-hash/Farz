@@ -65,3 +65,13 @@
   animation: jiggle 0.2s ease-in-out;
   transform: scale(0.95);
 }
+
+@keyframes gradient-move {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animate-gradient-move {
+  background-size: 200% 200%;
+  animation: gradient-move 3s ease infinite;
+}

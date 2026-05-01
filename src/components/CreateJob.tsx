@@ -308,9 +308,11 @@ export const CreateJob = ({
 
   const [enableWelcomeUI, setEnableWelcomeUI] = useState<boolean>(!!initialData?.campaignTitle);
   // Common
-  const [company, setCompany] = useState(
-    initialData?.company || userProfile?.companyName || "",
-  );
+  const [company, setCompany] = useState(() => {
+    if (initialData?.company) return initialData.company;
+    const saved = localStorage.getItem("savedCompanyName");
+    return saved || userProfile?.companyName || "";
+  });
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => {
     if (initialData?.companyLogo && !initialData.companyLogo.startsWith("blob:")) return initialData.companyLogo;
     const saved = localStorage.getItem("savedCompanyLogo");
@@ -1392,7 +1394,10 @@ export const CreateJob = ({
                         required
                         type="text"
                         value={company}
-                        onChange={(e) => setCompany(e.target.value)}
+                        onChange={(e) => {
+                          setCompany(e.target.value);
+                          localStorage.setItem("savedCompanyName", e.target.value);
+                        }}
                         placeholder="مثال: شركة الحلول الذكية..."
                         className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
                       />{" "}
