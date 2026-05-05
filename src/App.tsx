@@ -37,7 +37,7 @@ class ErrorBoundary extends React.Component<any, any> {
 }
 import { supabase } from "./lib/supabaseClient";
 import { motion, AnimatePresence } from "motion/react";
-import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target } from 'lucide-react';
+import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target, Moon, Sun } from 'lucide-react';
 import skillsDictionaryRaw from "./skillsDictionary.json";
 ;
 const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPublishDraft }: { isOpen: boolean; onClose: () => void; userProfile: any; setUserProfile: any; onPublishDraft?: () => void; }) => {
@@ -396,14 +396,16 @@ const PublicJobPage = ({
                     </div>
                   )}
 
-                  <div>
-                    <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
-                      <div className="w-1.5 h-6 bg-primary rounded-full" /> نبذة عن الدور
-                    </h3>
-                    <div className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap text-base">
-                      {activeRole?.roleSummary || job.roleSummary || activeRole?.description || job.description}
+                  {(activeRole?.roleSummary || job.roleSummary || activeRole?.description || job.description) && (
+                    <div>
+                      <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> نبذة عن الدور
+                      </h3>
+                      <div className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap text-base">
+                        {activeRole?.roleSummary || job.roleSummary || activeRole?.description || job.description}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {((activeRole?.targetMajors?.length ?? 0) > 0 || (job.targetMajors?.length ?? 0) > 0) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
@@ -1392,7 +1394,7 @@ const LoginPage = ({
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
                   placeholder="name@company.com"
                   dir="ltr"
                 />
@@ -1420,7 +1422,7 @@ const LoginPage = ({
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
                     placeholder="••••••••"
                     dir="ltr"
                   />
@@ -1964,6 +1966,7 @@ export default function App() {
     entityType: "company",
     city: "",
     cvs_processed_count: 0,
+    fields_locked: false,
   });
   const [step, setStep] = useState<FlowStep>(() => {
     return window.location.pathname.startsWith("/apply/") ? "form" : "landing";
@@ -2063,6 +2066,12 @@ export default function App() {
       setSession(session);
       setUser(session?.user || null);
       if (session && !window.location.pathname.startsWith('/apply/')) {
+        // Restore last tab from sessionStorage (Deep Linking)
+        const savedTab = sessionStorage.getItem('sahab_last_tab');
+        if (savedTab) {
+          setDashboardTab(savedTab);
+          sessionStorage.removeItem('sahab_last_tab');
+        }
         setStep("dashboard");
       }
     });
@@ -2076,8 +2085,21 @@ export default function App() {
       
       if (_event === 'PASSWORD_RECOVERY') {
         setStep("updatePassword");
+      } else if (_event === 'TOKEN_REFRESHED' || _event === 'SIGNED_IN') {
+        if (session && !window.location.pathname.startsWith('/apply/')) {
+          // Restore saved tab on re-login after session timeout
+          const savedTab = sessionStorage.getItem('sahab_last_tab');
+          if (savedTab) {
+            setDashboardTab(savedTab);
+            sessionStorage.removeItem('sahab_last_tab');
+          }
+          setStep(prevStep => {
+            if (prevStep === "updatePassword") return "updatePassword";
+            if (["landing", "login", "registerCompany"].includes(prevStep)) return "dashboard";
+            return prevStep;
+          });
+        }
       } else if (session && !window.location.pathname.startsWith('/apply/')) {
-        // Prevent redirecting if we are already in a logged-in state (like createJob, applicantDetails)
         setStep(prevStep => {
           if (prevStep === "updatePassword") return "updatePassword";
           if (["landing", "login", "registerCompany"].includes(prevStep)) return "dashboard";
@@ -2085,6 +2107,11 @@ export default function App() {
         });
       } else if (!session && !window.location.pathname.startsWith('/apply/')) {
         if (_event === 'SIGNED_OUT') {
+          // Save current tab before logout for session timeout scenarios
+          setDashboardTab(prev => {
+            sessionStorage.setItem('sahab_last_tab', prev);
+            return prev;
+          });
           setStep("landing");
         }
       }
@@ -2099,9 +2126,10 @@ export default function App() {
         try {
           const { data, error } = await supabase.from('companies').select('*').eq('id', user.id).single();
           if (data && !error) {
+            const isProfileComplete = !!(data.company_name && data.city);
             setUserProfile(prev => ({
               ...prev,
-              companyName: data.name || prev.name,
+              companyName: data.company_name || prev.name,
               entityType: data.entity_type || prev.entityType,
               commercialRegistration: data.commercial_registration || prev.commercialRegistration,
               freelanceDocument: data.freelance_document || prev.freelanceDocument,
@@ -2109,8 +2137,13 @@ export default function App() {
               city: data.city || prev.city,
               companyLogo: data.company_logo || prev.companyLogo,
               subscription_tier: data.subscription_plan || "free",
-              cvs_processed_count: data.cvs_processed_count || 0
+              cvs_processed_count: data.cvs_processed_count || 0,
+              fields_locked: data.fields_locked || false,
             }));
+            // Force Settings tab if profile is incomplete
+            if (!isProfileComplete) {
+              setDashboardTab("بيانات المنشأة");
+            }
           }
         } catch (err) {
           console.error("Error fetching company profile:", err);
@@ -2320,18 +2353,32 @@ export default function App() {
       setGlobalPendingDraftId(null);
     }
   };
-  const handleDeactivateJob = (job: Job) => {
+  const handleDeactivateJob = async (job: Job) => {
     const updatedJobs = jobs.map((j) =>
       j.id === job.id ? { ...j, status: "مغلق" as const } : j,
     );
     setJobs(updatedJobs);
+    
+    // Backend Sync
+    try {
+      await supabase.from('jobs').update({ status: 'مغلق', closed_at: new Date().toISOString() }).eq('id', job.id);
+    } catch (err) {
+      console.error("Could not deactivate job in backend", err);
+    }
   };
 
-  const handleReactivateJob = (job: Job) => {
+  const handleReactivateJob = async (job: Job) => {
     const updatedJobs = jobs.map((j) =>
       j.id === job.id ? { ...j, status: "نشط" as const, createdAt: new Date().toISOString().split("T")[0] } : j,
     );
     setJobs(updatedJobs);
+
+    // Backend Sync
+    try {
+      await supabase.from('jobs').update({ status: 'نشط', closed_at: null }).eq('id', job.id);
+    } catch (err) {
+      console.error("Could not reactivate job in backend", err);
+    }
   };
 
 

@@ -1600,48 +1600,149 @@ export const SettingsPage = ({
   initialTab?: string;
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+  const isLocked = userProfile.fields_locked === true;
+
   useEffect(() => {
     const newErrors: Record<string, string> = {};
-    if (userProfile.entityType === 'company') {
+    if (!isLocked) {
+      // Only validate CR/Tax if not already locked
+      if (userProfile.entityType === 'company') {
+        if (!userProfile.companyName?.trim()) {
+          newErrors.companyName = "هذا الحقل مطلوب لإصدار الفواتير";
+        }
+        if (!userProfile.commercialRegistration?.trim()) {
+          newErrors.cr = "هذا الحقل مطلوب لإصدار الفواتير";
+        } else if (!/^\d{10}$/.test(userProfile.commercialRegistration)) {
+          newErrors.cr = "يجب أن يتكون السجل التجاري من 10 أرقام بالضبط";
+        }
+        if (userProfile.taxNumber?.trim() && !/^3\d{13}3$/.test(userProfile.taxNumber)) {
+          newErrors.tax = "يجب أن يتكون الرقم الضريبي من 15 رقماً ويبدأ وينتهي بالرقم 3 (معيار ZATCA)";
+        }
+        if (!userProfile.city?.trim()) {
+          newErrors.city = "هذا الحقل مطلوب لإصدار الفواتير";
+        }
+      } else if (userProfile.entityType === 'freelance') {
+        if (!userProfile.companyName?.trim()) {
+          newErrors.companyName = "هذا الحقل مطلوب لإصدار الفواتير";
+        }
+        if (!userProfile.freelanceDocument?.trim()) {
+          newErrors.freelance = "هذا الحقل مطلوب لإصدار الفواتير";
+        }
+        if (!userProfile.city?.trim()) {
+          newErrors.city = "هذا الحقل مطلوب لإصدار الفواتير";
+        }
+      }
+    } else {
+      // Locked — only validate flexible fields
       if (!userProfile.companyName?.trim()) {
-        newErrors.companyName = "هذا الحقل مطلوب لإصدار الفواتير";
-      }
-      if (!userProfile.commercialRegistration?.trim()) {
-        newErrors.cr = "هذا الحقل مطلوب لإصدار الفواتير";
-      } else if (!/^\d{10}$/.test(userProfile.commercialRegistration)) {
-        newErrors.cr = "يجب أن يتكون السجل التجاري من 10 أرقام بالضبط";
-      }
-      if (!userProfile.taxNumber?.trim()) {
-        newErrors.tax = "هذا الحقل مطلوب لإصدار الفواتير";
-      } else if (!/^3\d{14}$/.test(userProfile.taxNumber)) {
-        newErrors.tax = "يجب أن يتكون الرقم الضريبي من 15 رقماً ويبدأ بالرقم 3";
+        newErrors.companyName = "هذا الحقل مطلوب";
       }
       if (!userProfile.city?.trim()) {
-        newErrors.city = "هذا الحقل مطلوب لإصدار الفواتير";
-      }
-    } else if (userProfile.entityType === 'freelance') {
-      if (!userProfile.companyName?.trim()) {
-        newErrors.companyName = "هذا الحقل مطلوب لإصدار الفواتير";
-      }
-      if (!userProfile.freelanceDocument?.trim()) {
-        newErrors.freelance = "هذا الحقل مطلوب لإصدار الفواتير";
-      }
-      if (!userProfile.city?.trim()) {
-        newErrors.city = "هذا الحقل مطلوب لإصدار الفواتير";
+        newErrors.city = "هذا الحقل مطلوب";
       }
     }
     setErrors(newErrors);
-  }, [userProfile.companyName, userProfile.commercialRegistration, userProfile.taxNumber, userProfile.freelanceDocument, userProfile.city, userProfile.entityType]);
+  }, [userProfile.companyName, userProfile.commercialRegistration, userProfile.taxNumber, userProfile.freelanceDocument, userProfile.city, userProfile.entityType, isLocked]);
+
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [lockConfirmed, setLockConfirmed] = useState(false);
+
+  // Locked field display component
+  const LockedField = ({ value, label }: { value: string; label: string }) => (
+    <div className="w-full px-6 py-4 bg-slate-100 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-center gap-3">
+      <Lock size={16} className="text-amber-500 shrink-0" />
+      <span className="text-slate-700 dark:text-slate-300 font-bold flex-1 font-mono tracking-wider" dir="ltr">{value || "—"}</span>
+      <span className="text-[10px] font-black text-amber-600 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full whitespace-nowrap">مقفل · ZATCA</span>
+    </div>
+  );
+
+  const executeSave = async () => {
+    setIsSaving(true);
+    setSaveSuccess(false);
+    try {
+      const { supabase: sb } = await import('./lib/supabaseClient');
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) throw new Error('غير مسجل الدخول');
+
+      const shouldLock = !isLocked &&
+        (!!userProfile.commercialRegistration?.trim() || !!userProfile.freelanceDocument?.trim());
+
+      const payload: any = {
+        id: user.id,
+        company_name: userProfile.companyName || userProfile.name || '',
+        entity_type: userProfile.entityType,
+        city: userProfile.city || null,
+        subscription_plan: userProfile.subscription_tier || 'free',
+      };
+
+      if (!isLocked) {
+        payload.commercial_registration = userProfile.commercialRegistration?.trim() || null;
+        payload.freelance_document = userProfile.freelanceDocument?.trim() || null;
+        payload.tax_number = userProfile.taxNumber?.trim() || null;
+        if (shouldLock) {
+          payload.fields_locked = true;
+        }
+      }
+
+      const { error } = await sb.from('companies').upsert(payload, { onConflict: 'id' });
+      if (error) throw error;
+
+      if (shouldLock) {
+        setUserProfile({ ...userProfile, fields_locked: true });
+      }
+      setSaveSuccess(true);
+      setShowLockModal(false);
+      setLockConfirmed(false);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: any) {
+      const msg = err.message || 'خطأ غير متوقع';
+      if (msg.includes('ZATCA_LOCKED')) {
+        alert('🔒 رفض النظام: هذه الحقول مقفلة في قاعدة البيانات ولا يمكن تعديلها.');
+      } else {
+        alert('حدث خطأ أثناء الحفظ: ' + msg);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveProfile = () => {
+    // If fields are not locked yet and CR or Freelance doc is filled → show legal modal
+    const willLock = !isLocked &&
+      (!!userProfile.commercialRegistration?.trim() || !!userProfile.freelanceDocument?.trim());
+    if (willLock) {
+      setLockConfirmed(false);
+      setShowLockModal(true);
+    } else {
+      executeSave();
+    }
+  };
+
+
   const [billingCycle, setBillingCycle] = useState<'subscription' | 'one-time'>('subscription');
   const [hasActiveAd, setHasActiveAd] = useState(false);
   const [isYearly, setIsYearly] = useState(false);
 
-  const handleSubscribe = (tier: string) => {
-    alert("سيتم توجيهك لصفحة الدفع الآمنة لتفعيل الباقة...");
-    // Simulate immediate success
+  const handleSubscribe = async (tier: string) => {
+    // Simulate immediate success in UI
     setUserProfile({ ...userProfile, subscription_tier: tier });
+    
+    // Sync directly to backend immediately
+    if (user?.id) {
+      try {
+        await supabase
+          .from('companies')
+          .update({ subscription_plan: tier })
+          .eq('id', user.id);
+      } catch (err) {
+        console.error("Failed to update subscription in backend", err);
+      }
+    }
+    
+    alert("تم تفعيل الباقة لك بنجاح، وربطها بملفك!");
   };
 
   const handleBuyAd = () => {
@@ -1649,6 +1750,97 @@ export const SettingsPage = ({
     setHasActiveAd(true);
   };
   return (
+    <>
+    {/* ====== ZATCA Legal Confirmation Modal ====== */}
+    <AnimatePresence>
+      {showLockModal && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+            className="bg-white dark:bg-slate-800 rounded-[28px] shadow-2xl border border-amber-200 dark:border-amber-800/50 max-w-md w-full overflow-hidden"
+          >
+            {/* Header */}
+            <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/50 px-8 py-5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0">
+                <ShieldCheck size={22} />
+              </div>
+              <div>
+                <h3 className="font-black text-amber-800 dark:text-amber-300 text-base">⚠️ تنبيه قانوني — ZATCA</h3>
+                <p className="text-amber-600 dark:text-amber-400 text-xs font-bold mt-0.5">الامتثال لمعايير هيئة الزكاة والضريبة والجمارك</p>
+              </div>
+            </div>
+            {/* Body */}
+            <div className="px-8 py-6 space-y-5">
+              <p className="text-slate-700 dark:text-slate-200 font-bold text-sm leading-relaxed">
+                البيانات الرسمية التي أدخلتها سيتم قفلها بعد الحفظ للامتثال لمتطلبات الفوترة، ولن تتمكن من تعديلها لاحقاً.
+              </p>
+              {/* Data Preview */}
+              <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
+                <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">البيانات المراد قفلها</p>
+                
+                {userProfile.entityType === 'company' ? (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500">السجل التجاري (CR)</span>
+                    <span className="font-black text-navy dark:text-white font-mono tracking-wider text-sm" dir="ltr">{userProfile.commercialRegistration}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500">وثيقة العمل الحر</span>
+                    <span className="font-black text-navy dark:text-white font-mono tracking-wider text-sm" dir="ltr">{userProfile.freelanceDocument}</span>
+                  </div>
+                )}
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-3 flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-500">الرقم الضريبي (Tax ID)</span>
+                  <span className="font-black text-navy dark:text-white font-mono tracking-wider text-sm" dir="ltr">{userProfile.taxNumber || "غير مدخل (اختياري)"}</span>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">
+                هل أنت متأكد من صحة البيانات؟ في حال الخطأ، يتم التعديل حصراً عبر تذكرة دعم فني بعد التحقق من المستندات الرسمية.
+              </p>
+              {/* Mandatory Checkbox */}
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={lockConfirmed}
+                  onChange={(e) => setLockConfirmed(e.target.checked)}
+                  className="w-5 h-5 rounded-lg border-2 border-slate-300 accent-amber-600 shrink-0 mt-0.5 cursor-pointer"
+                />
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-relaxed group-hover:text-navy dark:group-hover:text-white transition-colors">
+                  أقر بمراجعتي للبيانات وأنها صحيحة ونهائية
+                </span>
+              </label>
+            </div>
+            {/* Footer */}
+            <div className="px-8 pb-7 flex gap-3">
+              <button
+                onClick={() => { setShowLockModal(false); setLockConfirmed(false); }}
+                className="flex-1 py-3 rounded-2xl font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-sm"
+              >
+                مراجعة البيانات
+              </button>
+              <button
+                onClick={executeSave}
+                disabled={!lockConfirmed || isSaving}
+                className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                  lockConfirmed && !isSaving
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/30 active:scale-95'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                }`}
+              >
+                {isSaving ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري القفل...</>
+                ) : (
+                  <><Lock size={16} />تأكيد الحفظ النهائي</>
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
     <div className="space-y-10">
       {" "}
       <header>
@@ -1721,6 +1913,19 @@ export const SettingsPage = ({
                   <input type="text" readOnly value={userEmail || "لا يوجد بريد مسجل"} className="w-full px-6 py-4 bg-slate-100 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 border rounded-2xl outline-none cursor-not-allowed font-medium select-none" />
                 </div>
               </div>
+              <button
+                onClick={handleSaveProfile}
+                disabled={isSaving}
+                className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 mt-4 ${saveSuccess ? 'bg-emerald-500 text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:cursor-not-allowed'}`}
+              >
+                {isSaving ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
+                ) : saveSuccess ? (
+                  <><CheckCircle size={18} />تم الحفظ بنجاح!</>
+                ) : (
+                  'حفظ التغييرات'
+                )}
+              </button>
             </div>
           )}
 
@@ -1750,34 +1955,52 @@ export const SettingsPage = ({
                     placeholder={userProfile.entityType === "company" ? "شركة الحلول الذكية..." : "عبدالله محمد..."}
                     className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                   />
-                  {errors.companyName && <p className="text-red-500 text-xs mt-1 font-bold opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">{errors.companyName}</p>}
+                  {errors.companyName && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.companyName}</p>}
                 </div>
 
                 {userProfile.entityType === "company" ? (
-                  <div className="space-y-2 group">
-                    <label className="text-sm font-bold text-navy dark:text-slate-300">رقم السجل التجاري (CR) <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      value={userProfile.commercialRegistration || ""}
-                      onChange={(e) => setUserProfile({ ...userProfile, commercialRegistration: e.target.value })}
-                      placeholder="1010XXXXXX"
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
-                      dir="ltr"
-                    />
-                    {errors.cr && <p className="text-red-500 text-xs mt-1 font-bold opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">{errors.cr}</p>}
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
+                      رقم السجل التجاري (CR)
+                      {!isLocked && <span className="text-red-500">*</span>}
+                    </label>
+                    {isLocked ? (
+                      <LockedField value={userProfile.commercialRegistration || ""} label="CR" />
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          value={userProfile.commercialRegistration || ""}
+                          onChange={(e) => setUserProfile({ ...userProfile, commercialRegistration: e.target.value })}
+                          placeholder="1010XXXXXX"
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                          dir="ltr"
+                        />
+                        {errors.cr && <p className="text-red-500 text-xs mt-1 font-bold">{errors.cr}</p>}
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-2 group">
-                    <label className="text-sm font-bold text-navy dark:text-slate-300">رقم وثيقة العمل الحر أو الهوية <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      value={userProfile.freelanceDocument || ""}
-                      onChange={(e) => setUserProfile({ ...userProfile, freelanceDocument: e.target.value })}
-                      placeholder="FL-XXXXXX"
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
-                      dir="ltr"
-                    />
-                    {errors.freelance && <p className="text-red-500 text-xs mt-1 font-bold opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">{errors.freelance}</p>}
+                    <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
+                      رقم وثيقة العمل الحر أو الهوية
+                      {!isLocked && <span className="text-red-500">*</span>}
+                    </label>
+                    {isLocked ? (
+                      <LockedField value={userProfile.freelanceDocument || ""} label="Freelance ID" />
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          value={userProfile.freelanceDocument || ""}
+                          onChange={(e) => setUserProfile({ ...userProfile, freelanceDocument: e.target.value })}
+                          placeholder="FL-XXXXXX"
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                          dir="ltr"
+                        />
+                        {errors.freelance && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.freelance}</p>}
+                      </>
+                    )}
                   </div>
                 )}
 
@@ -1790,31 +2013,52 @@ export const SettingsPage = ({
                     placeholder="الرياض، جدة..."
                     className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                   />
-                  {errors.city && <p className="text-red-500 text-xs mt-1 font-bold opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">{errors.city}</p>}
+                  {errors.city && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.city}</p>}
                 </div>
-                <div className="space-y-2 group">
-                  {" "}
-                  <label
-                    className={`text-sm font-bold text-navy dark:text-slate-300`}
-                  >
-                    الرقم الضريبي (Tax ID) <span className="text-red-500">*</span>
-                  </label>{" "}
-                  <input
-                    type="text"
-                    value={userProfile.taxNumber || ""}
-                    onChange={(e) => setUserProfile({ ...userProfile, taxNumber: e.target.value })}
-                    placeholder="3000XXXXXXXX003"
-                    className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium`}
-                    dir="ltr"
-                  />{" "}
-                  {errors.tax && <p className="text-red-500 text-xs mt-1 font-bold opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">{errors.tax}</p>}
-                </div>{" "}
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
+                    الرقم الضريبي (Tax ID)
+                    <span className="text-xs text-slate-400 font-normal bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">اختياري</span>
+                  </label>
+                  {isLocked ? (
+                    <LockedField value={userProfile.taxNumber || ""} label="Tax ID" />
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        value={userProfile.taxNumber || ""}
+                        onChange={(e) => setUserProfile({ ...userProfile, taxNumber: e.target.value })}
+                        placeholder="3000XXXXXXXXX003"
+                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                        dir="ltr"
+                        maxLength={15}
+                      />
+                      {errors.tax && <p className="text-red-500 text-xs mt-1 font-bold">{errors.tax}</p>}
+                    </>
+                  )}
+                </div>
+                {isLocked && (
+                  <div className="md:col-span-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-4 flex items-start gap-3">
+                    <ShieldCheck size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-xs font-bold text-amber-700 dark:text-amber-400 leading-relaxed">
+                      الحقول المعلّمة بـ <span className="bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded text-amber-700 dark:text-amber-300">مقفل · ZATCA</span> محمية بموجب لوائح الفوترة الإلكترونية.
+                      لأي تعديل، يُرجى التواصل مع الدعم الفني عبر تذكرة رسمية مرفقاً بها المستندات.
+                    </p>
+                  </div>
+                )}
               </div>{" "}
               <button 
-                disabled={Object.keys(errors).length > 0}
-                className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 ${Object.keys(errors).length > 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30'}`}
+                onClick={handleSaveProfile}
+                disabled={Object.keys(errors).length > 0 || isSaving}
+                className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 ${Object.keys(errors).length > 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500' : saveSuccess ? 'bg-emerald-500 text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30'}`}
               >
-                حفظ التغييرات
+                {isSaving ? (
+                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
+                ) : saveSuccess ? (
+                  <><CheckCircle size={18} />تم الحفظ بنجاح!</>
+                ) : (
+                  'حفظ التغييرات'
+                )}
               </button>{" "}
             </div>
           )}{" "}
@@ -2073,6 +2317,7 @@ export const SettingsPage = ({
         </div>{" "}
       </div>{" "}
     </div>
+    </>
   );
 };
 export const ActiveJobs = ({

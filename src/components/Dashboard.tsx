@@ -368,6 +368,10 @@ export const Dashboard = ({
               hr_notes: raw.hr_notes || "",
               cv_file_url: raw.cv_file_url,
               is_favorite: raw.is_favorite || false,
+              skills_match: raw.skills_match || 0,
+              experience_match: raw.experience_match || 0,
+              education_match: raw.education_match || 0,
+              suggested_questions: Array.isArray(raw.suggested_questions) ? raw.suggested_questions : [],
               top_strengths: Array.isArray(raw.strengths) ? raw.strengths : Array.isArray(raw.top_strengths) ? raw.top_strengths : [],
               top_weaknesses: Array.isArray(raw.weaknesses) ? raw.weaknesses : Array.isArray(raw.top_weaknesses) ? raw.top_weaknesses : []
             };
@@ -425,11 +429,11 @@ export const Dashboard = ({
             mockApplicantsObj = null;
           }
 
-          if (mockApplicantsObj && mockApplicantsObj.data) {
+          if (mockApplicantsObj && mockApplicantsObj.data && jobs.length > 0) {
             const validMock = mockApplicantsObj.data.map((m: any) => ({
               ...m,
-              job: jobs.find(j => j.id === m.job_id)?.title || jobs[0].title,
-              job_id: jobs.find(j => j.id === m.job_id) ? m.job_id : jobs[0].id,
+              job: jobs.find(j => j.id === m.job_id)?.title || (jobs[0] ? jobs[0].title : "طلب غير محدد"),
+              job_id: jobs.find(j => j.id === m.job_id) ? m.job_id : (jobs[0] ? jobs[0].id : ""),
               decision: latestDecisions[m.id] || m.decision,
               is_favorite: m.is_favorite || false
             }));
@@ -689,14 +693,16 @@ export const Dashboard = ({
     setOpenDropdownId(null);
   };
 
-  const handleCrossNominate = () => {
+  const handleCrossNominate = async () => {
     if (!crossNominateApplicant || !crossNominateJobId) return;
     const targetJob = jobs.find(j => j.id === crossNominateJobId);
     if (!targetJob) return;
 
+    const newId = crypto.randomUUID();
+
     const clonedApplicant = {
       ...crossNominateApplicant,
-      id: "app_" + Math.random().toString(36).substr(2, 9),
+      id: newId,
       job: targetJob.title,
       status: "مقبول مبدئياً",
       decision: "pending" as any,
@@ -706,6 +712,28 @@ export const Dashboard = ({
     };
 
     setApplicants(prev => [...prev, clonedApplicant]);
+    
+    // Backend Sync
+    try {
+      // First, we need to fetch the original applicant's raw data to clone it properly
+      const { data: originalRaw } = await supabase.from('applicants').select('*').eq('id', crossNominateApplicant.id).single();
+      
+      if (originalRaw) {
+        const { id, created_at, job_id, decision, rejection_reason, source, ...restOfRaw } = originalRaw;
+        
+        await supabase.from('applicants').insert([{
+          ...restOfRaw,
+          id: newId,
+          job_id: crossNominateJobId,
+          decision: 'pending',
+          source: 'ترشيح متقاطع',
+          ai_justification: 'تم الترشيح المتقاطع من شاغر سابق.'
+        }]);
+      }
+    } catch (err) {
+      console.error("Could not sync cross-nomination to backend", err);
+    }
+
     setToastMessage(`تم ترشيح المتقدم للوظيفة بنجاح`);
     setTimeout(() => setToastMessage(null), 3000);
     setCrossNominateApplicant(null);
@@ -1759,9 +1787,16 @@ export const Dashboard = ({
         <aside className="w-80 bg-navy text-white p-8 hidden lg:flex flex-col fixed h-full right-0 shadow-2xl z-20">
           <div className="flex items-center gap-4 mb-16 px-2">
             <LogoIcon />{" "}
-            <span className="text-3xl font-black tracking-tighter text-white">
+            <span className="text-3xl font-black tracking-tighter text-white flex-1">
               فرز
             </span>{" "}
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
+              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all shrink-0"
+            >
+              {darkMode ? <Sun size={17} /> : <Moon size={17} />}
+            </button>
           </div>{" "}
           <nav className="space-y-3 flex-1 pb-6">
             {[

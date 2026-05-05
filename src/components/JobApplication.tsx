@@ -78,6 +78,7 @@ export const ApplicantForm = ({
   const [isParsing, setIsParsing] = useState(false);
   const [isParsed, setIsParsed] = useState(false);
   const [resumeFileName, setResumeFileName] = useState<string | null>(null);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [formDataState, setFormDataState] = useState({
     fullName: "",
     phone: "",
@@ -179,6 +180,7 @@ export const ApplicantForm = ({
         return;
       }
       setResumeFileName(file.name);
+      setResumeFile(file);
     } else {
       return;
     }
@@ -407,7 +409,7 @@ export const ApplicantForm = ({
     const processAndSubmitBackground = async () => {
       let cv_file_url = "";
       let applicant_db_id = "";
-      const cvFile = submitData.resume || submitData.cv || (formRef.current?.querySelector('input[type="file"]') as HTMLInputElement)?.files?.[0];
+      const cvFile = resumeFile || submitData.resume || submitData.cv || (formRef.current?.querySelector('input[type="file"]') as HTMLInputElement)?.files?.[0];
 
       try {
         if (cvFile && cvFile instanceof File) {
@@ -468,7 +470,8 @@ export const ApplicantForm = ({
             email: (submitData.email || "").toString(),
             phone: (submitData.phone || "").toString(),
             cv_file_url: cv_file_url || null,
-            status: isAutoRejected ? "مرفوض آلياً" : (skipWebhook ? "قيد الانتظار" : "قيد الإجراء"),
+            decision: isAutoRejected ? "filtered" : "pending",
+            rejection_reason: isAutoRejected ? "مرفوض آلياً (لم يجتز أسئلة التصفية)" : null,
             custom_answers: customAnswers
           }])
           .select("id")
@@ -793,13 +796,26 @@ export const ApplicantForm = ({
               ) : (
                 <div className="flex items-center justify-between p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800/50 shadow-sm mt-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center">
+                    <a 
+                      href={resumeFile ? URL.createObjectURL(resumeFile) : "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="عرض الملف"
+                      className="w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
+                    >
                       <FileText size={24} />
-                    </div>
+                    </a>
                     <div>
-                      <p className="font-bold text-navy dark:text-white mb-1" title={resumeFileName || ""}>
+                      <a 
+                        href={resumeFile ? URL.createObjectURL(resumeFile) : "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-bold text-primary hover:underline hover:text-teal-600 mb-1 flex items-center gap-1.5 cursor-pointer transition-colors" 
+                        title={resumeFileName || "عرض الملف"}
+                      >
                         {resumeFileName ? (resumeFileName.length > 25 ? resumeFileName.substring(0, 25) + "..." : resumeFileName) : "السيرة الذاتية المرفقة"}
-                      </p>
+                        <ExternalLink size={14} className="opacity-70" />
+                      </a>
                       <p className="text-xs font-medium text-green-600 dark:text-green-400">تم الرفع بنجاح</p>
                     </div>
                   </div>
@@ -835,7 +851,7 @@ export const ApplicantForm = ({
                   type="text"
                   value={formDataState.fullName}
                   onChange={handleInputChange}
-                  placeholder="أحمد محمد علي"
+                  placeholder="مثال: عبدالله خالد"
                   className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
                 />
               </div>
@@ -850,7 +866,7 @@ export const ApplicantForm = ({
                   type="email"
                   value={formDataState.email}
                   onChange={handleInputChange}
-                  placeholder="example@domain.com"
+                  placeholder="ahmed@example.com"
                   dir="ltr"
                   className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium"
                 />
@@ -869,9 +885,28 @@ export const ApplicantForm = ({
                     name="phone"
                     type="tel"
                     value={formDataState.phone}
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      let val = e.target.value.replace(/\D/g, '');
+                      
+                      // Restrict starting digits
+                      if (val.length === 1 && val !== '0' && val !== '5') val = '';
+                      if (val.length >= 2 && val.startsWith('0') && val[1] !== '5') val = '0';
+                      
+                      // Dynamic max length
+                      if (val.startsWith('5') && val.length > 9) {
+                        val = val.slice(0, 9);
+                      } else if (val.startsWith('05') && val.length > 10) {
+                        val = val.slice(0, 10);
+                      } else if (val.length > 10) {
+                        val = val.slice(0, 10);
+                      }
+                      
+                      setFormDataState((prev) => ({ ...prev, phone: val }));
+                    }}
                     placeholder="5xxxxxxxx"
                     dir="ltr"
+                    pattern="^(05[0-9]{8}|5[0-9]{8})$"
+                    title="رقم الجوال يجب أن يكون 9 أرقام ويبدأ بـ 5، أو 10 أرقام ويبدأ بـ 05"
                     className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-r-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium"
                   />
                 </div>

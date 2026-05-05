@@ -235,9 +235,9 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
   };
   const matchColorClass = getMatchColor(displayMatch);
 
-  const skillsMatch = applicant?.skills_match ?? Math.min(100, Math.round(displayMatch * 1.05));
-  const expMatch = applicant?.experience_match ?? Math.max(0, Math.round(displayMatch * 0.95));
-  const eduMatch = applicant?.education_match ?? Math.min(100, Math.round(displayMatch * 1.10));
+  const skillsMatch = applicant?.skills_match || 0;
+  const expMatch = applicant?.experience_match || 0;
+  const eduMatch = applicant?.education_match || 0;
 
   const getBarColor = (val: number) => {
     if (val >= 80) return "bg-emerald-500";
