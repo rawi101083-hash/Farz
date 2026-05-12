@@ -380,7 +380,7 @@ export const Dashboard = ({
 
         // --- FAKE APPLICANTS LOGIC (Valid for 24h) ---
         if (jobs.length > 0) {
-          const MOCK_DATA_KEY = "sahab_mock_applicants_24h_v3";
+          const MOCK_DATA_KEY = "sahab_mock_applicants_24h_v4";
           let mockApplicantsObj = null;
           try {
             mockApplicantsObj = window.localStorage ? JSON.parse(window.localStorage.getItem(MOCK_DATA_KEY) || "null") : null;
@@ -388,6 +388,18 @@ export const Dashboard = ({
           
           if (!mockApplicantsObj) {
             const names = ["أحمد الخالدي", "سارة محمد", "عبدالله السالم", "نورة العتيبي", "خالد الشمري", "منى الدوسري", "فيصل المطيري", "ريم العنزي", "سلمان القحطاني", "هند المري"];
+            const avatars = [
+              "https://i.pravatar.cc/150?img=11",
+              "https://i.pravatar.cc/150?img=5",
+              "https://i.pravatar.cc/150?img=14",
+              "https://i.pravatar.cc/150?img=9",
+              "https://i.pravatar.cc/150?img=15",
+              "https://i.pravatar.cc/150?img=20",
+              "https://i.pravatar.cc/150?img=33",
+              "https://i.pravatar.cc/150?img=28",
+              "https://i.pravatar.cc/150?img=59",
+              "https://i.pravatar.cc/150?img=32"
+            ];
             const generatedMock = names.map((name, idx) => ({
                id: `mock-${Date.now()}-${idx}`,
                name,
@@ -413,6 +425,7 @@ export const Dashboard = ({
                rejection_reason: "",
                hr_notes: "بيانات تجريبية، سيتم حذفها تلقائياً بعد 24 ساعة.",
                cv_file_url: null,
+               photoUrl: avatars[idx],
                is_favorite: false,
                top_strengths: ["الخبرة التقنية", "سرعة التعلم", "المرونة"],
                top_weaknesses: ["لا يوجد نقاط ضعف واضحة"]

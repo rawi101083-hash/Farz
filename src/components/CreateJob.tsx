@@ -362,6 +362,12 @@ export const CreateJob = ({
   const [targetMajors, setTargetMajors] = useState<string[]>(
     baseRole?.targetMajors || initialData?.targetMajors || []
   );
+  const [hideRoleSummary, setHideRoleSummary] = useState(baseRole?.hideRoleSummary || false);
+  const [hideResponsibilities, setHideResponsibilities] = useState(baseRole?.hideResponsibilities || false);
+  const [hideQualifications, setHideQualifications] = useState(baseRole?.hideQualifications || false);
+  const [hideBenefits, setHideBenefits] = useState(baseRole?.hideBenefits || false);
+  const [hideTargetMajors, setHideTargetMajors] = useState(baseRole?.hideTargetMajors || false);
+  const [hideSkillsAndLanguages, setHideSkillsAndLanguages] = useState(baseRole?.hideSkillsAndLanguages || false);
   const [newMajorInput, setNewMajorInput] = useState("");
   const [aiInstructions, setAiInstructions] = useState(baseRole?.aiInstructions || "");
   const [selectedSkills, setSelectedSkills] = useState<string[]>(
@@ -628,6 +634,12 @@ export const CreateJob = ({
       setQualification("");
       setLocations([]);
       setTargetMajors([]);
+      setHideRoleSummary(false);
+      setHideResponsibilities(false);
+      setHideQualifications(false);
+      setHideBenefits(false);
+      setHideTargetMajors(false);
+      setHideSkillsAndLanguages(false);
       return;
     }
 
@@ -662,6 +674,12 @@ export const CreateJob = ({
     if (role.knockoutQuestions) setKnockoutQuestions(role.knockoutQuestions);
     setLocations(role.locations && role.locations.length > 0 ? role.locations : (role.location ? [role.location] : []));
     setTargetMajors(role.targetMajors || []);
+    setHideRoleSummary(role.hideRoleSummary || false);
+    setHideResponsibilities(role.hideResponsibilities || false);
+    setHideQualifications(role.hideQualifications || false);
+    setHideBenefits(role.hideBenefits || false);
+    setHideTargetMajors(role.hideTargetMajors || false);
+    setHideSkillsAndLanguages(role.hideSkillsAndLanguages || false);
   };
 
   const handleSaveRole = () => {
@@ -702,6 +720,12 @@ export const CreateJob = ({
         photoRequirement,
         locations: [...locations],
         targetMajors: [...targetMajors],
+        hideRoleSummary,
+        hideResponsibilities,
+        hideQualifications,
+        hideBenefits,
+        hideTargetMajors,
+        hideSkillsAndLanguages,
       } : r));
       setEditingRoleId(null);
     } else {
@@ -737,6 +761,12 @@ export const CreateJob = ({
           photoRequirement,
           locations: [...locations],
           targetMajors: [...targetMajors],
+          hideRoleSummary,
+          hideResponsibilities,
+          hideQualifications,
+          hideBenefits,
+          hideTargetMajors,
+          hideSkillsAndLanguages,
         },
       ]);
     }
@@ -763,6 +793,12 @@ export const CreateJob = ({
     setSalaryMax("");
     setLocations([]);
     setTargetMajors([]);
+    setHideRoleSummary(false);
+    setHideResponsibilities(false);
+    setHideQualifications(false);
+    setHideBenefits(false);
+    setHideTargetMajors(false);
+    setHideSkillsAndLanguages(false);
     setIsAddingRole(false);
 
     setRoleToastMessage(editingRoleId ? "تم حفظ التعديلات بنجاح" : "تمت إضافة الدور بنجاح");
@@ -801,6 +837,12 @@ export const CreateJob = ({
         salaryMax,
         isSalaryHidden,
         knockoutQuestions,
+        hideRoleSummary,
+        hideResponsibilities,
+        hideQualifications,
+        hideBenefits,
+        hideTargetMajors,
+        hideSkillsAndLanguages,
       });
     }
 
@@ -830,6 +872,12 @@ export const CreateJob = ({
           salaryMax,
           isSalaryHidden,
           knockoutQuestions,
+          hideRoleSummary,
+          hideResponsibilities,
+          hideQualifications,
+          hideBenefits,
+          hideTargetMajors,
+          hideSkillsAndLanguages,
         },
       ];
       if (!enableWelcomeUI && adType === "single" && createJobType !== "quick_link") {
@@ -936,6 +984,12 @@ export const CreateJob = ({
             salaryMax,
             isSalaryHidden,
             knockoutQuestions,
+            hideRoleSummary,
+            hideResponsibilities,
+            hideQualifications,
+            hideBenefits,
+            hideTargetMajors,
+            hideSkillsAndLanguages,
             directUpload,
             requireVoiceInterview: isVoiceEnabled,
             voiceInterviewTemplate,
@@ -1633,15 +1687,21 @@ export const CreateJob = ({
                 </div>
 
                 <div className="mt-6 space-y-3">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">التخصصات المستهدفة <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span>
-                    <span className="relative group inline-flex items-center ml-1">
-                      <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                      <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                        اترك هذا الحقل فارغاً إذا كانت الوظيفة تقبل جميع التخصصات لتوسيع نطاق المتقدمين في نظام الفرز الآلي.
-                        <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                      </div>
-                    </span>
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">التخصصات المستهدفة <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span>
+                      <span className="relative group inline-flex items-center ml-1">
+                        <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                        <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                          اترك هذا الحقل فارغاً إذا كانت الوظيفة تقبل جميع التخصصات لتوسيع نطاق المتقدمين في نظام الفرز الآلي.
+                          <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                        </div>
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                      <input type="checkbox" className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideTargetMajors} onChange={(e) => setHideTargetMajors(e.target.checked)} />
+                    </label>
+                  </div>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -1718,16 +1778,22 @@ export const CreateJob = ({
                   <div>
                     <h3 className="font-bold text-navy dark:text-white text-lg mb-4">التفاصيل الوظيفية</h3>
                     <div className="space-y-3">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-1 mb-2 flex items-center gap-1">
-                        نبذة عن الدور
-                        <span className="relative group inline-flex items-center ml-1">
-                          <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                          <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                            ترك هذا الحقل فارغاً سيجعل محرك نظام الفرز يعتمد على المعايير القياسية للمسمى الوظيفي. لتقييم أدق، أضف نبذة مختصرة.
-                            <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                          </div>
-                        </span>
-                      </label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                          نبذة عن الدور
+                          <span className="relative group inline-flex items-center ml-1">
+                            <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                            <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                              ترك هذا الحقل فارغاً سيجعل محرك نظام الفرز يعتمد على المعايير القياسية للمسمى الوظيفي. لتقييم أدق، أضف نبذة مختصرة.
+                              <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                            </div>
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                          <input type="checkbox" className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideRoleSummary} onChange={(e) => setHideRoleSummary(e.target.checked)} />
+                        </label>
+                      </div>
                       <textarea
                         rows={3}
                         value={roleSummary}
@@ -1741,16 +1807,22 @@ export const CreateJob = ({
 
 
                   <div className="space-y-3">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 mb-2 flex items-center gap-1">
-                      المهام والمسؤوليات
-                      <span className="relative group inline-flex items-center ml-1">
-                        <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                        <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                          يفضل إضافتها في شكل نقاط للوظائف الإدارية أو المتخصصة لرفع دقة مطابقة نظام الفرز الآلي.
-                          <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                        </div>
-                      </span>
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                        المهام والمسؤوليات
+                        <span className="relative group inline-flex items-center ml-1">
+                          <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                          <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                            يفضل إضافتها في شكل نقاط للوظائف الإدارية أو المتخصصة لرفع دقة مطابقة نظام الفرز الآلي.
+                            <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                          </div>
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                        <input type="checkbox" className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideResponsibilities} onChange={(e) => setHideResponsibilities(e.target.checked)} />
+                      </label>
+                    </div>
                     <textarea onPaste={(e) => handleTextAreaPaste(e, setResponsibilities, responsibilities)}
                       rows={4}
                       value={responsibilities}
@@ -1762,16 +1834,22 @@ export const CreateJob = ({
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 mb-2 flex items-center gap-1">
-                      المؤهلات والمتطلبات
-                      <span className="relative group inline-flex items-center ml-1">
-                        <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                        <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                          أضف المؤهلات الأساسية المطلوبة ليتم أخذها بعين الاعتبار في نظام الفرز الآلي.
-                          <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                        </div>
-                      </span>
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                        المؤهلات والمتطلبات
+                        <span className="relative group inline-flex items-center ml-1">
+                          <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                          <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                            أضف المؤهلات الأساسية المطلوبة ليتم أخذها بعين الاعتبار في نظام الفرز الآلي.
+                            <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                          </div>
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                        <input type="checkbox" className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideQualifications} onChange={(e) => setHideQualifications(e.target.checked)} />
+                      </label>
+                    </div>
                     <textarea
 
                       rows={4}
@@ -1786,16 +1864,22 @@ export const CreateJob = ({
                   <>
                     <div className="space-y-4 pt-8 border-t border-slate-200 dark:border-slate-700/60 mt-8">
                       {" "}
-                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                        المهارات المستهدفة
-                        <span className="relative group inline-flex items-center ml-1">
-                          <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                          <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                            تحديد المهارات التقنية الدقيقة يجعل نظام الفرز الآلي أكثر صرامة ودقة.
-                            <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                          </div>
-                        </span>
-                      </label>{" "}
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
+                          المهارات المستهدفة
+                          <span className="relative group inline-flex items-center ml-1">
+                            <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                            <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                              تحديد المهارات التقنية الدقيقة يجعل نظام الفرز الآلي أكثر صرامة ودقة.
+                              <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                            </div>
+                          </span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                          <input type="checkbox" className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideSkillsAndLanguages} onChange={(e) => setHideSkillsAndLanguages(e.target.checked)} />
+                        </label>
+                      </div>{" "}
                       <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl">
                         {" "}
                         {selectedSkills.length === 0 && (
@@ -1885,9 +1969,15 @@ export const CreateJob = ({
 
                     <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-700/60 flex flex-col gap-6">
                       <div className="space-y-3">
-                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                          اللغات المطلوبة <span className="text-slate-400 font-normal ml-1">(اختياري)</span>
-                        </label>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                            اللغات المطلوبة <span className="text-slate-400 font-normal ml-1">(اختياري)</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                            <input type="checkbox" className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideSkillsAndLanguages} onChange={(e) => setHideSkillsAndLanguages(e.target.checked)} />
+                          </label>
+                        </div>
                         <div className="flex flex-wrap gap-2 mb-2">
                           {selectedLanguages.map((lang) => (
                             <span key={lang} className="bg-primary text-white px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm">
@@ -1924,9 +2014,15 @@ export const CreateJob = ({
                   </>
                 )}
                   <div className="space-y-3">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 mb-2 flex items-center gap-1">
-                      المميزات <span className="text-slate-400 font-normal text-xs ml-1">(اختياري)</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                        المميزات <span className="text-slate-400 font-normal text-xs ml-1">(اختياري)</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                        <input type="checkbox" className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideBenefits} onChange={(e) => setHideBenefits(e.target.checked)} />
+                      </label>
+                    </div>
                     <textarea onPaste={(e) => handleTextAreaPaste(e, setBenefits, benefits)}
                       rows={3}
                       value={benefits}
@@ -3462,7 +3558,7 @@ export const PublicJobPage = ({
                     </div>
                   )}
 
-                  {(activeRole?.roleSummary || job.roleSummary || activeRole?.description || job.description) ? (
+                  {(!activeRole?.hideRoleSummary && !job.hideRoleSummary) && (activeRole?.roleSummary || job.roleSummary || activeRole?.description || job.description) ? (
                     <div>
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> نبذة عن الدور
@@ -3473,22 +3569,7 @@ export const PublicJobPage = ({
                     </div>
                   ) : null}
 
-                  {((activeRole?.targetMajors?.length ?? 0) > 0 || (job.targetMajors?.length ?? 0) > 0) && (
-                    <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
-                      <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-primary rounded-full" /> التخصصات المطلوبة
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {(activeRole?.targetMajors || job.targetMajors || []).map((major, i) => (
-                          <span key={i} className="inline-flex items-center px-4 py-2 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-300 text-sm font-medium border border-blue-100/50 dark:border-blue-800/20 shadow-sm transition-all hover:-translate-y-0.5">
-                            {major}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {(activeRole?.responsibilities || job.responsibilities) && (
+                  {(!activeRole?.hideResponsibilities && !job.hideResponsibilities) && (activeRole?.responsibilities || job.responsibilities) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> المهام والمسؤوليات
@@ -3506,7 +3587,7 @@ export const PublicJobPage = ({
                     </div>
                   )}
 
-                  {(activeRole?.qualifications || job.qualifications) && (
+                  {(!activeRole?.hideQualifications && !job.hideQualifications) && (activeRole?.qualifications || job.qualifications) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> المؤهلات والمتطلبات
@@ -3521,33 +3602,52 @@ export const PublicJobPage = ({
                     </div>
                   )}
 
-                  {(activeRole?.skills?.length || job.skills?.length || activeRole?.languages?.length || job.languages?.length) ? (
+                  {(!activeRole?.hideTargetMajors && !job.hideTargetMajors) && ((activeRole?.targetMajors?.length ?? 0) > 0 || (job.targetMajors?.length ?? 0) > 0) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-primary rounded-full" /> المهارات واللغات
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> التخصصات المستهدفة
                       </h3>
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex flex-wrap gap-2 flex-1">
-                          {(activeRole?.skills || job.skills || []).map((skill: string) => (
-                            <span key={skill} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 shadow-sm">
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                        {((activeRole?.languages || job.languages || []).length > 0) && (
-                          <div className="flex flex-wrap gap-2 mr-auto">
-                            {(activeRole?.languages || job.languages || []).map((lang: string) => (
-                              <span key={lang} className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-xl text-sm font-bold border border-blue-200 dark:border-blue-800 shadow-sm">
-                                {lang}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                      <div className="flex flex-wrap gap-2">
+                        {(activeRole?.targetMajors || job.targetMajors || []).map((major, i) => (
+                          <span key={i} className="inline-flex items-center px-4 py-2 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-300 text-sm font-medium border border-blue-100/50 dark:border-blue-800/20 shadow-sm transition-all hover:-translate-y-0.5">
+                            {major}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(!activeRole?.hideSkillsAndLanguages && !job.hideSkillsAndLanguages) && (activeRole?.skills?.length || job.skills?.length) ? (
+                    <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
+                      <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> المهارات المستهدفة
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {(activeRole?.skills || job.skills || []).map((skill: string) => (
+                          <span key={skill} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 shadow-sm">
+                            {skill}
+                          </span>
+                        ))}
                       </div>
                     </div>
                   ) : null}
 
-                  {(activeRole?.benefits || job.benefits) && (
+                  {(!activeRole?.hideSkillsAndLanguages && !job.hideSkillsAndLanguages) && (activeRole?.languages?.length || job.languages?.length) ? (
+                    <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
+                      <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> اللغات المطلوبة
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {(activeRole?.languages || job.languages || []).map((lang: string) => (
+                          <span key={lang} className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-xl text-sm font-bold border border-blue-200 dark:border-blue-800 shadow-sm">
+                            {lang}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {(!activeRole?.hideBenefits && !job.hideBenefits) && (activeRole?.benefits || job.benefits) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> المميزات
@@ -3787,13 +3887,19 @@ const ManageJob = ({
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-2 flex items-center gap-1">نبذة عن الدور <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span> <span className="relative group inline-flex items-center ml-1">
-                      <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                      <div className="absolute right-0 bottom-full mb-2 w-64 p-2.5 bg-slate-800 dark:bg-slate-700 text-white text-[11px] font-normal leading-relaxed rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                        ترك هذا الحقل فارغاً سيجعل محرك الفرز يعتمد على المعايير القياسية للمسمى الوظيفي
-                        <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                      </div>
-                    </span></label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-2 flex items-center gap-1">نبذة عن الدور <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span> <span className="relative group inline-flex items-center ml-1">
+                        <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                        <div className="absolute right-0 bottom-full mb-2 w-64 p-2.5 bg-slate-800 dark:bg-slate-700 text-white text-[11px] font-normal leading-relaxed rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                          ترك هذا الحقل فارغاً سيجعل محرك الفرز يعتمد على المعايير القياسية للمسمى الوظيفي
+                          <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                        </div>
+                      </span></label>
+                      <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                        <input type="checkbox" className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideRoleSummary} onChange={(e) => setHideRoleSummary(e.target.checked)} />
+                      </label>
+                    </div>
                     <textarea onPaste={(e) => formatPastedText(e, description, setDescription)} rows={6} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="(مثال: برمجة التطبيقات، إدارة مشاريع معينة، متابعة الملفات...)" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium resize-none min-h-[100px]" />
                   </div>
                 </div>
@@ -3821,7 +3927,13 @@ const ManageJob = ({
                     </div>
                   </div>
                   <div className={"space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700 " + (isLocked ? "opacity-60 pointer-events-none" : "")}>
-                    <label className="text-sm font-bold text-navy dark:text-white block">التخصصات المستهدفة <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span></label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-bold text-navy dark:text-white block">التخصصات المستهدفة <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span></label>
+                      <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                        <input type="checkbox" disabled={isLocked} className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideTargetMajors} onChange={(e) => setHideTargetMajors(e.target.checked)} />
+                      </label>
+                    </div>
                     <div className="relative">
                       <input type="text" disabled={isLocked} value={newMajorInput} onChange={(e) => setNewMajorInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (newMajorInput.trim() && !targetMajors.includes(newMajorInput.trim())) { setTargetMajors([...targetMajors, newMajorInput.trim()]); setNewMajorInput(""); } } }} placeholder="أضف تخصصاً (اترك الحقل فارغاً للقبول العام)..." className="w-full pr-4 pl-12 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:border-primary transition-all font-medium" />
                       <button type="button" disabled={isLocked} onClick={() => { if (newMajorInput.trim() && !targetMajors.includes(newMajorInput.trim())) { setTargetMajors([...targetMajors, newMajorInput.trim()]); setNewMajorInput(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Plus size={18} /></button>
@@ -3837,7 +3949,13 @@ const ManageJob = ({
                     )}
                   </div>
                   <div className={"space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700 " + (isLocked ? "opacity-60 pointer-events-none" : "")}>
-                    <label className="text-sm font-bold text-navy dark:text-white block">المهارات المستهدفة <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span></label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-bold text-navy dark:text-white block">المهارات المستهدفة <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span></label>
+                      <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                        <input type="checkbox" disabled={isLocked} className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideSkillsAndLanguages} onChange={(e) => setHideSkillsAndLanguages(e.target.checked)} />
+                      </label>
+                    </div>
                     <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl">
                       {selectedSkills.length === 0 && <span className="text-sm text-slate-400 dark:text-slate-500 py-2">لم يتم اختيار مهارات بعد...</span>}
                       {selectedSkills.map((skill) => (
@@ -3850,7 +3968,13 @@ const ManageJob = ({
                     </div>
                   </div>
                   <div className={"space-y-3 pt-4 border-t border-slate-100 dark:border-slate-700 " + (isLocked ? "opacity-60 pointer-events-none" : "")}>
-                    <label className="text-sm font-bold text-navy dark:text-white block">اللغات المطلوبة <span className="text-slate-400 font-normal ml-1">(اختياري)</span></label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-bold text-navy dark:text-white block">اللغات المطلوبة <span className="text-slate-400 font-normal ml-1">(اختياري)</span></label>
+                      <label className="flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">للذكاء فقط 🔒</span>
+                        <input type="checkbox" disabled={isLocked} className="w-3.5 h-3.5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer" checked={hideSkillsAndLanguages} onChange={(e) => setHideSkillsAndLanguages(e.target.checked)} />
+                      </label>
+                    </div>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {selectedLanguages.map((lang) => (
                         <span key={lang} className="bg-primary text-white px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm">{lang}

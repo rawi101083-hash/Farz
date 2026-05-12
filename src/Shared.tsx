@@ -314,6 +314,13 @@ export interface Role {
   photoRequirement?: "optional" | "required" | "none";
   portfolioRequirement?: "optional" | "required" | "none";
   directUpload?: boolean;
+  // Visibility controls (AI gets data, applicant may not see it)
+  hideRoleSummary?: boolean;
+  hideResponsibilities?: boolean;
+  hideQualifications?: boolean;
+  hideBenefits?: boolean;
+  hideTargetMajors?: boolean;
+  hideSkillsAndLanguages?: boolean;
 }
 export interface Job {
   id: string;
@@ -364,6 +371,13 @@ export interface Job {
   askExpectedSalary?: "hidden" | "open" | "ranges";
   expectedSalaryRanges?: string[];
   knockoutQuestions?: { text: string; type: "yes_no" | "options"; options?: string[]; requiredAnswer: string }[];
+  // Visibility controls (AI gets data, applicant may not see it)
+  hideRoleSummary?: boolean;
+  hideResponsibilities?: boolean;
+  hideQualifications?: boolean;
+  hideBenefits?: boolean;
+  hideTargetMajors?: boolean;
+  hideSkillsAndLanguages?: boolean;
 }
 // --- Components ---
 export const LogoIcon = () => (
