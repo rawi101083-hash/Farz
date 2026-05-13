@@ -1955,6 +1955,7 @@ export default function App() {
   const [applicantSelectedRoleId, setApplicantSelectedRoleId] = useState<string | null>(null);
   const [selectedApplicantForDetails, setSelectedApplicantForDetails] = useState<Applicant | null>(null);
   const [userProfile, setUserProfile] = useState({
+    id: "",
     name: "",
     title: "",
     avatar: "",
@@ -2142,6 +2143,7 @@ export default function App() {
             const isProfileComplete = !!(data.company_name && data.city);
             setUserProfile(prev => ({
               ...prev,
+              id: user.id,
               name: user.user_metadata?.full_name || prev.name,
               title: user.user_metadata?.job_title || prev.title,
               companyName: data.company_name || prev.name,
@@ -2669,15 +2671,17 @@ export default function App() {
               />
             )}
             {step === "form" && selectedJob && (
-              <JobApplication
-                job={selectedJob}
-                selectedRoleId={applicantSelectedRoleId}
-                onBackToJobs={() => {
-                  setStep("publicJob");
-                  setApplicantSelectedRoleId(null);
-                }}
-                onSubmit={() => setStep("dashboard")}
-              />
+              <ErrorBoundary>
+                <JobApplication
+                  job={selectedJob}
+                  selectedRoleId={applicantSelectedRoleId}
+                  onBackToJobs={() => {
+                    setStep("publicJob");
+                    setApplicantSelectedRoleId(null);
+                  }}
+                  onSubmit={() => setStep("dashboard")}
+                />
+              </ErrorBoundary>
             )}
           </motion.div>{" "}
         </AnimatePresence>{" "}

@@ -1,41 +1,53 @@
 const fs = require('fs');
-const path = require('path');
+let content = fs.readFileSync('src/Shared.tsx', 'utf8');
 
-const sourcePath = path.join(__dirname, 'src/App_test_1256.tsx');
-const destPath = path.join(__dirname, 'src/Shared.tsx');
+// 1. Replace the generatePaymentForm html Content with programmatic form submission
+content = content.replace(/const htmlContent = `[\s\S]*?setPaymentHtml\(htmlContent\);/g, 
+`      // Create a hidden form in the document body and submit it
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.paymentUrl;
+      form.target = '_self'; // Redirect the whole window
+      form.style.display = 'none';
 
-let sourceCode = fs.readFileSync(sourcePath, 'utf8');
-let destCode = fs.readFileSync(destPath, 'utf8');
+      const addInput = (name, value) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      };
 
-const marker = '// RESTORED COMPONENTS';
-const markerIndex = destCode.indexOf(marker);
+      addInput('id', data.id);
+      addInput('trandata', data.trandata);
+      addInput('errorURL', data.errorURL);
+      addInput('responseURL', data.responseURL);
 
-if (markerIndex !== -1) {
-  destCode = destCode.substring(0, markerIndex);
-}
+      document.body.appendChild(form);
+      form.submit();
+      
+      // Cleanup after submit
+      setTimeout(() => {
+        if (document.body.contains(form)) {
+          document.body.removeChild(form);
+        }
+        setShowPaymentModal(false);
+      }, 2000);`);
 
-const components = ['SettingsPage', 'ActiveJobs', 'FastScreening'];
-let addedCode = '\n\n// RESTORED COMPONENTS\n';
+// 2. Replace the iframe with a loader
+content = content.replace(/<iframe[\s\S]*?<\/iframe>/g, 
+`<div className="text-center flex flex-col items-center justify-center w-full h-full">
+  <div className="w-12 h-12 border-4 border-slate-200 dark:border-slate-800 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4"></div>
+  <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300">جاري تحويلك لبوابة الدفع...</h3>
+</div>`);
 
-for (const comp of components) {
-  const declaration = `const ${comp} = `;
-  const startIndex = sourceCode.indexOf(declaration);
-  
-  if (startIndex !== -1) {
-    let nextCompIndex = sourceCode.length;
-    const substr = sourceCode.substring(startIndex + declaration.length);
-    // Find next top-level const or export default
-    const match = substr.match(/\nconst [A-Z]|\nexport default|\nexport const/);
-    if (match && match.index) {
-      nextCompIndex = startIndex + declaration.length + match.index;
-    }
-    
-    let compCode = sourceCode.substring(startIndex, nextCompIndex);
-    compCode = compCode.replace(`const ${comp} = `, `export const ${comp} = `);
-    addedCode += compCode + '\n';
-    console.log(`Successfully added ${comp}`);
-  }
-}
+// 3. Fix the DOM Nesting error in SettingsPage (div inside p)
+content = content.replace(/<p\s+className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">\s*<div\s+className="w-2 h-2/g, 
+`<div className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">\n                <div className="w-2 h-2`);
+content = content.replace(/Neoleap[\s\S]*?<\/p>/g, match => match.replace('</p>', '</div>'));
 
-fs.writeFileSync(destPath, destCode + addedCode, 'utf8');
-console.log('Fixed Shared.tsx!');
+// 4. Fix DOM nesting whitespace around <tr>
+content = content.replace(/<tr>\s*\{\s*"\s*"\s*\}\s*<td>/g, '<tr>\n<td>');
+
+fs.writeFileSync('src/Shared.tsx', content, 'utf8');
+console.log('Shared.tsx updated.');

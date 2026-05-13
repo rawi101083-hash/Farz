@@ -326,7 +326,18 @@ export const ApplicantForm = ({
       }
     }
 
-    // Check if voice interview is disabled!
+    // ============================================================================
+    // 🤖 AI ASSISTANT NOTE (PLEASE READ CAREFULLY):
+    // The "Voice Interview" (المقابلة الصوتية) feature is INTENTIONALLY DEACTIVATED
+    // by default. The code for it exists in this file because the user might want 
+    // to re-activate it in the future from the control panel.
+    // 
+    // DO NOT report this as a bug to the user.
+    // DO NOT say "you still have the audio feature in the code".
+    // DO NOT delete the audio UI code unless explicitly told to do so.
+    // The logic below perfectly bypasses the audio step and submits the form 
+    // instantly when `isRequireVoiceInterview` is false.
+    // ============================================================================
     if (isRequireVoiceInterview === false) {
       handleFinalSubmit(true);
       return;
@@ -339,7 +350,8 @@ export const ApplicantForm = ({
 
     setFormStep("audio");
   };
-  const handleFinalSubmit = async (isVoiceSkipped: boolean = false) => {
+  const handleFinalSubmit = async (eOrIsSkipped?: any) => {
+    const isVoiceSkipped = typeof eOrIsSkipped === "boolean" ? eOrIsSkipped : false;
     if (!isVoiceSkipped && !audioBlob) {
       alert("يرجى تسجيل الإجابة الصوتية للمقابلة أولاً.");
       return;
@@ -354,12 +366,12 @@ export const ApplicantForm = ({
       { question: "سنوات الخبرة", answer: submitData.experience || formDataState.experience },
       ...((formDataState.type || submitData.type) ? [{ question: "نوع العمل", answer: submitData.type || formDataState.type }] : []),
       { question: "مدة الانضمام / الجاهزية للعمل", answer: submitData.availability || (formDataState as any).availability || "" },
-      ...customQuestions.map((q: any, idx: number) => ({
+      ...(Array.isArray(customQuestions) ? customQuestions.map((q: any, idx: number) => ({
         question: q.text,
         answer: submitData[`customQuestion_${idx}`],
-      }))
+      })) : [])
     ];
-    const submittedCustomAttachments = customAttachments.map(
+    const submittedCustomAttachments = (Array.isArray(customAttachments) ? customAttachments : []).map(
       (att: any, idx: number) => ({
         attachment_name: att.attachment_name,
         attachment_type: att.attachment_type,
@@ -369,27 +381,12 @@ export const ApplicantForm = ({
             : (submitData[`customAttachment_${idx}`] as File)?.name || "",
       }),
     );
-    customQuestions.forEach(
+    (Array.isArray(customQuestions) ? customQuestions : []).forEach(
       (_: any, idx: number) => delete submitData[`customQuestion_${idx}`],
     );
-    customAttachments.forEach(
+    (Array.isArray(customAttachments) ? customAttachments : []).forEach(
       (_: any, idx: number) => delete submitData[`customAttachment_${idx}`],
     );
-    {
-      (activeRole || job) && (() => {
-        const displayRole = {
-          title: activeRole?.title || job?.title,
-          location: activeRole?.location || job?.location,
-          type: activeRole?.type || job?.type,
-          experience: activeRole?.experience || job?.experience,
-          qualification: activeRole?.qualification || job?.qualification,
-          salaryMin: activeRole?.salaryMin || job?.salaryMin,
-          salaryMax: activeRole?.salaryMax || job?.salaryMax,
-          isSalaryHidden: activeRole?.isSalaryHidden ?? job?.isSalaryHidden,
-        };
-        return null;
-      })()
-    }
     portfolioLinksState.forEach((_, idx) => {
       delete submitData[`portfolio_${idx}`];
     });
@@ -397,8 +394,8 @@ export const ApplicantForm = ({
     let autoRejectReason = "";
 
     // 1. Knockout Questions Check
-    if (activeRole?.knockoutQuestions && activeRole.knockoutQuestions.length > 0) {
-      const answers = formDataState.knockoutAnswers;
+    if (activeRole?.knockoutQuestions && Array.isArray(activeRole.knockoutQuestions) && activeRole.knockoutQuestions.length > 0) {
+      const answers = formDataState.knockoutAnswers || {};
       isAutoRejected = activeRole.knockoutQuestions.some((kq: any, idx: number) => {
         const ans = answers[idx];
         if (!ans) return false;

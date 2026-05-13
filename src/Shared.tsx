@@ -1688,6 +1688,8 @@ export const SettingsPage = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showLockModal, setShowLockModal] = useState(false);
   const [lockConfirmed, setLockConfirmed] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentHtml, setPaymentHtml] = useState("");
 
   // Locked field display component
   const LockedField = ({ value, label }: { value: string; label: string }) => (
@@ -1775,123 +1777,72 @@ export const SettingsPage = ({
   const [hasActiveAd, setHasActiveAd] = useState(false);
   const [isYearly, setIsYearly] = useState(false);
 
-  const handleSubscribe = async (tier: string) => {
-    const planId = `${tier}_${isYearly ? 'yearly' : 'monthly'}`;
-    const plan = subscriptionPlans.find(p => p.id === planId);
+  const generatePaymentForm = async (packageId: string, isYearlyPlan: boolean) => {
+    setShowPaymentModal(true);
+    setPaymentHtml(""); // Clear old content
     
-    if (!plan) {
-      alert("عذراً، جارٍ تحميل باقات الاشتراك، يرجى المحاولة بعد قليل.");
-      return;
-    }
-
-    let baseDate = new Date();
-    // Time Stacking Logic: if active subscription exists, stack it
-    if (userProfile.subscription_end_date) {
-      const currentEnd = new Date(userProfile.subscription_end_date);
-      if (currentEnd > baseDate) {
-        baseDate = currentEnd;
-      }
-    }
-
-    let expirationDate = baseDate;
-    if (plan.duration_type === 'years') {
-      expirationDate = addYears(expirationDate, plan.duration_value);
-    } else if (plan.duration_type === 'months') {
-      expirationDate = addMonths(expirationDate, plan.duration_value);
-    } else if (plan.duration_type === 'days') {
-      expirationDate = addDays(expirationDate, plan.duration_value);
-    }
-
-    const currentQuota = userProfile.jobs_quota || 0;
-    const newQuota = currentQuota + (plan.jobs_limit || 0);
-
-    // Simulate immediate success in UI
-    localStorage.setItem('subscription_is_yearly', isYearly.toString());
-    setUserProfile({ 
-      ...userProfile, 
-      subscription_tier: tier, 
-      subscription_end_date: expirationDate.toISOString(), 
-      subscription_is_yearly: isYearly,
-      jobs_quota: newQuota 
-    });
-    
-    // Sync directly to backend immediately
     try {
       const { supabase: sb } = await import('./lib/supabaseClient');
-      const { data: { user } } = await sb.auth.getUser();
-      if (user?.id) {
-        await sb
-          .from('companies')
-          .update({ 
-             subscription_plan: planId,
-             subscription_end_date: expirationDate.toISOString(),
-             jobs_quota: newQuota
-          })
-          .eq('id', user.id);
+      const { data, error } = await sb.functions.invoke('neoleap-payment', {
+        body: { action: 'initiate', customerId: userProfile.id, packageId, isYearly: isYearlyPlan }
+      });
+
+      if (error || !data || data.error) {
+        console.error("Payment Error:", error || data?.error);
+        alert("عذراً، حدث خطأ أثناء تجهيز بوابة الدفع. يرجى المحاولة لاحقاً.");
+        setShowPaymentModal(false);
+        return;
       }
+
+            // إزالة أي Form سابق إن وجد
+      const existingForm = document.getElementById('neoleap-raw-form');
+      if (existingForm) existingForm.remove();
+
+      // بناء النموذج كنص HTML خام
+      const formHtml = `
+        <form id="neoleap-raw-form" method="POST" action="${data.paymentUrl}" enctype="application/x-www-form-urlencoded" style="display: none;">
+          <input type="hidden" name="id" value="${data.id}" />
+          <input type="hidden" name="trandata" value="${data.trandata}" />
+          <input type="hidden" name="responseURL" value="${data.responseURL}" />
+          <input type="hidden" name="errorURL" value="${data.errorURL}" />
+        </form>
+      `;
+
+      // حقن الكود مباشرة في الـ Body
+      document.body.insertAdjacentHTML('beforeend', formHtml);
+
+      // إرسال النموذج فوراً
+      (document.getElementById('neoleap-raw-form') as HTMLFormElement).submit();
+      
+      // Cleanup after submit
+      setTimeout(() => {
+        const f = document.getElementById('neoleap-raw-form');
+        if (f) f.remove();
+        setShowPaymentModal(false);
+      }, 2000);
     } catch (err) {
-      console.error("Failed to update subscription in backend", err);
+      console.error(err);
+      alert("حدث خطأ في الاتصال بالخادم.");
+      setShowPaymentModal(false);
     }
-    
-    alert(`تم تفعيل الباقة لك بنجاح، وربطها بملفك!\nتاريخ الانتهاء الجديد: ${expirationDate.toLocaleDateString('ar-SA')}`);
+  };
+
+  const handleSubscribe = async (tier: string) => {
+    // Determine the actual packageId matching the DB rows
+    const packageId = `${tier}_${isYearly ? 'yearly' : 'monthly'}`;
+    await generatePaymentForm(packageId, isYearly);
   };
 
   const handleBuyAd = async () => {
-    const plan = subscriptionPlans.find(p => p.id === 'single_job');
-    if (!plan) {
-      alert("عذراً، جارٍ تحميل خطة الإعلان، يرجى المحاولة بعد قليل.");
-      return;
-    }
-
-    alert("سيتم توجيهك لصفحة شراء الإعلان الآمنة... (تم التفعيل للتجربة)");
-    setHasActiveAd(true);
-    
-    let baseDate = new Date();
-    // Time stacking if they already have an active single job subscription
-    if (userProfile.subscription_tier === 'single_job' && userProfile.subscription_end_date) {
-      const currentEnd = new Date(userProfile.subscription_end_date);
-      if (currentEnd > baseDate) {
-        baseDate = currentEnd;
-      }
-    }
-
-    let expirationDate = baseDate;
-    if (plan.duration_type === 'years') {
-      expirationDate = addYears(expirationDate, plan.duration_value);
-    } else if (plan.duration_type === 'months') {
-      expirationDate = addMonths(expirationDate, plan.duration_value);
-    } else if (plan.duration_type === 'days') {
-      expirationDate = addDays(expirationDate, plan.duration_value);
-    }
-
-    const currentQuota = userProfile.jobs_quota || 0;
-    const newQuota = currentQuota + (plan.jobs_limit || 0);
-
-    setUserProfile({ 
-      ...userProfile, 
-      subscription_tier: 'single_job', 
-      subscription_end_date: expirationDate.toISOString(), 
-      subscription_is_yearly: false,
-      jobs_quota: newQuota
-    });
-
-    try {
-      const { supabase: sb } = await import('./lib/supabaseClient');
-      const { data: { user } } = await sb.auth.getUser();
-      if (user?.id) {
-        await sb
-          .from('companies')
-          .update({ 
-            subscription_plan: 'single_job',
-            subscription_end_date: expirationDate.toISOString(),
-            jobs_quota: newQuota
-          })
-          .eq('id', user.id);
-      }
-    } catch (err) {
-      console.error("Failed to update ad in backend", err);
-    }
+    await generatePaymentForm('single_job', false);
   };
+
+  const handleConfirmPayment = () => {
+    setShowPaymentModal(false);
+    setPaymentHtml("");
+    alert("تم تأكيد عملية الدفع بنجاح! \nتم إرسال إشعار للإدارة لتفعيل الباقة يدوياً في أقرب وقت.");
+  };
+
   return (
     <>
     {/* ====== ZATCA Legal Confirmation Modal ====== */}
@@ -2487,6 +2438,60 @@ export const SettingsPage = ({
         </div>{" "}
       </div>{" "}
     </div>
+
+    {showPaymentModal && (
+      <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 lg:p-10">
+        <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-full lg:h-[90vh] rounded-[32px] shadow-2xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+          <div className="flex items-center justify-between p-5 md:p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+            <h3 className="font-bold text-lg md:text-xl text-navy dark:text-white flex items-center gap-2">
+              <Lock size={20} className="text-emerald-500" /> نافذة الدفع الآمن
+            </h3>
+            <button
+              onClick={() => setShowPaymentModal(false)}
+              className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          
+          <div className="flex-1 w-full relative bg-slate-100 dark:bg-slate-950 overflow-hidden">
+            {paymentHtml ? (
+              <iframe 
+                srcDoc={paymentHtml} 
+                className="w-full h-full border-none absolute inset-0" 
+                title="بوابة الدفع"
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-slate-400 font-bold">
+                جاري التحميل...
+              </div>
+            )}
+          </div>
+          
+          <div className="p-5 md:p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              تتم عملية الدفع عبر خوادم Neoleap المشفرة والآمنة
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="px-6 py-3.5 font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all flex-1 sm:flex-none text-center"
+              >
+                إلغاء العملية
+              </button>
+              <button
+                onClick={handleConfirmPayment}
+                className="px-8 py-3.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 flex-1 sm:flex-none"
+              >
+                <CheckCircle size={18} /> تأكيد إتمام الدفع
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 };
@@ -2534,7 +2539,8 @@ export const ActiveJobs = ({
     setCopiedId(job.id);
     setTimeout(() => setCopiedId(null), 2000);
   };
-  const getJobIcon = (title: string) => {
+  const getJobIcon = (title?: string | null) => {
+    if (!title) return <Briefcase size={24} />;
     const t = title.toLowerCase();
     if (t.includes("خدمة") || t.includes("عملاء") || t.includes("customer"))
       return <User size={24} />;
@@ -2573,17 +2579,17 @@ export const ActiveJobs = ({
                   <div
                     className={`w-12 h-12 shrink-0 bg-primary/10 text-primary rounded-xl flex items-center justify-center shadow-inner-3d`}
                   >
-                    {getJobIcon(job.title)}
+                    {getJobIcon(job.title || job.campaignTitle)}
                   </div>
                   <div className="min-w-0">
                     <h3
                       className={`text-lg font-bold mb-1 text-navy dark:text-white truncate`}
-                      title={job.title}
+                      title={job.title || job.campaignTitle || "عنوان غير محدد"}
                     >
-                      {job.title}
+                      {job.title || job.campaignTitle || "عنوان غير محدد"}
                     </h3>
-                    <p className={`text-sm font-medium text-slate-500 dark:text-slate-400 truncate`} title={job.company}>
-                      {job.company}
+                    <p className={`text-sm font-medium text-slate-500 dark:text-slate-400 truncate`} title={job.company || "جهة غير محددة"}>
+                      {job.company || "جهة غير محددة"}
                     </p>
                   </div>
                 </div>

@@ -363,7 +363,7 @@ export const Dashboard = ({
               voiceEval: "",
               voiceEvalUrl: raw.voice_eval_url || "",
               customAnswers: Array.isArray(raw.custom_answers) ? raw.custom_answers : [],
-              decision: raw.decision || latestDecisions[raw.id] || "pending",
+              decision: (raw.decision === 'evaluated' ? 'pending' : raw.decision) || latestDecisions[raw.id] || "pending",
               rejection_reason: raw.rejection_reason || "",
               hr_notes: raw.hr_notes || "",
               cv_file_url: raw.cv_file_url,
@@ -1378,13 +1378,13 @@ export const Dashboard = ({
                               </div>
                             </td>
                           </tr>
-                        )}{" "}
+                        )}
                       </AnimatePresence>
-                    )}{" "}
-                  </tbody>{" "}
-                </table>{" "}
-              </div>{" "}
-            </div>{" "}
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         );
       case "إدارة الوظائف":

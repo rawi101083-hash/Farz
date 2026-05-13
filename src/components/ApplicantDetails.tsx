@@ -655,33 +655,44 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
                       أسئلة مصممة للتركيز على الفجوات ونقاط التقييم الحرجة:
                     </p>
                   </div>
-                  {[
-                    {
-                      q: "في سيرتك الذاتية، لاحظنا فجوة لمدة 6 أشهر تقريباً خلال عام 2021، هل يمكنك التوضيح عما كنت تفعله خلال تلك الفترة؟",
-                      reason: "الهدف التحليلي: للتأكد من أسباب الانقطاع وهل أثرت على مسار التطوير المهني وتحديث المهارات."
-                    },
-                    {
-                      q: "ذكرت خبرتك في Node.js، لكن كيف تقيم خبرتك الفعلية في التعامل مع خوادم AWS وتهيئتها من الصفر لمشاريع إنتاجية؟",
-                      reason: "الهدف التحليلي: المهارة مذكورة ضمن الكلمات المفتاحية لكن السيرة تفتقر لأمثلة عملية وتطبيقات حقيقية."
-                    },
-                    {
-                      q: "بناءً على ردك الصوتي حول طريقة تعاملك المنطقية مع الخلافات، هل يمكنك وضعنا في صورة موقف حقيقي فشلت فيه منهجيتك وكيف تكيفت معه؟",
-                      reason: "الهدف التحليلي: النبرة واثقة، لكن كمنسق فريق نحتاج للتحقق من تقبله للخطأ وردة فعله عند عدم سير الأمور كما هو مخطط لها."
+                  {(() => {
+                    const questions = applicant?.suggested_questions || [];
+                    if (!questions || questions.length === 0) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-12 text-center bg-white dark:bg-slate-800/50 rounded-[32px] border border-slate-100 dark:border-slate-700/50 border-dashed">
+                          <MessageCircle size={40} className="text-slate-300 dark:text-slate-600 mb-4" />
+                          <h3 className="text-lg font-bold text-navy dark:text-white mb-2">لا توجد أسئلة مقترحة حالياً</h3>
+                          <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm leading-relaxed">
+                            لم يتم إضافة أسئلة مقترحة لهذا المتقدم حتى الآن.
+                          </p>
+                        </div>
+                      );
                     }
-                  ].map((item, idx) => (
-                    <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                      <h4 className="font-bold text-navy dark:text-white mb-4 text-sm leading-relaxed flex items-start gap-3">
-                        <span className="w-8 h-8 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
-                          {idx + 1}
-                        </span>
-                        <span className="pt-1">{item.q}</span>
-                      </h4>
-                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 inline-block px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700">
-                        <span className="text-primary mr-1 text-sm bg-primary/10 px-2 py-0.5 rounded-lg ml-2">الهدف</span>
-                        {item.reason}
-                      </p>
-                    </div>
-                  ))}
+
+                    return questions.map((item: any, idx: number) => {
+                      const qText = typeof item === 'string' ? item : (item.q || item.question || "");
+                      const rText = typeof item === 'string' ? "" : (item.reason || item.objective || "");
+
+                      if (!qText) return null;
+
+                      return (
+                        <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+                          <h4 className="font-bold text-navy dark:text-white mb-4 text-sm leading-relaxed flex items-start gap-3">
+                            <span className="w-8 h-8 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
+                              {idx + 1}
+                            </span>
+                            <span className="pt-1">{qText}</span>
+                          </h4>
+                          {rText && (
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 inline-block px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700 mt-2">
+                              <span className="text-primary mr-1 text-sm bg-primary/10 px-2 py-0.5 rounded-lg ml-2">الهدف التحليلي</span>
+                              {rText}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
                 </motion.div>
               )}
             </div>{" "}
