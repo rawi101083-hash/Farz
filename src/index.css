@@ -18,7 +18,7 @@
 
 @layer base {
   body {
-    @apply font-sans bg-bg text-navy antialiased;
+    @apply font-sans bg-bg dark:bg-navy text-navy dark:text-white antialiased;
   }
   
   /* Enforce English numerals across the system for numeric inputs */

@@ -156,6 +156,10 @@ export const CreateJob = ({
           aiInstructions: aiInstructions.trim(),
           location: location.trim(),
           type: type,
+          types: types.join(","),
+          autoRejectCity: autoRejectCity,
+          autoRejectQualification: autoRejectQualification,
+          autoRejectExperience: autoRejectExperience,
           experience: experience,
           qualification: qualification,
           salaryMin: salaryMin,
@@ -184,6 +188,10 @@ export const CreateJob = ({
 
         location: (initialData?.location || "").trim(),
         type: initialData?.type || "دوام كامل",
+        types: (initialData?.types || (initialData?.type ? [initialData.type] : ["دوام كامل"])).join(","),
+        autoRejectCity: initialData?.autoRejectCity || false,
+        autoRejectQualification: initialData?.autoRejectQualification || false,
+        autoRejectExperience: initialData?.autoRejectExperience || false,
         experience: initialData?.experience || "لا يشترط خبرة",
         qualification: initialData?.qualification || "ثانوي",
         salaryMin: initialData?.salaryMin || "",
@@ -213,6 +221,10 @@ export const CreateJob = ({
 
         location: (safeBaseRole?.location || "").trim(),
         type: safeBaseRole?.type || "دوام كامل",
+        types: (safeBaseRole?.types || (safeBaseRole?.type ? [safeBaseRole.type] : ["دوام كامل"])).join(","),
+        autoRejectCity: safeBaseRole?.autoRejectCity || false,
+        autoRejectQualification: safeBaseRole?.autoRejectQualification || false,
+        autoRejectExperience: safeBaseRole?.autoRejectExperience || false,
         experience: safeBaseRole?.experience || "لا يشترط خبرة",
         qualification: safeBaseRole?.qualification || "ثانوي",
         salaryMin: safeBaseRole?.salaryMin || "",
@@ -310,22 +322,23 @@ export const CreateJob = ({
   // Common
   const [company, setCompany] = useState(() => {
     if (initialData?.company) return initialData.company;
-    const saved = localStorage.getItem("savedCompanyName");
-    return saved || userProfile?.companyName || "";
+    return userProfile?.companyName || "";
   });
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => {
     if (initialData?.companyLogo && !initialData.companyLogo.startsWith("blob:")) return initialData.companyLogo;
-    const saved = localStorage.getItem("savedCompanyLogo");
-    if (saved && saved.startsWith("blob:")) {
-      localStorage.removeItem("savedCompanyLogo");
-      return null;
-    }
-    return saved || null;
+    return userProfile?.companyLogo || null;
   });
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(initialData?.status === "مسودة" ? initialData.id : null);
   // Profile Data Mock
   const [type, setType] = useState(initialData?.type || "دوام كامل");
+  const [types, setTypes] = useState<string[]>(
+    initialData?.types || (initialData?.type ? [initialData.type] : ["دوام كامل"])
+  );
+  const [autoRejectCity, setAutoRejectCity] = useState(initialData?.autoRejectCity || false);
+  const [autoRejectQualification, setAutoRejectQualification] = useState(initialData?.autoRejectQualification || false);
+  const [autoRejectExperience, setAutoRejectExperience] = useState(initialData?.autoRejectExperience || false);
+
   const [location, setLocation] = useState(initialData?.location || "");
   const [locations, setLocations] = useState<string[]>(
     initialData?.locations || (initialData?.location ? [initialData.location] : [])
@@ -706,6 +719,10 @@ export const CreateJob = ({
         portfolioRequirement: requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined,
         customAttachments: [...customAttachments],
         type,
+        types: [...types],
+        autoRejectCity,
+        autoRejectQualification,
+        autoRejectExperience,
         location,
         experience,
         qualification,
@@ -747,6 +764,10 @@ export const CreateJob = ({
           portfolioRequirement: requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined,
           customAttachments: [...customAttachments],
           type,
+          types: [...types],
+          autoRejectCity,
+          autoRejectQualification,
+          autoRejectExperience,
           location,
           experience,
           qualification,
@@ -830,6 +851,10 @@ export const CreateJob = ({
         portfolioRequirement: requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined,
         customAttachments: [...customAttachments],
         type,
+        types: [...types],
+        autoRejectCity,
+        autoRejectQualification,
+        autoRejectExperience,
         location,
         experience,
         qualification,
@@ -863,6 +888,10 @@ export const CreateJob = ({
           portfolioRequirement: createJobType === "quick_link" ? undefined : (requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined),
           customAttachments: createJobType === "quick_link" ? [] : customAttachments,
           type,
+          types: [...types],
+          autoRejectCity,
+          autoRejectQualification,
+          autoRejectExperience,
           location,
           locations,
           targetMajors,
@@ -917,6 +946,10 @@ export const CreateJob = ({
       expectedSalaryRanges: createJobType === "quick_link" ? [] : expectedSalaryRanges,
       knockoutQuestions: createJobType === "quick_link" ? [] : knockoutQuestions,
       type: createJobType === "quick_link" ? "دوام كامل" : type,
+      types: createJobType === "quick_link" ? ["دوام كامل"] : types,
+      autoRejectCity: createJobType === "quick_link" ? false : autoRejectCity,
+      autoRejectQualification: createJobType === "quick_link" ? false : autoRejectQualification,
+      autoRejectExperience: createJobType === "quick_link" ? false : autoRejectExperience,
       aiInstructions: createJobType === "quick_link" ? "" : aiInstructions.trim(),
       title: mainTitle,
       companyLogo: companyLogo || undefined,
@@ -978,6 +1011,10 @@ export const CreateJob = ({
             locations,
             targetMajors,
             type,
+            types: [...types],
+            autoRejectCity,
+            autoRejectQualification,
+            autoRejectExperience,
             experience,
             qualification,
             salaryMin,
@@ -1016,6 +1053,10 @@ export const CreateJob = ({
       company,
       companyLogo: companyLogo || undefined,
       type,
+      types: [...types],
+      autoRejectCity,
+      autoRejectQualification,
+      autoRejectExperience,
       location,
       locations,
       targetMajors,
@@ -1398,7 +1439,6 @@ export const CreateJob = ({
                                 reader.onloadend = () => {
                                   const base64Url = reader.result as string;
                                   setCompanyLogo(base64Url);
-                                  localStorage.setItem("savedCompanyLogo", base64Url);
                                 };
                                 reader.readAsDataURL(file);
                               }
@@ -1450,7 +1490,6 @@ export const CreateJob = ({
                         value={company}
                         onChange={(e) => {
                           setCompany(e.target.value);
-                          localStorage.setItem("savedCompanyName", e.target.value);
                         }}
                         placeholder="مثال: شركة الحلول الذكية..."
                         className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
@@ -1595,14 +1634,48 @@ export const CreateJob = ({
                       نوع العمل <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <select
-                        value={type}
-                        onChange={(e) => setType(e.target.value)}
-                        className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none font-medium"
-                      >
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام كامل</option> <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام جزئي</option>
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">عن بعد</option> <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">تدريب</option>
-                      </select>
+                      <SearchableSelect
+                        options={["دوام كامل", "دوام جزئي", "عن بعد", "تدريب"].filter((c) => !types.includes(c))}
+                        value={""}
+                        onChange={(val) => {
+                          if (val && !types.includes(val)) {
+                            setTypes([...types, val]);
+                            setType(val); // fallback for older clients if needed
+                            if (val === "عن بعد" && !locations.includes("لا يشترط / كافة المدن")) {
+                              setLocations([...locations, "لا يشترط / كافة المدن"]);
+                            }
+                          }
+                        }}
+                        placeholder="اختر نوع العمل..."
+                      />
+                      {types.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                          <AnimatePresence>
+                            {types.map((t) => (
+                              <motion.span
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.8, opacity: 0 }}
+                                key={t}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
+                              >
+                                {t}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const newTypes = types.filter((l) => l !== t);
+                                    setTypes(newTypes.length > 0 ? newTypes : ["دوام كامل"]);
+                                    if (newTypes.length > 0) setType(newTypes[0]); else setType("دوام كامل");
+                                  }}
+                                  className="hover:text-red-500 transition-colors p-0.5"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </motion.span>
+                            ))}
+                          </AnimatePresence>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="space-y-3">
@@ -1648,6 +1721,12 @@ export const CreateJob = ({
                         </AnimatePresence>
                       </div>
                     )}
+                    <label className="flex items-center gap-2 cursor-pointer mt-2 w-fit" onClick={() => setAutoRejectCity(!autoRejectCity)}>
+                      <div className={`w-10 h-5 flex items-center rounded-full p-1 transition-colors ${autoRejectCity ? 'bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                        <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${autoRejectCity ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </div>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">استبعاد من لا يطابق المدينة</span>
+                    </label>
                   </div>
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
@@ -1665,6 +1744,12 @@ export const CreateJob = ({
                         <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
                       </select>
                     </div>
+                    <label className="flex items-center gap-2 cursor-pointer mt-2 w-fit" onClick={() => setAutoRejectExperience(!autoRejectExperience)}>
+                      <div className={`w-10 h-5 flex items-center rounded-full p-1 transition-colors ${autoRejectExperience ? 'bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                        <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${autoRejectExperience ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </div>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">استبعاد من يملك خبرة أقل</span>
+                    </label>
                   </div>
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
@@ -1683,6 +1768,12 @@ export const CreateJob = ({
                         <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
                       </select>
                     </div>
+                    <label className="flex items-center gap-2 cursor-pointer mt-2 w-fit" onClick={() => setAutoRejectQualification(!autoRejectQualification)}>
+                      <div className={`w-10 h-5 flex items-center rounded-full p-1 transition-colors ${autoRejectQualification ? 'bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                        <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${autoRejectQualification ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </div>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">استبعاد من يحمل مؤهلاً أقل</span>
+                    </label>
                   </div>
                 </div>
 
@@ -3003,7 +3094,7 @@ export const CreateJob = ({
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); handleBackAttempt(); }}
-                className="w-full md:w-auto bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-8 py-4 rounded-xl text-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all items-center gap-2"
+                className="w-full md:w-auto bg-slate-100 dark:bg-slate-800/80 border-2 border-transparent dark:border-slate-600 text-slate-600 dark:text-slate-300 px-8 py-4 rounded-xl text-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
               >
                 إلغاء والعودة
               </button>
@@ -3290,7 +3381,7 @@ const JobSuccess = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const link = `/apply/${job.id}`;
+  const link = `${window.location.origin}/apply/${job.id}`;
   const copyToClipboard = () => {
     // const verified = localStorage.getItem("company_verified") === "true";
     /* if (!verified) {
@@ -3388,7 +3479,7 @@ export const PublicJobPage = ({
 }) => {
   if (job.status === "مسودة") {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-bg dark:bg-navy flex items-center justify-center p-6">
         <div className="text-center bg-white dark:bg-slate-800 p-12 rounded-3xl shadow-xl max-w-lg w-full border border-slate-100 dark:border-slate-800">
           <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <Lock size={32} />
@@ -3411,7 +3502,7 @@ export const PublicJobPage = ({
   const displayCompany = job.company;
 
   return (
-    <div className="min-h-screen bg-slate-100 pt-32 pb-20 px-4">
+    <div className="min-h-screen bg-bg dark:bg-navy pt-32 pb-20 px-4">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -3473,7 +3564,7 @@ export const PublicJobPage = ({
                       <Clock size={16} className="text-white/80 shrink-0" /> {activeRole?.type || job.type}
                     </div>
                   )}
-                  {((activeRole?.locations?.length ? activeRole.locations : job.locations?.length ? job.locations : (activeRole?.location || job.location) ? [activeRole?.location || job.location] : []) as string[]).map((loc, idx) => (
+                  {((activeRole?.locations?.length ? activeRole.locations : job.locations?.length ? job.locations : (activeRole?.location || job.location) ? [activeRole?.location || job.location] : []) as string[]).filter(loc => loc !== "لا يشترط / كافة المدن").map((loc, idx) => (
                     <div key={idx} className="inline-flex items-center justify-center gap-2 bg-white/10 px-5 py-2.5 rounded-xl border border-white/20 text-sm font-bold shadow-sm backdrop-blur-sm">
                       <MapPin size={16} className="text-white/80 shrink-0" /> {loc}
                     </div>
@@ -3877,7 +3968,11 @@ const ManageJob = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-navy dark:text-white mr-2 flex items-center gap-1">نوع العمل <span className="text-red-500">*</span></label>
-                      <select required value={type} onChange={(e) => setType(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-bold text-navy dark:text-white appearance-none cursor-pointer">
+                      <select required value={type} onChange={(e) => {
+                        const val = e.target.value;
+                        setType(val);
+                        if (val === "عن بعد") setLocation("لا يشترط / كافة المدن");
+                      }} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-bold text-navy dark:text-white appearance-none cursor-pointer">
                         <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام كامل</option><option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام جزئي</option><option className="bg-white text-navy dark:bg-slate-800 dark:text-white">عن بعد</option><option className="bg-white text-navy dark:bg-slate-800 dark:text-white">تدريب</option>
                       </select>
                     </div>
@@ -4218,7 +4313,7 @@ const ManageJob = ({
                         return;
                       } */
                       navigator.clipboard.writeText(
-                        `/apply/${job.id}`,
+                        `${window.location.origin}/apply/${job.id}`,
                       );
                       window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "تم نسخ الرابط بنجاح.", type: "success" } }));
                     }}
@@ -4256,7 +4351,7 @@ const ManageJob = ({
         onVerify={() => {
           setShowVerificationModal(false);
           navigator.clipboard.writeText(
-            `/apply/${job.id}`,
+            `${window.location.origin}/apply/${job.id}`,
           );
           window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "تم نسخ الرابط وتفعيل الحساب بنجاح!", type: "success" } }));
         }}

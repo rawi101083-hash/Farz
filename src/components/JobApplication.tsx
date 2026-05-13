@@ -72,6 +72,7 @@ export const ApplicantForm = ({
   selectedRoleId?: string | null;
   onBackToJobs?: () => void;
   onSubmit: () => void;
+  isPreview?: boolean;
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,6 +88,7 @@ export const ApplicantForm = ({
     city: "",
     education: "",
     experience: "",
+    type: "",
     linkedin: "",
     source: "",
     knockoutAnswers: {} as Record<string, string>,
@@ -346,10 +348,17 @@ export const ApplicantForm = ({
     setIsSubmitting(true);
     const formData = new FormData(formRef.current);
     const submitData = Object.fromEntries(formData.entries());
-    const customAnswers = customQuestions.map((q: any, idx: number) => ({
-      question: q.text,
-      answer: submitData[`customQuestion_${idx}`],
-    }));
+    const customAnswers = [
+      { question: "المدينة", answer: submitData.city || formDataState.city },
+      { question: "أعلى مؤهل علمي", answer: submitData.education || formDataState.education },
+      { question: "سنوات الخبرة", answer: submitData.experience || formDataState.experience },
+      ...((formDataState.type || submitData.type) ? [{ question: "نوع العمل", answer: submitData.type || formDataState.type }] : []),
+      { question: "مدة الانضمام / الجاهزية للعمل", answer: submitData.availability || (formDataState as any).availability || "" },
+      ...customQuestions.map((q: any, idx: number) => ({
+        question: q.text,
+        answer: submitData[`customQuestion_${idx}`],
+      }))
+    ];
     const submittedCustomAttachments = customAttachments.map(
       (att: any, idx: number) => ({
         attachment_name: att.attachment_name,
@@ -385,6 +394,9 @@ export const ApplicantForm = ({
       delete submitData[`portfolio_${idx}`];
     });
     let isAutoRejected = false;
+    let autoRejectReason = "";
+
+    // 1. Knockout Questions Check
     if (activeRole?.knockoutQuestions && activeRole.knockoutQuestions.length > 0) {
       const answers = formDataState.knockoutAnswers;
       isAutoRejected = activeRole.knockoutQuestions.some((kq: any, idx: number) => {
@@ -399,14 +411,71 @@ export const ApplicantForm = ({
         }
         return ans !== kq.requiredAnswer;
       });
+      if (isAutoRejected) autoRejectReason = "لم يجتز أسئلة الاستبعاد التلقائي";
+    }
+
+    // 2. City Check
+    if (!isAutoRejected && activeRole?.autoRejectCity && formDataState.city) {
+      // If the job locations do NOT include the applicant's city AND do not have "لا يشترط / كافة المدن"
+      const allowedLocs = activeRole.locations || [];
+      if (!allowedLocs.includes(formDataState.city) && !allowedLocs.includes("لا يشترط / كافة المدن")) {
+        isAutoRejected = true;
+        autoRejectReason = "المدينة لا تطابق متطلبات الوظيفة";
+      }
+    }
+
+    // 3. Qualification Check
+    if (!isAutoRejected && activeRole?.autoRejectQualification && formDataState.education) {
+      const getQualRank = (q?: string) => {
+        if (!q || q.includes("لا يشترط")) return 0;
+        if (q.includes("ثانوي")) return 1;
+        if (q.includes("دبلوم")) return 2;
+        if (q.includes("بكالوريوس")) return 3;
+        if (q.includes("ماجستير")) return 4;
+        if (q.includes("دكتوراه")) return 5;
+        return 0;
+      };
+      
+      const reqRank = getQualRank(activeRole.qualification);
+      const appRank = getQualRank(formDataState.education);
+      
+      if (appRank < reqRank) {
+        isAutoRejected = true;
+        autoRejectReason = "المؤهل أقل من الحد الأدنى المطلوب";
+      }
+    }
+
+    // 4. Experience Check
+    if (!isAutoRejected && activeRole?.autoRejectExperience && formDataState.experience) {
+      const getExpRank = (e?: string) => {
+        if (!e || e.includes("لا يشترط")) return 0;
+        if (e.includes("أقل من سنة")) return 1;
+        if (e.includes("1-3")) return 2;
+        if (e.includes("3-5")) return 3;
+        if (e.includes("5+")) return 4;
+        return 0;
+      };
+
+      const reqRank = getExpRank(activeRole.experience);
+      const appRank = getExpRank(formDataState.experience);
+      
+      if (appRank < reqRank) {
+        isAutoRejected = true;
+        autoRejectReason = "سنوات الخبرة أقل من الحد الأدنى المطلوب";
+      }
     }
 
     if (isAutoRejected) {
-      console.log("Knockout Question failed: Applicant Auto-Rejected. Appended skipAI=true to avoid API costs.");
+      console.log(`Applicant Auto-Rejected (${autoRejectReason}). Appended skipAI=true to avoid API costs.`);
     }
 
     // Asynchronous background task for PDF OCR and AI webhook
     const processAndSubmitBackground = async () => {
+      if (isPreview) {
+        window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "هذه معاينة فقط: لم يتم حفظ البيانات", type: "warning" } }));
+        console.log("Preview Mode: Skipping database and webhook execution.");
+        return;
+      }
       let cv_file_url = "";
       let applicant_db_id = "";
       const cvFile = resumeFile || submitData.resume || submitData.cv || (formRef.current?.querySelector('input[type="file"]') as HTMLInputElement)?.files?.[0];
@@ -471,7 +540,7 @@ export const ApplicantForm = ({
             phone: (submitData.phone || "").toString(),
             cv_file_url: cv_file_url || null,
             decision: isAutoRejected ? "filtered" : "pending",
-            rejection_reason: isAutoRejected ? "مرفوض آلياً (لم يجتز أسئلة التصفية)" : null,
+            rejection_reason: isAutoRejected ? `مرفوض آلياً (${autoRejectReason})` : null,
             custom_answers: customAnswers
           }])
           .select("id")
@@ -555,7 +624,7 @@ export const ApplicantForm = ({
 
   if (formStep === "success") {
     return (
-      <div className="min-h-screen pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
+      <div className="min-h-screen bg-bg dark:bg-navy pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 -z-10 translate-x-1/2" />
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -566,10 +635,10 @@ export const ApplicantForm = ({
             <CheckCircle size={48} />
           </div>
           <h2 className="text-3xl font-bold mb-4 text-navy dark:text-white">
-            تم إرسال طلبك بنجاح!
+            {isPreview ? "تمت تجربة التقديم بنجاح!" : "تم إرسال طلبك بنجاح!"}
           </h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-10">
-            شكراً لاهتمامك بالانضمام إلينا. سنقوم بمراجعة طلبك والتواصل معك في أقرب وقت. نتمنى لك التوفيق!
+            {isPreview ? "هذه مجرد معاينة حية لشكل الشاشة التي ستظهر للمتقدمين. لم يتم حفظ أي بيانات فعلية في النظام." : "شكراً لاهتمامك بالانضمام إلينا. سنقوم بمراجعة طلبك والتواصل معك في أقرب وقت. نتمنى لك التوفيق!"}
           </p>
           <div className="space-y-4">
             <button
@@ -593,7 +662,7 @@ export const ApplicantForm = ({
 
   if (isClosed || now > jobEnd) {
     return (
-      <div className="min-h-screen pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
+      <div className="min-h-screen bg-bg dark:bg-navy pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 -z-10 translate-x-1/2" />{" "}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -615,7 +684,7 @@ export const ApplicantForm = ({
   }
   if (now < jobStart) {
     return (
-      <div className="min-h-screen pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
+      <div className="min-h-screen bg-bg dark:bg-navy pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 -z-10 translate-x-1/2" />{" "}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -637,7 +706,7 @@ export const ApplicantForm = ({
     );
   }
   return (
-    <div className="min-h-screen pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen bg-bg dark:bg-navy pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
       <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 -z-10 translate-x-1/2" />{" "}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -950,12 +1019,9 @@ export const ApplicantForm = ({
                     className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
                   >
                     <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المدينة</option>
-                    <option value="الرياض" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الرياض</option>
-                    <option value="جدة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">جدة</option>
-                    <option value="الدمام" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الدمام</option>
-                    <option value="الخبر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الخبر</option>
-                    <option value="مكة المكرمة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مكة المكرمة</option>
-                    <option value="المدينة المنورة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">المدينة المنورة</option>
+                    {SAUDI_CITIES.filter(city => city !== "لا يشترط / كافة المدن").map(city => (
+                      <option key={city} value={city} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{city}</option>
+                    ))}
                     <option value="أخرى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مدينة أخرى</option>
                   </select>
                   <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
@@ -989,8 +1055,55 @@ export const ApplicantForm = ({
                 </div>
               </div>
 
+              <div className="space-y-3">
+                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                  سنوات الخبرة <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    required
+                    name="experience"
+                    value={formDataState.experience}
+                    onChange={handleInputChange}
+                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر سنوات الخبرة</option>
+                    <option value="لا يشترط خبرة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط خبرة</option>
+                    <option value="أقل من سنة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أقل من سنة</option>
+                    <option value="1-3 سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">1-3 سنوات</option>
+                    <option value="3-5 سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">3-5 سنوات</option>
+                    <option value="5+ سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
+                  </select>
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                    <ChevronDown size={18} />
+                  </div>
+                </div>
+              </div>
 
-
+              {((activeRole?.types?.length || 0) > 1 || (!activeRole?.types && (job?.types?.length || 0) > 1)) && (
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                    نوع العمل <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      required
+                      name="type"
+                      value={formDataState.type}
+                      onChange={handleInputChange}
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر نوع العمل</option>
+                      {(activeRole?.types || job?.types || []).map((t: string) => (
+                        <option key={t} value={t} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{t}</option>
+                      ))}
+                    </select>
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                      <ChevronDown size={18} />
+                    </div>
+                  </div>
+                </div>
+              )}
 
 
 

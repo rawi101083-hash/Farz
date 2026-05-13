@@ -57,6 +57,7 @@ import {
   Linkedin,
   Check,
 } from "lucide-react";
+import { addDays, addMonths, addYears } from "date-fns";
 import {
   BarChart,
   Bar,
@@ -104,6 +105,7 @@ export const saveUserSkills = (title: string, skills: string[]) => {
 };
 
 export const SAUDI_CITIES = [
+  "لا يشترط / كافة المدن",
   "الرياض",
   "جدة",
   "مكة المكرمة",
@@ -300,6 +302,10 @@ export interface Role {
   locations?: string[];
   targetMajors?: string[];
   type?: string;
+  types?: string[];
+  autoRejectCity?: boolean;
+  autoRejectQualification?: boolean;
+  autoRejectExperience?: boolean;
   experience?: string;
   qualification?: string;
   salaryMin?: string;
@@ -336,6 +342,10 @@ export interface Job {
   entityType?: "company" | "freelance";
   city?: string;
   type: string;
+  types?: string[];
+  autoRejectCity?: boolean;
+  autoRejectQualification?: boolean;
+  autoRejectExperience?: boolean;
   description: string;
   roleSummary?: string;
   responsibilities?: string;
@@ -468,7 +478,7 @@ export const PreviewModal = ({ job, onClose }: { job: Job; onClose: () => void }
       : "landing"
   );
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-100 dark:bg-slate-900 flex flex-col">
+    <div className="fixed inset-0 z-[100] bg-bg dark:bg-navy flex flex-col">
       <div className="h-16 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-6 bg-white dark:bg-slate-800 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
@@ -511,6 +521,7 @@ export const PreviewModal = ({ job, onClose }: { job: Job; onClose: () => void }
               alert("نموذج المعاينة: لن يتم إرسال أي بيانات إلى الخادم.");
               onClose();
             }}
+            isPreview={true}
           />
         )}
       </div>{" "}
@@ -1614,7 +1625,21 @@ export const SettingsPage = ({
   initialTab?: string;
 }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
   const isLocked = userProfile.fields_locked === true;
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const { supabase: sb } = await import('./lib/supabaseClient');
+        const { data } = await sb.from('plans').select('*');
+        if (data) setSubscriptionPlans(data);
+      } catch (err) {
+        console.error("Failed to fetch plans", err);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   useEffect(() => {
     const newErrors: Record<string, string> = {};
@@ -1690,6 +1715,7 @@ export const SettingsPage = ({
         entity_type: userProfile.entityType,
         city: userProfile.city || null,
         subscription_plan: userProfile.subscription_tier || 'free',
+        company_logo: userProfile.companyLogo || null,
       };
 
       if (!isLocked) {
@@ -1703,6 +1729,15 @@ export const SettingsPage = ({
 
       const { error } = await sb.from('companies').upsert(payload, { onConflict: 'id' });
       if (error) throw error;
+
+      // Update name and title in user_metadata
+      const { error: updateError } = await sb.auth.updateUser({
+        data: {
+          full_name: userProfile.name || '',
+          job_title: userProfile.title || ''
+        }
+      });
+      if (updateError) console.error("Failed to update user_metadata", updateError);
 
       if (shouldLock) {
         setUserProfile({ ...userProfile, fields_locked: true });
@@ -1741,27 +1776,121 @@ export const SettingsPage = ({
   const [isYearly, setIsYearly] = useState(false);
 
   const handleSubscribe = async (tier: string) => {
-    // Simulate immediate success in UI
-    setUserProfile({ ...userProfile, subscription_tier: tier });
+    const planId = `${tier}_${isYearly ? 'yearly' : 'monthly'}`;
+    const plan = subscriptionPlans.find(p => p.id === planId);
     
-    // Sync directly to backend immediately
-    if (user?.id) {
-      try {
-        await supabase
-          .from('companies')
-          .update({ subscription_plan: tier })
-          .eq('id', user.id);
-      } catch (err) {
-        console.error("Failed to update subscription in backend", err);
+    if (!plan) {
+      alert("عذراً، جارٍ تحميل باقات الاشتراك، يرجى المحاولة بعد قليل.");
+      return;
+    }
+
+    let baseDate = new Date();
+    // Time Stacking Logic: if active subscription exists, stack it
+    if (userProfile.subscription_end_date) {
+      const currentEnd = new Date(userProfile.subscription_end_date);
+      if (currentEnd > baseDate) {
+        baseDate = currentEnd;
       }
     }
+
+    let expirationDate = baseDate;
+    if (plan.duration_type === 'years') {
+      expirationDate = addYears(expirationDate, plan.duration_value);
+    } else if (plan.duration_type === 'months') {
+      expirationDate = addMonths(expirationDate, plan.duration_value);
+    } else if (plan.duration_type === 'days') {
+      expirationDate = addDays(expirationDate, plan.duration_value);
+    }
+
+    const currentQuota = userProfile.jobs_quota || 0;
+    const newQuota = currentQuota + (plan.jobs_limit || 0);
+
+    // Simulate immediate success in UI
+    localStorage.setItem('subscription_is_yearly', isYearly.toString());
+    setUserProfile({ 
+      ...userProfile, 
+      subscription_tier: tier, 
+      subscription_end_date: expirationDate.toISOString(), 
+      subscription_is_yearly: isYearly,
+      jobs_quota: newQuota 
+    });
     
-    alert("تم تفعيل الباقة لك بنجاح، وربطها بملفك!");
+    // Sync directly to backend immediately
+    try {
+      const { supabase: sb } = await import('./lib/supabaseClient');
+      const { data: { user } } = await sb.auth.getUser();
+      if (user?.id) {
+        await sb
+          .from('companies')
+          .update({ 
+             subscription_plan: planId,
+             subscription_end_date: expirationDate.toISOString(),
+             jobs_quota: newQuota
+          })
+          .eq('id', user.id);
+      }
+    } catch (err) {
+      console.error("Failed to update subscription in backend", err);
+    }
+    
+    alert(`تم تفعيل الباقة لك بنجاح، وربطها بملفك!\nتاريخ الانتهاء الجديد: ${expirationDate.toLocaleDateString('ar-SA')}`);
   };
 
-  const handleBuyAd = () => {
+  const handleBuyAd = async () => {
+    const plan = subscriptionPlans.find(p => p.id === 'single_job');
+    if (!plan) {
+      alert("عذراً، جارٍ تحميل خطة الإعلان، يرجى المحاولة بعد قليل.");
+      return;
+    }
+
     alert("سيتم توجيهك لصفحة شراء الإعلان الآمنة... (تم التفعيل للتجربة)");
     setHasActiveAd(true);
+    
+    let baseDate = new Date();
+    // Time stacking if they already have an active single job subscription
+    if (userProfile.subscription_tier === 'single_job' && userProfile.subscription_end_date) {
+      const currentEnd = new Date(userProfile.subscription_end_date);
+      if (currentEnd > baseDate) {
+        baseDate = currentEnd;
+      }
+    }
+
+    let expirationDate = baseDate;
+    if (plan.duration_type === 'years') {
+      expirationDate = addYears(expirationDate, plan.duration_value);
+    } else if (plan.duration_type === 'months') {
+      expirationDate = addMonths(expirationDate, plan.duration_value);
+    } else if (plan.duration_type === 'days') {
+      expirationDate = addDays(expirationDate, plan.duration_value);
+    }
+
+    const currentQuota = userProfile.jobs_quota || 0;
+    const newQuota = currentQuota + (plan.jobs_limit || 0);
+
+    setUserProfile({ 
+      ...userProfile, 
+      subscription_tier: 'single_job', 
+      subscription_end_date: expirationDate.toISOString(), 
+      subscription_is_yearly: false,
+      jobs_quota: newQuota
+    });
+
+    try {
+      const { supabase: sb } = await import('./lib/supabaseClient');
+      const { data: { user } } = await sb.auth.getUser();
+      if (user?.id) {
+        await sb
+          .from('companies')
+          .update({ 
+            subscription_plan: 'single_job',
+            subscription_end_date: expirationDate.toISOString(),
+            jobs_quota: newQuota
+          })
+          .eq('id', user.id);
+      }
+    } catch (err) {
+      console.error("Failed to update ad in backend", err);
+    }
   };
   return (
     <>
@@ -1860,7 +1989,7 @@ export const SettingsPage = ({
       <header>
         {" "}
         <h1 className={`text-4xl font-bold mb-3 text-navy dark:text-white`}>
-          الإعدادات
+          إدارة الحساب
         </h1>{" "}
         <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
           إدارة حسابك، اشتراكك، وتكاملات النظام.
@@ -1899,11 +2028,11 @@ export const SettingsPage = ({
                 <label className="cursor-pointer relative overflow-hidden w-24 h-24 rounded-3xl bg-slate-100 border-slate-200 dark:bg-slate-700 dark:border-slate-600 flex items-center justify-center border-2 border-dashed group hover:border-primary/50 transition-colors">
                   <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                     if (e.target.files && e.target.files[0]) {
-                      setUserProfile({ ...userProfile, avatar: URL.createObjectURL(e.target.files[0]) });
+                      setUserProfile({ ...userProfile, companyLogo: URL.createObjectURL(e.target.files[0]) });
                     }
                   }} />
-                  {userProfile.avatar ? (
-                    <img src={userProfile.avatar} className="w-full h-full object-cover" alt="User Avatar" />
+                  {userProfile.companyLogo ? (
+                    <img src={userProfile.companyLogo} className="w-full h-full object-cover" alt="User Avatar" />
                   ) : (
                     <Upload size={32} className="text-slate-300 group-hover:text-primary transition-colors" />
                   )}
@@ -1914,11 +2043,11 @@ export const SettingsPage = ({
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-bold text-navy dark:text-slate-300">الاسم بالكامل</label>
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-navy dark:text-slate-300">الاسم</label>
                   <input type="text" value={userProfile.name} onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
                 </div>
-                <div className="space-y-2 md:col-span-2">
+                <div className="space-y-2">
                   <label className="text-sm font-bold text-navy dark:text-slate-300">المسمى الوظيفي</label>
                   <input type="text" value={userProfile.title} onChange={(e) => setUserProfile({ ...userProfile, title: e.target.value })} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
                 </div>
@@ -1930,7 +2059,7 @@ export const SettingsPage = ({
               <button
                 onClick={handleSaveProfile}
                 disabled={isSaving}
-                className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 mt-4 ${saveSuccess ? 'bg-emerald-500 text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:cursor-not-allowed'}`}
+                className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 mt-4 ${saveSuccess ? 'bg-primary text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:cursor-not-allowed'}`}
               >
                 {isSaving ? (
                   <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
@@ -2064,7 +2193,7 @@ export const SettingsPage = ({
               <button 
                 onClick={handleSaveProfile}
                 disabled={Object.keys(errors).length > 0 || isSaving}
-                className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 ${Object.keys(errors).length > 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500' : saveSuccess ? 'bg-emerald-500 text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30'}`}
+                className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 ${Object.keys(errors).length > 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500' : saveSuccess ? 'bg-primary text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30'}`}
               >
                 {isSaving ? (
                   <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
@@ -2120,16 +2249,34 @@ export const SettingsPage = ({
               {(() => {
                 const activeTier = userProfile?.subscription_tier;
                 const highlightedTier = (activeTier === 'startup' || activeTier === 'business' || activeTier === 'enterprise') ? activeTier : 'business';
+                
+                const startupPlan = subscriptionPlans.find(p => p.id === `startup_${isYearly ? 'yearly' : 'monthly'}`);
+                const businessPlan = subscriptionPlans.find(p => p.id === `business_${isYearly ? 'yearly' : 'monthly'}`);
+                const enterprisePlan = subscriptionPlans.find(p => p.id === `enterprise_${isYearly ? 'yearly' : 'monthly'}`);
+                
+                const startupPrice = startupPlan?.price.toLocaleString() || (isYearly ? '4,990' : '499');
+                const businessPrice = businessPlan?.price.toLocaleString() || (isYearly ? '14,990' : '1,499');
+                const enterprisePrice = enterprisePlan?.price.toLocaleString() || (isYearly ? '34,990' : '3,499');
+                
+                const startupFeatures = startupPlan?.features || ["3 وظائف نشطة", isYearly ? "12,000 سيرة ذاتية سنوياً" : "1,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+                const businessFeatures = businessPlan?.features || ["10 وظائف نشطة", isYearly ? "60,000 سيرة ذاتية سنوياً" : "5,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+                const enterpriseFeatures = enterprisePlan?.features || ["وظائف غير محدودة", isYearly ? "180,000 سيرة ذاتية سنوياً" : "15,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+
+                const showStartup = startupPlan ? startupPlan.is_active !== false : true;
+                const showBusiness = businessPlan ? businessPlan.is_active !== false : true;
+                const showEnterprise = enterprisePlan ? enterprisePlan.is_active !== false : true;
+
                 return billingCycle === 'subscription' && (
                   <div className="flex flex-col md:flex-row justify-center gap-4 items-center w-full max-w-5xl mx-auto mt-2">
                     
                     {/* انطلاق (Right) */}
+                    {showStartup && (
                     <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-5 cursor-default ${highlightedTier === 'startup' ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 max-w-[260px] border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-4 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 max-w-[240px] border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1 hover:z-20'}`}>
                       <h3 className={`${highlightedTier === 'startup' ? 'text-xl font-black text-[#0D9488]' : 'text-lg font-black text-navy dark:text-white'} mb-2`}>نمو</h3>
                       <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">الخطوة الأولى لبناء فريق عملك بكفاءة عالية.</p>
                       
                       <div className="flex flex-col items-center mb-5 mt-1">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{isYearly ? '4,990' : '499'}</span>
+                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{startupPrice}</span>
                         <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
                       </div>
                       
@@ -2138,9 +2285,7 @@ export const SettingsPage = ({
                       </div>
                       
                       <ul className={`${highlightedTier === 'startup' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
-                        {[
-                          "3 وظائف نشطة", isYearly ? "12,000 سيرة ذاتية سنوياً" : "1,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
-                        ].map((feature, idx) => (
+                        {startupFeatures.map((feature: string, idx: number) => (
                           <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'startup' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
                             <CheckCircle size={highlightedTier === 'startup' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'startup' ? 2.5 : 2} />
                             {feature}
@@ -2148,10 +2293,13 @@ export const SettingsPage = ({
                         ))}
                       </ul>
                       
-                      {activeTier === 'startup' ? (
-                        <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex justify-center items-center gap-2 overflow-hidden">
-                          <CheckCircle size={18} className="text-white relative z-10" strokeWidth={2.5} />
-                          <span className="relative z-10">باقتك الحالية</span>
+                      {activeTier === 'startup' && (userProfile as any).subscription_is_yearly === isYearly ? (
+                        <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
+                          <div className="flex items-center gap-2 relative z-10">
+                            <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
+                            <span>باقتك الحالية</span>
+                          </div>
+                          {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
                         </button>
                       ) : (
                         <button onClick={() => handleSubscribe('startup')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'startup' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
@@ -2159,14 +2307,16 @@ export const SettingsPage = ({
                         </button>
                       )}
                     </div>
+                    )}
 
                     {/* أعمال (Center) */}
+                    {showBusiness && (
                     <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-5 cursor-default ${highlightedTier === 'business' ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 max-w-[260px] border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-4 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 max-w-[240px] border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1 hover:z-20'}`}>
                       <h3 className={`${highlightedTier === 'business' ? 'text-xl font-black text-[#0D9488]' : 'text-lg font-black text-navy dark:text-white'} mb-2`}>أعمال</h3>
                       <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">الأكثر طلباً للشركات لتسريع وتيرة التوظيف.</p>
                       
                       <div className="flex flex-col items-center mb-5 mt-1">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{isYearly ? '14,990' : '1,499'}</span>
+                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{businessPrice}</span>
                         <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
                       </div>
                       
@@ -2175,9 +2325,7 @@ export const SettingsPage = ({
                       </div>
                       
                       <ul className={`${highlightedTier === 'business' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
-                        {[
-                          "10 وظائف نشطة", isYearly ? "60,000 سيرة ذاتية سنوياً" : "5,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
-                        ].map((feature, idx) => (
+                        {businessFeatures.map((feature: string, idx: number) => (
                           <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'business' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
                             <CheckCircle size={highlightedTier === 'business' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'business' ? 2.5 : 2} />
                             {feature}
@@ -2185,10 +2333,13 @@ export const SettingsPage = ({
                         ))}
                       </ul>
                       
-                      {activeTier === 'business' ? (
-                        <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex justify-center items-center gap-2 overflow-hidden">
-                          <CheckCircle size={18} className="text-white relative z-10" strokeWidth={2.5} />
-                          <span className="relative z-10">باقتك الحالية</span>
+                      {activeTier === 'business' && (userProfile as any).subscription_is_yearly === isYearly ? (
+                        <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
+                          <div className="flex items-center gap-2 relative z-10">
+                            <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
+                            <span>باقتك الحالية</span>
+                          </div>
+                          {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
                         </button>
                       ) : (
                         <button onClick={() => handleSubscribe('business')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'business' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
@@ -2196,27 +2347,25 @@ export const SettingsPage = ({
                         </button>
                       )}
                     </div>
+                    )}
 
                     {/* احترافية (Left) */}
+                    {showEnterprise && (
                     <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-5 cursor-default ${highlightedTier === 'enterprise' ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 max-w-[260px] border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-4 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 max-w-[240px] border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1 hover:z-20'}`}>
                       <h3 className={`${highlightedTier === 'enterprise' ? 'text-xl font-black text-[#0D9488]' : 'text-lg font-black text-navy dark:text-white'} mb-2`}>الشركات الكبرى</h3>
                       <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">قدرات لا محدودة للمؤسسات الكبرى والتوظيف المكثف.</p>
                       
                       <div className="flex flex-col items-center mb-5 mt-1">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{isYearly ? '34,990' : '3,499'}</span>
+                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{enterprisePrice}</span>
                         <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
                       </div>
                       
-                      {isYearly && (
-                        <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
-                          احصل على شهرين مجاناً
-                        </div>
-                      )}
+                      <div className={`bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm ${!isYearly && 'opacity-0 select-none'}`}>
+                        احصل على شهرين مجاناً
+                      </div>
                       
                       <ul className={`${highlightedTier === 'enterprise' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
-                        {[
-                          "وظائف غير محدودة", isYearly ? "180,000 سيرة ذاتية سنوياً" : "15,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
-                        ].map((feature, idx) => (
+                        {enterpriseFeatures.map((feature: string, idx: number) => (
                           <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'enterprise' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
                             <CheckCircle size={highlightedTier === 'enterprise' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'enterprise' ? 2.5 : 2} />
                             {feature}
@@ -2224,10 +2373,13 @@ export const SettingsPage = ({
                         ))}
                       </ul>
                       
-                      {activeTier === 'enterprise' ? (
-                        <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex justify-center items-center gap-2 overflow-hidden">
-                          <CheckCircle size={18} className="text-white relative z-10" strokeWidth={2.5} />
-                          <span className="relative z-10">باقتك الحالية</span>
+                      {activeTier === 'enterprise' && (userProfile as any).subscription_is_yearly === isYearly ? (
+                        <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
+                          <div className="flex items-center gap-2 relative z-10">
+                            <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
+                            <span>باقتك الحالية</span>
+                          </div>
+                          {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
                         </button>
                       ) : (
                         <button onClick={() => handleSubscribe('enterprise')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'enterprise' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
@@ -2235,6 +2387,7 @@ export const SettingsPage = ({
                         </button>
                       )}
                     </div>
+                    )}
 
                   </div>
                 );
@@ -2258,7 +2411,7 @@ export const SettingsPage = ({
                     
                     <ul className="space-y-2 mb-6 w-full px-1">
                       {[
-                        "نشر إعلان وظيفي واحد", "500 سيرة ذاتية للفرز", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
+                        "إعلان وظيفي لمدة 45 يوم", "500 سيرة ذاتية للفرز", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
                       ].map((feature, idx) => (
                         <li key={idx} className={`flex items-center gap-2 ${hasActiveAd ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-[13px] font-semibold text-slate-700 dark:text-slate-300'}`}>
                           <CheckCircle size={hasActiveAd ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={hasActiveAd ? 2.5 : 2} />
@@ -2268,9 +2421,12 @@ export const SettingsPage = ({
                     </ul>
                     
                     {hasActiveAd ? (
-                      <button className="relative w-full py-3 rounded-lg text-xs font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-inner cursor-default mt-auto flex justify-center items-center gap-2 overflow-hidden">
-                        <CheckCircle size={16} className="text-white relative z-10" strokeWidth={2.5} />
-                        <span className="relative z-10">الإعلان الفعال</span>
+                      <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default mt-auto flex flex-col justify-center items-center overflow-hidden">
+                        <div className="flex items-center gap-2 relative z-10">
+                          <CheckCircle size={16} className="text-white" strokeWidth={2.5} />
+                          <span>الإعلان الفعال</span>
+                        </div>
+                        {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
                       </button>
                     ) : (
                       <button onClick={handleBuyAd} className="w-full py-3 rounded-lg text-xs font-bold transition-all mt-auto bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95">
@@ -2374,7 +2530,7 @@ export const ActiveJobs = ({
       alert("لا يوجد رابط حالياً، يجب نشر الإعلان وظيفياً أولاً.");
       return;
     }
-    navigator.clipboard.writeText(`https://smart-recruitment.sa/apply/${job.id}`);
+    navigator.clipboard.writeText(`${window.location.origin}/apply/${job.id}`);
     setCopiedId(job.id);
     setTimeout(() => setCopiedId(null), 2000);
   };
@@ -2400,7 +2556,7 @@ export const ActiveJobs = ({
           onClick={() => setOpenDropdownId(null)}
         />
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         {" "}
         {jobs.map((job) => {
           const expired = isJobExpired(job);
@@ -2408,59 +2564,68 @@ export const ActiveJobs = ({
             <motion.div
               key={job.id}
               style={{ zIndex: openDropdownId === job.id ? 20 : 1 }}
-              whileHover={!expired ? { y: -5 } : {}}
-              className={`bg-white relative dark:bg-slate-800 p-8 rounded-[32px] border border-white dark:border-slate-700 shadow-xl group flex flex-col transition-all ${expired ? "opacity-60 grayscale-[0.3]" : "shadow-slate-200/40"}`}
+              whileHover={{ y: -5 }}
+              className={`bg-white relative dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-lg group flex flex-col transition-all shadow-slate-200/40`}
             >
               {" "}
-              <div className="flex items-center justify-between mb-6">
-                {" "}
-                <div
-                  className={`w-14 h-14 ${expired ? "bg-slate-100 text-slate-400 dark:text-slate-500" : "bg-primary/10 text-primary"} rounded-2xl flex items-center justify-center shadow-inner-3d`}
-                >
-                  {" "}
-                  {getJobIcon(job.title)}{" "}
-                </div>{" "}
-                <div
-                  className={`px-3 py-1 rounded-full text-xs font-bold ${expired ? "bg-slate-100 text-slate-500 dark:text-slate-400 dark:text-slate-500" : "bg-green-100 text-green-700"}`}
-                >
-                  {" "}
-                  {expired ? "منتهي/مغلق" : job.status}{" "}
-                </div>{" "}
-              </div>{" "}
-              <h3
-                className={`text-xl font-bold mb-1 ${expired ? "text-slate-500 dark:text-slate-400 dark:text-slate-500" : "text-navy dark:text-white"}`}
-              >
-                {job.title}
-              </h3>{" "}
-              <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 text-sm font-medium mb-6">
-                {job.company}
-              </p>{" "}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                {" "}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                  {" "}
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase mb-1">
-                    المتقدمين
-                  </p>{" "}
-                  <p
-                    className={`text-lg font-bold ${expired ? "text-slate-500 dark:text-slate-400 dark:text-slate-500" : "text-navy dark:text-white"}`}
+              <div className="flex items-start justify-between mb-5 gap-2">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div
+                    className={`w-12 h-12 shrink-0 bg-primary/10 text-primary rounded-xl flex items-center justify-center shadow-inner-3d`}
                   >
-                    {job.applicants}
-                  </p>{" "}
-                </div>{" "}
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                  {" "}
-                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase mb-1">
-                    نوع العمل
-                  </p>{" "}
-                  <p
-                    className={`text-lg font-bold ${expired ? "text-slate-500 dark:text-slate-400 dark:text-slate-500" : "text-navy dark:text-white"}`}
-                  >
-                    {job.type}
-                  </p>{" "}
-                </div>{" "}
-              </div>{" "}
-              <div className="flex items-center justify-between pt-6 border-t border-slate-50 mt-auto">
+                    {getJobIcon(job.title)}
+                  </div>
+                  <div className="min-w-0">
+                    <h3
+                      className={`text-lg font-bold mb-1 text-navy dark:text-white truncate`}
+                      title={job.title}
+                    >
+                      {job.title}
+                    </h3>
+                    <p className={`text-sm font-medium text-slate-500 dark:text-slate-400 truncate`} title={job.company}>
+                      {job.company}
+                    </p>
+                  </div>
+                </div>
+                <div
+                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold ${expired ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}
+                >
+                  {expired ? "منتهي/مغلق" : job.status}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 group flex flex-col justify-center">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 shrink-0 rounded-lg bg-white dark:bg-slate-700 shadow-sm border border-slate-100 dark:border-slate-600 flex items-center justify-center text-primary transition-colors duration-300">
+                      <Users size={18} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">
+                        المتقدمين
+                      </p>
+                      <p className="text-lg font-bold text-navy dark:text-white leading-none">
+                        {job.applicants}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 group flex flex-col justify-center">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 shrink-0 rounded-lg bg-white dark:bg-slate-700 shadow-sm border border-slate-100 dark:border-slate-600 flex items-center justify-center text-primary transition-colors duration-300">
+                      <Briefcase size={18} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">
+                        نوع العمل
+                      </p>
+                      <p className="text-sm font-bold text-navy dark:text-white leading-none mt-1">
+                        {job.type}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-700/50 mt-auto">
                 {" "}
                 <div className="flex items-center gap-3">
                   {" "}
@@ -2472,7 +2637,7 @@ export const ActiveJobs = ({
                   {" "}
                   <button
                     onClick={() => job.status === "مسودة" ? onClone(job) : onManage(job)}
-                    className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-[0.95] ${expired ? "bg-slate-200 text-slate-600 dark:text-slate-300 hover:bg-slate-300" : "bg-navy text-white hover:bg-slate-800 shadow-lg shadow-navy/10"}`}
+                    className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-[0.95] bg-navy text-white hover:bg-slate-800 shadow-lg shadow-navy/10`}
                   >
                     {" "}
                     {job.status === "مسودة" ? "إكمال المسودة" : "إدارة الوظيفة"}{" "}

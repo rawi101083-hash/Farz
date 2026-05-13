@@ -228,7 +228,7 @@ const PublicJobPage = ({
 }) => {
   if (job.status === "مسودة") {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-bg dark:bg-navy flex items-center justify-center p-6">
         <div className="text-center bg-white dark:bg-slate-800 p-12 rounded-3xl shadow-xl max-w-lg w-full border border-slate-100 dark:border-slate-800">
           <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <Lock size={32} />
@@ -251,7 +251,7 @@ const PublicJobPage = ({
   const displayCompany = job.company;
 
   return (
-    <div className="min-h-screen bg-slate-100 pt-32 pb-20 px-4">
+    <div className="min-h-screen bg-bg dark:bg-navy pt-32 pb-20 px-4">
       <div className="max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -311,7 +311,7 @@ const PublicJobPage = ({
                       <Clock size={16} className="text-white/80 shrink-0" /> {activeRole?.type || job.type}
                     </div>
                   )}
-                  {((activeRole?.locations?.length ? activeRole.locations : job.locations?.length ? job.locations : (activeRole?.location || job.location) ? [activeRole?.location || job.location] : []) as string[]).map((loc, idx) => (
+                  {((activeRole?.locations?.length ? activeRole.locations : job.locations?.length ? job.locations : (activeRole?.location || job.location) ? [activeRole?.location || job.location] : []) as string[]).filter(loc => loc !== "لا يشترط / كافة المدن").map((loc, idx) => (
                     <div key={idx} className="inline-flex items-center justify-center gap-2 bg-white/10 px-5 py-2.5 rounded-xl border border-white/20 text-sm font-bold shadow-sm backdrop-blur-sm">
                       <MapPin size={16} className="text-white/80 shrink-0" /> {loc}
                     </div>
@@ -1034,7 +1034,7 @@ const ManageJob = ({
                         return;
                       } */
                       navigator.clipboard.writeText(
-                        `/apply/${job.id}`,
+                        `${window.location.origin}/apply/${job.id}`,
                       );
                       alert("تم نسخ الرابط");
                     }}
@@ -1072,7 +1072,7 @@ const ManageJob = ({
         onVerify={() => {
           setShowVerificationModal(false);
           navigator.clipboard.writeText(
-            `/apply/${job.id}`,
+            `${window.location.origin}/apply/${job.id}`,
           );
           alert("تم نسخ الرابط وتفعيل الحساب بنجاح!");
         }}
@@ -1963,6 +1963,8 @@ export default function App() {
     freelanceDocument: "",
     taxNumber: "",
     subscription_tier: "free",
+    subscription_end_date: "",
+    subscription_is_yearly: false,
     entityType: "company",
     city: "",
     cvs_processed_count: 0,
@@ -1975,11 +1977,18 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
   const [dashboardTab, setDashboardTab] = useState("الرئيسية");
   const [dashboardPendingAction, setDashboardPendingAction] = useState<{ id: string, decision: string, isOffer?: boolean } | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem("sahab_dark_mode") === "true";
+  });
   const [showOnboardingGlobal, setShowOnboardingGlobal] = useState(false);
   const [globalPendingDraftId, setGlobalPendingDraftId] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   useEffect(() => {
+    localStorage.setItem("sahab_dark_mode", String(darkMode));
+    if (window.location.pathname.startsWith("/apply/")) {
+      document.documentElement.classList.remove("dark");
+      return;
+    }
     if (darkMode) {
       document.documentElement.classList.add("dark");
     } else {
@@ -2027,6 +2036,10 @@ export default function App() {
             department: raw.department || "",
             location: raw.location || "",
             type: raw.type || "",
+            types: Array.isArray(raw.types) ? raw.types : [],
+            autoRejectCity: raw.auto_reject_city || false,
+            autoRejectQualification: raw.auto_reject_qualification || false,
+            autoRejectExperience: raw.auto_reject_experience || false,
             experience: raw.experience_level || "",
             qualification: raw.qualification || "",
             description: raw.description || "",
@@ -2129,6 +2142,8 @@ export default function App() {
             const isProfileComplete = !!(data.company_name && data.city);
             setUserProfile(prev => ({
               ...prev,
+              name: user.user_metadata?.full_name || prev.name,
+              title: user.user_metadata?.job_title || prev.title,
               companyName: data.company_name || prev.name,
               entityType: data.entity_type || prev.entityType,
               commercialRegistration: data.commercial_registration || prev.commercialRegistration,
@@ -2137,12 +2152,14 @@ export default function App() {
               city: data.city || prev.city,
               companyLogo: data.company_logo || prev.companyLogo,
               subscription_tier: data.subscription_plan || "free",
+              subscription_end_date: data.subscription_end_date || prev.subscription_end_date,
+              subscription_is_yearly: localStorage.getItem('subscription_is_yearly') === 'true',
               cvs_processed_count: data.cvs_processed_count || 0,
               fields_locked: data.fields_locked || false,
             }));
             // Force Settings tab if profile is incomplete
             if (!isProfileComplete) {
-              setDashboardTab("بيانات المنشأة");
+              setDashboardTab("الحساب");
             }
           }
         } catch (err) {
@@ -2290,6 +2307,10 @@ export default function App() {
           department: newJob.department,
           location: newJob.location,
           type: newJob.type,
+          types: newJob.types || [],
+          auto_reject_city: newJob.autoRejectCity || false,
+          auto_reject_qualification: newJob.autoRejectQualification || false,
+          auto_reject_experience: newJob.autoRejectExperience || false,
           experience_level: newJob.experience,
           qualification: newJob.qualification,
           description: newJob.description,

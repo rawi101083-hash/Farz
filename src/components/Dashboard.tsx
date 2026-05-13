@@ -378,82 +378,7 @@ export const Dashboard = ({
           });
         }
 
-        // --- FAKE APPLICANTS LOGIC (Valid for 24h) ---
-        if (jobs.length > 0) {
-          const MOCK_DATA_KEY = "sahab_mock_applicants_24h_v4";
-          let mockApplicantsObj = null;
-          try {
-            mockApplicantsObj = window.localStorage ? JSON.parse(window.localStorage.getItem(MOCK_DATA_KEY) || "null") : null;
-          } catch (e) {}
-          
-          if (!mockApplicantsObj) {
-            const names = ["أحمد الخالدي", "سارة محمد", "عبدالله السالم", "نورة العتيبي", "خالد الشمري", "منى الدوسري", "فيصل المطيري", "ريم العنزي", "سلمان القحطاني", "هند المري"];
-            const avatars = [
-              "https://i.pravatar.cc/150?img=11",
-              "https://i.pravatar.cc/150?img=5",
-              "https://i.pravatar.cc/150?img=14",
-              "https://i.pravatar.cc/150?img=9",
-              "https://i.pravatar.cc/150?img=15",
-              "https://i.pravatar.cc/150?img=20",
-              "https://i.pravatar.cc/150?img=33",
-              "https://i.pravatar.cc/150?img=28",
-              "https://i.pravatar.cc/150?img=59",
-              "https://i.pravatar.cc/150?img=32"
-            ];
-            const generatedMock = names.map((name, idx) => ({
-               id: `mock-${Date.now()}-${idx}`,
-               name,
-               job: jobs[0]?.title || "طلب غير محدد",
-               job_id: jobs[0]?.id || "",
-               rating: 95 - (idx * 3),
-               status: "متاح فوراً",
-               expectedSalary: idx === 0 ? "10,000" : (8000 + (idx * 500)).toString(),
-               askExpectedSalary: "open",
-               color: "emerald",
-               phone: "050000000" + idx,
-               email: `applicant${idx}@example.com`,
-               source: "مباشر",
-               skills: ["إدارة مشاريع", "تواصل فعال", "تحليل بيانات", "حل المشكلات", "قيادة فريق"].slice(0, 3 + (idx % 3)),
-               aiSummary: "مرشح مميز (بيانات وهمية للتجربة) يمتلك خبرة ممتازة وتتطابق مهاراته مع متطلبات الوظيفة بشكل عالٍ، ومناسب جداً للثقافة المؤسسية.",
-               voiceEval: "",
-               voiceEvalUrl: "",
-               customAnswers: idx === 0 ? [
-                 { question: "لماذا ترغب بالانضمام إلى فريقنا؟", answer: "أبحث عن بيئة عمل طموحة تتيح لي تطوير مهاراتي والمساهمة في مشاريع نوعية تعود بالأثر الإيجابي." },
-                 { question: "ما هو أكبر تحدي واجهته في عملك السابق وكيف تغلبت عليه؟", answer: "واجهت تحدياً في تسليم مشروع تقني معقد خلال فترة زمنية قصيرة. تغلبت عليه من خلال تقسيم المهام وإعادة جدولة الأولويات والتواصل المستمر مع الفريق." }
-               ] : [],
-               decision: "pending",
-               rejection_reason: "",
-               hr_notes: "بيانات تجريبية، سيتم حذفها تلقائياً بعد 24 ساعة.",
-               cv_file_url: null,
-               photoUrl: avatars[idx],
-               is_favorite: false,
-               top_strengths: ["الخبرة التقنية", "سرعة التعلم", "المرونة"],
-               top_weaknesses: ["لا يوجد نقاط ضعف واضحة"]
-            }));
-            mockApplicantsObj = {
-              createdAt: Date.now(),
-              data: generatedMock
-            };
-            if (window.localStorage) {
-              window.localStorage.setItem(MOCK_DATA_KEY, JSON.stringify(mockApplicantsObj));
-            }
-          } else if (Date.now() - mockApplicantsObj.createdAt > 24 * 60 * 60 * 1000) {
-            if (window.localStorage) window.localStorage.removeItem(MOCK_DATA_KEY);
-            mockApplicantsObj = null;
-          }
-
-          if (mockApplicantsObj && mockApplicantsObj.data && jobs.length > 0) {
-            const validMock = mockApplicantsObj.data.map((m: any) => ({
-              ...m,
-              job: jobs.find(j => j.id === m.job_id)?.title || (jobs[0] ? jobs[0].title : "طلب غير محدد"),
-              job_id: jobs.find(j => j.id === m.job_id) ? m.job_id : (jobs[0] ? jobs[0].id : ""),
-              decision: latestDecisions[m.id] || m.decision,
-              is_favorite: m.is_favorite || false
-            }));
-            mappedList = [...validMock, ...mappedList];
-          }
-        }
-        // ----------------------------------------------
+        // Fake applicants logic has been permanently removed based on user request.
 
 
         setApplicantsState(prev => {
@@ -499,6 +424,13 @@ export const Dashboard = ({
         setToastMessage("تم إرسال العرض بنجاح");
         setTimeout(() => setToastMessage(null), 3500);
       }
+      
+      // Save mock decisions to localStorage to prevent bounce-back
+      try {
+        const decisions = JSON.parse(window.localStorage.getItem("sahab_decisions") || "{}");
+        decisions[pendingAction.id] = pendingAction.decision;
+        window.localStorage.setItem("sahab_decisions", JSON.stringify(decisions));
+      } catch(e) {}
       
       clearPendingAction();
     }
@@ -609,7 +541,7 @@ export const Dashboard = ({
     
     if (undoAction?.timeoutId) clearTimeout(undoAction.timeoutId);
     
-    const targetDecision = decision === "rejected" ? "filtered" : decision;
+    const targetDecision = decision;
     const updatePayload: any = { decision: targetDecision };
     if (decision === "rejected" || decision === "filtered") {
       updatePayload.rejection_reason = "استبعاد يدوي من الإدارة";
@@ -625,6 +557,13 @@ export const Dashboard = ({
       } catch (error) {
         console.warn("Could not sync decision to backend:", error);
       }
+    } else {
+      // Save mock decision to localStorage to prevent bounce-back
+      try {
+        const decisions = JSON.parse(window.localStorage.getItem("sahab_decisions") || "{}");
+        decisions[id] = targetDecision;
+        window.localStorage.setItem("sahab_decisions", JSON.stringify(decisions));
+      } catch(e) {}
     }
 
     if (decision !== "pending") {
@@ -657,6 +596,15 @@ export const Dashboard = ({
         console.warn("Could not sync bulk decision to backend:", error);
       }
     }
+    
+    // Save mock decisions to localStorage
+    try {
+      const decisions = JSON.parse(window.localStorage.getItem("sahab_decisions") || "{}");
+      idsToFilter.forEach(id => {
+        if (id.startsWith("mock-")) decisions[id] = "filtered";
+      });
+      window.localStorage.setItem("sahab_decisions", JSON.stringify(decisions));
+    } catch(e) {}
 
     setSelectedApplicantIds([]);
     const timeoutId = setTimeout(() => {
@@ -1425,7 +1373,7 @@ export const Dashboard = ({
                                   </div>
                                   <h4 className="text-xl font-black text-navy dark:text-white mb-2 tracking-tight">انتهت العينّة المجانية 🔒</h4>
                                   <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">للوصول إلى باقي المتقدمين وفرز ملفاتهم، يرجى تفعيل إحدى باقاتنا</p>
-                                  <button onClick={() => { setDashboardTab("الإعدادات"); setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 50); }} className="w-full bg-primary text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-primary-dark transition-all active:scale-[0.98] shadow-lg shadow-primary/20">ترقية الباقة الآن</button>
+                                  <button onClick={() => { setActiveTab("الحساب"); setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 50); }} className="w-full bg-primary text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-primary-dark transition-all active:scale-[0.98] shadow-lg shadow-primary/20">ترقية الباقة الآن</button>
                                 </div>
                               </div>
                             </td>
@@ -1579,7 +1527,7 @@ export const Dashboard = ({
               onDelete={(id) => setDraftToDelete(id)}
               cvLimitReached={cvsRemaining === 0 && cvLimit > 0}
               plan={plan}
-              onUpgrade={() => { setDashboardTab("الإعدادات"); setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 50); }}
+              onUpgrade={() => { setActiveTab("الحساب"); setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 50); }}
             />{" "}
           </div>
         );
@@ -1614,7 +1562,18 @@ export const Dashboard = ({
       case "باقات فرز":
         return <SettingsPage darkMode={darkMode} setDarkMode={setDarkMode} userProfile={userProfile} setUserProfile={setUserProfile} userEmail={userEmail || ""} initialTab={activeTab === "باقات فرز" ? "باقات فرز" : "الملف الشخصي"} />;
       default:
-        return null;
+        return (
+          <div className="p-16 flex flex-col items-center justify-center text-center max-w-md mx-auto">
+            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400 mb-6">
+              <AlertTriangle size={32} />
+            </div>
+            <h2 className="text-xl font-bold text-navy dark:text-white mb-2">الصفحة غير موجودة</h2>
+            <p className="text-slate-500 dark:text-slate-400 mb-8">عذراً، لم نتمكن من العثور على القسم المطلوب. قد يكون تم نقله أو إزالته.</p>
+            <button onClick={() => setActiveTab('الرئيسية')} className="bg-primary text-white px-6 py-3 rounded-xl font-bold hover:bg-primary-dark transition-all">
+              العودة للرئيسية
+            </button>
+          </div>
+        );
     }
   };
   return (
