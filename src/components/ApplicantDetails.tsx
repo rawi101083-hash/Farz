@@ -208,7 +208,7 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
   const [offerText, setOfferText] = useState("");
   // Simulated candidate data for conditional rendering of contact info
   const candidate = {
-    linkedin: "https://linkedin.com/in/ahmed",
+    linkedin: applicant?.linkedin || "",
     whatsapp: applicant?.phone || "966500000000",
     email: applicant?.email || "ahmed@example.com",
     phone: applicant?.phone || "966500000000",
@@ -741,8 +741,8 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
 
               {/* Contact Icons - Bottom of CV Wrapper */}
               <div className="flex items-center justify-center gap-3 px-8 pb-8">
-                {candidate.linkedin && (
-                  <a href={candidate.linkedin} target="_blank" rel="noreferrer" className="w-10 h-10 bg-[#0A66C2]/10 text-[#0A66C2] rounded-xl flex items-center justify-center hover:bg-[#0A66C2] hover:text-white transition-all shadow-sm" title="لينكد إن">
+                {candidate.linkedin && typeof candidate.linkedin === 'string' && candidate.linkedin.trim() !== "" && candidate.linkedin !== "null" && candidate.linkedin !== "undefined" && (
+                  <a href={candidate.linkedin.startsWith('http') ? candidate.linkedin : `https://${candidate.linkedin}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-[#0A66C2]/10 text-[#0A66C2] rounded-xl flex items-center justify-center hover:bg-[#0A66C2] hover:text-white transition-all shadow-sm" title="لينكد إن">
                     <Linkedin size={20} />
                   </a>
                 )}

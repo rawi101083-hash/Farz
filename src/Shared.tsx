@@ -2163,16 +2163,16 @@ export const SettingsPage = ({
               <div className="flex flex-col items-center gap-5 mb-6">
                 
                 {/* Toggle Wrapper - Very Rectangular */}
-                <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex gap-1 shadow-inner">
+                <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex gap-1 shadow-inner border border-transparent dark:border-slate-700">
                   <button
                     onClick={() => setBillingCycle('subscription')}
-                    className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'subscription' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
+                    className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'subscription' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:text-slate-400 dark:hover:text-white'}`}
                   >
                     اشتراكات مستمرة
                   </button>
                   <button
                     onClick={() => setBillingCycle('one-time')}
-                    className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'one-time' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
+                    className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'one-time' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:text-slate-400 dark:hover:text-white'}`}
                   >
                     توظيف لمرة واحدة
                   </button>
@@ -2571,7 +2571,9 @@ export const ActiveJobs = ({
               key={job.id}
               style={{ zIndex: openDropdownId === job.id ? 20 : 1 }}
               whileHover={{ y: -5 }}
-              className={`bg-white relative dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-lg group flex flex-col transition-all shadow-slate-200/40`}
+              className={`bg-white relative dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-lg group flex flex-col transition-all shadow-slate-200/40 ${
+                expired ? 'opacity-80 grayscale-[25%]' : ''
+              }`}
             >
               {" "}
               <div className="flex items-start justify-between mb-5 gap-2">
