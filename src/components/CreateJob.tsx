@@ -56,7 +56,8 @@ import {
   AlertTriangle,
   Linkedin,
   Info,
-  GraduationCap
+  GraduationCap,
+  AlertCircle
 } from 'lucide-react';
 import {
   BarChart,
@@ -445,6 +446,114 @@ export const CreateJob = ({
   });
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [roleToastMessage, setRoleToastMessage] = useState<string | null>(null);
+
+  const [chatMessages, setChatMessages] = useState<{role: "user" | "assistant", content: string}[]>(
+    initialData?.aiChatHistory || [{role: "assistant", content: "أهلاً بك! أنا مستشار التوظيف الذكي الخاص بمنصة فرز. يسعدني مساعدتك في صياغة الإعلان الوظيفي. أخبرني باختصار عن الشاغر الذي تبحث عنه."}]
+  );
+  const [chatInput, setChatInput] = useState("");
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isApplyingAi, setIsApplyingAi] = useState(false);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatScrollRef.current) {
+      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
+
+  const handleSendChatMessage = async () => {
+    if (!chatInput.trim()) return;
+    const userMsg = { role: "user" as const, content: chatInput.trim() };
+    setChatMessages(prev => [...prev, userMsg]);
+    setChatInput("");
+    setChatError(null);
+    setIsChatLoading(true);
+
+    try {
+      const response = await supabase.functions.invoke('magic-autofill', {
+        body: { mode: 'chat', messages: [...chatMessages, userMsg].map(m => ({ role: m.role, content: m.content })) }
+      });
+      if (response.error) throw new Error(response.error.message);
+      
+      const data = response.data;
+      if (data && data.reply) {
+        setChatMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
+      }
+    } catch (err: any) {
+      console.error(err);
+      let errMsg = "حدث خطأ أثناء الاتصال بالمستشار الذكي.";
+      try {
+        if (err.message && !err.message.includes("fetch")) {
+            errMsg = err.message;
+        }
+      } catch(e) {}
+      
+      setChatError(errMsg);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  const handleApplyChatToForm = async () => {
+    const messagesToExtract = chatInput.trim() 
+      ? [...chatMessages, { role: "user" as const, content: chatInput.trim() }] 
+      : chatMessages;
+      
+    if (messagesToExtract.length === 0) return;
+    
+    setIsApplyingAi(true);
+    try {
+      const response = await supabase.functions.invoke('magic-autofill', {
+        body: { mode: 'extract', messages: messagesToExtract.map(m => ({ role: m.role, content: m.content })) }
+      });
+      if (response.error) throw new Error(response.error.message);
+      
+      const data = response.data;
+      if (data && data.extracted) {
+        const ext = data.extracted;
+        if (ext.roleTitle) setRoleTitle(ext.roleTitle);
+        if (ext.roleSummary) setRoleSummary(ext.roleSummary);
+        if (ext.responsibilities) setResponsibilities(ext.responsibilities);
+        if (ext.qualifications) setQualifications(ext.qualifications);
+        if (ext.benefits) setBenefits(ext.benefits);
+        if (ext.type) {
+          setType(ext.type);
+          setTypes(prev => Array.from(new Set([...prev, ext.type])));
+        }
+        if (ext.experience) setExperience(ext.experience);
+        if (ext.qualification) setQualification(ext.qualification);
+        if (ext.location) {
+          setLocation(ext.location);
+          setLocations(prev => Array.from(new Set([...prev, ext.location])));
+        }
+        if (ext.selectedSkills && Array.isArray(ext.selectedSkills)) {
+          setSelectedSkills(prev => Array.from(new Set([...prev, ...ext.selectedSkills])));
+        }
+        if (ext.selectedLanguages && Array.isArray(ext.selectedLanguages)) {
+          setSelectedLanguages(prev => Array.from(new Set([...prev, ...ext.selectedLanguages])));
+        }
+        if (ext.targetMajors && Array.isArray(ext.targetMajors)) {
+          setTargetMajors(prev => Array.from(new Set([...prev, ...ext.targetMajors])));
+        }
+        if (ext.adTitle && adType !== "single") {
+          setCampaignTitle(ext.adTitle);
+          setEnableWelcomeUI(true);
+        }
+        if (ext.welcomeMessage) {
+          setCampaignDescription(ext.welcomeMessage);
+          setEnableWelcomeUI(true);
+        }
+        
+        window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "تم تطبيق التفاصيل المستخرجة بنجاح!", type: "success" } }));
+      }
+    } catch (err: any) {
+      console.error(err);
+      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "فشل استخراج البيانات من المحادثة.", type: "error" } }));
+    } finally {
+      setIsApplyingAi(false);
+    }
+  };
 
 
   const handleTextAreaPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>, setter: (value: string) => void, currentValue: string) => {
@@ -927,6 +1036,7 @@ export const CreateJob = ({
       responsibilities: responsibilities.trim(),
       qualifications: qualifications.trim(),
       benefits: benefits.trim(),
+      aiChatHistory: chatMessages,
       description: mainDesc,
       roles: finalRoles,
       startDate,
@@ -1049,6 +1159,7 @@ export const CreateJob = ({
       responsibilities: responsibilities.trim(),
       qualifications: qualifications.trim(),
       benefits: benefits.trim(),
+      aiChatHistory: chatMessages,
       roles: finalRoles,
       company,
       companyLogo: companyLogo || undefined,
@@ -1281,7 +1392,75 @@ export const CreateJob = ({
           </div>
         )}
       </AnimatePresence>
-      <div className="max-w-5xl mx-auto pb-32">
+      <div className="max-w-[1400px] mx-auto pb-32 flex flex-col xl:flex-row gap-6 px-4 xl:px-8">
+        
+        {/* Chat UI Panel */}
+        <div className="w-full xl:w-[380px] shrink-0 order-1 xl:order-2 flex flex-col h-[600px] xl:h-[calc(100vh-120px)] xl:sticky top-24 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
+             <div>
+               <h3 className="font-bold text-navy dark:text-white flex items-center gap-2">
+                 <Sparkles className="text-primary" size={18}/> مستشار التوظيف الذكي
+               </h3>
+               <p className="text-xs text-slate-500 mt-1">يساعدك في صياغة الإعلان و استخراج التفاصيل</p>
+             </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={chatScrollRef}>
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-start' : 'items-end'}`} dir="ltr">
+                <div dir="rtl" className={`p-3 rounded-2xl max-w-[90%] text-sm leading-relaxed ${msg.role === 'user' ? 'bg-primary text-white rounded-tr-sm' : 'bg-slate-100 dark:bg-slate-700 text-navy dark:text-white rounded-tl-sm'}`}>
+                  {msg.content.split('\n').map((line, idx) => <React.Fragment key={idx}>{line}<br/></React.Fragment>)}
+                </div>
+              </div>
+            ))}
+            {isChatLoading && (
+              <div className="flex items-start" dir="ltr">
+                <div dir="rtl" className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-700 rounded-tl-sm flex gap-1 items-center">
+                  <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce"></div>
+                  <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{animationDelay: "0.2s"}}></div>
+                  <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{animationDelay: "0.4s"}}></div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700">
+            <div className="flex gap-2 mb-3">
+              <input 
+                type="text" 
+                value={chatInput} 
+                onChange={(e) => {
+                  setChatInput(e.target.value);
+                  if (chatError) setChatError(null);
+                }} 
+                onKeyDown={(e) => { if (e.key === 'Enter' && !chatError) handleSendChatMessage(); }}
+                placeholder="اكتب رسالتك هنا..." 
+                className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary dark:text-white"
+                disabled={isChatLoading || isApplyingAi}
+                maxLength={4000}
+              />
+              <button onClick={handleSendChatMessage} disabled={!chatInput.trim() || isChatLoading || isApplyingAi || !!chatError} className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 disabled:opacity-50 transition-opacity">
+                 <ArrowLeft size={18} className="rotate-180" />
+              </button>
+            </div>
+            {chatError && (
+              <div className="mb-3 px-2 flex items-start gap-1.5 text-orange-600 dark:text-orange-400">
+                <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                <p className="text-xs font-bold">{chatError}</p>
+              </div>
+            )}
+            <button 
+              type="button" 
+              onClick={handleApplyChatToForm} 
+              disabled={chatMessages.length < 2 || isApplyingAi || isChatLoading}
+              className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-navy font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90 transition-opacity shadow-md"
+            >
+              {isApplyingAi ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Download size={16} />}
+              تطبيق التفاصيل على النموذج 📥
+            </button>
+          </div>
+        </div>
+
+        {/* Main Form Content */}
+        <div className="flex-1 xl:max-w-4xl order-2 xl:order-1 min-w-0">
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); handleBackAttempt(); }}
@@ -3180,6 +3359,7 @@ export const CreateJob = ({
             </div>
           </form>{" "}
         </motion.div>{" "}
+      </div>{" "}
       </div>{" "}
       {isLivePreview && (
         <PreviewModal

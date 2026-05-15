@@ -388,6 +388,7 @@ export interface Job {
   hideBenefits?: boolean;
   hideTargetMajors?: boolean;
   hideSkillsAndLanguages?: boolean;
+  aiChatHistory?: { role: "user" | "assistant"; content: string }[];
 }
 // --- Components ---
 export const LogoIcon = () => (
@@ -445,29 +446,22 @@ export const EmptyState = ({
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="flex flex-col items-center justify-center py-24 px-8 text-center bg-white dark:bg-slate-800 rounded-[40px] border border-dashed border-slate-200 dark:border-slate-700 shadow-sm"
+    className="flex flex-col items-center justify-center py-16 px-8 text-center bg-white dark:bg-slate-800 rounded-[32px] border border-dashed border-slate-200 dark:border-slate-700 shadow-sm"
   >
-    <div className="relative mb-10">
-      <div className="w-32 h-32 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center relative z-10">
-        <div className="w-20 h-20 bg-white dark:bg-slate-800 rounded-[32px] shadow-xl shadow-slate-200/50 flex items-center justify-center text-slate-300">
-          <Search size={40} strokeWidth={1.5} />{" "}
-        </div>{" "}
-      </div>{" "}
-      <div className="absolute -top-4 -right-4 w-12 h-12 bg-mint/20 rounded-2xl blur-xl animate-pulse" />{" "}
-      <div
-        className="absolute -bottom-4 -left-4 w-16 h-16 bg-primary/10 rounded-full blur-xl animate-pulse"
-        style={{ animationDelay: "1s" }}
-      />{" "}
-    </div>{" "}
-    <h3 className="text-2xl font-bold text-navy dark:text-white mb-4 max-w-md leading-relaxed">
-      {title}{" "}
-    </h3>{" "}
+    <div className="mb-6 flex justify-center">
+      <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 rounded-full flex items-center justify-center ring-4 ring-slate-50 dark:ring-slate-800/30">
+        <Search size={28} strokeWidth={1.5} />
+      </div>
+    </div>
+    <h3 className="text-2xl font-bold text-navy dark:text-white mb-4 max-w-md leading-relaxed text-center">
+      {title}
+    </h3>
     <button
       onClick={onAction}
-      className="bg-mint dark:bg-[#065f46] text-employer-green dark:text-[#a7f3d0] px-10 py-4 rounded-2xl font-bold text-lg hover:bg-[#34d399] transition-all shadow-xl shadow-mint/20 active:scale-95 flex items-center gap-3 mt-4"
+      className="bg-primary text-white px-10 py-4 rounded-2xl font-bold text-lg hover:bg-teal-600 transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center gap-3 mt-4"
     >
-      {actionLabel} <Plus size={20} />{" "}
-    </button>{" "}
+      {actionLabel} <Plus size={20} />
+    </button>
   </motion.div>
 );
 export const PreviewModal = ({ job, onClose }: { job: Job; onClose: () => void }) => {
@@ -2571,7 +2565,8 @@ export const ActiveJobs = ({
               key={job.id}
               style={{ zIndex: openDropdownId === job.id ? 20 : 1 }}
               whileHover={{ y: -5 }}
-              className={`bg-white relative dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-lg group flex flex-col transition-all shadow-slate-200/40 ${
+              onClick={() => job.status === "مسودة" ? onClone(job) : onManage(job)}
+              className={`bg-white relative cursor-pointer dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-lg group flex flex-col transition-all shadow-slate-200/40 ${
                 expired ? 'opacity-80 grayscale-[25%]' : ''
               }`}
             >
@@ -2644,8 +2639,11 @@ export const ActiveJobs = ({
                 <div className="flex items-center gap-2">
                   {" "}
                   <button
-                    onClick={() => job.status === "مسودة" ? onClone(job) : onManage(job)}
-                    className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-[0.95] bg-navy text-white hover:bg-slate-800 shadow-lg shadow-navy/10`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      job.status === "مسودة" ? onClone(job) : onManage(job);
+                    }}
+                    className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-[0.95] bg-navy text-white shadow-lg shadow-navy/10`}
                   >
                     {" "}
                     {job.status === "مسودة" ? "إكمال المسودة" : "إدارة الوظيفة"}{" "}
@@ -2653,11 +2651,12 @@ export const ActiveJobs = ({
                   <div className="relative">
                     {" "}
                     <button
-                      onClick={() =>
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setOpenDropdownId(
                           openDropdownId === job.id ? null : job.id,
-                        )
-                      }
+                        );
+                      }}
                       className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:bg-slate-800/50 transition-colors"
                     >
                       {" "}

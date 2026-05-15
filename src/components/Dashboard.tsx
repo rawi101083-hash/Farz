@@ -770,11 +770,11 @@ export const Dashboard = ({
           <div className="max-w-6xl mx-auto space-y-8">
             <header className="flex justify-between items-center w-full mb-8 border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2 text-navy dark:text-white">
-                  طلبات التوظيف
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 text-navy dark:text-white" title={userProfile?.name || "مستخدم جديد"}>
+                  مرحباً بك في منصة فرز، {(userProfile?.name || "مستخدم جديد").length > 25 ? (userProfile?.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile?.name || "مستخدم جديد")}
                 </h1>
                 <p className="text-slate-500 dark:text-slate-400 font-medium text-sm md:text-base">
-                  مرحباً بك مجدداً. إليك نظرة شاملة على نشاط اليوم.
+                  مساحتك جاهزة. ابدأ الآن في فرز المتقدمين واختيار أفضل الكفاءات بضغطة زر.
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
@@ -1798,7 +1798,9 @@ export const Dashboard = ({
                 )}
               </div>
               <div className="overflow-hidden flex-1">
-                <p className="text-sm font-bold truncate text-white">{userProfile.name || "مستخدم جديد"}</p>
+                <p className="text-sm font-bold text-white" title={userProfile.name || "مستخدم جديد"}>
+                  {(userProfile.name || "مستخدم جديد").length > 25 ? (userProfile.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile.name || "مستخدم جديد")}
+                </p>
                 {userProfile.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile.title}</p>}
               </div>
               <button 

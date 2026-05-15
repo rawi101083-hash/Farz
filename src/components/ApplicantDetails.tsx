@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
-const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () => void, applicant?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void }) => {
+const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void }) => {
   const [activeTab, setActiveTab] = useState<"analysis" | "notes" | "questions">("analysis");
   const [isAILoading, setIsAILoading] = useState(false);
   const [isFullscreenCV, setIsFullscreenCV] = useState(false);
@@ -513,24 +513,66 @@ const ApplicantDetails = ({ onBack, applicant, onStatusUpdate }: { onBack: () =>
                     if (typeof answers === "string") {
                       try { answers = JSON.parse(answers); } catch (e) { answers = []; }
                     }
-                    if (Array.isArray(answers) && answers.length > 0) {
-                      return (
-                        <div className="bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30 p-6 rounded-[32px] mt-6">
-                          <h4 className="font-bold text-indigo-700 dark:text-indigo-400 mb-4 flex items-center gap-2">
-                            <MessageCircle size={18} /> إجابات أسئلة نموذج التقديم
-                          </h4>
-                          <div className="space-y-4">
-                            {answers.map((ans: any, i: number) => (
-                              <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {i + 1}: {ans.question}</p>
-                                <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ans.answer}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
+                    if (!Array.isArray(answers)) answers = [];
+
+                    const regularAnswers = answers.filter((a: any) => !a.isKnockout);
+                    const knockoutAnswers = answers.filter((a: any) => a.isKnockout);
+                    let jobKq = job?.knockoutQuestions || [];
+                    if (typeof jobKq === "string") {
+                      try { jobKq = JSON.parse(jobKq); } catch (e) { jobKq = []; }
                     }
-                    return null;
+                    if (!Array.isArray(jobKq)) jobKq = [];
+
+                    const jobKnockoutQuestions = jobKq;
+
+                    return (
+                      <>
+                        {/* أسئلة الاستبعاد المباشر */}
+                        {jobKnockoutQuestions.length > 0 && (
+                          <div className="bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800/30 p-6 rounded-[32px] mt-6">
+                            <h4 className="font-bold text-rose-700 dark:text-rose-400 mb-4 flex items-center gap-2">
+                              <Ban size={18} /> إجابات أسئلة الاستبعاد المباشر (Knockout)
+                            </h4>
+                            <div className="space-y-4">
+                              {jobKnockoutQuestions.map((kq: any, i: number) => {
+                                const kqText = typeof kq === 'string' ? kq : (kq?.text || "");
+                                const ansObj = knockoutAnswers.find((a: any) => a.question === kqText);
+                                const isAnswered = kqText.includes("تجريبي") ? false : !!ansObj;
+                                return (
+                                  <div key={i} className={"p-4 rounded-2xl shadow-sm border " + (isAnswered ? "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700" : "bg-slate-50 dark:bg-slate-800/50 border-dashed border-slate-200 dark:border-slate-600 opacity-80")}>
+                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {i + 1}: {kqText}</p>
+                                    {isAnswered ? (
+                                      <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ansObj.answer}</p>
+                                    ) : (
+                                      <div className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 mt-1">
+                                        <span className="text-[11px] font-bold">لم يُطرح عليه هذا السؤال (قدم قبل التحديث)</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* أسئلة نموذج التقديم */}
+                        {regularAnswers.length > 0 && (
+                          <div className="bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30 p-6 rounded-[32px] mt-6">
+                            <h4 className="font-bold text-indigo-700 dark:text-indigo-400 mb-4 flex items-center gap-2">
+                              <MessageCircle size={18} /> إجابات أسئلة نموذج التقديم
+                            </h4>
+                            <div className="space-y-4">
+                              {regularAnswers.map((ans: any, i: number) => (
+                                <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {i + 1}: {ans.question}</p>
+                                  <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ans.answer}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
                   })()}
                 </motion.div>
               )}

@@ -369,6 +369,12 @@ export const ApplicantForm = ({
       ...(Array.isArray(customQuestions) ? customQuestions.map((q: any, idx: number) => ({
         question: q.text,
         answer: submitData[`customQuestion_${idx}`],
+      })) : []),
+      ...(activeRole?.knockoutQuestions && Array.isArray(activeRole.knockoutQuestions) ? activeRole.knockoutQuestions.map((q: any, idx: number) => ({
+        question: q.text,
+        answer: formDataState.knockoutAnswers ? (formDataState.knockoutAnswers[idx] || "لم يتم الإجابة") : "لم يتم الإجابة",
+        isKnockout: true,
+        requiredAnswer: q.requiredAnswer
       })) : [])
     ];
     const submittedCustomAttachments = (Array.isArray(customAttachments) ? customAttachments : []).map(
