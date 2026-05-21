@@ -709,15 +709,15 @@ export const ManageJob = ({
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                  <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Eye size={14}/> الزيارات</span>
+                  <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Eye size={14} className="text-primary"/> الزيارات</span>
                   <span className="font-bold text-navy dark:text-white">غير متاح</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                  <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Users size={14}/> إجمالي المتقدمين</span>
+                  <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Users size={14} className="text-primary"/> إجمالي المتقدمين</span>
                   <span className="font-bold text-navy dark:text-white">{job.applicants}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
-                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5"><CheckCircle size={14}/> المجتازين للفرز</span>
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5"><CheckCircle size={14} className="text-primary"/> المجتازين للفرز</span>
                   <span className="font-bold text-emerald-700 dark:text-emerald-400">---</span>
                 </div>
               </div>
@@ -749,7 +749,7 @@ export const ManageJob = ({
                     X/Twitter
                   </a>
                 </div>
-                <button onClick={() => copyToClipboard(applyLink)} className="w-full flex items-center justify-center gap-2 bg-navy/5 text-navy dark:bg-white/5 dark:text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:bg-navy/10 dark:hover:bg-white/10 transition-colors border border-navy/10 dark:border-white/10 mt-4">
+                <button onClick={() => copyToClipboard(`${window.location.origin}/share/${job.id}`)} className="w-full flex items-center justify-center gap-2 bg-navy/5 text-navy dark:bg-white/5 dark:text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:bg-navy/10 dark:hover:bg-white/10 transition-colors border border-navy/10 dark:border-white/10 mt-4">
                   <Lock size={14} className="opacity-70" /> الرابط السري للإدارة (مشاركة للقراءة)
                 </button>
               </div>

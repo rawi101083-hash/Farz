@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
 const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void }) => {
-  const [activeTab, setActiveTab] = useState<"analysis" | "notes" | "questions">("analysis");
+  const [activeTab, setActiveTab] = useState<"analysis" | "requirements" | "interview" | "notes">("analysis");
   const [isAILoading, setIsAILoading] = useState(false);
   const [isFullscreenCV, setIsFullscreenCV] = useState(false);
 
@@ -219,14 +219,32 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
 
 
 
+  const safeParseArray = (val: any) => {
+    if (!val) return [];
+    if (typeof val === 'string') {
+      try { val = JSON.parse(val); } catch(e) { return []; }
+    }
+    if (!Array.isArray(val)) return [val];
+    return val.map(item => {
+      if (typeof item === 'string') {
+        try { return JSON.parse(item); } catch(e) { return item; }
+      }
+      return item;
+    });
+  };
+
   const actualMatch = applicant?.matchScore ?? applicant?.rating ?? 0;
   const displayMatch = actualMatch > 1 ? actualMatch : Math.round(actualMatch * 100);
   const strokeOffsetMatch = actualMatch > 1 ? actualMatch / 100 : actualMatch;
   const actualName = applicant?.name ?? "راوي عاصم برناوي";
   const actualJob = applicant?.job ?? "مهندس برمجيات أول";
-  const actualSummary = applicant?.aiSummary ?? "";
-  const actualStrengths = applicant?.top_strengths || [];
-  const actualWeaknesses = applicant?.top_weaknesses || [];
+  const actualSummary = applicant?.ai_justification ?? applicant?.aiSummary ?? "";
+  const actualStrengths = safeParseArray(applicant?.top_strengths);
+  const actualWeaknesses = safeParseArray(applicant?.top_weaknesses);
+  const topPercentile = applicant?.top_percentile;
+  const redFlags = safeParseArray(applicant?.red_flags);
+  const interviewQuestions = safeParseArray(applicant?.interview_questions);
+  const attachments = safeParseArray(applicant?.attachments);
 
   const getMatchColor = (score: number) => {
     if (score >= 80) return "text-primary";
@@ -345,103 +363,116 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                   </div>
                 </div>
               </div>{" "}
-              <div className="flex flex-col items-center justify-center py-5 bg-white dark:bg-slate-800/80 rounded-[28px] mb-6 border border-slate-100 dark:border-slate-700 shadow-sm border-b-[4px] border-b-slate-100/80 dark:border-b-slate-700/80 transition-all hover:-translate-y-0.5">
-                {" "}
-                <div className="relative w-28 h-28 mb-3">
-                  {" "}
-                  <svg className="w-full h-full drop-shadow-md" viewBox="0 0 100 100">
+              <div className="bg-slate-50/50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-[32px] p-8 mb-8 flex flex-col items-center relative overflow-hidden">
+                {/* Subtle Background Glow */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+
+                <div className="relative w-32 h-32 mb-6">
+                  <svg className="w-full h-full drop-shadow-sm" viewBox="0 0 100 100">
                     <defs>
                       <linearGradient id="matchGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="currentColor" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="currentColor" stopOpacity="1" />
+                        <stop offset="0%" stopColor="currentColor" />
+                        <stop offset="100%" stopColor="currentColor" stopOpacity="0.6" />
                       </linearGradient>
-                      <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                        <feDropShadow dx="0" dy="4" stdDeviation="4" floodOpacity="0.15" />
-                      </filter>
                     </defs>
                     <circle
-                      className="text-slate-100 dark:text-slate-700 stroke-current"
-                      strokeWidth="8"
+                      className="text-slate-200 dark:text-slate-700/50 stroke-current"
+                      strokeWidth="6"
                       cx="50"
                       cy="50"
-                      r="40"
+                      r="42"
                       fill="transparent"
-                    />{" "}
+                    />
                     <motion.circle
                       className={`${matchColorClass} stroke-current`}
-                      strokeWidth="8"
+                      strokeWidth="6"
                       strokeLinecap="round"
                       cx="50"
                       cy="50"
-                      r="40"
+                      r="42"
                       fill="transparent"
-                      filter="url(#glow)"
                       stroke="url(#matchGradient)"
-                      strokeDasharray="251.2"
-                      initial={{ strokeDashoffset: 251.2 }}
-                      animate={{ strokeDashoffset: 251.2 * (1 - strokeOffsetMatch) }}
+                      strokeDasharray="263.89"
+                      initial={{ strokeDashoffset: 263.89 }}
+                      animate={{ strokeDashoffset: 263.89 * (1 - strokeOffsetMatch) }}
                       transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
-                    />{" "}
-                  </svg>{" "}
+                    />
+                  </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    {" "}
-                    <span className={`text-2xl font-bold ${matchColorClass}`}>
+                    <span className={`text-3xl font-black ${matchColorClass}`}>
                       {displayMatch}%
-                    </span>{" "}
-                    <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
                       مطابقة
-                    </span>{" "}
-                  </div>{" "}
-                </div>{" "}
-                <p className="text-sm text-navy dark:text-white font-bold mb-4">
-                  توافق عالي جداً مع متطلبات الوظيفة
-                </p>{" "}
-                <div className="w-full px-6 md:px-10 space-y-3.5 mb-2">
-                  <div>
-                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
-                      <span className="text-slate-500 dark:text-slate-400">تطابق المهارات</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center gap-3 mb-8 w-full z-10">
+                  <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold border ${displayMatch >= 80 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/30' : displayMatch >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/30' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/30'} shadow-sm`}>
+                    {displayMatch >= 80 ? <CheckCircle size={16} /> : displayMatch >= 50 ? <AlertTriangle size={16} /> : <X size={16} />}
+                    {displayMatch >= 80 ? "ملاءمة عالية جداً" : displayMatch >= 50 ? "ملاءمة جزئية" : "غير مطابق"}
+                  </div>
+                  
+                  {topPercentile && (
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
+                      ضمن أفضل <span className="text-primary">{topPercentile}%</span> من المتقدمين
+                    </span>
+                  )}
+                </div>
+
+                <div className="w-full space-y-4 z-10">
+                  <div className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm transition-transform hover:-translate-y-0.5">
+                    <div className="flex justify-between text-xs font-bold mb-2">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق المهارات</span>
                       <span className="text-navy dark:text-white">{skillsMatch}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
                       <motion.div initial={{ width: 0 }} animate={{ width: `${skillsMatch}%` }} transition={{ duration: 1, delay: 0.3 }} className={`h-full rounded-full ${getBarColor(skillsMatch)}`} />
                     </div>
                   </div>
-                  <div>
-                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
-                      <span className="text-slate-500 dark:text-slate-400">تطابق الخبرة</span>
+                  <div className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm transition-transform hover:-translate-y-0.5">
+                    <div className="flex justify-between text-xs font-bold mb-2">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق الخبرة</span>
                       <span className="text-navy dark:text-white">{expMatch}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
                       <motion.div initial={{ width: 0 }} animate={{ width: `${expMatch}%` }} transition={{ duration: 1, delay: 0.4 }} className={`h-full rounded-full ${getBarColor(expMatch)}`} />
                     </div>
                   </div>
-                  <div>
-                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
-                      <span className="text-slate-500 dark:text-slate-400">تطابق التعليم</span>
+                  <div className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm transition-transform hover:-translate-y-0.5">
+                    <div className="flex justify-between text-xs font-bold mb-2">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق التعليم</span>
                       <span className="text-navy dark:text-white">{eduMatch}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
                       <motion.div initial={{ width: 0 }} animate={{ width: `${eduMatch}%` }} transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${getBarColor(eduMatch)}`} />
                     </div>
                   </div>
                 </div>
               </div>{" "}
-              <div className="flex bg-slate-50 dark:bg-slate-800/30 p-1.5 rounded-2xl mb-8 border border-slate-100 dark:border-slate-700 overflow-x-auto">
+              <div className="flex bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-[20px] mb-8 border border-slate-100 dark:border-slate-700/50 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <button
                   onClick={() => setActiveTab("analysis")}
-                  className={`min-w-[120px] flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === "analysis" ? "bg-white dark:bg-slate-800 text-primary shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}
+                  className={`min-w-[120px] flex-1 py-3 px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${activeTab === "analysis" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
                   المطابقة والتحليل
                 </button>
                 <button
-                  onClick={() => setActiveTab("questions")}
-                  className={`min-w-[120px] flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === "questions" ? "bg-white dark:bg-slate-800 text-primary shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}
+                  onClick={() => setActiveTab("requirements")}
+                  className={`min-w-[120px] flex-1 py-3 px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${activeTab === "requirements" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
-                  أسئلة مقترحة
+                  متطلبات التقديم
+                </button>
+                <button
+                  onClick={() => setActiveTab("interview")}
+                  className={`min-w-[120px] flex-1 py-3 px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${activeTab === "interview" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
+                >
+                  خطة المقابلة
                 </button>
                 <button
                   onClick={() => setActiveTab("notes")}
-                  className={`min-w-[120px] flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap ${activeTab === "notes" ? "bg-white dark:bg-slate-800 text-primary shadow-sm" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`}
+                  className={`min-w-[120px] flex-1 py-3 px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${activeTab === "notes" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
                   ملاحظات الفريق
                 </button>
@@ -470,25 +501,51 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
 
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700">
                     <h3 className="text-lg font-bold text-navy dark:text-white mb-6 flex items-center gap-2">
-                      <Sparkles size={20} className="text-primary" /> التوصية النهائية
+                      <Sparkles size={20} className="text-primary" /> 🤖 مبررات التقييم
                     </h3>
                     <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                       {actualSummary}
                     </p>
                   </div>
 
+                  {redFlags && redFlags.length > 0 && (
+                    <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30 p-6 rounded-[32px]">
+                      <h4 className="font-bold text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
+                        <AlertTriangle size={18} /> رادار التحذيرات (Red Flags 🚩)
+                      </h4>
+                      <ul className="space-y-2">
+                        {redFlags.map((flag: string, i: number) => (
+                          <li key={i} className="flex gap-2 text-sm text-red-800 dark:text-red-300/90 leading-relaxed font-bold">
+                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
+                            {flag}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 gap-4">
                     <div className="bg-[#F0FDF4] dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 p-6 rounded-[32px]">
                       <h4 className="font-bold text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
-                        <CheckCircle size={18} /> أبرز نقاط القوة
+                        <CheckCircle size={18} /> أبرز نقاط القوة والأدلة 🔎
                       </h4>
-                      <ul className="space-y-2">
-                        {actualStrengths.map((str, i) => (
-                          <li key={i} className="flex gap-2 text-sm text-green-800 dark:text-green-300/90 leading-relaxed font-bold">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 shrink-0" />
-                            {str}
-                          </li>
-                        ))}
+                      <ul className="space-y-4">
+                        {actualStrengths.map((strObj: any, i: number) => {
+                          const strengthText = typeof strObj === 'string' ? strObj : (strObj.strength || "");
+                          const evidenceText = typeof strObj === 'string' ? "" : (strObj.evidence || "");
+                          if (!strengthText) return null;
+                          return (
+                            <li key={i} className="flex gap-3">
+                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 shrink-0" />
+                              <div>
+                                <p className="text-sm text-green-800 dark:text-green-300/90 leading-relaxed font-bold">{strengthText}</p>
+                                {evidenceText && (
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1 font-medium">{evidenceText}</p>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
 
@@ -497,7 +554,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                         <Zap size={18} /> فجوات ونقاط الانتباه
                       </h4>
                       <ul className="space-y-2">
-                        {actualWeaknesses.map((weak, i) => (
+                        {actualWeaknesses.map((weak: string, i: number) => (
                           <li key={i} className="flex gap-2 text-sm text-orange-800 dark:text-orange-300/90 leading-relaxed font-bold">
                             <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-2 shrink-0" />
                             {weak}
@@ -506,24 +563,18 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                       </ul>
                     </div>
                   </div>
+                </motion.div>
+              )}
+
+              {activeTab === "requirements" && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
 
                   {/* إجابات المتقدم على الأسئلة المخصصة */}
                   {(() => {
-                    let answers = applicant?.custom_answers || applicant?.customAnswers;
-                    if (typeof answers === "string") {
-                      try { answers = JSON.parse(answers); } catch (e) { answers = []; }
-                    }
-                    if (!Array.isArray(answers)) answers = [];
-
-                    const regularAnswers = answers.filter((a: any) => !a.isKnockout);
-                    const knockoutAnswers = answers.filter((a: any) => a.isKnockout);
-                    let jobKq = job?.knockoutQuestions || [];
-                    if (typeof jobKq === "string") {
-                      try { jobKq = JSON.parse(jobKq); } catch (e) { jobKq = []; }
-                    }
-                    if (!Array.isArray(jobKq)) jobKq = [];
-
-                    const jobKnockoutQuestions = jobKq;
+                    const answers = safeParseArray(applicant?.custom_answers || applicant?.customAnswers);
+                    const regularAnswers = answers.filter((a: any) => !a?.isKnockout);
+                    const knockoutAnswers = answers.filter((a: any) => a?.isKnockout);
+                    const jobKnockoutQuestions = safeParseArray(job?.knockoutQuestions);
 
                     return (
                       <>
@@ -574,6 +625,28 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                       </>
                     );
                   })()}
+
+                  {/* المرفقات (Attachments) */}
+                  {attachments.length > 0 && (
+                    <div className="bg-slate-50/50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-700/50 p-6 rounded-[32px] mt-6">
+                      <h4 className="font-bold text-navy dark:text-white mb-4 flex items-center gap-2">
+                        <FileDigit size={18} /> المرفقات المستلمة
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {attachments.map((att: any, i: number) => (
+                          <a key={i} href={att.url || att.link} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-primary/50 transition-colors group">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                {att.type === 'image' ? <ImageIcon size={14} /> : att.type === 'video' ? <Video size={14} /> : <Paperclip size={14} />}
+                              </div>
+                              <span className="text-sm font-bold text-navy dark:text-white truncate">{att.name || `مرفق ${i+1}`}</span>
+                            </div>
+                            <ExternalLink size={14} className="text-slate-400 group-hover:text-primary transition-colors shrink-0" />
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </motion.div>
               )}
 
@@ -689,16 +762,16 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                 </motion.div>
               )}
 
-              {activeTab === "questions" && (
+              {activeTab === "interview" && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
                   <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 p-5 rounded-[24px] mb-6">
                     <p className="text-sm font-bold text-blue-700 dark:text-blue-400 flex items-center gap-3">
                       <MessageCircle size={20} />
-                      أسئلة مصممة للتركيز على الفجوات ونقاط التقييم الحرجة:
+                      أسئلة هجومية / تكتيكية مصممة للتركيز على الفجوات ونقاط التقييم الحرجة:
                     </p>
                   </div>
                   {(() => {
-                    const questions = applicant?.suggested_questions || [];
+                    const questions = interviewQuestions;
                     if (!questions || questions.length === 0) {
                       return (
                         <div className="flex flex-col items-center justify-center py-12 text-center bg-white dark:bg-slate-800/50 rounded-[32px] border border-slate-100 dark:border-slate-700/50 border-dashed">

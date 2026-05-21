@@ -1198,6 +1198,35 @@ export const GlobalJobSelector = ({
     </div>
   );
 };
+
+const GlassBar = (props: any) => {
+  const { x, y, width, height, fill } = props;
+  if (!width || !height) return null;
+  const overflow = 20;
+  
+  // Extract RGB from fill or use default green
+  const rgbMatch = fill ? fill.match(/rgba?\((\d+,\s*\d+,\s*\d+)/) : null;
+  const rgb = rgbMatch ? rgbMatch[1] : '25, 168, 145';
+
+  return (
+    <foreignObject x={x - overflow} y={y - overflow} width={width + overflow * 2} height={height + overflow * 2}>
+      <div style={{ padding: overflow, width: '100%', height: '100%', boxSizing: 'border-box' }}>
+        <div 
+          style={{
+            width: '100%',
+            height: '100%',
+            background: `linear-gradient(180deg, rgba(${rgb}, 0.9) 0%, rgba(${rgb}, 0.1) 100%)`,
+            boxShadow: `0px -5px 20px rgba(${rgb}, 0.4)`,
+            borderTop: '2px solid rgba(111, 247, 166, 0.8)',
+            borderLeft: `1px solid rgba(${rgb}, 0.4)`,
+            borderRight: `1px solid rgba(${rgb}, 0.4)`,
+            borderRadius: '6px 6px 0 0'
+          }}
+        />
+      </div>
+    </foreignObject>
+  );
+};
 export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filterId: string; applicants?: any[] }) => {
   const filteredJobs = filterId === "all" ? jobs : jobs.filter(j => j.id === filterId);
   const totalJobs = filteredJobs.length;
@@ -1314,7 +1343,21 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
 
   const avgTime = validJobsCount > 0 ? Math.round(totalDays / validJobsCount) : 0;
 
-  const COLORS = ["#3b82f6", "#f97316", "#8b5cf6", "#0d9488"]; // Blue, Orange, Purple, Teal (App Green)
+  const glassStyleStr = { background: "rgba(25, 168, 145, 0.30)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", border: "1px solid rgba(25, 168, 145, 0.50)", boxShadow: "0 4px 15px rgba(25, 168, 145, 0.2)" };
+
+  // Glass versions of original colors: Blue, Orange, Purple, Teal
+  const COLORS = [
+    "rgba(59, 130, 246, 0.40)",
+    "rgba(249, 115, 22, 0.40)",
+    "rgba(139, 92, 246, 0.40)",
+    "rgba(13, 148, 136, 0.40)"
+  ];
+  const STROKE_COLORS = [
+    "rgba(59, 130, 246, 0.60)",
+    "rgba(249, 115, 22, 0.60)",
+    "rgba(139, 92, 246, 0.60)",
+    "rgba(13, 148, 136, 0.60)"
+  ];
   return (
     <div className="space-y-6 pb-6">
       <header className="mb-6">
@@ -1331,7 +1374,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
           {
             label: "إجمالي المتقدمين",
             value: totalApplicants.toString(),
-            icon: <Users size={20} />,
+            icon: <Users size={18} />,
             color: "text-primary",
             bg: "bg-primary/10",
             subtitle: totalApplicants > 0 ? (
@@ -1344,14 +1387,14 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
           {
             label: "إجمالي الوظائف",
             value: totalJobs.toString(),
-            icon: <Briefcase size={20} />,
+            icon: <Briefcase size={18} />,
             color: "text-indigo-600",
             bg: "bg-indigo-50",
           },
           {
             label: "متوسط وقت التوظيف",
             value: `${avgTime} يوم`,
-            icon: <Clock size={20} />,
+            icon: <Clock size={18} />,
             color: "text-orange-600",
             bg: "bg-orange-50",
           },
@@ -1361,17 +1404,17 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40 flex flex-col items-center text-center"
+            className="bg-white dark:bg-slate-800 p-5 rounded-[24px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40 flex flex-col items-center text-center"
           >
             <div
-              className={`w-12 h-12 ${metric.bg} ${metric.color} rounded-2xl flex items-center justify-center mb-6 shadow-inner-3d`}
+              className={`w-10 h-10 ${metric.bg} ${metric.color} rounded-xl flex items-center justify-center mb-4 shadow-inner-3d`}
             >
               {metric.icon}{" "}
             </div>{" "}
-            <p className="text-slate-500 dark:text-slate-400 font-bold text-sm uppercase tracking-widest mb-2">
+            <p className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">
               {metric.label}
             </p>{" "}
-            <h3 className="text-3xl font-black text-navy dark:text-white">
+            <h3 className="text-2xl font-black text-navy dark:text-white">
               {metric.value}
             </h3>{" "}
             {metric.subtitle && (
@@ -1392,15 +1435,34 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
             </h3>{" "}
             <PieChartIcon className="text-slate-300" size={20} />{" "}
           </div>{" "}
-          <div className="h-[280px] w-full">
+          <div className="h-[240px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
+                <defs>
+                  {COLORS.map((color, index) => {
+                    const rgb = '52, 211, 153'; // emerald-400
+                    return (
+                      <linearGradient key={`grad-${index}`} id={`pieGrad-${index}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={`rgba(${rgb}, 0.9)`} />
+                        <stop offset="100%" stopColor={`rgba(${rgb}, 0.1)`} />
+                      </linearGradient>
+                    );
+                  })}
+                  {COLORS.map((color, index) => {
+                    const rgb = '52, 211, 153'; // emerald-400
+                    return (
+                      <filter key={`glow-${index}`} id={`pieGlow-${index}`} x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor={`rgba(${rgb}, 0.6)`} />
+                      </filter>
+                    );
+                  })}
+                </defs>
                 <Pie
                   data={sourceOfHireData}
                   cx="50%"
                   cy="50%"
-                  innerRadius={70}
-                  outerRadius={110}
+                  innerRadius={55}
+                  outerRadius={85}
                   paddingAngle={6}
                   dataKey="value"
                   stroke="none"
@@ -1408,7 +1470,10 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                   {sourceOfHireData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
+                      fill={`url(#pieGrad-${index % COLORS.length})`}
+                      filter={`url(#pieGlow-${index % COLORS.length})`}
+                      stroke="rgba(111, 247, 166, 0.8)"
+                      strokeWidth={1}
                     />
                   ))}{" "}
                 </Pie>{" "}
@@ -1418,7 +1483,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
                       return (
-                        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-700 min-w-[160px] text-right" dir="rtl">
+                        <div className="p-4 rounded-2xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] min-w-[160px] text-right" style={glassStyleStr} dir="rtl">
                           <p className="font-bold text-slate-500 dark:text-slate-400 mb-2 text-xs">{data.name}</p>
                           <p className="text-navy dark:text-white font-black text-lg mb-2">
                             {data.value} مرشحاً
@@ -1484,9 +1549,9 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-700 min-w-[140px] text-right" dir="rtl">
+                        <div className="p-4 rounded-2xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] min-w-[140px] text-right" style={glassStyleStr} dir="rtl">
                           <p className="font-bold text-slate-500 dark:text-slate-400 mb-2 text-xs">{label}</p>
-                          <p className="text-teal-600 dark:text-teal-400 font-black text-sm flex items-center gap-1">{payload[0].value} متقدماً</p>
+                          <p className="text-white font-black text-sm flex items-center gap-1">{payload[0].value} متقدماً</p>
                         </div>
                       );
                     }
@@ -1499,16 +1564,20 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                   dataKey="value" 
                   radius={12} 
                   barSize={30} 
-                  background={{ fill: '#f8fafc', radius: 12 }}
+                  stroke="none"
+                  shape={<GlassBar />}
                 >
                   {hiringFunnelData.map((entry, index) => {
-                    let fillHex = "#0d9488"; // Green for Total and Accepted
+                    let fillRgba = "rgba(13, 148, 136, 0.40)"; // Green for Total and Accepted
+                    let strokeRgba = "rgba(13, 148, 136, 0.60)";
                     if (entry.name === "الفرز الآلي") {
-                       fillHex = "#3b82f6"; // Blue for AI Screening
+                       fillRgba = "rgba(59, 130, 246, 0.40)"; // Blue for AI Screening
+                       strokeRgba = "rgba(59, 130, 246, 0.60)";
                     } else if (entry.name === "المقابلات") {
-                       fillHex = "#f97316"; // Orange for Interviews
+                       fillRgba = "rgba(249, 115, 22, 0.40)"; // Orange for Interviews
+                       strokeRgba = "rgba(249, 115, 22, 0.60)";
                     }
-                    return <Cell key={"cell-" + index} fill={fillHex} />;
+                    return <Cell key={"cell-" + index} fill={fillRgba} stroke={strokeRgba} strokeWidth={1} />;
                   })}
                   <LabelList position="right" fill="#64748b" stroke="none" dataKey="value" fontSize={14} fontWeight="bold" />
                 </Bar>
@@ -1559,7 +1628,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       return (
-                        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-700 min-w-[140px] text-right" dir="rtl">
+                        <div className="p-4 rounded-2xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] min-w-[140px] text-right" style={glassStyleStr} dir="rtl">
                           <p className="font-bold text-slate-500 dark:text-slate-400 mb-2 text-xs">{label}</p>
                           <p className="text-slate-600 dark:text-slate-300 font-black text-sm mb-2">{payload[0].value} متقدم</p>
                         </div>
@@ -1573,16 +1642,20 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                   dataKey="value"
                   radius={12}
                   barSize={30}
-                  background={{ fill: '#f8fafc', radius: 12 }}
+                  stroke="none"
+                  shape={<GlassBar />}
                 >
                   {qualityIndexData.map((entry, index) => {
-                    let fillHex = "#0d9488"; // Same teal/green as high efficiency in table
+                    let fillRgba = "rgba(13, 148, 136, 0.40)"; // Teal/Green for high efficiency
+                    let strokeRgba = "rgba(13, 148, 136, 0.60)";
                     if (entry.name.includes("متوسطة")) {
-                       fillHex = "#f97316"; // Same orange as medium efficiency in table
+                       fillRgba = "rgba(249, 115, 22, 0.40)"; // Orange for medium efficiency
+                       strokeRgba = "rgba(249, 115, 22, 0.60)";
                     } else if (entry.name.includes("ضعيفة")) {
-                       fillHex = "#ef4444"; // Same red as low efficiency in table
+                       fillRgba = "rgba(239, 68, 68, 0.40)"; // Red for low efficiency
+                       strokeRgba = "rgba(239, 68, 68, 0.60)";
                     }
-                    return <Cell key={"cell-" + index} fill={fillHex} />;
+                    return <Cell key={"cell-" + index} fill={fillRgba} stroke={strokeRgba} strokeWidth={1} />;
                   })}
                   <LabelList position="right" fill="#64748b" stroke="none" dataKey="value" fontSize={14} fontWeight="bold" offset={12} />
                 </Bar>
@@ -2203,8 +2276,8 @@ export const SettingsPage = ({
                 const businessPrice = businessPlan?.price.toLocaleString() || (isYearly ? '14,990' : '1,499');
                 const enterprisePrice = enterprisePlan?.price.toLocaleString() || (isYearly ? '34,990' : '3,499');
                 
-                const startupFeatures = startupPlan?.features || ["3 وظائف نشطة", isYearly ? "12,000 سيرة ذاتية سنوياً" : "1,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
-                const businessFeatures = businessPlan?.features || ["10 وظائف نشطة", isYearly ? "60,000 سيرة ذاتية سنوياً" : "5,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+                const startupFeatures = startupPlan?.features || ["5 وظائف نشطة", isYearly ? "12,000 سيرة ذاتية سنوياً" : "1,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+                const businessFeatures = businessPlan?.features || ["15 وظيفة نشطة", isYearly ? "60,000 سيرة ذاتية سنوياً" : "5,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
                 const enterpriseFeatures = enterprisePlan?.features || ["وظائف غير محدودة", isYearly ? "180,000 سيرة ذاتية سنوياً" : "15,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
 
                 const showStartup = startupPlan ? startupPlan.is_active !== false : true;

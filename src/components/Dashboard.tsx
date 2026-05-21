@@ -282,6 +282,23 @@ export const Dashboard = ({
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
   const [isSmartSortOpen, setIsSmartSortOpen] = useState(false);
   const [smartSortState, setSmartSortState] = useState<"all" | "elite" | "latest" | "weak">("all");
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
+  useEffect(() => {
+    if (userEmail) {
+      const hasSeenWelcome = localStorage.getItem("hasSeenWelcomeModal_" + userEmail);
+      if (!hasSeenWelcome) {
+        setShowWelcomeModal(true);
+      }
+    }
+  }, [userEmail]);
+
+  const handleCloseWelcomeModal = () => {
+    if (userEmail) {
+      localStorage.setItem("hasSeenWelcomeModal_" + userEmail, "true");
+    }
+    setShowWelcomeModal(false);
+  };
   const smartSortRef = useRef<HTMLDivElement>(null);
   const [subTab, setSubTabState] = useState<"active" | "inactive" | "drafts">(() => {
     return (localStorage.getItem("dashboardSubTab") as "active" | "inactive" | "drafts") || "active";
@@ -362,7 +379,7 @@ export const Dashboard = ({
               aiSummary: raw.ai_justification || "قيد التحليل أو تعذر الاستخراج...",
               voiceEval: "",
               voiceEvalUrl: raw.voice_eval_url || "",
-              customAnswers: Array.isArray(raw.custom_answers) ? raw.custom_answers : [],
+              customAnswers: raw.custom_answers,
               decision: (raw.decision === 'evaluated' ? 'pending' : raw.decision) || latestDecisions[raw.id] || "pending",
               rejection_reason: raw.rejection_reason || "",
               hr_notes: raw.hr_notes || "",
@@ -371,10 +388,15 @@ export const Dashboard = ({
               skills_match: raw.skills_match || 0,
               experience_match: raw.experience_match || 0,
               education_match: raw.education_match || 0,
-              suggested_questions: Array.isArray(raw.suggested_questions) ? raw.suggested_questions : [],
-              top_strengths: Array.isArray(raw.strengths) ? raw.strengths : Array.isArray(raw.top_strengths) ? raw.top_strengths : [],
-              top_weaknesses: Array.isArray(raw.weaknesses) ? raw.weaknesses : Array.isArray(raw.top_weaknesses) ? raw.top_weaknesses : []
-            };
+              suggested_questions: raw.suggested_questions,
+              top_strengths: raw.strengths || raw.top_strengths,
+              top_weaknesses: raw.weaknesses || raw.top_weaknesses,
+              top_percentile: raw.top_percentile,
+              red_flags: raw.red_flags,
+              interview_questions: raw.interview_questions,
+              attachments: raw.attachments,
+              ai_justification: raw.ai_justification
+            } as any;
           });
         }
 
@@ -752,7 +774,7 @@ export const Dashboard = ({
     if (!job.endDate) return false;
     return new Date() > new Date(job.endDate);
   };
-  const syncedJobs = jobs.map(j => ({ ...j, applicants: applicants.filter(a => a.job.includes(j.title || "")).length }));
+  const syncedJobs = jobs.map(j => ({ ...j, company: j.company || userProfile?.companyName || userProfile?.name || "", applicants: applicants.filter(a => a.job.includes(j.title || "")).length }));
   const filteredSearchJobs = syncedJobs.filter((j) =>
     !jobSearchQuery ||
     (j.title || j.campaignTitle || "").toLowerCase().includes(jobSearchQuery.toLowerCase())
@@ -770,11 +792,11 @@ export const Dashboard = ({
           <div className="max-w-6xl mx-auto space-y-8">
             <header className="flex justify-between items-center w-full mb-8 border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2 text-navy dark:text-white" title={userProfile?.name || "مستخدم جديد"}>
-                  مرحباً بك في منصة فرز، {(userProfile?.name || "مستخدم جديد").length > 25 ? (userProfile?.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile?.name || "مستخدم جديد")}
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 text-navy dark:text-white">
+                  طلبات التوظيف
                 </h1>
                 <p className="text-slate-500 dark:text-slate-400 font-medium text-sm md:text-base">
-                  مساحتك جاهزة. ابدأ الآن في فرز المتقدمين واختيار أفضل الكفاءات بضغطة زر.
+                  مرحباً بك مجدداً. إليك نظرة شاملة على نشاط اليوم.
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
@@ -819,7 +841,7 @@ export const Dashboard = ({
               </div>
             )}
             <GlobalJobSelector
-              jobs={jobs}
+              jobs={syncedJobs}
               selectedFilter={jobFilter}
               onFilterChange={setJobFilter}
             />{" "}
@@ -1927,6 +1949,50 @@ export const Dashboard = ({
                 <RotateCcw size={14} /> تراجع
               </button>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Welcome Modal for First-Time Users */}
+        <AnimatePresence>
+          {showWelcomeModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ perspective: '1000px' }}>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+                onClick={handleCloseWelcomeModal}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, rotateX: 20, y: 40 }}
+                animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, rotateX: -20, y: 40 }}
+                transition={{ type: "spring", bounce: 0.4, duration: 0.8 }}
+                className="bg-white dark:bg-slate-800 rounded-[32px] p-8 md:p-10 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative z-10 w-full max-w-[400px] text-center border border-slate-200 dark:border-slate-700 overflow-hidden"
+              >
+                <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-400 via-primary to-teal-600" />
+                
+                <div className="mx-auto flex justify-center mb-6 mt-2">
+                  <div className="scale-[1.8] origin-center">
+                    <LogoIcon />
+                  </div>
+                </div>
+                
+                <h2 className="text-[22px] font-black text-navy dark:text-white mb-3 tracking-tight">
+                  مرحباً بك في منصة فرز، {(userProfile?.name || "مستخدم جديد").length > 20 ? (userProfile?.name || "مستخدم جديد").substring(0, 20) + "..." : (userProfile?.name || "مستخدم جديد")}
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium px-2">
+                  مساحتك جاهزة. ابدأ الآن في فرز المتقدمين واختيار أفضل الكفاءات بضغطة زر.
+                </p>
+                
+                <button
+                  onClick={handleCloseWelcomeModal}
+                  className="w-full bg-gradient-to-r from-primary to-teal-600 text-white font-bold py-3.5 rounded-2xl hover:shadow-[0_8px_25px_rgba(13,148,136,0.4)] hover:-translate-y-1 active:translate-y-0 transition-all flex justify-center items-center gap-2"
+                >
+                  ابدأ الآن
+                </button>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>

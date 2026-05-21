@@ -6,6 +6,7 @@ import ApplicantDetails from './components/ApplicantDetails';
 import Dashboard from './components/Dashboard';
 import CreateJob from './components/CreateJob';
 import { ManageJob } from './components/ManageJob';
+import { SharedManagementView } from './components/SharedManagementView';
 import React, { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from "react";
 
 class ErrorBoundary extends React.Component<any, any> {
@@ -787,7 +788,7 @@ const LoginPage = ({
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-900">
       {/* Right Side - Branding */}
-      <div className="hidden md:flex md:w-1/2 bg-[#129B81] text-white p-12 flex-col justify-center items-center text-center relative overflow-hidden">
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-primary to-teal-900 text-white p-12 flex-col justify-center items-center text-center relative overflow-hidden">
         <motion.div
           initial={{ opacity: 0, x: 50 }}
           animate={{ opacity: 1, x: 0 }}
@@ -811,7 +812,7 @@ const LoginPage = ({
       <div className="md:w-1/2 bg-white dark:bg-slate-800 p-12 flex flex-col justify-center items-center relative overflow-y-auto">
         <button
           onClick={onBack}
-          className="absolute top-8 right-8 flex items-center gap-2 text-slate-400 dark:text-slate-500 hover:text-slate-800 font-medium text-sm transition-colors"
+          className="absolute top-8 right-8 flex items-center gap-2 bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 py-2 px-4 rounded-xl font-bold text-sm transition-all shadow-sm"
         >
           <ArrowRight size={18} /> العودة للرئيسية
         </button>
@@ -835,7 +836,7 @@ const LoginPage = ({
           <form onSubmit={isForgotPassword ? handleResetPassword : handleAuth} className="space-y-5">
             {!isForgotPassword && mode === "register" && (
               <>
-                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl mb-4">
+                <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-xl mb-6 border border-slate-200/50 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => setEntityType("company")}
@@ -866,7 +867,7 @@ const LoginPage = ({
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
-                      placeholder={entityType === "company" ? "شركة التقنية المتقدمة" : "أحمد محمد"}
+                      placeholder={entityType === "company" ? "اسم الشركة أو الجهة" : "الاسم الكامل"}
                     />
                   </div>
                 </div>
@@ -938,7 +939,7 @@ const LoginPage = ({
             <button
               type="submit"
               disabled={isLoading || !email || (!isForgotPassword && !password) || (!isForgotPassword && mode === "register" && !name)}
-              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold text-white bg-primary hover:bg-teal-600 transition-all shadow-lg shadow-primary/20 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold text-white bg-[#10857b] hover:bg-teal-700 transition-all shadow-sm disabled:opacity-70 disabled:cursor-default"
             >
               {isLoading ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -972,9 +973,15 @@ const LoginPage = ({
             )}
           </form>
 
-          <div className="mt-12 pt-8 border-t border-slate-100 dark:border-slate-700 text-center">
-            <p className="text-sm text-slate-400 dark:text-slate-500">
-              نظام فرز المتقدم للتوظيف &copy; {new Date().getFullYear()}
+          <div className="mt-12 pt-8 text-center flex flex-col items-center justify-center gap-2">
+            <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 justify-center">
+               <span className="text-[10px] font-bold tracking-widest uppercase opacity-70">Powered By</span>
+               <div className="flex items-center justify-center">
+                 <div className="scale-[0.6] -mx-1"><LogoIcon /></div>
+               </div>
+            </div>
+            <p className="text-[11px] font-medium text-slate-400/70 dark:text-slate-500/70">
+              جميع الحقوق محفوظة &copy; {new Date().getFullYear()}
             </p>
           </div>
         </motion.div>
@@ -1038,7 +1045,7 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
           {" "}
           <button
             onClick={onStart}
-            className="w-full sm:w-auto bg-primary text-white px-14 py-5 rounded-[24px] text-xl font-bold hover:shadow-[0_20px_50px_rgba(13,148,136,0.3)] transition-all hover:-translate-y-1.5 active:scale-95 flex items-center justify-center gap-3 group"
+            className="w-full sm:w-auto bg-[#10857b] text-white px-14 py-5 rounded-[24px] text-xl font-bold hover:shadow-md hover:bg-teal-700 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 group"
           >
             {" "}
             ابدأ مجاناً الآن{" "}
@@ -1074,7 +1081,7 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
         <div className="text-center mb-24">
           {" "}
           <h2 className="text-4xl md:text-5xl font-bold text-navy dark:text-white mb-6">
-            كيف توظف مع فرز؟
+            كيف توظف مع <span className="text-primary">فرز</span>؟
           </h2>{" "}
           <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 text-lg font-medium">
             3 خطوات تفصلك عن مرشحك الأنسب
@@ -1206,30 +1213,30 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
         {" "}
         <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-[0.03] dark:opacity-5" />{" "}
         <div className="relative z-10 text-center">
-          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-navy dark:text-white mb-6 leading-tight">الفرز اليدوي انتهى. لغة الأرقام تتحدث.</h2>
-          <p className="text-slate-500 dark:text-slate-400 text-xl font-medium mb-16 max-w-3xl mx-auto">نظام <span className="font-bold text-primary">فرز</span> ليس مجرد أداة، بل هو ترقية كاملة لقسم الموارد البشرية لديك.</p>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-navy dark:text-white mb-6 leading-tight">الفرز اليدوي انتهى. لغة الأرقام تتحدث</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-xl font-medium mb-16 max-w-3xl mx-auto">نظام <span className="font-bold text-primary">فرز</span> ليس مجرد أداة، بل هو ترقية كاملة لقسم الموارد البشرية لديك</p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm card-3d">
               <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Clock size={32} />
               </div>
               <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">3 ثوانٍ فقط</h3>
-              <p className="text-slate-500 dark:text-slate-400 font-medium">لتحليل السيرة واستخراج البيانات.</p>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">لتحليل السيرة واستخراج البيانات</p>
             </div>
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm card-3d">
               <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Target size={32} />
               </div>
               <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">99% دقة مطابقة</h3>
-              <p className="text-slate-500 dark:text-slate-400 font-medium">خوارزميات ترشح الكفاءات بدون تحيز.</p>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">خوارزميات ترشح الكفاءات بدون تحيز</p>
             </div>
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm card-3d">
               <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Briefcase size={32} />
               </div>
               <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">القضاء على الهدر</h3>
-              <p className="text-slate-500 dark:text-slate-400 font-medium">وفر ميزانيتك المهدرة في الفرز اليدوي.</p>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">وفر ميزانيتك المهدرة في الفرز اليدوي</p>
             </div>
           </div>
         </div>{" "}
@@ -1249,12 +1256,12 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
               جاهز لأتمتة التوظيف في شركتك؟
             </h2>
             <p className="text-slate-500 dark:text-slate-400 max-w-xl mx-auto font-medium text-lg mt-4">
-              انضم للشركات الرائدة التي تبني فرق عمل استثنائية بوقت وجهد أقل وبدقة متناهية.
+              انضم للشركات الرائدة التي تبني فرق عمل استثنائية بوقت وجهد أقل وبدقة متناهية
             </p>
           </div>
           <div className="flex flex-col items-center justify-center mt-8">
             <button onClick={onOpenBookingModal} className="bg-primary text-white px-12 py-4 rounded-xl text-lg font-bold hover:bg-teal-600 hover:shadow-lg transition-all active:scale-95">
-              احجز عرضاً توضيحياً
+              احجز عرضا توضيحيا
             </button>
           </div>
         </div>
@@ -1406,7 +1413,7 @@ const UpdatePasswordPage = ({ onComplete }: { onComplete: () => void }) => {
           <button
             type="submit"
             disabled={isLoading || !password || !confirmPassword}
-            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark transition-all shadow-xl shadow-primary/30 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark transition-all shadow-xl shadow-primary/30 disabled:opacity-70 disabled:cursor-default"
           >
             {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : "حفظ كلمة المرور"}
           </button>
@@ -1548,6 +1555,7 @@ export default function App() {
             company_id: raw.company_id,
             title: raw.title,
             recordType: raw.record_type || 'single',
+            company: raw.department || raw.company_name || "",
             department: raw.department || "",
             location: raw.location || "",
             type: raw.type || "",
@@ -1593,7 +1601,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user || null);
-      if (session && !window.location.pathname.startsWith('/apply/')) {
+      if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/')) {
         // Restore last tab from sessionStorage (Deep Linking)
         const savedTab = sessionStorage.getItem('sahab_last_tab');
         if (savedTab) {
@@ -1614,7 +1622,7 @@ export default function App() {
       if (_event === 'PASSWORD_RECOVERY') {
         setStep("updatePassword");
       } else if (_event === 'TOKEN_REFRESHED' || _event === 'SIGNED_IN') {
-        if (session && !window.location.pathname.startsWith('/apply/')) {
+        if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/')) {
           // Restore saved tab on re-login after session timeout
           const savedTab = sessionStorage.getItem('sahab_last_tab');
           if (savedTab) {
@@ -1627,13 +1635,13 @@ export default function App() {
             return prevStep;
           });
         }
-      } else if (session && !window.location.pathname.startsWith('/apply/')) {
+      } else if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/')) {
         setStep(prevStep => {
           if (prevStep === "updatePassword") return "updatePassword";
           if (["landing", "login", "registerCompany"].includes(prevStep)) return "dashboard";
           return prevStep;
         });
-      } else if (!session && !window.location.pathname.startsWith('/apply/')) {
+      } else if (!session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/')) {
         if (_event === 'SIGNED_OUT') {
           // Save current tab before logout for session timeout scenarios
           setDashboardTab(prev => {
@@ -1699,6 +1707,7 @@ export default function App() {
                 company_id: data.company_id,
                 title: data.title,
                 recordType: data.record_type || 'single',
+                company: data.department || data.company_name || "",
                 department: data.department || "",
                 location: data.location || "",
                 type: data.type || "",
@@ -1751,7 +1760,9 @@ export default function App() {
       };
       
       fetchJobDirectly();
-    }
+     } else if (path.startsWith('/share/')) {
+       setStep('share');
+     }
   }, []);
 
   useEffect(() => {
@@ -1820,7 +1831,7 @@ export default function App() {
           company_id: actualCompanyId,
           title: newJob.title,
           record_type: newJob.recordType || 'single',
-          department: newJob.department,
+          department: newJob.company || newJob.department,
           location: newJob.location,
           type: newJob.type,
           types: newJob.types || [],
@@ -2197,6 +2208,9 @@ export default function App() {
                   onSubmit={() => setStep("dashboard")}
                 />
               </ErrorBoundary>
+            )}
+            {step === "share" && (
+              <SharedManagementView jobId={window.location.pathname.split('/')[2]} />
             )}
           </motion.div>{" "}
         </AnimatePresence>{" "}

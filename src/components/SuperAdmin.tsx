@@ -16,6 +16,7 @@ import {
   Ban,
   Shield,
   Zap,
+  Activity,
 } from "lucide-react";
 import { LogoIcon } from '../Shared';
 import { getVoiceInterviewFeatureEnabled, setVoiceInterviewFeatureEnabled } from '../config';
@@ -51,6 +52,7 @@ const SuperAdminDashboard = () => {
             { name: "الاشتراكات والفواتير", icon: <CreditCard size={20} /> },
             { name: "الإعدادات العامة", icon: <Settings size={20} /> },
             { name: "قاموس المهارات", icon: <FileText size={20} /> },
+            { name: "مراقبة النظام", icon: <Activity size={20} /> },
           ].map((item) => (
             <button
               key={item.name}
@@ -285,7 +287,27 @@ const SuperAdminDashboard = () => {
             </div>
           )}
 
-          {activeTab !== "إدارة الشركات" && activeTab !== "قاموس المهارات" && activeTab !== "الإعدادات العامة" && (
+          {activeTab === "مراقبة النظام" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 h-[calc(100vh-10rem)] flex flex-col">
+              <header className="mb-4 shrink-0">
+                <h1 className="text-3xl font-bold mb-2 text-navy dark:text-white flex items-center gap-3">
+                  <Activity className="text-primary" /> مراقبة النظام (Flower)
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400 font-medium">
+                  مراقبة طوابير المهام وحالة السيرفر في الوقت الفعلي (Celery & Redis).
+                </p>
+              </header>
+              <div className="flex-1 w-full bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden relative min-h-[600px]">
+                <iframe 
+                  src="https://farz-cv-processo-2.onrender.com" 
+                  className="absolute inset-0 w-full h-full border-0"
+                  title="System Monitor"
+                />
+              </div>
+            </div>
+          )}
+
+          {activeTab !== "إدارة الشركات" && activeTab !== "قاموس المهارات" && activeTab !== "الإعدادات العامة" && activeTab !== "مراقبة النظام" && (
             <div className="flex flex-col items-center justify-center p-20 bg-white/5 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
                <h2 className="text-2xl font-bold text-slate-400 mb-2">قريباً</h2>
                <p className="text-slate-500">هذه الأداة قيد التطوير...</p>
