@@ -51,6 +51,7 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
           .from('applicants')
           .select('*')
           .eq('job_id', jobId)
+          .neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW')
           .order('created_at', { ascending: false });
 
         if (appData && !appError) {

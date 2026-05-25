@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft, Lock, Info, Users, X, Plus, Calendar, Sparkles, 
   CheckCircle, Save, Share2, MapPin, Briefcase, FileText, 
-  CreditCard, Upload, ExternalLink, Mic, Clock, Ban, Eye, FileDigit, Link, Send, Copy, Settings, RefreshCw, Zap, AlertTriangle, Target, ClipboardList, Trash2, CheckSquare, Square, Image as ImageIcon, Video, Paperclip
+  CreditCard, Upload, ExternalLink, Mic, Clock, Ban, Eye, FileDigit, Link, Send, Copy, Settings, RefreshCw, Zap, AlertTriangle, Target, ClipboardList, Trash2, CheckSquare, Square, Image as ImageIcon, Video, Paperclip, RotateCcw
 } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { skillsDictionary, getUserSavedSkills, saveUserSkills, Job, VerificationModal } from '../Shared';
@@ -62,6 +62,7 @@ export const ManageJob = ({
   const [welcomeUIMessage, setWelcomeUIMessage] = useState(job.welcomeUIMessage || "");
   const [portalTitle, setPortalTitle] = useState(job.portalTitle || "");
   const [fontFamily, setFontFamily] = useState(job.fontFamily || "cairo");
+  const [aiInstructions, setAiInstructions] = useState(job.aiInstructions || (job as any).ai_instructions || "");
 
   // Status
   const [status, setStatus] = useState(job.status || "نشط");
@@ -149,7 +150,8 @@ export const ManageJob = ({
       customAttachments,
       welcomeUIMessage,
       portalTitle,
-      fontFamily
+      fontFamily,
+      aiInstructions
     };
 
     try {
@@ -168,7 +170,8 @@ export const ManageJob = ({
         custom_attachments: updatedJob.customAttachments,
         welcome_ui_message: updatedJob.welcomeUIMessage,
         portal_title: updatedJob.portalTitle,
-        font_family: updatedJob.fontFamily
+        font_family: updatedJob.fontFamily,
+        ai_instructions: updatedJob.aiInstructions
       }).eq('id', updatedJob.id);
       
       if (error) throw error;
@@ -176,9 +179,14 @@ export const ManageJob = ({
       onUpdate(updatedJob);
       setShowWarningModal(false);
       alert("تم حفظ التعديلات بنجاح!");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Supabase update error:", err);
-      alert("حدث خطأ أثناء الحفظ. يرجى المحاولة مرة أخرى.");
+      if (err.message?.includes('LIMIT_REACHED') || err.details?.includes('LIMIT_REACHED')) {
+        alert("لقد وصلت للحد الأقصى للوظائف النشطة في باقتك. الرجاء إغلاق وظيفة أخرى أولاً.");
+        setStatus(job.status || "مغلق");
+      } else {
+        alert("حدث خطأ أثناء الحفظ. يرجى المحاولة مرة أخرى.");
+      }
     }
   };
 
@@ -406,7 +414,11 @@ export const ManageJob = ({
                   
                   {/* Additional Settings that were moved here */}
                   <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                     <h4 className="font-bold text-navy dark:text-white mb-2">تخصيص الواجهة</h4>
+                     <h4 className="font-bold text-navy dark:text-white mb-2">تخصيص الواجهة والفرز الذكي</h4>
+                     <div className="space-y-2 mb-4 bg-primary/5 border border-primary/20 p-4 rounded-xl">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-2 flex items-center gap-2"><Sparkles size={16} className="text-primary"/> توجيهات إضافية لمحرك الفرز (AI Instructions)</label>
+                      <textarea value={aiInstructions} onChange={e => setAiInstructions(e.target.value)} placeholder="مثال: يرجى تقليل نسبة المتقدم إذا لم يكن يملك خبرة في برنامج فوتوشوب، أو ارفع نسبة المتقدم إذا كان يحمل شهادة PMP..." className="w-full px-4 py-3 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-medium text-navy dark:text-white min-h-[100px]"></textarea>
+                     </div>
                      <div className="space-y-2">
                       <label className="text-sm font-bold text-navy dark:text-white mr-2">رسالة الترحيب</label>
                       <input type="text" value={welcomeUIMessage} onChange={e => setWelcomeUIMessage(e.target.value)} placeholder="مثال: يسعدنا انضمامك لفريقنا..." className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-medium text-navy dark:text-white" />
@@ -688,6 +700,23 @@ export const ManageJob = ({
                 </button>
                 <form onSubmit={handleUpdate} className="hidden"><button id="hidden-submit" type="submit"></button></form>
               </div>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  if (window.confirm("هل أنت متأكد من رغبتك في فك حظر الـ 90 يوماً والسماح للمتقدمين السابقين بالتقديم مرة أخرى على هذه الوظيفة؟")) {
+                    try {
+                      await supabase.from('applicants').update({ is_cooldown_bypassed: true }).eq('job_id', job.id);
+                      window.dispatchEvent(new CustomEvent('showToast', { detail: { message: "تم فك الحظر عن المتقدمين السابقين بنجاح", type: "success" }}));
+                    } catch(e) {
+                      console.error(e);
+                    }
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 p-3 rounded-2xl font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors mb-4"
+              >
+                <RotateCcw size={16} /> فتح التقديم يدوياً (فك حظر 90 يوم)
+              </button>
 
               {onClone && (
                 <button

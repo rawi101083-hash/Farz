@@ -444,23 +444,41 @@ export const EmptyState = ({
   onAction: () => void;
 }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="flex flex-col items-center justify-center py-16 px-8 text-center bg-white dark:bg-slate-800 rounded-[32px] border border-dashed border-slate-200 dark:border-slate-700 shadow-sm"
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="flex flex-col items-center justify-center py-20 px-8 text-center bg-white dark:bg-slate-800 rounded-[40px] border border-slate-100 dark:border-slate-700 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 relative overflow-hidden w-full mx-auto"
   >
-    <div className="mb-6 flex justify-center">
-      <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 rounded-full flex items-center justify-center ring-4 ring-slate-50 dark:ring-slate-800/30">
-        <Search size={28} strokeWidth={1.5} />
-      </div>
+    <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-primary/5 to-transparent -z-10" />
+    <div className="absolute -top-32 -right-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl opacity-50" />
+    <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl opacity-50" />
+    
+    <div className="mb-10 relative" style={{ perspective: "1000px" }}>
+      <motion.div 
+        animate={{ y: [0, -8, 0] }} 
+        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+        className="relative z-10"
+      >
+        <div className="w-32 h-32 bg-slate-50 dark:bg-slate-800/80 rounded-[32px] flex items-center justify-center mx-auto shadow-inner-3d border border-white/50 dark:border-slate-700">
+          <Search size={56} className="text-slate-300 dark:text-slate-500" strokeWidth={1.5} />
+        </div>
+        <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-gradient-to-br from-primary to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-12 border-2 border-white dark:border-slate-800">
+          <Briefcase size={24} className="text-white drop-shadow-md" strokeWidth={2} />
+        </div>
+      </motion.div>
     </div>
-    <h3 className="text-2xl font-bold text-navy dark:text-white mb-4 max-w-md leading-relaxed text-center">
+    
+    <h3 className="text-2xl md:text-3xl font-black text-navy dark:text-white mb-6 max-w-lg leading-tight text-center relative z-10">
       {title}
     </h3>
+    
     <button
       onClick={onAction}
-      className="bg-primary text-white px-10 py-4 rounded-2xl font-bold text-lg hover:bg-teal-600 transition-all shadow-lg hover:shadow-xl active:scale-95 flex items-center gap-3 mt-4"
+      className="bg-primary text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-primary-dark transition-all shadow-xl shadow-primary/30 active:scale-95 flex items-center gap-3 mt-2 relative z-10 group"
     >
-      {actionLabel} <Plus size={20} />
+      <div className="bg-white/20 p-1.5 rounded-lg group-hover:bg-white/30 transition-colors">
+        <Plus size={20} strokeWidth={3} />
+      </div>
+      {actionLabel}
     </button>
   </motion.div>
 );

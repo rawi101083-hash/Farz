@@ -345,6 +345,7 @@ export const Dashboard = ({
           .from('applicants')
           .select('*')
           .in('job_id', jobIds)
+          .neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW')
           .order('created_at', { ascending: false });
 
         const latestDecisions = window.localStorage ? JSON.parse(window.localStorage.getItem("sahab_decisions") || "{}") : {};
@@ -1454,7 +1455,7 @@ export const Dashboard = ({
             <header className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div>
                 <h1 className="text-4xl font-bold mb-3 text-navy dark:text-white">
-                  إدارة الإعلانات
+                  إدارة الوظائف
                 </h1>{" "}
                 <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
                   أدر جميع الوظائف المتاحة والمنتهية وتابع المتقدمين.

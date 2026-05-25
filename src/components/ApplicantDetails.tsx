@@ -514,12 +514,22 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                         <AlertTriangle size={18} /> رادار التحذيرات (Red Flags 🚩)
                       </h4>
                       <ul className="space-y-2">
-                        {redFlags.map((flag: string, i: number) => (
-                          <li key={i} className="flex gap-2 text-sm text-red-800 dark:text-red-300/90 leading-relaxed font-bold">
-                            <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
-                            {flag}
-                          </li>
-                        ))}
+                        {redFlags.map((flagObj: any, i: number) => {
+                          const flagText = typeof flagObj === 'string' ? flagObj : (flagObj.point || "");
+                          const evidenceText = typeof flagObj === 'string' ? "" : (flagObj.evidence || "");
+                          if (!flagText) return null;
+                          return (
+                            <li key={i} className="flex gap-3">
+                              <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
+                              <div>
+                                <p className="text-sm text-red-800 dark:text-red-300/90 leading-relaxed font-bold">{flagText}</p>
+                                {evidenceText && (
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1 font-medium">"{evidenceText}"</p>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   )}
@@ -531,7 +541,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                       </h4>
                       <ul className="space-y-4">
                         {actualStrengths.map((strObj: any, i: number) => {
-                          const strengthText = typeof strObj === 'string' ? strObj : (strObj.strength || "");
+                          const strengthText = typeof strObj === 'string' ? strObj : (strObj.point || strObj.strength || "");
                           const evidenceText = typeof strObj === 'string' ? "" : (strObj.evidence || "");
                           if (!strengthText) return null;
                           return (
@@ -540,7 +550,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                               <div>
                                 <p className="text-sm text-green-800 dark:text-green-300/90 leading-relaxed font-bold">{strengthText}</p>
                                 {evidenceText && (
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1 font-medium">{evidenceText}</p>
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1 font-medium">"{evidenceText}"</p>
                                 )}
                               </div>
                             </li>
@@ -554,12 +564,22 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                         <Zap size={18} /> فجوات ونقاط الانتباه
                       </h4>
                       <ul className="space-y-2">
-                        {actualWeaknesses.map((weak: string, i: number) => (
-                          <li key={i} className="flex gap-2 text-sm text-orange-800 dark:text-orange-300/90 leading-relaxed font-bold">
-                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-2 shrink-0" />
-                            {weak}
-                          </li>
-                        ))}
+                        {actualWeaknesses.map((weakObj: any, i: number) => {
+                          const weakText = typeof weakObj === 'string' ? weakObj : (weakObj.point || "");
+                          const evidenceText = typeof weakObj === 'string' ? "" : (weakObj.evidence || "");
+                          if (!weakText) return null;
+                          return (
+                            <li key={i} className="flex gap-3">
+                              <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-2 shrink-0" />
+                              <div>
+                                <p className="text-sm text-orange-800 dark:text-orange-300/90 leading-relaxed font-bold">{weakText}</p>
+                                {evidenceText && (
+                                  <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1 font-medium">"{evidenceText}"</p>
+                                )}
+                              </div>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   </div>
@@ -786,7 +806,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
 
                     return questions.map((item: any, idx: number) => {
                       const qText = typeof item === 'string' ? item : (item.q || item.question || "");
-                      const rText = typeof item === 'string' ? "" : (item.reason || item.objective || "");
+                      const rText = typeof item === 'string' ? "" : (item.purpose || item.reason || item.objective || "");
 
                       if (!qText) return null;
 
@@ -800,7 +820,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                           </h4>
                           {rText && (
                             <p className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 inline-block px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700 mt-2">
-                              <span className="text-primary mr-1 text-sm bg-primary/10 px-2 py-0.5 rounded-lg ml-2">الهدف التحليلي</span>
+                              <span className="text-primary mr-1 text-sm bg-primary/10 px-2 py-0.5 rounded-lg ml-2">الهدف من السؤال</span>
                               {rText}
                             </p>
                           )}

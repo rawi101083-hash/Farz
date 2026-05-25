@@ -171,14 +171,18 @@ export const ApplicantForm = ({
     }
 
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("عذراً، يجب ألا يتجاوز حجم ملف السيرة الذاتية 5 ميجابايت.");
+        return;
+      }
       if (isCampaign && roles.length > 1 && !selectedRoleId) {
         alert("يرجى اختيار المسمى الوظيفي أولاً قبل رفع السيرة الذاتية.");
         return;
       }
       const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const allowedExts = ['pdf', 'doc', 'docx'];
+      const allowedExts = ['pdf', 'docx', 'jpg', 'jpeg', 'png'];
       if (!allowedExts.includes(fileExt || '')) {
-        alert("صيغة الملف غير مدعومة، يرجى رفع PDF أو Word");
+        alert("صيغة الملف غير مدعومة، يرجى رفع PDF أو DOCX أو صور (JPG, PNG)");
         return;
       }
       setResumeFileName(file.name);
@@ -471,6 +475,58 @@ export const ApplicantForm = ({
     if (isAutoRejected) {
       console.log(`Applicant Auto-Rejected (${autoRejectReason}). Appended skipAI=true to avoid API costs.`);
     }
+    
+    // --- Double Protection Shield (Pre-flight Logic) ---
+    const cvFile = resumeFile || submitData.resume || submitData.cv || (formRef.current?.querySelector('input[type="file"]') as HTMLInputElement)?.files?.[0];
+    try {
+      if (job?.id && !isPreview) {
+        // Generate Device Fingerprint
+        const str = `${navigator.userAgent}-${window.screen.width}x${window.screen.height}-${navigator.language}`;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(str);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const deviceFingerprint = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        
+        // Generate File Hash
+        let fileHash = "";
+        if (cvFile && cvFile instanceof File) {
+          const fileBuffer = await cvFile.arrayBuffer();
+          const fileHashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer);
+          const fileHashArray = Array.from(new Uint8Array(fileHashBuffer));
+          fileHash = fileHashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+        
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        
+        let query = supabase.from('applicants')
+          .select('id, created_at')
+          .eq('job_id', job.id)
+          .eq('is_cooldown_bypassed', false)
+          .gte('created_at', ninetyDaysAgo.toISOString());
+          
+        if (fileHash) {
+          query = query.or(`device_fingerprint.eq.${deviceFingerprint},file_hash.eq.${fileHash}`);
+        } else {
+          query = query.eq('device_fingerprint', deviceFingerprint);
+        }
+        
+        const { data: existingApps } = await query;
+        if (existingApps && existingApps.length > 0) {
+          alert("عفواً، لا يمكنك التقديم على نفس الوظيفة أكثر من مرة خلال 90 يوماً.");
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Store these hashes in formDataState or pass them to DB
+        submitData._deviceFingerprint = deviceFingerprint;
+        submitData._fileHash = fileHash;
+      }
+    } catch (e) {
+      console.error("Double Protection Shield Error:", e);
+      // Fail open to avoid blocking legitimate users if crypto fails
+    }
 
     // Asynchronous background task for PDF OCR and AI webhook
     const processAndSubmitBackground = async () => {
@@ -544,7 +600,9 @@ export const ApplicantForm = ({
             cv_file_url: cv_file_url || null,
             decision: isAutoRejected ? "filtered" : "pending",
             rejection_reason: isAutoRejected ? `مرفوض آلياً (${autoRejectReason})` : null,
-            custom_answers: customAnswers
+            custom_answers: customAnswers,
+            device_fingerprint: submitData._deviceFingerprint || null,
+            file_hash: submitData._fileHash || null
           }])
           .select("id")
           .single();
@@ -602,10 +660,7 @@ export const ApplicantForm = ({
           }
         );
         
-        // Increment cvs count if successful
-        if (job?.company_id) {
-          await supabase.rpc('increment_cv_count', { comp_id: job.company_id }).catch(() => {});
-        }
+        // Increment cvs count is now handled securely by Supabase Backend Triggers (increment_cv_on_insert)
       } catch (error) {
         console.error("Webhook error:", error);
       }
@@ -838,7 +893,7 @@ export const ApplicantForm = ({
                 >
                   <input
                     type="file"
-                    accept=".pdf, .doc, .docx"
+                    accept=".pdf, .docx, .jpg, .jpeg, .png"
                     onChange={handleFileUpload}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
@@ -894,7 +949,7 @@ export const ApplicantForm = ({
                   <div className="relative">
                     <input
                       type="file"
-                      accept=".pdf, .doc, .docx"
+                      accept=".pdf, .docx, .jpg, .jpeg, .png"
                       onChange={handleFileUpload}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     />
