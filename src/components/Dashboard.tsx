@@ -436,7 +436,7 @@ export const Dashboard = ({
   useEffect(() => {
     if (pendingAction && clearPendingAction) {
       setApplicants(prev => prev.map(a => a.id === pendingAction.id ? { ...a, decision: pendingAction.decision } : a));
-      
+
       if (pendingAction.decision === "filtered" && !pendingAction.isOffer) {
         if (undoAction?.timeoutId) clearTimeout(undoAction.timeoutId);
         const timeoutId = setTimeout(() => {
@@ -447,14 +447,14 @@ export const Dashboard = ({
         setToastMessage("تم إرسال العرض بنجاح");
         setTimeout(() => setToastMessage(null), 3500);
       }
-      
+
       // Save mock decisions to localStorage to prevent bounce-back
       try {
         const decisions = JSON.parse(window.localStorage.getItem("sahab_decisions") || "{}");
         decisions[pendingAction.id] = pendingAction.decision;
         window.localStorage.setItem("sahab_decisions", JSON.stringify(decisions));
-      } catch(e) {}
-      
+      } catch (e) { }
+
       clearPendingAction();
     }
   }, [pendingAction, clearPendingAction, undoAction]);
@@ -491,7 +491,7 @@ export const Dashboard = ({
       setToastMessage("لا يوجد متقدمين غير متطابقين");
       setTimeout(() => setToastMessage(null), 3000);
     }
-    
+
     setSmartSortState("weak");
     setIsSmartSortOpen(false);
   };
@@ -509,7 +509,7 @@ export const Dashboard = ({
       setToastMessage("لا يوجد متقدمين أعلى مطابقة");
       setTimeout(() => setToastMessage(null), 3000);
     }
-    
+
     setSmartSortState("elite");
     setIsSmartSortOpen(false);
   };
@@ -527,10 +527,10 @@ export const Dashboard = ({
       a.email?.toLowerCase().includes(searchLower)
     );
 
-    const smartSortMatch = 
+    const smartSortMatch =
       smartSortState === "elite" ? Number(a.rating) >= 80 :
-      smartSortState === "weak" ? Number(a.rating) < 50 :
-      true;
+        smartSortState === "weak" ? Number(a.rating) < 50 :
+          true;
 
     return statusMatch && jobMatch && favMatch && searchMatch && smartSortMatch;
   });
@@ -561,9 +561,9 @@ export const Dashboard = ({
     const applicant = applicants.find(a => a.id === id);
     if (!applicant) return;
     const prevDecision = applicant.decision || "pending";
-    
+
     if (undoAction?.timeoutId) clearTimeout(undoAction.timeoutId);
-    
+
     const targetDecision = decision;
     const updatePayload: any = { decision: targetDecision };
     if (decision === "rejected" || decision === "filtered") {
@@ -586,7 +586,7 @@ export const Dashboard = ({
         const decisions = JSON.parse(window.localStorage.getItem("sahab_decisions") || "{}");
         decisions[id] = targetDecision;
         window.localStorage.setItem("sahab_decisions", JSON.stringify(decisions));
-      } catch(e) {}
+      } catch (e) { }
     }
 
     if (decision !== "pending") {
@@ -619,7 +619,7 @@ export const Dashboard = ({
         console.warn("Could not sync bulk decision to backend:", error);
       }
     }
-    
+
     // Save mock decisions to localStorage
     try {
       const decisions = JSON.parse(window.localStorage.getItem("sahab_decisions") || "{}");
@@ -627,7 +627,7 @@ export const Dashboard = ({
         if (id.startsWith("mock-")) decisions[id] = "filtered";
       });
       window.localStorage.setItem("sahab_decisions", JSON.stringify(decisions));
-    } catch(e) {}
+    } catch (e) { }
 
     setSelectedApplicantIds([]);
     const timeoutId = setTimeout(() => {
@@ -643,10 +643,10 @@ export const Dashboard = ({
     setUndoAction(null);
 
     const idsToRestore = Array.isArray(id) ? id : [id];
-    
+
     // UI Update
     setApplicants(prev => prev.map(a => idsToRestore.includes(a.id) ? { ...a, decision: prevDecision as any, rejection_reason: "" } : a));
-    
+
     // Backend Sync
     const realIds = idsToRestore.filter(i => !i.startsWith("mock-"));
     if (realIds.length > 0) {
@@ -696,15 +696,15 @@ export const Dashboard = ({
     };
 
     setApplicants(prev => [...prev, clonedApplicant]);
-    
+
     // Backend Sync
     try {
       // First, we need to fetch the original applicant's raw data to clone it properly
       const { data: originalRaw } = await supabase.from('applicants').select('*').eq('id', crossNominateApplicant.id).single();
-      
+
       if (originalRaw) {
         const { id, created_at, job_id, decision, rejection_reason, source, ...restOfRaw } = originalRaw;
-        
+
         await supabase.from('applicants').insert([{
           ...restOfRaw,
           id: newId,
@@ -995,9 +995,9 @@ export const Dashboard = ({
                         <Filter size={18} />
                         <span>
                           {smartSortState === "elite" ? "الأعلى مطابقة" :
-                           smartSortState === "weak" ? "غير المطابقين" :
-                           smartSortState === "latest" ? "الأحدث تسجيلاً" :
-                           "الفرز الذكي"}
+                            smartSortState === "weak" ? "غير المطابقين" :
+                              smartSortState === "latest" ? "الأحدث تسجيلاً" :
+                                "الفرز الذكي"}
                         </span>
                       </div>
                       <ChevronDown size={14} className={`relative z-10 transition-transform ${isSmartSortOpen ? "rotate-180" : ""}`} />
@@ -1132,257 +1132,257 @@ export const Dashboard = ({
                         {visibleApplicants.map((row, index) => {
                           const isBlurred = plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining === 0;
                           return (
-                          <motion.tr
-                            layout
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            key={row.id}
-                            className={`transition-colors group ${isBlurred ? 'opacity-60 pointer-events-none select-none filter blur-[3px]' : 'hover:bg-slate-50 dark:bg-slate-800/80 cursor-pointer'}`}
-                          >
-                            {isSelectionMode && (
-                              <td className="px-3 py-4 w-10">
-                                <div
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (selectedApplicantIds.includes(row.id)) {
-                                      setSelectedApplicantIds(prev => prev.filter(id => id !== row.id));
-                                    } else {
-                                      setSelectedApplicantIds(prev => [...prev, row.id]);
-                                    }
-                                  }}
-                                  className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${selectedApplicantIds.includes(row.id) ? "bg-primary border-primary text-white opacity-100" : "border-slate-300 dark:border-slate-600 bg-slate-100/50 dark:bg-slate-800 opacity-0 group-hover:opacity-100 hover:border-slate-400"}`}
-                                >
-                                  {selectedApplicantIds.includes(row.id) && (
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                  )}
-                                </div>
-                              </td>
-                            )}
-                            <td className="px-2 py-3">
-                              <div className="flex items-center gap-2 whitespace-nowrap">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleToggleFavorite(row.id); }}
-                                  className={`transition-all ${row.is_favorite ? "text-yellow-500 scale-110" : "text-slate-200 hover:text-yellow-500"}`}
-                                  title={row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
-                                >
-                                  <Star
-                                    size={18}
-                                    fill={
-                                      row.is_favorite
-                                        ? "currentColor"
-                                        : "none"
-                                    }
-                                  />{" "}
-                                </button>{" "}
-                                <div
-                                  onClick={(e) => {
-                                    if (row.photoUrl) {
-                                      e.stopPropagation();
-                                      setLightboxPhoto(row.photoUrl);
-                                    }
-                                  }}
-                                  className={`w-10 h-10 rounded-[14px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d transition-colors overflow-hidden ${row.photoUrl ? "cursor-pointer hover:opacity-80" : "group-hover:bg-white dark:hover:bg-slate-600"}`}
-                                >
-                                  {row.photoUrl ? (
-                                    <img src={row.photoUrl} alt={row.name} className="w-full h-full object-cover" />
-                                  ) : (
-                                    row.name.charAt(0)
-                                  )}{" "}
-                                </div>{" "}
-                                <div className="flex flex-col">
-                                  <span className="font-bold text-navy dark:text-white">
-                                    {row.name}
-                                  </span>
-                                  {row.nominatedTo && (
-                                    <div className="mt-1 text-[10px] bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md inline-block font-bold w-fit border border-blue-100 dark:border-blue-800/30 shadow-sm">
-                                      🔄 تم ترشيحه لـ: {row.nominatedTo}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>{" "}
-                            </td>{" "}
-                            <td className="px-2 py-3">
-                              <div className="flex justify-start">
-                                <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white px-2 py-1 rounded-md text-[11px] font-bold inline-flex items-center justify-center whitespace-nowrap w-fit">
-                                  {row.job}{" "}
-                                </span>{" "}
-                              </div>
-                            </td>{" "}
-                            <td className="px-2 py-3">
-                              <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
-                                <div className="w-12 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                            <motion.tr
+                              layout
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.9 }}
+                              key={row.id}
+                              className={`transition-colors group ${isBlurred ? 'opacity-60 pointer-events-none select-none filter blur-[3px]' : 'hover:bg-slate-50 dark:bg-slate-800/80 cursor-pointer'}`}
+                            >
+                              {isSelectionMode && (
+                                <td className="px-3 py-4 w-10">
                                   <div
-                                    className={`h-full ${row.rating >= 80 ? "bg-primary" : row.rating >= 50 ? "bg-orange-500" : "bg-red-500"}`}
-                                    style={{ width: `${row.rating}%` }}
-                                  />{" "}
-                                </div>{" "}
-                                <span className={`text-sm font-bold ${row.rating >= 80 ? "text-primary" : row.rating >= 50 ? "text-orange-600 dark:text-orange-400" : "text-red-600 dark:text-red-400"}`}>
-                                  {row.rating}%
-                                </span>{" "}
-                              </div>{" "}
-                            </td>{" "}
-                            <td className="px-2 py-3 text-xs text-slate-600 dark:text-slate-300 font-bold whitespace-nowrap text-right">
-                              {row.status}
-                            </td>{" "}
-                            <td className="px-2 py-3">
-                              <div className="flex items-center justify-center gap-1">
-                                <a
-                                  href={`https://wa.me/${row.phone}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="w-8 h-8 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded-lg flex items-center justify-center hover:bg-green-500 dark:hover:bg-green-500/60 dark:hover:text-green-100 hover:text-white transition-all shadow-sm"
-                                  title="واتساب"
-                                >
-                                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.878-.788-1.47-1.761-1.643-2.059-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
-                                  </svg>{" "}
-                                </a>{" "}
-                                <a
-                                  href={`mailto:${row.email}`}
-                                  className="w-8 h-8 bg-navy/5 dark:bg-slate-700/50 text-navy dark:text-slate-200 rounded-lg flex items-center justify-center hover:bg-navy dark:hover:bg-slate-600 hover:text-white transition-all shadow-sm"
-                                  title="إيميل"
-                                >
-                                  <Mail size={15} />{" "}
-                                </a>{" "}
-                                <a
-                                  href={`tel:${row.phone}`}
-                                  className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-lg flex items-center justify-center hover:bg-blue-500 dark:hover:bg-blue-500/60 dark:hover:text-blue-100 hover:text-white transition-all shadow-sm"
-                                  title="اتصال"
-                                >
-                                  <Phone size={15} />{" "}
-                                </a>{" "}
-                              </div>{" "}
-                            </td>{" "}
-                            <td className="px-2 py-3">
-                              <div className="flex items-center justify-end gap-1.5 w-max ml-auto pl-4">
-                                {row.decision === "filtered" ? (
-                                  <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleDecision(row.id, "pending");
+                                      if (selectedApplicantIds.includes(row.id)) {
+                                        setSelectedApplicantIds(prev => prev.filter(id => id !== row.id));
+                                      } else {
+                                        setSelectedApplicantIds(prev => [...prev, row.id]);
+                                      }
                                     }}
-                                    className="flex items-center justify-center gap-1 border border-primary text-primary hover:bg-primary hover:text-white dark:border-primary/50 dark:hover:bg-primary px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                                    title="استعادة"
+                                    className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${selectedApplicantIds.includes(row.id) ? "bg-primary border-primary text-white opacity-100" : "border-slate-300 dark:border-slate-600 bg-slate-100/50 dark:bg-slate-800 opacity-0 group-hover:opacity-100 hover:border-slate-400"}`}
                                   >
-                                    <RotateCcw size={14} /> استعادة
-                                  </button>
-                                ) : row.decision && row.decision !== "pending" ? (
-                                  <>
-                                    
-                                    <button
-                                      onClick={() => {
-                                        if (window.confirm("هل أنت متأكد من رغبتك في التراجع عن هذا القرار وإعادته لقيد المراجعة؟")) {
-                                          handleDecision(row.id, "pending");
-                                        }
-                                      }}
-                                      className="flex items-center justify-center gap-1 border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-400 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
-                                      title="تراجع"
-                                    >
-                                      <RotateCcw size={14} /> تراجع
-                                    </button>
-                                  </>
-                                ) : (
-                                  <>
-                                    <button
-                                      onClick={() => handleDecision(row.id, "accepted")}
-                                      className="flex items-center justify-center gap-1 bg-green-50 text-green-600 hover:bg-green-500 hover:text-white dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                                      title="قبول"
-                                    >
-                                      <CheckCircle size={14} /> قبول
-                                    </button>
-                                    <button
-                                      onClick={() => handleDecision(row.id, "interview")}
-                                      className="flex items-center justify-center gap-1 bg-yellow-50 text-yellow-600 hover:bg-yellow-500 hover:text-white dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                                      title="مقابلة"
-                                    >
-                                      مقابلة
-                                    </button>
-                                    <button
-                                      onClick={() => handleDecision(row.id, "rejected")}
-                                      className="flex items-center justify-center gap-1 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                                      title="رفض"
-                                    >
-                                      <X size={14} /> رفض
-                                    </button>
-                                  </>
-                                )}
-                                <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                                <button
-                                  onClick={() => onViewDetails(row)}
-                                  className="flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                                  title="عرض الملف"
-                                >
-                                  <FileText size={14} /> عرض الملف{" "}
-                                </button>
-                                <div className="relative">
+                                    {selectedApplicantIds.includes(row.id) && (
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                    )}
+                                  </div>
+                                </td>
+                              )}
+                              <td className="px-2 py-3">
+                                <div className="flex items-center gap-2 whitespace-nowrap">
                                   <button
-                                    onClick={() => setOpenDropdownId(openDropdownId === row.id ? null : row.id)}
-                                    className="flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 hover:text-navy hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); handleToggleFavorite(row.id); }}
+                                    className={`transition-all ${row.is_favorite ? "text-yellow-500 scale-110" : "text-slate-200 hover:text-yellow-500"}`}
+                                    title={row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
                                   >
-                                    <MoreVertical size={16} />
-                                  </button>
+                                    <Star
+                                      size={18}
+                                      fill={
+                                        row.is_favorite
+                                          ? "currentColor"
+                                          : "none"
+                                      }
+                                    />{" "}
+                                  </button>{" "}
+                                  <div
+                                    onClick={(e) => {
+                                      if (row.photoUrl) {
+                                        e.stopPropagation();
+                                        setLightboxPhoto(row.photoUrl);
+                                      }
+                                    }}
+                                    className={`w-10 h-10 rounded-[14px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d transition-colors overflow-hidden ${row.photoUrl ? "cursor-pointer hover:opacity-80" : "group-hover:bg-white dark:hover:bg-slate-600"}`}
+                                  >
+                                    {row.photoUrl ? (
+                                      <img src={row.photoUrl} alt={row.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                      row.name.charAt(0)
+                                    )}{" "}
+                                  </div>{" "}
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-navy dark:text-white">
+                                      {row.name}
+                                    </span>
+                                    {row.nominatedTo && (
+                                      <div className="mt-1 text-[10px] bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md inline-block font-bold w-fit border border-blue-100 dark:border-blue-800/30 shadow-sm">
+                                        🔄 تم ترشيحه لـ: {row.nominatedTo}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>{" "}
+                              </td>{" "}
+                              <td className="px-2 py-3">
+                                <div className="flex justify-start">
+                                  <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white px-2 py-1 rounded-md text-[11px] font-bold inline-flex items-center justify-center whitespace-nowrap w-fit">
+                                    {row.job}{" "}
+                                  </span>{" "}
+                                </div>
+                              </td>{" "}
+                              <td className="px-2 py-3">
+                                <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
+                                  <div className="w-12 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full ${row.rating >= 80 ? "bg-primary" : row.rating >= 50 ? "bg-orange-500" : "bg-red-500"}`}
+                                      style={{ width: `${row.rating}%` }}
+                                    />{" "}
+                                  </div>{" "}
+                                  <span className={`text-sm font-bold ${row.rating >= 80 ? "text-primary" : row.rating >= 50 ? "text-orange-600 dark:text-orange-400" : "text-red-600 dark:text-red-400"}`}>
+                                    {row.rating}%
+                                  </span>{" "}
+                                </div>{" "}
+                              </td>{" "}
+                              <td className="px-2 py-3 text-xs text-slate-600 dark:text-slate-300 font-bold whitespace-nowrap text-right">
+                                {row.status}
+                              </td>{" "}
+                              <td className="px-2 py-3">
+                                <div className="flex items-center justify-center gap-1">
+                                  <a
+                                    href={`https://wa.me/${row.phone}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="w-8 h-8 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded-lg flex items-center justify-center hover:bg-green-500 dark:hover:bg-green-500/60 dark:hover:text-green-100 hover:text-white transition-all shadow-sm"
+                                    title="واتساب"
+                                  >
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.878-.788-1.47-1.761-1.643-2.059-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
+                                    </svg>{" "}
+                                  </a>{" "}
+                                  <a
+                                    href={`mailto:${row.email}`}
+                                    className="w-8 h-8 bg-navy/5 dark:bg-slate-700/50 text-navy dark:text-slate-200 rounded-lg flex items-center justify-center hover:bg-navy dark:hover:bg-slate-600 hover:text-white transition-all shadow-sm"
+                                    title="إيميل"
+                                  >
+                                    <Mail size={15} />{" "}
+                                  </a>{" "}
+                                  <a
+                                    href={`tel:${row.phone}`}
+                                    className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-lg flex items-center justify-center hover:bg-blue-500 dark:hover:bg-blue-500/60 dark:hover:text-blue-100 hover:text-white transition-all shadow-sm"
+                                    title="اتصال"
+                                  >
+                                    <Phone size={15} />{" "}
+                                  </a>{" "}
+                                </div>{" "}
+                              </td>{" "}
+                              <td className="px-2 py-3">
+                                <div className="flex items-center justify-end gap-1.5 w-max ml-auto pl-4">
+                                  {row.decision === "filtered" ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDecision(row.id, "pending");
+                                      }}
+                                      className="flex items-center justify-center gap-1 border border-primary text-primary hover:bg-primary hover:text-white dark:border-primary/50 dark:hover:bg-primary px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                      title="استعادة"
+                                    >
+                                      <RotateCcw size={14} /> استعادة
+                                    </button>
+                                  ) : row.decision && row.decision !== "pending" ? (
+                                    <>
 
-                                  {(() => {
-                                    const isNearBottom = index >= visibleApplicants.length - 2 && visibleApplicants.length > 2;
-                                    return (
-                                      <AnimatePresence>
-                                        {openDropdownId === row.id && (
-                                          <>
-                                            <div
-                                              className="fixed inset-0 z-40"
-                                              onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); }}
-                                            />
-                                            <motion.div
-                                              initial={{ opacity: 0, y: isNearBottom ? -10 : 10, scale: 0.95 }}
-                                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                                              exit={{ opacity: 0, scale: 0.95 }}
-                                              style={{ left: 0, right: 'auto' }}
-                                              className={`absolute w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 dark:border-slate-700 py-2 z-50 overflow-hidden ${isNearBottom ? "bottom-[110%]" : "mt-2 top-full"}`}
-                                            >
-                                              <button
-                                                onClick={(e) => { e.stopPropagation(); handleToggleFavorite(row.id); setOpenDropdownId(null); }}
-                                                className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
+                                      <button
+                                        onClick={() => {
+                                          if (window.confirm("هل أنت متأكد من رغبتك في التراجع عن هذا القرار وإعادته لقيد المراجعة؟")) {
+                                            handleDecision(row.id, "pending");
+                                          }
+                                        }}
+                                        className="flex items-center justify-center gap-1 border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-400 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
+                                        title="تراجع"
+                                      >
+                                        <RotateCcw size={14} /> تراجع
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() => handleDecision(row.id, "accepted")}
+                                        className="flex items-center justify-center gap-1 bg-green-50 text-green-600 hover:bg-green-500 hover:text-white dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                        title="قبول"
+                                      >
+                                        <CheckCircle size={14} /> قبول
+                                      </button>
+                                      <button
+                                        onClick={() => handleDecision(row.id, "interview")}
+                                        className="flex items-center justify-center gap-1 bg-yellow-50 text-yellow-600 hover:bg-yellow-500 hover:text-white dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                        title="مقابلة"
+                                      >
+                                        مقابلة
+                                      </button>
+                                      <button
+                                        onClick={() => handleDecision(row.id, "rejected")}
+                                        className="flex items-center justify-center gap-1 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                        title="رفض"
+                                      >
+                                        <X size={14} /> رفض
+                                      </button>
+                                    </>
+                                  )}
+                                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                                  <button
+                                    onClick={() => onViewDetails(row)}
+                                    className="flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                    title="عرض الملف"
+                                  >
+                                    <FileText size={14} /> عرض الملف{" "}
+                                  </button>
+                                  <div className="relative">
+                                    <button
+                                      onClick={() => setOpenDropdownId(openDropdownId === row.id ? null : row.id)}
+                                      className="flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 hover:text-navy hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                    >
+                                      <MoreVertical size={16} />
+                                    </button>
+
+                                    {(() => {
+                                      const isNearBottom = index >= visibleApplicants.length - 2 && visibleApplicants.length > 2;
+                                      return (
+                                        <AnimatePresence>
+                                          {openDropdownId === row.id && (
+                                            <>
+                                              <div
+                                                className="fixed inset-0 z-40"
+                                                onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); }}
+                                              />
+                                              <motion.div
+                                                initial={{ opacity: 0, y: isNearBottom ? -10 : 10, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                style={{ left: 0, right: 'auto' }}
+                                                className={`absolute w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 dark:border-slate-700 py-2 z-50 overflow-hidden ${isNearBottom ? "bottom-[110%]" : "mt-2 top-full"}`}
                                               >
-                                                <Star size={16} className={row.is_favorite ? "text-yellow-500" : "text-slate-400"} fill={row.is_favorite ? "currentColor" : "none"} />
-                                                {row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
-                                              </button>
-                                              {talentPool.some(t => t.id === row.id && !(t as any).is_removed_from_pool) ? (
                                                 <button
-                                                  onClick={() => handleRemoveFromPool(row.id)}
-                                                  className="w-full text-right px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
-                                                >
-                                                  <Database size={16} className="text-red-500" /> إزالة من بنك الكفاءات
-                                                </button>
-                                              ) : (
-                                                <button
-                                                  onClick={() => handleMoveToPool(row)}
+                                                  onClick={(e) => { e.stopPropagation(); handleToggleFavorite(row.id); setOpenDropdownId(null); }}
                                                   className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
                                                 >
-                                                  <Database size={16} className="text-slate-400" /> إضافة إلى بنك الكفاءات
+                                                  <Star size={16} className={row.is_favorite ? "text-yellow-500" : "text-slate-400"} fill={row.is_favorite ? "currentColor" : "none"} />
+                                                  {row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
                                                 </button>
-                                              )}
-                                              <button
-                                                onClick={() => {
-                                                  setCrossNominateApplicant(row);
-                                                  setCrossNominateJobId(jobs.find(j => j.status === "نشط")?.id || "");
-                                                  setOpenDropdownId(null);
-                                                }}
-                                                className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
-                                              >
-                                                <Briefcase size={16} className="text-primary" /> ترشيح لوظيفة أخرى
-                                              </button>
+                                                {talentPool.some(t => t.id === row.id && !(t as any).is_removed_from_pool) ? (
+                                                  <button
+                                                    onClick={() => handleRemoveFromPool(row.id)}
+                                                    className="w-full text-right px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
+                                                  >
+                                                    <Database size={16} className="text-red-500" /> إزالة من بنك الكفاءات
+                                                  </button>
+                                                ) : (
+                                                  <button
+                                                    onClick={() => handleMoveToPool(row)}
+                                                    className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
+                                                  >
+                                                    <Database size={16} className="text-slate-400" /> إضافة إلى بنك الكفاءات
+                                                  </button>
+                                                )}
+                                                <button
+                                                  onClick={() => {
+                                                    setCrossNominateApplicant(row);
+                                                    setCrossNominateJobId(jobs.find(j => j.status === "نشط")?.id || "");
+                                                    setOpenDropdownId(null);
+                                                  }}
+                                                  className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
+                                                >
+                                                  <Briefcase size={16} className="text-primary" /> ترشيح لوظيفة أخرى
+                                                </button>
 
-                                            </motion.div>
-                                          </>
-                                        )}
-                                      </AnimatePresence>
-                                    );
-                                  })()}
-                                </div>
-                              </div>{" "}
-                            </td>{" "}
-                          </motion.tr>
+                                              </motion.div>
+                                            </>
+                                          )}
+                                        </AnimatePresence>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>{" "}
+                              </td>{" "}
+                            </motion.tr>
                           );
                         })}
                         {visibleApplicants.some((row, index) => plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining === 0) && (
@@ -1418,11 +1418,11 @@ export const Dashboard = ({
                 <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-primary/5 to-transparent -z-10" />
                 <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
                 <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl" />
-                
+
                 <div className="w-28 h-28 bg-white dark:bg-slate-700 text-primary rounded-[40px] flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 transform -rotate-6 border border-slate-50 dark:border-slate-600 relative z-10">
                   <Rocket size={56} className="text-primary drop-shadow-md" />
                 </div>
-                
+
                 <h1 className="text-4xl md:text-5xl font-black text-navy dark:text-white leading-tight mb-6">
                   {plan === 'free' ? (
                     <>أهلاً بك! ابدأ الآن بنشر إعلانك الأول <span className="text-primary">مجاناً</span> 🚀</>
@@ -1430,14 +1430,14 @@ export const Dashboard = ({
                     <>أهلاً بك في منصة <span className="text-primary">التوظيف الذكي</span> 🚀</>
                   )}
                 </h1>
-                
+
                 <p className="text-lg md:text-xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-2xl mx-auto mb-12">
                   {plan === 'free' ? "احصل على أول 50 سيرة ذاتية مفروزة بتقنيات الذكاء الاصطناعي مجاناً بالكامل. نحن هنا لنسهل عليك رحلة البحث عن أفضل الكفاءات واختيار الأنسب لفريقك." : "نحن هنا لنسهل عليك رحلة البحث عن أفضل الكفاءات وتقييم المتقدمين بتقنيات الذكاء الاصطناعي بكل احترافية."}
                 </p>
-                
+
                 <div className="relative z-10">
                   <button onClick={onCreateJob} className="bg-primary text-white px-10 md:px-14 py-5 md:py-6 rounded-3xl font-black text-xl md:text-2xl hover:bg-primary-dark transition-all active:scale-[0.98] shadow-2xl shadow-primary/30 flex items-center justify-center gap-4 mx-auto group">
-                    <Briefcase size={28} className="group-hover:scale-110 transition-transform" /> 
+                    <Briefcase size={28} className="group-hover:scale-110 transition-transform" />
                     {plan === 'free' ? "أنشئ إعلانك الأول الآن" : "أنشئ وظيفتك الأولى الآن"}
                   </button>
                   {plan === 'free' && (
@@ -1826,9 +1826,9 @@ export const Dashboard = ({
                 </p>
                 {userProfile.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile.title}</p>}
               </div>
-              <button 
-                onClick={async () => await supabase.auth.signOut()} 
-                className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shrink-0" 
+              <button
+                onClick={async () => await supabase.auth.signOut()}
+                className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shrink-0"
                 title="تسجيل الخروج"
               >
                 <LogOut size={16} />
@@ -1847,16 +1847,16 @@ export const Dashboard = ({
                 <span>{plan === 'enterprise' ? '∞' : `${activeCount} / ${jobLimit}`}</span>
               </div>
               <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 bg-primary`} 
-                  style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (activeCount / (jobLimit || 1)) * 100)}%` }} 
+                <div
+                  className={`h-full rounded-full transition-all duration-500 bg-primary`}
+                  style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (activeCount / (jobLimit || 1)) * 100)}%` }}
                 />
               </div>
 
               <div className={`flex justify-between items-center text-xs font-bold text-slate-300 pt-2 ${plan === 'free' && cvsRemaining === 0 ? 'mt-2' : 'border-t border-slate-700/50'}`}>
                 {plan === 'free' ? (
                   cvsRemaining === 0 ? (
-                    <div 
+                    <div
                       onClick={() => setActiveTab('باقات فرز')}
                       className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 text-red-400 py-2.5 px-2 rounded-xl cursor-pointer hover:from-red-500/20 hover:to-orange-500/20 transition-all active:scale-95 shadow-sm group"
                     >
@@ -1877,9 +1877,9 @@ export const Dashboard = ({
                 )}
               </div>
               <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all duration-500 ${cvsRemaining === 0 && cvLimit > 0 ? 'bg-red-500' : cvColor}`} 
-                  style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (cvsRemaining / (cvLimit || 1)) * 100)}%` }} 
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${cvsRemaining === 0 && cvLimit > 0 ? 'bg-red-500' : cvColor}`}
+                  style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (cvsRemaining / (cvLimit || 1)) * 100)}%` }}
                 />
               </div>
             </div>
@@ -1938,12 +1938,12 @@ export const Dashboard = ({
                 )}
                 <span>
                   {undoAction.targetDecision === "accepted" ? (Array.isArray(undoAction.id) ? "تم قبول المتقدمين المحددين بنجاح" : "تم قبول المتقدم بنجاح") :
-                   undoAction.targetDecision === "filtered" || undoAction.targetDecision === "rejected" ? (Array.isArray(undoAction.id) ? "تم رفض وتصفية المتقدمين بنجاح" : "تم رفض المتقدم بنجاح") :
-                   undoAction.targetDecision === "interview" ? "تم تحديد مقابلة للمتقدم بنجاح" :
-                   "تم تحديث حالة المتقدم بنجاح"}
+                    undoAction.targetDecision === "filtered" || undoAction.targetDecision === "rejected" ? (Array.isArray(undoAction.id) ? "تم رفض وتصفية المتقدمين بنجاح" : "تم رفض المتقدم بنجاح") :
+                      undoAction.targetDecision === "interview" ? "تم تحديد مقابلة للمتقدم بنجاح" :
+                        "تم تحديث حالة المتقدم بنجاح"}
                 </span>
               </div>
-              <button 
+              <button
                 onClick={handleUndo}
                 className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-2"
               >
@@ -1972,20 +1972,20 @@ export const Dashboard = ({
                 className="bg-white dark:bg-slate-800 rounded-[32px] p-8 md:p-10 shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative z-10 w-full max-w-[400px] text-center border border-slate-200 dark:border-slate-700 overflow-hidden"
               >
                 <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-400 via-primary to-teal-600" />
-                
+
                 <div className="mx-auto flex justify-center mb-6 mt-2">
                   <div className="scale-[1.8] origin-center">
                     <LogoIcon />
                   </div>
                 </div>
-                
+
                 <h2 className="text-[22px] font-black text-navy dark:text-white mb-3 tracking-tight">
                   مرحباً بك في منصة فرز، {(userProfile?.name || "مستخدم جديد").length > 20 ? (userProfile?.name || "مستخدم جديد").substring(0, 20) + "..." : (userProfile?.name || "مستخدم جديد")}
                 </h2>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium px-2">
                   مساحتك جاهزة. ابدأ الآن في فرز المتقدمين واختيار أفضل الكفاءات بضغطة زر.
                 </p>
-                
+
                 <button
                   onClick={handleCloseWelcomeModal}
                   className="w-full bg-gradient-to-r from-primary to-teal-600 text-white font-bold py-3.5 rounded-2xl hover:shadow-[0_8px_25px_rgba(13,148,136,0.4)] hover:-translate-y-1 active:translate-y-0 transition-all flex justify-center items-center gap-2"

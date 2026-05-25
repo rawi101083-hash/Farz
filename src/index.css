@@ -1,24 +1,13 @@
-@import "tailwindcss";
-
-@theme {
-  --font-sans: "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #0D9488; /* Relaxing Teal */
-  --color-navy: #0F172A; /* Deep Professional Navy */
-  --color-bg: #F1F5F9; /* Soft Slate Gray */
-  --color-accent: #6366F1; /* Indigo for subtle highlights */
-  --color-employer-green: #0D9488; /* Aligned with Primary Teal */
-  --color-mint: #ccfbf1; /* Light Teal for contrast */
-  
-  --shadow-3d: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1), inset 0 1px 1px 0 rgb(255 255 255 / 0.1);
-  --shadow-inner-3d: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
-  --shadow-inner-3d: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
-}
-
-@custom-variant dark (&:is(.dark *));
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   body {
-    @apply font-sans bg-bg dark:bg-navy text-navy dark:text-white antialiased;
+    @apply font-sans bg-bg text-navy antialiased;
+  }
+  .dark body {
+    @apply bg-navy text-white;
   }
   
   /* Enforce English numerals across the system for numeric inputs */
@@ -48,51 +37,4 @@
   .depth-2 {
     box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
   }
-  
-  .bg-watermark {
-    background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg transform='translate(40,40)' opacity='0.02'%3E%3Crect width='40' height='40' rx='12' fill='%230D9488' /%3E%3Cg stroke='white' stroke-width='2.5' stroke-linecap='square'%3E%3Cpath d='M16 10H10V30H16' /%3E%3C/g%3E%3Ccircle cx='23' cy='20' r='5' fill='white' /%3E%3C/g%3E%3C/svg%3E");
-    background-repeat: repeat;
-  }
 }
-
-@keyframes jiggle {
-  0% { transform: rotate(-3deg); }
-  50% { transform: rotate(3deg); }
-  100% { transform: rotate(0deg); }
-}
-
-.logo-icon:active {
-  animation: jiggle 0.2s ease-in-out;
-  transform: scale(0.95);
-}
-
-@keyframes gradient-move {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-.animate-gradient-move {
-  background-size: 200% 200%;
-  animation: gradient-move 3s ease infinite;
-}
-
-/* Autofill for dark mode */
-.dark input:-webkit-autofill,
-.dark input:-webkit-autofill:hover,
-.dark input:-webkit-autofill:focus,
-.dark input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
-    -webkit-text-fill-color: white !important;
-    transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Autofill for light mode */
-html:not(.dark) input:-webkit-autofill,
-html:not(.dark) input:-webkit-autofill:hover,
-html:not(.dark) input:-webkit-autofill:focus,
-html:not(.dark) input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #f8fafc inset !important;
-    -webkit-text-fill-color: #1e293b !important;
-    transition: background-color 5000s ease-in-out 0s;
-}
-
