@@ -508,9 +508,9 @@ export const ApplicantForm = ({
           .gte('created_at', ninetyDaysAgo.toISOString());
           
         if (fileHash) {
-          query = query.or(`device_fingerprint.eq.${deviceFingerprint},file_hash.eq.${fileHash},email.eq.${submitData.email || ""}`);
+          query = query.or(`device_fingerprint.eq.${deviceFingerprint},file_hash.eq.${fileHash}`);
         } else {
-          query = query.or(`device_fingerprint.eq.${deviceFingerprint},email.eq.${submitData.email || ""}`);
+          query = query.eq('device_fingerprint', deviceFingerprint);
         }
         
         const { data: existingApps } = await query;
