@@ -508,9 +508,9 @@ export const ApplicantForm = ({
           .gte('created_at', ninetyDaysAgo.toISOString());
           
         if (fileHash) {
-          query = query.or(`device_fingerprint.eq.${deviceFingerprint},file_hash.eq.${fileHash}`);
+          query = query.or(`device_fingerprint.eq.${deviceFingerprint},file_hash.eq.${fileHash},email.eq.${submitData.email || ""}`);
         } else {
-          query = query.eq('device_fingerprint', deviceFingerprint);
+          query = query.or(`device_fingerprint.eq.${deviceFingerprint},email.eq.${submitData.email || ""}`);
         }
         
         const { data: existingApps } = await query;
@@ -627,7 +627,7 @@ export const ApplicantForm = ({
         return;
       }
 
-      const API_BASE_URL = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
+      const API_BASE_URL = import.meta.env.VITE_PYTHON_API_URL || "https://farz-cv-processo.onrender.com";
       
       const pythonPayload = {
         applicant_id: applicant_db_id,
