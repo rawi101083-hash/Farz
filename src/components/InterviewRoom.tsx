@@ -21,9 +21,11 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
     });
 
     vapi.on('error', (error) => {
-      console.error(error);
+      console.error("VAPI ERROR LOG:", error);
       setCallStatus('error');
-      setErrorMessage('حدث خطأ أثناء الاتصال. يرجى التأكد من سماحيات المايكروفون والمحاولة مرة أخرى.');
+      // Extract the real error message if available, otherwise fallback
+      const errorMsg = error?.message || error?.error?.message || JSON.stringify(error) || 'حدث خطأ أثناء الاتصال. يرجى التأكد من سماحيات المايكروفون والمحاولة مرة أخرى.';
+      setErrorMessage(errorMsg);
     });
 
     vapi.on('volume-level', (level) => {
