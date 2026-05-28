@@ -12,6 +12,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
   const [showAcceptOptions, setShowAcceptOptions] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [interviewLang, setInterviewLang] = useState<'ar' | 'en'>('ar');
 
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [interviewDate, setInterviewDate] = useState(() => {
@@ -312,21 +313,34 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
               <CheckCircle size={16} /> قبول
             </button>
             {(applicant?.decision === "interview" || applicant?.decision === "interviewing") && !applicant?.is_interview_completed && (
-              <div className="flex gap-2">
-                <a
-                  href={`https://wa.me/${candidate.whatsapp}?text=${encodeURIComponent(`مرحباً ${actualName}، ندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${window.location.origin}/interview/${applicant.id}`)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white border border-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-900/50 dark:hover:bg-green-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
-                >
-                  <MessageCircle size={16} /> إرسال المقابلة (واتساب)
-                </a>
-                <a
-                  href={`mailto:${candidate.email}?subject=${encodeURIComponent(`دعوة لمقابلة الذكاء الاصطناعي - ${companyName}`)}&body=${encodeURIComponent(`مرحباً ${actualName}،\n\nندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${window.location.origin}/interview/${applicant.id}\n\nمع التوفيق.`)}`}
-                  className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-900/50 dark:hover:bg-blue-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
-                >
-                  <Mail size={16} /> إرسال المقابلة (إيميل)
-                </a>
+              <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">لغة الذكاء الاصطناعي:</span>
+                  <select 
+                    value={interviewLang}
+                    onChange={(e) => setInterviewLang(e.target.value as 'ar' | 'en')}
+                    className="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1 outline-none focus:border-primary"
+                  >
+                    <option value="ar">العربية</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+                <div className="flex gap-2">
+                  <a
+                    href={`https://wa.me/${candidate.whatsapp}?text=${encodeURIComponent(`مرحباً ${actualName}، ندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${window.location.origin}/interview/${applicant.id}?lang=${interviewLang}`)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white border border-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-900/50 dark:hover:bg-green-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                  >
+                    <MessageCircle size={16} /> إرسال المقابلة (واتساب)
+                  </a>
+                  <a
+                    href={`mailto:${candidate.email}?subject=${encodeURIComponent(`دعوة لمقابلة الذكاء الاصطناعي - ${companyName}`)}&body=${encodeURIComponent(`مرحباً ${actualName}،\n\nندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${window.location.origin}/interview/${applicant.id}?lang=${interviewLang}\n\nمع التوفيق.`)}`}
+                    className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-900/50 dark:hover:bg-blue-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                  >
+                    <Mail size={16} /> إرسال المقابلة (إيميل)
+                  </a>
+                </div>
               </div>
             )}
             {applicant?.decision !== "interview" && applicant?.decision !== "interviewing" && (

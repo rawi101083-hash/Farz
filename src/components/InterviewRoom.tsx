@@ -4,14 +4,26 @@ import { Mic, MicOff, PhoneOff, AlertCircle, Play, ShieldCheck, Waves } from 'lu
 import Vapi from '@vapi-ai/web';
 import { LogoIcon } from '../Shared'; // Assuming LogoIcon is exported from Shared
 
-const vapi = new Vapi('1325def0-c344-4811-aa65-c3bb5d38ca16');
+const VAPI_PUBLIC_KEY = '1325def0-c344-4811-aa65-c3bb5d38ca16';
+const ENGLISH_ASSISTANT_ID = '0486ff5b-3ef4-4a40-bb38-4b0ec6dfd400';
+const ARABIC_ASSISTANT_ID = '465bda68-de37-4d5c-88c1-37df8164c98f';
 
 export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, onBack: () => void }) => {
   const [callStatus, setCallStatus] = useState<'idle' | 'loading' | 'active' | 'ended' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [volumeLevel, setVolumeLevel] = useState(0);
 
+  // Read language from URL parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const lang = urlParams.get('lang') || 'ar';
+  
+  // Use a ref to store vapi instance so it persists
+  const vapiRef = useRef<any>(null);
+
   useEffect(() => {
+    vapiRef.current = new Vapi(VAPI_PUBLIC_KEY);
+    const vapi = vapiRef.current;
+
     vapi.on('call-start', () => {
       setCallStatus('active');
     });
@@ -20,7 +32,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       setCallStatus('ended');
     });
 
-    vapi.on('error', (error) => {
+    vapi.on('error', (error: any) => {
       console.error("VAPI ERROR LOG:", error);
       setCallStatus('error');
       // Extract the real error message if available, otherwise fallback
@@ -28,7 +40,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       setErrorMessage(errorMsg);
     });
 
-    vapi.on('volume-level', (level) => {
+    vapi.on('volume-level', (level: number) => {
       setVolumeLevel(level);
     });
 
@@ -41,9 +53,8 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
   const startInterview = async () => {
     try {
       setCallStatus('loading');
-      // We pass the applicantId to the assistant via metadata or variable if needed
-      // Currently, Vapi webhook will receive the call details. We can pass applicantId as metadata
-      await vapi.start('0486ff5b-3ef4-4a40-bb38-4b0ec6dfd400', {
+      const assistantId = lang === 'en' ? ENGLISH_ASSISTANT_ID : ARABIC_ASSISTANT_ID;
+      await vapiRef.current.start(assistantId, {
         variableValues: {
           applicantId: applicantId
         }
@@ -56,7 +67,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
   };
 
   const endInterview = () => {
-    vapi.stop();
+    vapiRef.current.stop();
     setCallStatus('ended');
   };
 
