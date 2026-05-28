@@ -627,7 +627,7 @@ export const ApplicantForm = ({
         return;
       }
 
-      const API_BASE_URL = import.meta.env.VITE_PYTHON_API_URL || "https://farz-cv-processo.onrender.com";
+      const API_BASE_URL = "https://farz-cv-processo-1.onrender.com";
       
       const pythonPayload = {
         applicant_id: applicant_db_id,
