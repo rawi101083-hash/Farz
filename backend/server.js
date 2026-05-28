@@ -190,6 +190,83 @@ app.post('/api/payment/callback', async (req, res) => {
   }
 });
 
+// ==========================================
+// Vapi Webhook - End of AI Interview
+// ==========================================
+app.post('/api/vapi/webhook', async (req, res) => {
+  try {
+    const payload = req.body;
+    const message = payload.message || payload;
+    
+    if (message.type === 'end-of-call-report') {
+      const applicantId = message.call?.variableValues?.applicantId || message.variableValues?.applicantId;
+      const transcript = message.transcript;
+
+      if (!applicantId) {
+        console.warn('Vapi Webhook: Missing applicantId in end-of-call-report');
+        return res.status(200).send('OK');
+      }
+
+      // Analyze transcript with Claude 3.5 Sonnet
+      const Anthropic = require('@anthropic-ai/sdk');
+      const anthropic = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY || "YOUR_ANTHROPIC_API_KEY" // Make sure to set this in .env
+      });
+
+      let evaluation = { summary: "لم يتم استخراج الملخص بنجاح", score: 0 };
+      
+      try {
+        const response = await anthropic.messages.create({
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 1024,
+          messages: [{
+            role: "user",
+            content: `You are an expert HR recruiter. Analyze the following AI interview transcript for an applicant.
+Provide a professional summary of the interview (strengths, weaknesses, communication skills) in Arabic, and a score out of 10.
+Return ONLY a JSON object in this format:
+{"summary": "ملخص المقابلة باللغة العربية...", "score": 8}
+
+Transcript:
+${transcript}`
+          }]
+        });
+
+        const jsonText = response.content[0].text;
+        const startIndex = jsonText.indexOf('{');
+        const endIndex = jsonText.lastIndexOf('}');
+        evaluation = JSON.parse(jsonText.substring(startIndex, endIndex + 1));
+      } catch (err) {
+        console.error('Failed to parse Claude output:', err);
+      }
+
+      // Update Supabase
+      const { error } = await supabase
+        .from('applicants')
+        .update({
+          is_interview_completed: true,
+          interview_transcript: transcript,
+          interview_summary: evaluation.summary,
+          interview_score: evaluation.score
+        })
+        .eq('id', applicantId);
+
+      if (error) {
+        console.error('Supabase update error:', error);
+      } else {
+        console.log(`AI Interview data saved for applicant: ${applicantId}`);
+      }
+      
+      return res.status(200).send('OK');
+    }
+
+    // Default response for other Vapi events
+    return res.status(200).send('OK');
+  } catch (err) {
+    console.error('Vapi webhook error:', err);
+    return res.status(500).send('Internal Server Error');
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`NeoLeap Backend listening on port ${PORT}`);

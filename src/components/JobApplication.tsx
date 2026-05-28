@@ -67,6 +67,7 @@ export const ApplicantForm = ({
   selectedRoleId,
   onBackToJobs,
   onSubmit,
+  isPreview,
 }: {
   job: Job | null;
   selectedRoleId?: string | null;
@@ -626,37 +627,40 @@ export const ApplicantForm = ({
         return;
       }
 
-      const n8nPayload = {
-        availability: submitData.availability || "",
-        applicant_db_id: applicant_db_id,
-        applicant_name: (submitData.fullName || submitData.name || submitData.firstName || "متقدم").toString(),
-        applicant_email: (submitData.email || "").toString(),
-        applicant_phone: (submitData.phone || "").toString(),
+      const API_BASE_URL = import.meta.env.VITE_PYTHON_API_URL || "http://localhost:8000";
+      
+      const pythonPayload = {
+        applicant_id: applicant_db_id,
         job_id: job?.id || "",
-        role_id: activeRole?.id || "",
         cv_file_url: cv_file_url,
-        jobTitle: activeRole?.title || job?.title || "",
-        minEducation: (activeRole?.qualification ?? job?.qualification) === "لا يشترط مؤهل" ? "لا يشترط" : (activeRole?.qualification ?? job?.qualification ?? "لا يشترط"),
-        minExperience: (activeRole?.experience ?? job?.experience) === "لا يشترط خبرة" ? "لا يشترط" : (activeRole?.experience ?? job?.experience ?? "لا يشترط"),
-        responsibilities: activeRole?.responsibilities ?? job?.responsibilities ?? "",
-        roleDescription: activeRole?.description ?? job?.description ?? "",
-        textQualifications: activeRole?.qualifications ?? job?.qualifications ?? "",
-        targetMajors: activeRole?.targetMajors ?? job?.targetMajors ?? [],
-        targetSkills: activeRole?.targetSkills ?? job?.targetSkills ?? [],
-        requiredLanguages: activeRole?.requiredLanguages ?? job?.requiredLanguages ?? [],
-        aiCustomPrompts: [
-          "قاعدة صارمة جداً: مهمتك هي التقييم وإعطاء نسبة مئوية للمطابقة (من 1 إلى 100) والترتيب فقط. يمنع منعاً باتاً استبعاد المرشح أو تعيين حالته كمرفوض (Rejected) بمجرد حصوله على نسبة منخفضة. يجب أن يبقى المتقدم في قائمة قيد الإجراء مهما كانت نسبته حتى لو كانت 0. الاستبعاد الآلي يحدث حصرياً في حال رسوب المتقدم في أسئلة الفلترة المسبقة المحددة من الموارد البشرية فقط.",
-          activeRole?.aiInstructions ?? job?.aiInstructions ?? ""
-        ].filter(Boolean).join("\n\n")
+        device_fingerprint: btoa(navigator.userAgent + window.screen.width + window.screen.height),
+        job_context: {
+          jobTitle: activeRole?.title || job?.title || "",
+          minEducation: (activeRole?.qualification ?? job?.qualification) === "لا يشترط مؤهل" ? "لا يشترط" : (activeRole?.qualification ?? job?.qualification ?? "لا يشترط"),
+          minExperience: (activeRole?.experience ?? job?.experience) === "لا يشترط خبرة" ? "لا يشترط" : (activeRole?.experience ?? job?.experience ?? "لا يشترط"),
+          responsibilities: activeRole?.responsibilities ?? job?.responsibilities ?? "",
+          roleDescription: activeRole?.description ?? job?.description ?? "",
+          textQualifications: activeRole?.qualifications ?? job?.qualifications ?? "",
+          targetMajors: activeRole?.targetMajors ?? job?.targetMajors ?? [],
+          targetSkills: activeRole?.targetSkills ?? job?.targetSkills ?? [],
+          requiredLanguages: activeRole?.requiredLanguages ?? job?.requiredLanguages ?? [],
+          aiCustomPrompts: [
+            "قاعدة صارمة: يمنع منعاً باتاً استبعاد المرشح أو تعيين حالته كمرفوض بمجرد حصوله على نسبة منخفضة. يجب أن يبقى المتقدم في قائمة قيد الإجراء مهما كانت نسبته حتى لو كانت 0.",
+            activeRole?.aiInstructions ?? job?.aiInstructions ?? ""
+          ].filter(Boolean).join("\n\n")
+        }
       };
 
       try {
         await fetch(
-          "http://localhost:5678/webhook/99f8e113-a203-45a0-82fb-46861f964ce1",
+          `${API_BASE_URL}/api/v1/extract-cv`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(n8nPayload)
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${import.meta.env.VITE_FARZ_API_KEY || "change_me_in_production"}`
+            },
+            body: JSON.stringify(pythonPayload)
           }
         );
         

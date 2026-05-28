@@ -311,6 +311,24 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
             >
               <CheckCircle size={16} /> قبول
             </button>
+            {(applicant?.decision === "interview" || applicant?.decision === "interviewing") && !applicant?.is_interview_completed && (
+              <div className="flex gap-2">
+                <a
+                  href={`https://wa.me/${candidate.whatsapp}?text=${encodeURIComponent(`مرحباً ${actualName}، ندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${window.location.origin}/interview/${applicant.id}`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white border border-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-900/50 dark:hover:bg-green-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                >
+                  <MessageCircle size={16} /> إرسال المقابلة (واتساب)
+                </a>
+                <a
+                  href={`mailto:${candidate.email}?subject=${encodeURIComponent(`دعوة لمقابلة الذكاء الاصطناعي - ${companyName}`)}&body=${encodeURIComponent(`مرحباً ${actualName}،\n\nندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${window.location.origin}/interview/${applicant.id}\n\nمع التوفيق.`)}`}
+                  className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-900/50 dark:hover:bg-blue-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                >
+                  <Mail size={16} /> إرسال المقابلة (إيميل)
+                </a>
+              </div>
+            )}
             {applicant?.decision !== "interview" && applicant?.decision !== "interviewing" && (
               <button
                 onClick={() => {
@@ -495,6 +513,23 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                       </div>
                       <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
                         الراتب المتوقع بناءً على إجابة المتقدم: <span className="text-navy dark:text-white font-black ml-1 text-sm">{applicant.expectedSalary} {applicant.expectedSalary.toString().includes("ريال") ? "" : "ريال"}</span>
+                      </p>
+                    </div>
+                  )}
+
+                  {applicant?.is_interview_completed && (
+                    <div className="bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800/30 p-6 rounded-[32px] mb-6">
+                      <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400 mb-4 flex items-center gap-2">
+                        <Mic size={20} /> تقرير المقابلة الصوتية (AI)
+                      </h3>
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3">
+                          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">التقييم النهائي:</span>
+                          <span className="text-lg font-black text-purple-600 dark:text-purple-400">{applicant?.interview_score || "-"} / 10</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap">
+                        {applicant?.interview_summary || "جاري جلب الملخص..."}
                       </p>
                     </div>
                   )}

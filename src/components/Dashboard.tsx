@@ -389,6 +389,10 @@ export const Dashboard = ({
               skills_match: raw.skills_match || 0,
               experience_match: raw.experience_match || 0,
               education_match: raw.education_match || 0,
+              is_interview_completed: raw.is_interview_completed || false,
+              interview_transcript: raw.interview_transcript || "",
+              interview_summary: raw.interview_summary || "",
+              interview_score: raw.interview_score || 0,
               suggested_questions: raw.suggested_questions,
               top_strengths: raw.strengths || raw.top_strengths,
               top_weaknesses: raw.weaknesses || raw.top_weaknesses,
@@ -1130,7 +1134,7 @@ export const Dashboard = ({
                     ) : (
                       <AnimatePresence>
                         {visibleApplicants.map((row, index) => {
-                          const isBlurred = plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining === 0;
+                          const isBlurred = plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining <= 0;
                           return (
                             <motion.tr
                               layout
@@ -1224,6 +1228,9 @@ export const Dashboard = ({
                               </td>{" "}
                               <td className="px-2 py-3 text-xs text-slate-600 dark:text-slate-300 font-bold whitespace-nowrap text-right">
                                 {row.status}
+                                {row.is_interview_completed && (
+                                  <span className="mr-2 bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 px-2 py-0.5 rounded-full text-[10px] inline-flex items-center">تمت المقابلة ✅</span>
+                                )}
                               </td>{" "}
                               <td className="px-2 py-3">
                                 <div className="flex items-center justify-center gap-1">
@@ -1385,7 +1392,7 @@ export const Dashboard = ({
                             </motion.tr>
                           );
                         })}
-                        {visibleApplicants.some((row, index) => plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining === 0) && (
+                        {visibleApplicants.some((row, index) => plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining <= 0) && (
                           <tr>
                             <td colSpan={100} className="p-0">
                               <div className="absolute left-0 w-full flex justify-center z-10 -translate-y-full pb-8 pointer-events-auto">
@@ -1548,7 +1555,7 @@ export const Dashboard = ({
               onDeactivate={subTab === "active" ? onDeactivateJob : undefined}
               onReactivate={subTab === "inactive" ? onReactivateJob : undefined}
               onDelete={(id) => setDraftToDelete(id)}
-              cvLimitReached={cvsRemaining === 0 && cvLimit > 0}
+              cvLimitReached={cvsRemaining <= 0 && cvLimit > 0}
               plan={plan}
               onUpgrade={() => { setActiveTab("الحساب"); setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 50); }}
             />{" "}
@@ -1853,9 +1860,9 @@ export const Dashboard = ({
                 />
               </div>
 
-              <div className={`flex justify-between items-center text-xs font-bold text-slate-300 pt-2 ${plan === 'free' && cvsRemaining === 0 ? 'mt-2' : 'border-t border-slate-700/50'}`}>
+              <div className={`flex justify-between items-center text-xs font-bold text-slate-300 pt-2 ${plan === 'free' && cvsRemaining <= 0 ? 'mt-2' : 'border-t border-slate-700/50'}`}>
                 {plan === 'free' ? (
-                  cvsRemaining === 0 ? (
+                  cvsRemaining <= 0 ? (
                     <div
                       onClick={() => setActiveTab('باقات فرز')}
                       className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 text-red-400 py-2.5 px-2 rounded-xl cursor-pointer hover:from-red-500/20 hover:to-orange-500/20 transition-all active:scale-95 shadow-sm group"
@@ -1878,7 +1885,7 @@ export const Dashboard = ({
               </div>
               <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all duration-500 ${cvsRemaining === 0 && cvLimit > 0 ? 'bg-red-500' : cvColor}`}
+                  className={`h-full rounded-full transition-all duration-500 ${cvsRemaining <= 0 && cvLimit > 0 ? 'bg-red-500' : cvColor}`}
                   style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (cvsRemaining / (cvLimit || 1)) * 100)}%` }}
                 />
               </div>

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { skillsDictionary, getUserSavedSkills, saveUserSkills, Job, VerificationModal } from '../Shared';
+import { supabase } from "../lib/supabaseClient";
 
 export const ManageJob = ({
   job,
@@ -706,10 +707,20 @@ export const ManageJob = ({
                 onClick={async () => {
                   if (window.confirm("هل أنت متأكد من رغبتك في فك حظر الـ 90 يوماً والسماح للمتقدمين السابقين بالتقديم مرة أخرى على هذه الوظيفة؟")) {
                     try {
-                      await supabase.from('applicants').update({ is_cooldown_bypassed: true }).eq('job_id', job.id);
-                      window.dispatchEvent(new CustomEvent('showToast', { detail: { message: "تم فك الحظر عن المتقدمين السابقين بنجاح", type: "success" }}));
+                      const { data, error } = await supabase.from('applicants').update({ is_cooldown_bypassed: true }).eq('job_id', job.id).select('id');
+                      if (error) {
+                        alert("حدث خطأ أثناء فك الحظر: " + error.message);
+                        console.error("Update error:", error);
+                      } else {
+                        if (data && data.length > 0) {
+                          window.dispatchEvent(new CustomEvent('showToast', { detail: { message: `تم فك الحظر عن ${data.length} متقدمين بنجاح`, type: "success" }}));
+                        } else {
+                          window.dispatchEvent(new CustomEvent('showToast', { detail: { message: "لا يوجد متقدمين محظورين لهذه الوظيفة حالياً", type: "info" }}));
+                        }
+                      }
                     } catch(e) {
                       console.error(e);
+                      alert("حدث خطأ غير متوقع");
                     }
                   }
                 }}

@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard';
 import CreateJob from './components/CreateJob';
 import { ManageJob } from './components/ManageJob';
 import { SharedManagementView } from './components/SharedManagementView';
+import { InterviewRoom } from './components/InterviewRoom';
 import React, { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from "react";
 
 class ErrorBoundary extends React.Component<any, any> {
@@ -1493,6 +1494,8 @@ export default function App() {
     fields_locked: false,
   });
   const [step, setStep] = useState<FlowStep>(() => {
+    if (window.location.pathname.startsWith("/interview/")) return "interview";
+    if (window.location.pathname.startsWith("/share/")) return "share";
     return window.location.pathname.startsWith("/apply/") ? "form" : "landing";
   });
   const [session, setSession] = useState<any>(null);
@@ -1507,7 +1510,7 @@ export default function App() {
   const [showBookingModal, setShowBookingModal] = useState(false);
   useEffect(() => {
     localStorage.setItem("sahab_dark_mode", String(darkMode));
-    if (window.location.pathname.startsWith("/apply/")) {
+    if (window.location.pathname.startsWith("/apply/") || window.location.pathname.startsWith("/interview/")) {
       document.documentElement.classList.remove("dark");
       return;
     }
@@ -1601,7 +1604,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user || null);
-      if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/')) {
+      if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
         // Restore last tab from sessionStorage (Deep Linking)
         const savedTab = sessionStorage.getItem('sahab_last_tab');
         if (savedTab) {
@@ -1622,7 +1625,7 @@ export default function App() {
       if (_event === 'PASSWORD_RECOVERY') {
         setStep("updatePassword");
       } else if (_event === 'TOKEN_REFRESHED' || _event === 'SIGNED_IN') {
-        if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/')) {
+        if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
           // Restore saved tab on re-login after session timeout
           const savedTab = sessionStorage.getItem('sahab_last_tab');
           if (savedTab) {
@@ -1635,13 +1638,13 @@ export default function App() {
             return prevStep;
           });
         }
-      } else if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/')) {
+      } else if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
         setStep(prevStep => {
           if (prevStep === "updatePassword") return "updatePassword";
           if (["landing", "login", "registerCompany"].includes(prevStep)) return "dashboard";
           return prevStep;
         });
-      } else if (!session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/')) {
+      } else if (!session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
         if (_event === 'SIGNED_OUT') {
           // Save current tab before logout for session timeout scenarios
           setDashboardTab(prev => {
@@ -1762,6 +1765,8 @@ export default function App() {
       fetchJobDirectly();
      } else if (path.startsWith('/share/')) {
        setStep('share');
+     } else if (path.startsWith('/interview/')) {
+       setStep('interview');
      }
   }, []);
 
@@ -2211,6 +2216,9 @@ export default function App() {
             )}
             {step === "share" && (
               <SharedManagementView jobId={window.location.pathname.split('/')[2]} />
+            )}
+            {step === "interview" && (
+              <InterviewRoom applicantId={window.location.pathname.split('/')[2]} onBack={() => window.location.href = '/'} />
             )}
           </motion.div>{" "}
         </AnimatePresence>{" "}

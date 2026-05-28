@@ -278,7 +278,9 @@ export type FlowStep =
   | "createJob"
   | "jobSuccess"
   | "publicJob"
-  | "manageJob";
+  | "manageJob"
+  | "interview"
+  | "share";
 export interface CustomAttachment {
   attachment_name: string;
   attachment_type: "file" | "link" | "image" | "video" | "document" | "mixed_file";
@@ -2883,8 +2885,12 @@ interface Applicant {
   aiSummary: string;
   voiceEval: string;
   customAnswers: { question: string; answer: string }[];
-  decision?: "accepted" | "rejected" | "pending";
+  decision?: "accepted" | "rejected" | "pending" | "interview" | "filtered";
   nominatedTo?: string;
+  is_interview_completed?: boolean;
+  interview_transcript?: string;
+  interview_summary?: string;
+  interview_score?: number;
 }
 const mockApplicants: Applicant[] = [
   {
