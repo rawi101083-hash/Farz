@@ -43,7 +43,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       setCallStatus('loading');
       // We pass the applicantId to the assistant via metadata or variable if needed
       // Currently, Vapi webhook will receive the call details. We can pass applicantId as metadata
-      await vapi.start('465bda68-de37-4d5c-88c1-37df8164c98f', {
+      await vapi.start('0486ff5b-3ef4-4a40-bb38-4b0ec6dfd400', {
         variableValues: {
           applicantId: applicantId
         }
