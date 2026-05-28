@@ -4,7 +4,7 @@ import { Mic, MicOff, PhoneOff, AlertCircle, Play, ShieldCheck, Waves } from 'lu
 import Vapi from '@vapi-ai/web';
 import { LogoIcon } from '../Shared'; // Assuming LogoIcon is exported from Shared
 
-const vapi = new Vapi('66539a4a-7fc7-461d-8cbe-884a8d48be40');
+const vapi = new Vapi('1325def0-c344-4811-aa65-c3bb5d38ca16');
 
 export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, onBack: () => void }) => {
   const [callStatus, setCallStatus] = useState<'idle' | 'loading' | 'active' | 'ended' | 'error'>('idle');
