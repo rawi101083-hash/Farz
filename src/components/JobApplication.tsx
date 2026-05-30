@@ -251,6 +251,7 @@ export const ApplicantForm = ({
   };
   const handleNextStep = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSubmitting) return;
 
     const formData = new FormData(e.currentTarget);
     const formValues = Object.fromEntries(formData.entries());
@@ -356,6 +357,7 @@ export const ApplicantForm = ({
     setFormStep("audio");
   };
   const handleFinalSubmit = async (eOrIsSkipped?: any) => {
+    if (isSubmitting) return;
     const isVoiceSkipped = typeof eOrIsSkipped === "boolean" ? eOrIsSkipped : false;
     if (!isVoiceSkipped && !audioBlob) {
       alert("يرجى تسجيل الإجابة الصوتية للمقابلة أولاً.");
@@ -477,64 +479,59 @@ export const ApplicantForm = ({
       console.log(`Applicant Auto-Rejected (${autoRejectReason}). Appended skipAI=true to avoid API costs.`);
     }
     
-    // --- Double Protection Shield (Pre-flight Logic) ---
-    const cvFile = resumeFile || submitData.resume || submitData.cv || (formRef.current?.querySelector('input[type="file"]') as HTMLInputElement)?.files?.[0];
-    try {
-      if (job?.id && !isPreview) {
-        // Generate Device Fingerprint
-        const str = `${navigator.userAgent}-${window.screen.width}x${window.screen.height}-${navigator.language}`;
-        const encoder = new TextEncoder();
-        const data = encoder.encode(str);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const deviceFingerprint = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        
-        // Generate File Hash
-        let fileHash = "";
-        if (cvFile && cvFile instanceof File) {
-          const fileBuffer = await cvFile.arrayBuffer();
-          const fileHashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer);
-          const fileHashArray = Array.from(new Uint8Array(fileHashBuffer));
-          fileHash = fileHashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-        
-        const ninetyDaysAgo = new Date();
-        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-        
-        let query = supabase.from('applicants')
-          .select('id, created_at')
-          .eq('job_id', job.id)
-          .eq('is_cooldown_bypassed', false)
-          .gte('created_at', ninetyDaysAgo.toISOString());
-          
-        if (fileHash) {
-          query = query.or(`device_fingerprint.eq.${deviceFingerprint},file_hash.eq.${fileHash}`);
-        } else {
-          query = query.eq('device_fingerprint', deviceFingerprint);
-        }
-        
-        const { data: existingApps } = await query;
-        if (existingApps && existingApps.length > 0) {
-          alert("عفواً، لا يمكنك التقديم على نفس الوظيفة أكثر من مرة خلال 90 يوماً.");
-          setIsSubmitting(false);
-          return;
-        }
-        
-        // Store these hashes in formDataState or pass them to DB
-        submitData._deviceFingerprint = deviceFingerprint;
-        submitData._fileHash = fileHash;
-      }
-    } catch (e) {
-      console.error("Double Protection Shield Error:", e);
-      // Fail open to avoid blocking legitimate users if crypto fails
-    }
-
     // Asynchronous background task for PDF OCR and AI webhook
     const processAndSubmitBackground = async () => {
       if (isPreview) {
         window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "هذه معاينة فقط: لم يتم حفظ البيانات", type: "warning" } }));
         console.log("Preview Mode: Skipping database and webhook execution.");
         return;
+      }
+      
+      // --- Double Protection Shield (Background Logic) ---
+      const cvFile = resumeFile || submitData.resume || submitData.cv || (formRef.current?.querySelector('input[type="file"]') as HTMLInputElement)?.files?.[0];
+      try {
+        if (job?.id && !isPreview) {
+          const str = `${navigator.userAgent}-${window.screen.width}x${window.screen.height}-${navigator.language}`;
+          const encoder = new TextEncoder();
+          const data = encoder.encode(str);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const deviceFingerprint = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          
+          let fileHash = "";
+          if (cvFile && cvFile instanceof File) {
+            const fileBuffer = await cvFile.arrayBuffer();
+            const fileHashBuffer = await crypto.subtle.digest('SHA-256', fileBuffer);
+            const fileHashArray = Array.from(new Uint8Array(fileHashBuffer));
+            fileHash = fileHashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          }
+          
+          const ninetyDaysAgo = new Date();
+          ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+          
+          let query = supabase.from('applicants')
+            .select('id, created_at')
+            .eq('job_id', job.id)
+            .eq('is_cooldown_bypassed', false)
+            .gte('created_at', ninetyDaysAgo.toISOString());
+            
+          if (fileHash) {
+            query = query.or(`device_fingerprint.eq.${deviceFingerprint},file_hash.eq.${fileHash}`);
+          } else {
+            query = query.eq('device_fingerprint', deviceFingerprint);
+          }
+          
+          const { data: existingApps } = await query;
+          if (existingApps && existingApps.length > 0) {
+            console.log("Duplicate application detected in background. Skipping processing to prevent spam.");
+            return;
+          }
+          
+          submitData._deviceFingerprint = deviceFingerprint;
+          submitData._fileHash = fileHash;
+        }
+      } catch (e) {
+        console.error("Double Protection Shield Error:", e);
       }
       let cv_file_url = "";
       let applicant_db_id = "";
@@ -702,21 +699,23 @@ export const ApplicantForm = ({
           <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-10">
             {isPreview ? "هذه مجرد معاينة حية لشكل الشاشة التي ستظهر للمتقدمين. لم يتم حفظ أي بيانات فعلية في النظام." : "شكراً لاهتمامك بالانضمام إلينا. سنقوم بمراجعة طلبك والتواصل معك في أقرب وقت. نتمنى لك التوفيق!"}
           </p>
-          <div className="space-y-4">
-            <button
-              type="button"
-              onClick={() => {
-                if (onBackToJobs) {
-                  onBackToJobs();
-                } else {
-                  window.location.href = "/";
-                }
-              }}
-              className="w-full bg-primary text-white py-5 rounded-2xl text-lg font-bold hover:bg-teal-600 hover:shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98] font-cairo"
-            >
-              العودة لقائمة الوظائف
-            </button>
-          </div>
+          {isCampaign && (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onBackToJobs) {
+                    onBackToJobs();
+                  } else {
+                    window.location.href = "/";
+                  }
+                }}
+                className="w-full bg-primary text-white py-5 rounded-2xl text-lg font-bold hover:bg-teal-600 hover:shadow-xl hover:shadow-primary/20 transition-all active:scale-[0.98] font-cairo"
+              >
+                العودة لقائمة الوظائف
+              </button>
+            </div>
+          )}
         </motion.div>
       </div>
     );
@@ -1615,9 +1614,15 @@ export const ApplicantForm = ({
 
               <button
                 type="submit"
-                className="md:col-span-2 bg-primary text-white py-5 rounded-2xl text-lg font-bold hover:shadow-2xl hover:shadow-primary/40 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-3"
+                disabled={isSubmitting}
+                className="md:col-span-2 bg-primary text-white py-5 rounded-2xl text-lg font-bold hover:shadow-2xl hover:shadow-primary/40 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-3 disabled:opacity-70 disabled:grayscale"
               >
-                {isRequireVoiceInterview ? (
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white dark:border-slate-700/30 border-t-white rounded-full animate-spin" />{" "}
+                    جاري الإرسال...{" "}
+                  </>
+                ) : isRequireVoiceInterview ? (
                   <>التالي: المقابلة الصوتية <Mic size={20} /></>
                 ) : (
                   <>إرسال الطلب</>

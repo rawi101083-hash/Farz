@@ -280,6 +280,7 @@ export type FlowStep =
   | "publicJob"
   | "manageJob"
   | "interview"
+  | "notFound"
   | "share";
 export interface CustomAttachment {
   attachment_name: string;

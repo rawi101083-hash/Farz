@@ -1757,8 +1757,7 @@ export default function App() {
                      return;
                  }
              }
-             alert("عذراً! لم يتم العثور على الوظيفة في قاعدة البيانات. \nالسبب إما أن الوظيفة قديمة ولم تُحفظ بنجاح، أو أن إعدادات (RLS) في Supabase تمنع الزوار من قراءة الوظائف.");
-             setStep('landing');
+             setStep('notFound');
          }
       };
       
@@ -2219,6 +2218,19 @@ export default function App() {
             )}
             {step === "interview" && (
               <InterviewRoom applicantId={window.location.pathname.split('/')[2]} onBack={() => window.location.href = '/'} />
+            )}
+            {step === "notFound" && (
+              <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4" dir="rtl">
+                <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-[32px] p-8 shadow-2xl border border-slate-100 dark:border-slate-700 text-center">
+                  <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-red-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-3">الوظيفة غير متاحة</h2>
+                  <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-6">
+                    عذراً، لم نتمكن من العثور على هذه الوظيفة. قد تكون الوظيفة قديمة وتم إغلاقها، أو أن الرابط غير صحيح.
+                  </p>
+                </div>
+              </div>
             )}
           </motion.div>{" "}
         </AnimatePresence>{" "}
