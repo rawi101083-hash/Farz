@@ -453,10 +453,10 @@ export const EmptyState = ({
     <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-primary/5 to-transparent -z-10" />
     <div className="absolute -top-32 -right-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl opacity-50" />
     <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl opacity-50" />
-    
+
     <div className="mb-10 relative" style={{ perspective: "1000px" }}>
-      <motion.div 
-        animate={{ y: [0, -8, 0] }} 
+      <motion.div
+        animate={{ y: [0, -8, 0] }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         className="relative z-10"
       >
@@ -468,11 +468,11 @@ export const EmptyState = ({
         </div>
       </motion.div>
     </div>
-    
+
     <h3 className="text-2xl md:text-3xl font-black text-navy dark:text-white mb-6 max-w-lg leading-tight text-center relative z-10">
       {title}
     </h3>
-    
+
     <button
       onClick={onAction}
       className="bg-primary text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-primary-dark transition-all shadow-xl shadow-primary/30 active:scale-95 flex items-center gap-3 mt-2 relative z-10 group"
@@ -702,7 +702,7 @@ const CompactSkillSelector = ({
         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10"
         size={18}
       />
-      <div 
+      <div
         className={`pr-12 pl-10 py-4 rounded-2xl cursor-pointer flex items-center justify-between transition-all min-w-[160px] border ${selectedFilter === "all" ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-primary/50" : "bg-primary/10 border-primary/50 dark:bg-primary/20 dark:border-primary/50"}`}
         onClick={() => setIsOpen(!isOpen)}
       >
@@ -714,23 +714,23 @@ const CompactSkillSelector = ({
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
             className="absolute top-full mt-2 left-0 right-0 min-w-[240px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden"
           >
             <div className="p-3 border-b border-slate-100 dark:border-slate-700 relative">
               <Search size={14} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 autoFocus
-                placeholder="ابحث عن مهارة..." 
+                placeholder="ابحث عن مهارة..."
                 className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pr-10 pl-3 py-2 text-sm outline-none focus:border-primary transition-colors text-navy dark:text-white font-medium"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
             <div className="max-h-64 overflow-y-auto p-2 scrollbar-thin">
-              <div 
+              <div
                 className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === "all" ? "bg-primary/10 text-primary font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300"}`}
                 onClick={() => { onFilterChange("all"); setIsOpen(false); setSearch(""); }}
               >
@@ -740,7 +740,7 @@ const CompactSkillSelector = ({
                 <span className="text-sm font-bold">الكل</span>
               </div>
               {filteredSkills.map(skill => (
-                <div 
+                <div
                   key={skill}
                   className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === skill ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
                   onClick={() => { onFilterChange(skill); setIsOpen(false); setSearch(""); }}
@@ -853,11 +853,11 @@ export const TalentPool = ({
       (t.job && typeof t.job === 'string' && t.job.includes((jobs || []).find((j: any) => j && j.id === jobFilter)?.title || ""));
     const matchesSkill = skillFilter === "all" || (t.skills && Array.isArray(t.skills) && t.skills.includes(skillFilter));
     const searchLower = (searchTerm || "").toLowerCase();
-    const matchesSearch = !searchTerm || 
+    const matchesSearch = !searchTerm ||
       (t.name && typeof t.name === 'string' && t.name.toLowerCase().includes(searchLower)) ||
       (t.job && typeof t.job === 'string' && t.job.toLowerCase().includes(searchLower)) ||
       (t.skills && Array.isArray(t.skills) && t.skills.some((s: string) => s && typeof s === 'string' && s.toLowerCase().includes(searchLower)));
-      
+
     const matchesRating = ratingFilter === "all" ||
       (ratingFilter === "+90" && (t.rating || 0) >= 90) ||
       (ratingFilter === "+80" && (t.rating || 0) >= 80) ||
@@ -927,7 +927,7 @@ export const TalentPool = ({
                 className={`absolute right-4 top-1/2 -translate-y-1/2 drop-shadow-[0_0_5px_rgba(13,148,136,0.3)] transition-transform pointer-events-none ${ratingFilter === "all" ? "text-slate-400 dark:text-slate-500" : "text-primary dark:text-primary group-hover:scale-110"}`}
                 size={18}
               />{" "}
-              <select 
+              <select
                 value={ratingFilter}
                 onChange={(e) => setRatingFilter(e.target.value)}
                 className={`pr-12 pl-10 py-4 rounded-2xl outline-none transition-all appearance-none cursor-pointer font-bold min-w-[160px] border ${ratingFilter === "all" ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-navy dark:text-white hover:border-primary/50" : "bg-primary/10 border-primary/50 text-primary dark:bg-primary/20 dark:border-primary/50"}`}
@@ -1117,8 +1117,8 @@ export const GlobalJobSelector = ({
   const filteredJobs = jobs
     .filter((j) => j.status !== "مسودة")
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-    .filter((j) => 
-      (j.title || "").toLowerCase().includes(search.toLowerCase()) || 
+    .filter((j) =>
+      (j.title || "").toLowerCase().includes(search.toLowerCase()) ||
       (j.company || "").toLowerCase().includes(search.toLowerCase())
     )
     .slice(0, 50);
@@ -1152,7 +1152,7 @@ export const GlobalJobSelector = ({
             عرض البيانات لـ:
           </p>
           <div className="relative w-64 md:w-80" ref={ref}>
-            <div 
+            <div
               className={`px-4 py-2.5 rounded-xl cursor-pointer flex items-center justify-between transition-colors border ${selectedFilter === "all" ? "bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-primary/50" : "bg-primary/10 border-primary/50 dark:bg-primary/20"}`}
               onClick={() => setIsOpen(!isOpen)}
             >
@@ -1164,23 +1164,23 @@ export const GlobalJobSelector = ({
 
             <AnimatePresence>
               {isOpen && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
                   className="absolute z-50 top-full mt-2 left-0 right-0 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden"
                 >
                   <div className="p-3 border-b border-slate-100 dark:border-slate-700 relative">
                     <Search size={14} className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       autoFocus
-                      placeholder="ابحث عن وظيفة..." 
+                      placeholder="ابحث عن وظيفة..."
                       className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pr-10 pl-3 py-2 text-sm outline-none focus:border-primary transition-colors text-navy dark:text-white font-medium"
                       value={search}
                       onChange={e => setSearch(e.target.value)}
                     />
                   </div>
                   <div className="max-h-64 overflow-y-auto p-2 scrollbar-thin">
-                    <div 
+                    <div
                       className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === "all" ? "bg-primary/10 text-primary font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300"}`}
                       onClick={() => { onFilterChange("all"); setIsOpen(false); setSearch(""); }}
                     >
@@ -1190,7 +1190,7 @@ export const GlobalJobSelector = ({
                       <span className="text-sm font-bold">كل الوظائف</span>
                     </div>
                     {filteredJobs.map(job => (
-                      <div 
+                      <div
                         key={job.id}
                         className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === job.id ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
                         onClick={() => { onFilterChange(job.id); setIsOpen(false); setSearch(""); }}
@@ -1223,7 +1223,7 @@ const GlassBar = (props: any) => {
   const { x, y, width, height, fill } = props;
   if (!width || !height) return null;
   const overflow = 20;
-  
+
   // Extract RGB from fill or use default green
   const rgbMatch = fill ? fill.match(/rgba?\((\d+,\s*\d+,\s*\d+)/) : null;
   const rgb = rgbMatch ? rgbMatch[1] : '25, 168, 145';
@@ -1231,7 +1231,7 @@ const GlassBar = (props: any) => {
   return (
     <foreignObject x={x - overflow} y={y - overflow} width={width + overflow * 2} height={height + overflow * 2}>
       <div style={{ padding: overflow, width: '100%', height: '100%', boxSizing: 'border-box' }}>
-        <div 
+        <div
           style={{
             width: '100%',
             height: '100%',
@@ -1251,15 +1251,15 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
   const filteredJobs = filterId === "all" ? jobs : jobs.filter(j => j.id === filterId);
   const totalJobs = filteredJobs.length;
 
-  const relevantApplicants = filterId === "all" 
-    ? applicants 
+  const relevantApplicants = filterId === "all"
+    ? applicants
     : applicants.filter(a => {
-        const searchJob = jobs.find(j => j.id === filterId)?.title || "";
-        return searchJob ? a.job.includes(searchJob) : false;
-      });
+      const searchJob = jobs.find(j => j.id === filterId)?.title || "";
+      return searchJob ? a.job.includes(searchJob) : false;
+    });
 
-  const totalApplicants = applicants.length > 0 
-    ? relevantApplicants.length 
+  const totalApplicants = applicants.length > 0
+    ? relevantApplicants.length
     : filteredJobs.reduce((sum, j) => sum + (j.applicants || 0), 0);
 
   const pendingCount = relevantApplicants.filter(a => !a.decision || a.decision === "pending").length;
@@ -1344,7 +1344,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
     { name: "كفاءة متوسطة (70%-79%)", value: mediumQualityCount },
     { name: "كفاءة ضعيفة (<70%)", value: lowQualityCount }
   ].filter(d => d.value > 0);
-  
+
   // Calculate dynamic average time to hire (based on time since job creation)
   let totalDays = 0;
   let validJobsCount = 0;
@@ -1382,7 +1382,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
     <div className="space-y-6 pb-6">
       <header className="mb-6">
         <h1 className="text-3xl font-bold mb-3 text-navy dark:text-white">
-          التقارير والتحليلات
+          التقارير
         </h1>{" "}
         <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium text-lg">
           نظرة شاملة ودقيقة على أداء عمليات التوظيف والبيانات التحليلية.
@@ -1455,88 +1455,106 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
             </h3>{" "}
             <PieChartIcon className="text-slate-300" size={20} />{" "}
           </div>{" "}
-          <div className="h-[240px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <defs>
-                  {COLORS.map((color, index) => {
-                    const rgb = '52, 211, 153'; // emerald-400
-                    return (
+          <div className="h-[240px] w-full flex items-center justify-between">
+            <div className="relative w-[55%] h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <defs>
+                    {["96, 165, 250", "139, 92, 246", "156, 163, 175", "13, 148, 136"].map((rgb, index) => (
                       <linearGradient key={`grad-${index}`} id={`pieGrad-${index}`} x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={`rgba(${rgb}, 0.9)`} />
-                        <stop offset="100%" stopColor={`rgba(${rgb}, 0.1)`} />
+                        <stop offset="100%" stopColor={`rgba(${rgb}, 0.4)`} />
                       </linearGradient>
-                    );
-                  })}
-                  {COLORS.map((color, index) => {
-                    const rgb = '52, 211, 153'; // emerald-400
-                    return (
+                    ))}
+                    {["96, 165, 250", "139, 92, 246", "156, 163, 175", "13, 148, 136"].map((rgb, index) => (
                       <filter key={`glow-${index}`} id={`pieGlow-${index}`} x="-50%" y="-50%" width="200%" height="200%">
-                        <feDropShadow dx="0" dy="0" stdDeviation="6" floodColor={`rgba(${rgb}, 0.6)`} />
+                        <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor={`rgba(${rgb}, 0.5)`} />
                       </filter>
-                    );
-                  })}
-                </defs>
-                <Pie
-                  data={sourceOfHireData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={85}
-                  paddingAngle={6}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {sourceOfHireData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={`url(#pieGrad-${index % COLORS.length})`}
-                      filter={`url(#pieGlow-${index % COLORS.length})`}
-                      stroke="rgba(111, 247, 166, 0.8)"
-                      strokeWidth={1}
-                    />
-                  ))}{" "}
-                </Pie>{" "}
-                <Tooltip
-                  cursor={{ fill: 'transparent' }}
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
+                    ))}
+                  </defs>
+                  <Pie
+                    data={sourceOfHireData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={2}
+                    dataKey="value"
+                    stroke="none"
+                    labelLine={false}
+                    label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+                      const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                      const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+                      const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+                      if (percent === 0) return null;
                       return (
-                        <div className="p-4 rounded-2xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] min-w-[160px] text-right" style={glassStyleStr} dir="rtl">
-                          <p className="font-bold text-slate-500 dark:text-slate-400 mb-2 text-xs">{data.name}</p>
-                          <p className="text-navy dark:text-white font-black text-lg mb-2">
-                            {data.value} مرشحاً
-                          </p>
-                          {data.breakdown && data.breakdown.length > 0 && (
-                            <div className="space-y-1 mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
-                              {data.breakdown.map((item: any, i: number) => (
-                                <div key={i} className="flex justify-between items-center text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                                  <span>{item.name}</span>
-                                  <span className="text-primary">{item.value}%</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                        <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize="12" fontWeight="bold">
+                          {`${(percent * 100).toFixed(0)}%`}
+                        </text>
                       );
-                    }
-                    return null;
-                  }}
-                />{" "}
-                <Legend
-                  verticalAlign="bottom"
-                  height={40}
-                  iconType="circle"
-                  formatter={(value) => (
-                    <span className="text-navy dark:text-white font-bold text-sm mr-2">
-                      {value}
-                    </span>
-                  )}
-                />{" "}
-              </PieChart>{" "}
-            </ResponsiveContainer>{" "}
-          </div>{" "}
+                    }}
+                  >
+                    {sourceOfHireData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={`url(#pieGrad-${index % 4})`} 
+                        filter={`url(#pieGlow-${index % 4})`} 
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    cursor={{ fill: 'transparent' }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="p-4 rounded-2xl shadow-[0_10px_40px_-15px_rgba(0,0,0,0.1)] min-w-[160px] text-right" style={glassStyleStr} dir="rtl">
+                            <p className="font-bold text-slate-500 dark:text-slate-400 mb-2 text-xs">{data.name}</p>
+                            <p className="text-navy dark:text-white font-black text-lg mb-2">
+                              {data.value} مرشحاً
+                            </p>
+                            {data.breakdown && data.breakdown.length > 0 && (
+                              <div className="space-y-1 mt-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+                                {data.breakdown.map((item: any, i: number) => (
+                                  <div key={i} className="flex justify-between items-center text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                    <span>{item.name}</span>
+                                    <span className="text-primary">{item.value}%</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <PieChartIcon size={24} className="text-slate-400 dark:text-slate-500" />
+              </div>
+            </div>
+            
+            {/* Custom Legend */}
+            <div className="w-[45%] flex flex-col justify-center gap-3 pr-4 border-r border-slate-100 dark:border-slate-700">
+              {sourceOfHireData.map((entry, index) => {
+                const PIE_RGBS = ["96, 165, 250", "139, 92, 246", "156, 163, 175", "13, 148, 136"];
+                const total = sourceOfHireData.reduce((sum, item) => sum + item.value, 0);
+                const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+                
+                return (
+                  <div key={index} className="flex flex-col">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: `rgb(${PIE_RGBS[index % 4]})`, boxShadow: `0 0 8px rgba(${PIE_RGBS[index % 4]}, 0.6)` }}></div>
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{entry.name}</span>
+                    </div>
+                    <span className="text-sm font-bold text-navy dark:text-white mr-4">{percent}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>{" "}
         {/* Hiring Funnel Chart Card */}
         <div className="lg:col-span-7 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
@@ -1555,14 +1573,14 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" strokeOpacity={0.1} />
                 <XAxis type="number" hide />
-                <YAxis 
-                  type="category" 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fill: "#64748b", fontSize: 14, fontWeight: "bold" }} 
-                  width={150} 
-                  tickMargin={10} 
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: "#64748b", fontSize: 14, fontWeight: "bold" }}
+                  width={150}
+                  tickMargin={10}
                 />
                 <Tooltip
                   cursor={{ fill: 'transparent' }}
@@ -1580,10 +1598,10 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                   trigger="hover"
                   wrapperStyle={{ pointerEvents: 'auto' }}
                 />
-                <Bar 
-                  dataKey="value" 
-                  radius={12} 
-                  barSize={30} 
+                <Bar
+                  dataKey="value"
+                  radius={12}
+                  barSize={30}
                   stroke="none"
                   shape={<GlassBar />}
                 >
@@ -1591,11 +1609,11 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                     let fillRgba = "rgba(13, 148, 136, 0.40)"; // Green for Total and Accepted
                     let strokeRgba = "rgba(13, 148, 136, 0.60)";
                     if (entry.name === "الفرز الآلي") {
-                       fillRgba = "rgba(59, 130, 246, 0.40)"; // Blue for AI Screening
-                       strokeRgba = "rgba(59, 130, 246, 0.60)";
+                      fillRgba = "rgba(59, 130, 246, 0.40)"; // Blue for AI Screening
+                      strokeRgba = "rgba(59, 130, 246, 0.60)";
                     } else if (entry.name === "المقابلات") {
-                       fillRgba = "rgba(249, 115, 22, 0.40)"; // Orange for Interviews
-                       strokeRgba = "rgba(249, 115, 22, 0.60)";
+                      fillRgba = "rgba(249, 115, 22, 0.40)"; // Orange for Interviews
+                      strokeRgba = "rgba(249, 115, 22, 0.60)";
                     }
                     return <Cell key={"cell-" + index} fill={fillRgba} stroke={strokeRgba} strokeWidth={1} />;
                   })}
@@ -1669,11 +1687,11 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                     let fillRgba = "rgba(13, 148, 136, 0.40)"; // Teal/Green for high efficiency
                     let strokeRgba = "rgba(13, 148, 136, 0.60)";
                     if (entry.name.includes("متوسطة")) {
-                       fillRgba = "rgba(249, 115, 22, 0.40)"; // Orange for medium efficiency
-                       strokeRgba = "rgba(249, 115, 22, 0.60)";
+                      fillRgba = "rgba(249, 115, 22, 0.40)"; // Orange for medium efficiency
+                      strokeRgba = "rgba(249, 115, 22, 0.60)";
                     } else if (entry.name.includes("ضعيفة")) {
-                       fillRgba = "rgba(239, 68, 68, 0.40)"; // Red for low efficiency
-                       strokeRgba = "rgba(239, 68, 68, 0.60)";
+                      fillRgba = "rgba(239, 68, 68, 0.40)"; // Red for low efficiency
+                      strokeRgba = "rgba(239, 68, 68, 0.60)";
                     }
                     return <Cell key={"cell-" + index} fill={fillRgba} stroke={strokeRgba} strokeWidth={1} />;
                   })}
@@ -1682,7 +1700,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
               </BarChart>
             </ResponsiveContainer>
           ) : (
-             <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">لا توجد بيانات كافية</div>
+            <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">لا توجد بيانات كافية</div>
           )}
         </div>
       </div>
@@ -1867,7 +1885,7 @@ export const SettingsPage = ({
   const generatePaymentForm = async (packageId: string, isYearlyPlan: boolean) => {
     setShowPaymentModal(true);
     setPaymentHtml(""); // Clear old content
-    
+
     try {
       const { supabase: sb } = await import('./lib/supabaseClient');
       const { data, error } = await sb.functions.invoke('neoleap-payment', {
@@ -1881,7 +1899,7 @@ export const SettingsPage = ({
         return;
       }
 
-            // إزالة أي Form سابق إن وجد
+      // إزالة أي Form سابق إن وجد
       const existingForm = document.getElementById('neoleap-raw-form');
       if (existingForm) existingForm.remove();
 
@@ -1900,7 +1918,7 @@ export const SettingsPage = ({
 
       // إرسال النموذج فوراً
       (document.getElementById('neoleap-raw-form') as HTMLFormElement).submit();
-      
+
       // Cleanup after submit
       setTimeout(() => {
         const f = document.getElementById('neoleap-raw-form');
@@ -1932,653 +1950,652 @@ export const SettingsPage = ({
 
   return (
     <>
-    {/* ====== ZATCA Legal Confirmation Modal ====== */}
-    <AnimatePresence>
-      {showLockModal && (
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
-        >
+      {/* ====== ZATCA Legal Confirmation Modal ====== */}
+      <AnimatePresence>
+        {showLockModal && (
           <motion.div
-            initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
-            className="bg-white dark:bg-slate-800 rounded-[28px] shadow-2xl border border-amber-200 dark:border-amber-800/50 max-w-md w-full overflow-hidden"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
           >
-            {/* Header */}
-            <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/50 px-8 py-5 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0">
-                <ShieldCheck size={22} />
-              </div>
-              <div>
-                <h3 className="font-black text-amber-800 dark:text-amber-300 text-base">⚠️ تنبيه قانوني — ZATCA</h3>
-                <p className="text-amber-600 dark:text-amber-400 text-xs font-bold mt-0.5">الامتثال لمعايير هيئة الزكاة والضريبة والجمارك</p>
-              </div>
-            </div>
-            {/* Body */}
-            <div className="px-8 py-6 space-y-5">
-              <p className="text-slate-700 dark:text-slate-200 font-bold text-sm leading-relaxed">
-                البيانات الرسمية التي أدخلتها سيتم قفلها بعد الحفظ للامتثال لمتطلبات الفوترة، ولن تتمكن من تعديلها لاحقاً.
-              </p>
-              {/* Data Preview */}
-              <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
-                <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">البيانات المراد قفلها</p>
-                
-                {userProfile.entityType === 'company' ? (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500">السجل التجاري (CR)</span>
-                    <span className="font-black text-navy dark:text-white font-mono tracking-wider text-sm" dir="ltr">{userProfile.commercialRegistration}</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500">وثيقة العمل الحر</span>
-                    <span className="font-black text-navy dark:text-white font-mono tracking-wider text-sm" dir="ltr">{userProfile.freelanceDocument}</span>
-                  </div>
-                )}
-                <div className="border-t border-slate-200 dark:border-slate-700 pt-3 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-500">الرقم الضريبي (Tax ID)</span>
-                  <span className="font-black text-navy dark:text-white font-mono tracking-wider text-sm" dir="ltr">{userProfile.taxNumber || "غير مدخل (اختياري)"}</span>
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+              className="bg-white dark:bg-slate-800 rounded-[28px] shadow-2xl border border-amber-200 dark:border-amber-800/50 max-w-md w-full overflow-hidden"
+            >
+              {/* Header */}
+              <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/50 px-8 py-5 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0">
+                  <ShieldCheck size={22} />
+                </div>
+                <div>
+                  <h3 className="font-black text-amber-800 dark:text-amber-300 text-base">⚠️ تنبيه قانوني — ZATCA</h3>
+                  <p className="text-amber-600 dark:text-amber-400 text-xs font-bold mt-0.5">الامتثال لمعايير هيئة الزكاة والضريبة والجمارك</p>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">
-                هل أنت متأكد من صحة البيانات؟ في حال الخطأ، يتم التعديل حصراً عبر تذكرة دعم فني بعد التحقق من المستندات الرسمية.
-              </p>
-              {/* Mandatory Checkbox */}
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={lockConfirmed}
-                  onChange={(e) => setLockConfirmed(e.target.checked)}
-                  className="w-5 h-5 rounded-lg border-2 border-slate-300 accent-amber-600 shrink-0 mt-0.5 cursor-pointer"
-                />
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-relaxed group-hover:text-navy dark:group-hover:text-white transition-colors">
-                  أقر بمراجعتي للبيانات وأنها صحيحة ونهائية
-                </span>
-              </label>
-            </div>
-            {/* Footer */}
-            <div className="px-8 pb-7 flex gap-3">
-              <button
-                onClick={() => { setShowLockModal(false); setLockConfirmed(false); }}
-                className="flex-1 py-3 rounded-2xl font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-sm"
-              >
-                مراجعة البيانات
-              </button>
-              <button
-                onClick={executeSave}
-                disabled={!lockConfirmed || isSaving}
-                className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
-                  lockConfirmed && !isSaving
-                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/30 active:scale-95'
-                    : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
-                }`}
-              >
-                {isSaving ? (
-                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري القفل...</>
-                ) : (
-                  <><Lock size={16} />تأكيد الحفظ النهائي</>
-                )}
-              </button>
-            </div>
+              {/* Body */}
+              <div className="px-8 py-6 space-y-5">
+                <p className="text-slate-700 dark:text-slate-200 font-bold text-sm leading-relaxed">
+                  البيانات الرسمية التي أدخلتها سيتم قفلها بعد الحفظ للامتثال لمتطلبات الفوترة، ولن تتمكن من تعديلها لاحقاً.
+                </p>
+                {/* Data Preview */}
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 space-y-3">
+                  <p className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">البيانات المراد قفلها</p>
+
+                  {userProfile.entityType === 'company' ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-500">السجل التجاري (CR)</span>
+                      <span className="font-black text-navy dark:text-white font-mono tracking-wider text-sm" dir="ltr">{userProfile.commercialRegistration}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-500">وثيقة العمل الحر</span>
+                      <span className="font-black text-navy dark:text-white font-mono tracking-wider text-sm" dir="ltr">{userProfile.freelanceDocument}</span>
+                    </div>
+                  )}
+                  <div className="border-t border-slate-200 dark:border-slate-700 pt-3 flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500">الرقم الضريبي (Tax ID)</span>
+                    <span className="font-black text-navy dark:text-white font-mono tracking-wider text-sm" dir="ltr">{userProfile.taxNumber || "غير مدخل (اختياري)"}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 font-bold">
+                  هل أنت متأكد من صحة البيانات؟ في حال الخطأ، يتم التعديل حصراً عبر تذكرة دعم فني بعد التحقق من المستندات الرسمية.
+                </p>
+                {/* Mandatory Checkbox */}
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={lockConfirmed}
+                    onChange={(e) => setLockConfirmed(e.target.checked)}
+                    className="w-5 h-5 rounded-lg border-2 border-slate-300 accent-amber-600 shrink-0 mt-0.5 cursor-pointer"
+                  />
+                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200 leading-relaxed group-hover:text-navy dark:group-hover:text-white transition-colors">
+                    أقر بمراجعتي للبيانات وأنها صحيحة ونهائية
+                  </span>
+                </label>
+              </div>
+              {/* Footer */}
+              <div className="px-8 pb-7 flex gap-3">
+                <button
+                  onClick={() => { setShowLockModal(false); setLockConfirmed(false); }}
+                  className="flex-1 py-3 rounded-2xl font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-sm"
+                >
+                  مراجعة البيانات
+                </button>
+                <button
+                  onClick={executeSave}
+                  disabled={!lockConfirmed || isSaving}
+                  className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${lockConfirmed && !isSaving
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/30 active:scale-95'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                    }`}
+                >
+                  {isSaving ? (
+                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري القفل...</>
+                  ) : (
+                    <><Lock size={16} />تأكيد الحفظ النهائي</>
+                  )}
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-    <div className="space-y-10">
-      {" "}
-      <header>
+        )}
+      </AnimatePresence>
+      <div className="space-y-10">
         {" "}
-        <h1 className={`text-4xl font-bold mb-3 text-navy dark:text-white`}>
-          إدارة الحساب
-        </h1>{" "}
-        <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
-          إدارة حسابك، اشتراكك، وتكاملات النظام.
-        </p>{" "}
-      </header>{" "}
-      <div
-        className={`bg-white dark:bg-slate-800 border-white dark:bg-slate-800 dark:border-slate-700 rounded-[40px] border shadow-xl shadow-slate-200/40 overflow-hidden transition-colors duration-300`}
-      >
-        {" "}
+        <header>
+          {" "}
+          <h1 className={`text-4xl font-bold mb-3 text-navy dark:text-white`}>
+            إدارة الحساب
+          </h1>{" "}
+          <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
+            إدارة حسابك، اشتراكك، وتكاملات النظام.
+          </p>{" "}
+        </header>{" "}
         <div
-          className={`flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 dark:bg-slate-900/50`}
+          className={`bg-white dark:bg-slate-800 border-white dark:bg-slate-800 dark:border-slate-700 rounded-[40px] border shadow-xl shadow-slate-200/40 overflow-hidden transition-colors duration-300`}
         >
           {" "}
-          {["الملف الشخصي", "بيانات المنشأة", "باقات فرز", "المظهر"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-10 py-6 font-bold text-sm transition-all relative ${activeTab === tab ? "text-primary" : "text-slate-400 dark:text-slate-500 hover:text-navy dark:text-white"}`}
-            >
-              {" "}
-              {tab}{" "}
-              {activeTab === tab && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute bottom-0 left-0 right-0 h-1 bg-primary"
-                />
-              )}{" "}
-            </button>
-          ))}{" "}
-        </div>{" "}
-        <div className="p-12">
-          {" "}
-          {activeTab === "الملف الشخصي" && (
-            <div className="max-w-2xl space-y-8">
-              <div className="flex items-center gap-8 mb-10">
-                <label className="cursor-pointer relative overflow-hidden w-24 h-24 rounded-3xl bg-slate-100 border-slate-200 dark:bg-slate-700 dark:border-slate-600 flex items-center justify-center border-2 border-dashed group hover:border-primary/50 transition-colors">
-                  <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setUserProfile({ ...userProfile, companyLogo: URL.createObjectURL(e.target.files[0]) });
-                    }
-                  }} />
-                  {userProfile.companyLogo ? (
-                    <img src={userProfile.companyLogo} className="w-full h-full object-cover" alt="User Avatar" />
-                  ) : (
-                    <Upload size={32} className="text-slate-300 group-hover:text-primary transition-colors" />
-                  )}
-                </label>
-                <div>
-                  <h4 className="font-bold text-navy dark:text-white mb-1">الصورة الشخصية</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">يفضل استخدام صورة مربعة واضحة المعالم</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-navy dark:text-slate-300">الاسم</label>
-                  <input type="text" value={userProfile.name} onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-navy dark:text-slate-300">المسمى الوظيفي</label>
-                  <input type="text" value={userProfile.title} onChange={(e) => setUserProfile({ ...userProfile, title: e.target.value })} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-bold text-navy dark:text-slate-300">البريد الإلكتروني</label>
-                  <input type="text" readOnly value={userEmail || "لا يوجد بريد مسجل"} className="w-full px-6 py-4 bg-slate-100 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 border rounded-2xl outline-none cursor-not-allowed font-medium select-none" />
-                </div>
-              </div>
+          <div
+            className={`flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 dark:bg-slate-900/50`}
+          >
+            {" "}
+            {["الملف الشخصي", "بيانات المنشأة", "باقات فرز", "المظهر"].map((tab) => (
               <button
-                onClick={handleSaveProfile}
-                disabled={isSaving}
-                className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 mt-4 ${saveSuccess ? 'bg-primary text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:cursor-not-allowed'}`}
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-10 py-6 font-bold text-sm transition-all relative ${activeTab === tab ? "text-primary" : "text-slate-400 dark:text-slate-500 hover:text-navy dark:text-white"}`}
               >
-                {isSaving ? (
-                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
-                ) : saveSuccess ? (
-                  <><CheckCircle size={18} />تم الحفظ بنجاح!</>
-                ) : (
-                  'حفظ التغييرات'
-                )}
-              </button>
-            </div>
-          )}
-
-          {activeTab === "بيانات المنشأة" && (
-
-            <div className="max-w-2xl space-y-8">
-              {" "}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {" "}
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-bold text-navy dark:text-slate-300">نوع الكيان</label>
-                  <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 gap-1.5 rounded-2xl w-full">
-                    <button type="button" onClick={() => setUserProfile({ ...userProfile, entityType: "company" })} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${userProfile.entityType === "company" ? "bg-white dark:bg-slate-700 text-navy dark:text-white shadow-sm" : "text-slate-500"}`}>جهة اعتبارية (شركة/مؤسسة)</button>
-                    <button type="button" onClick={() => setUserProfile({ ...userProfile, entityType: "freelance" })} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${userProfile.entityType === "freelance" ? "bg-white dark:bg-slate-700 text-navy dark:text-white shadow-sm" : "text-slate-500"}`}>فرد مستقل (عمل حر)</button>
+                {tab}{" "}
+                {activeTab === tab && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute bottom-0 left-0 right-0 h-1 bg-primary"
+                  />
+                )}{" "}
+              </button>
+            ))}{" "}
+          </div>{" "}
+          <div className="p-12">
+            {" "}
+            {activeTab === "الملف الشخصي" && (
+              <div className="max-w-2xl space-y-8">
+                <div className="flex items-center gap-8 mb-10">
+                  <label className="cursor-pointer relative overflow-hidden w-24 h-24 rounded-3xl bg-slate-100 border-slate-200 dark:bg-slate-700 dark:border-slate-600 flex items-center justify-center border-2 border-dashed group hover:border-primary/50 transition-colors">
+                    <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setUserProfile({ ...userProfile, companyLogo: URL.createObjectURL(e.target.files[0]) });
+                      }
+                    }} />
+                    {userProfile.companyLogo ? (
+                      <img src={userProfile.companyLogo} className="w-full h-full object-cover" alt="User Avatar" />
+                    ) : (
+                      <Upload size={32} className="text-slate-300 group-hover:text-primary transition-colors" />
+                    )}
+                  </label>
+                  <div>
+                    <h4 className="font-bold text-navy dark:text-white mb-1">الصورة الشخصية</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">يفضل استخدام صورة مربعة واضحة المعالم</p>
                   </div>
                 </div>
-
-                <div className="space-y-2 md:col-span-2 group">
-                  <label className="text-sm font-bold text-navy dark:text-slate-300">
-                    {userProfile.entityType === "company" ? "اسم المنشأة" : "اسم الفرد / المشروع"} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={userProfile.companyName || ""}
-                    onChange={(e) => setUserProfile({ ...userProfile, companyName: e.target.value })}
-                    placeholder={userProfile.entityType === "company" ? "شركة الحلول الذكية..." : "عبدالله محمد..."}
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
-                  />
-                  {errors.companyName && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.companyName}</p>}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">الاسم</label>
+                    <input type="text" value={userProfile.name} onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">المسمى الوظيفي</label>
+                    <input type="text" value={userProfile.title} onChange={(e) => setUserProfile({ ...userProfile, title: e.target.value })} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">البريد الإلكتروني</label>
+                    <input type="text" readOnly value={userEmail || "لا يوجد بريد مسجل"} className="w-full px-6 py-4 bg-slate-100 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 border rounded-2xl outline-none cursor-not-allowed font-medium select-none" />
+                  </div>
                 </div>
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 mt-4 ${saveSuccess ? 'bg-primary text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:cursor-not-allowed'}`}
+                >
+                  {isSaving ? (
+                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
+                  ) : saveSuccess ? (
+                    <><CheckCircle size={18} />تم الحفظ بنجاح!</>
+                  ) : (
+                    'حفظ التغييرات'
+                  )}
+                </button>
+              </div>
+            )}
 
-                {userProfile.entityType === "company" ? (
+            {activeTab === "بيانات المنشأة" && (
+
+              <div className="max-w-2xl space-y-8">
+                {" "}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {" "}
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">نوع الكيان</label>
+                    <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 gap-1.5 rounded-2xl w-full">
+                      <button type="button" onClick={() => setUserProfile({ ...userProfile, entityType: "company" })} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${userProfile.entityType === "company" ? "bg-white dark:bg-slate-700 text-navy dark:text-white shadow-sm" : "text-slate-500"}`}>جهة اعتبارية (شركة/مؤسسة)</button>
+                      <button type="button" onClick={() => setUserProfile({ ...userProfile, entityType: "freelance" })} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${userProfile.entityType === "freelance" ? "bg-white dark:bg-slate-700 text-navy dark:text-white shadow-sm" : "text-slate-500"}`}>فرد مستقل (عمل حر)</button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2 group">
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">
+                      {userProfile.entityType === "company" ? "اسم المنشأة" : "اسم الفرد / المشروع"} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={userProfile.companyName || ""}
+                      onChange={(e) => setUserProfile({ ...userProfile, companyName: e.target.value })}
+                      placeholder={userProfile.entityType === "company" ? "شركة الحلول الذكية..." : "عبدالله محمد..."}
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                    />
+                    {errors.companyName && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.companyName}</p>}
+                  </div>
+
+                  {userProfile.entityType === "company" ? (
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
+                        رقم السجل التجاري (CR)
+                        {!isLocked && <span className="text-red-500">*</span>}
+                      </label>
+                      {isLocked ? (
+                        <LockedField value={userProfile.commercialRegistration || ""} label="CR" />
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            value={userProfile.commercialRegistration || ""}
+                            onChange={(e) => setUserProfile({ ...userProfile, commercialRegistration: e.target.value })}
+                            placeholder="1010XXXXXX"
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                            dir="ltr"
+                          />
+                          {errors.cr && <p className="text-red-500 text-xs mt-1 font-bold">{errors.cr}</p>}
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2 group">
+                      <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
+                        رقم وثيقة العمل الحر أو الهوية
+                        {!isLocked && <span className="text-red-500">*</span>}
+                      </label>
+                      {isLocked ? (
+                        <LockedField value={userProfile.freelanceDocument || ""} label="Freelance ID" />
+                      ) : (
+                        <>
+                          <input
+                            type="text"
+                            value={userProfile.freelanceDocument || ""}
+                            onChange={(e) => setUserProfile({ ...userProfile, freelanceDocument: e.target.value })}
+                            placeholder="FL-XXXXXX"
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                            dir="ltr"
+                          />
+                          {errors.freelance && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.freelance}</p>}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="space-y-2 group">
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">مدينة المقر الرئيسي (لأغراض الفوترة) <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={userProfile.city || ""}
+                      onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
+                      placeholder="الرياض، جدة..."
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                    />
+                    {errors.city && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.city}</p>}
+                  </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
-                      رقم السجل التجاري (CR)
-                      {!isLocked && <span className="text-red-500">*</span>}
+                      الرقم الضريبي (Tax ID)
+                      <span className="text-xs text-slate-400 font-normal bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">اختياري</span>
                     </label>
                     {isLocked ? (
-                      <LockedField value={userProfile.commercialRegistration || ""} label="CR" />
+                      <LockedField value={userProfile.taxNumber || ""} label="Tax ID" />
                     ) : (
                       <>
                         <input
                           type="text"
-                          value={userProfile.commercialRegistration || ""}
-                          onChange={(e) => setUserProfile({ ...userProfile, commercialRegistration: e.target.value })}
-                          placeholder="1010XXXXXX"
+                          value={userProfile.taxNumber || ""}
+                          onChange={(e) => setUserProfile({ ...userProfile, taxNumber: e.target.value })}
+                          placeholder="3000XXXXXXXXX003"
                           className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                           dir="ltr"
+                          maxLength={15}
                         />
-                        {errors.cr && <p className="text-red-500 text-xs mt-1 font-bold">{errors.cr}</p>}
+                        {errors.tax && <p className="text-red-500 text-xs mt-1 font-bold">{errors.tax}</p>}
                       </>
                     )}
                   </div>
-                ) : (
-                  <div className="space-y-2 group">
-                    <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
-                      رقم وثيقة العمل الحر أو الهوية
-                      {!isLocked && <span className="text-red-500">*</span>}
-                    </label>
-                    {isLocked ? (
-                      <LockedField value={userProfile.freelanceDocument || ""} label="Freelance ID" />
-                    ) : (
-                      <>
-                        <input
-                          type="text"
-                          value={userProfile.freelanceDocument || ""}
-                          onChange={(e) => setUserProfile({ ...userProfile, freelanceDocument: e.target.value })}
-                          placeholder="FL-XXXXXX"
-                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
-                          dir="ltr"
-                        />
-                        {errors.freelance && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.freelance}</p>}
-                      </>
-                    )}
-                  </div>
-                )}
-
-                <div className="space-y-2 group">
-                  <label className="text-sm font-bold text-navy dark:text-slate-300">مدينة المقر الرئيسي (لأغراض الفوترة) <span className="text-red-500">*</span></label>
-                  <input
-                    type="text"
-                    value={userProfile.city || ""}
-                    onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
-                    placeholder="الرياض، جدة..."
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
-                  />
-                  {errors.city && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.city}</p>}
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
-                    الرقم الضريبي (Tax ID)
-                    <span className="text-xs text-slate-400 font-normal bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">اختياري</span>
-                  </label>
-                  {isLocked ? (
-                    <LockedField value={userProfile.taxNumber || ""} label="Tax ID" />
+                  {isLocked && (
+                    <div className="md:col-span-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-4 flex items-start gap-3">
+                      <ShieldCheck size={16} className="text-amber-600 shrink-0 mt-0.5" />
+                      <p className="text-xs font-bold text-amber-700 dark:text-amber-400 leading-relaxed">
+                        الحقول المعلّمة بـ <span className="bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded text-amber-700 dark:text-amber-300">مقفل · ZATCA</span> محمية بموجب لوائح الفوترة الإلكترونية.
+                        لأي تعديل، يُرجى التواصل مع الدعم الفني عبر تذكرة رسمية مرفقاً بها المستندات.
+                      </p>
+                    </div>
+                  )}
+                </div>{" "}
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={Object.keys(errors).length > 0 || isSaving}
+                  className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 ${Object.keys(errors).length > 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500' : saveSuccess ? 'bg-primary text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30'}`}
+                >
+                  {isSaving ? (
+                    <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
+                  ) : saveSuccess ? (
+                    <><CheckCircle size={18} />تم الحفظ بنجاح!</>
                   ) : (
-                    <>
-                      <input
-                        type="text"
-                        value={userProfile.taxNumber || ""}
-                        onChange={(e) => setUserProfile({ ...userProfile, taxNumber: e.target.value })}
-                        placeholder="3000XXXXXXXXX003"
-                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
-                        dir="ltr"
-                        maxLength={15}
-                      />
-                      {errors.tax && <p className="text-red-500 text-xs mt-1 font-bold">{errors.tax}</p>}
-                    </>
+                    'حفظ التغييرات'
+                  )}
+                </button>{" "}
+              </div>
+            )}{" "}
+            {activeTab === "باقات فرز" && (
+              <div className="space-y-8 pb-10 flex flex-col items-center">
+
+                {/* Header Toggles */}
+                <div className="flex flex-col items-center gap-5 mb-6">
+
+                  {/* Toggle Wrapper - Very Rectangular */}
+                  <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex gap-1 shadow-inner border border-transparent dark:border-slate-700">
+                    <button
+                      onClick={() => setBillingCycle('subscription')}
+                      className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'subscription' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:text-slate-400 dark:hover:text-white'}`}
+                    >
+                      اشتراكات مستمرة
+                    </button>
+                    <button
+                      onClick={() => setBillingCycle('one-time')}
+                      className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'one-time' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:text-slate-400 dark:hover:text-white'}`}
+                    >
+                      توظيف لمرة واحدة
+                    </button>
+                  </div>
+
+                  {billingCycle === 'subscription' && (
+                    <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full flex gap-1 shadow-inner border border-slate-200/50 dark:border-slate-700 mt-2">
+                      <button
+                        onClick={() => setIsYearly(false)}
+                        className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all ${!isYearly ? 'bg-white text-navy shadow-sm' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
+                      >
+                        دفع شهري
+                      </button>
+                      <button
+                        onClick={() => setIsYearly(true)}
+                        className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${isYearly ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
+                      >
+                        دفع سنوي
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isYearly ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600'}`}>وفر قيمة شهرين</span>
+                      </button>
+                    </div>
                   )}
                 </div>
-                {isLocked && (
-                  <div className="md:col-span-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-4 flex items-start gap-3">
-                    <ShieldCheck size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                    <p className="text-xs font-bold text-amber-700 dark:text-amber-400 leading-relaxed">
-                      الحقول المعلّمة بـ <span className="bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded text-amber-700 dark:text-amber-300">مقفل · ZATCA</span> محمية بموجب لوائح الفوترة الإلكترونية.
-                      لأي تعديل، يُرجى التواصل مع الدعم الفني عبر تذكرة رسمية مرفقاً بها المستندات.
-                    </p>
-                  </div>
-                )}
-              </div>{" "}
-              <button 
-                onClick={handleSaveProfile}
-                disabled={Object.keys(errors).length > 0 || isSaving}
-                className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 ${Object.keys(errors).length > 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500' : saveSuccess ? 'bg-primary text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30'}`}
-              >
-                {isSaving ? (
-                  <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
-                ) : saveSuccess ? (
-                  <><CheckCircle size={18} />تم الحفظ بنجاح!</>
-                ) : (
-                  'حفظ التغييرات'
-                )}
-              </button>{" "}
-            </div>
-          )}{" "}
-          {activeTab === "باقات فرز" && (
-            <div className="space-y-8 pb-10 flex flex-col items-center">
-              
-              {/* Header Toggles */}
-              <div className="flex flex-col items-center gap-5 mb-6">
-                
-                {/* Toggle Wrapper - Very Rectangular */}
-                <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex gap-1 shadow-inner border border-transparent dark:border-slate-700">
-                  <button
-                    onClick={() => setBillingCycle('subscription')}
-                    className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'subscription' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:text-slate-400 dark:hover:text-white'}`}
-                  >
-                    اشتراكات مستمرة
-                  </button>
-                  <button
-                    onClick={() => setBillingCycle('one-time')}
-                    className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'one-time' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:text-slate-400 dark:hover:text-white'}`}
-                  >
-                    توظيف لمرة واحدة
-                  </button>
-                </div>
-                
-                {billingCycle === 'subscription' && (
-                  <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full flex gap-1 shadow-inner border border-slate-200/50 dark:border-slate-700 mt-2">
-                    <button
-                      onClick={() => setIsYearly(false)}
-                      className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all ${!isYearly ? 'bg-white text-navy shadow-sm' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
-                    >
-                      دفع شهري
-                    </button>
-                    <button
-                      onClick={() => setIsYearly(true)}
-                      className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${isYearly ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
-                    >
-                      دفع سنوي
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isYearly ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600'}`}>وفر قيمة شهرين</span>
-                    </button>
+
+                {(() => {
+                  const activeTier = userProfile?.subscription_tier;
+                  const highlightedTier = (activeTier === 'startup' || activeTier === 'business' || activeTier === 'enterprise') ? activeTier : 'business';
+
+                  const startupPlan = subscriptionPlans.find(p => p.id === `startup_${isYearly ? 'yearly' : 'monthly'}`);
+                  const businessPlan = subscriptionPlans.find(p => p.id === `business_${isYearly ? 'yearly' : 'monthly'}`);
+                  const enterprisePlan = subscriptionPlans.find(p => p.id === `enterprise_${isYearly ? 'yearly' : 'monthly'}`);
+
+                  const startupPrice = startupPlan?.price.toLocaleString() || (isYearly ? '4,990' : '499');
+                  const businessPrice = businessPlan?.price.toLocaleString() || (isYearly ? '14,990' : '1,499');
+                  const enterprisePrice = enterprisePlan?.price.toLocaleString() || (isYearly ? '34,990' : '3,499');
+
+                  const startupFeatures = startupPlan?.features || ["5 وظائف نشطة", isYearly ? "12,000 سيرة ذاتية سنوياً" : "1,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+                  const businessFeatures = businessPlan?.features || ["15 وظيفة نشطة", isYearly ? "60,000 سيرة ذاتية سنوياً" : "5,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+                  const enterpriseFeatures = enterprisePlan?.features || ["وظائف غير محدودة", isYearly ? "180,000 سيرة ذاتية سنوياً" : "15,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+
+                  const showStartup = startupPlan ? startupPlan.is_active !== false : true;
+                  const showBusiness = businessPlan ? businessPlan.is_active !== false : true;
+                  const showEnterprise = enterprisePlan ? enterprisePlan.is_active !== false : true;
+
+                  return billingCycle === 'subscription' && (
+                    <div className="flex flex-col md:flex-row justify-center gap-4 items-center w-full max-w-5xl mx-auto mt-2">
+
+                      {/* انطلاق (Right) */}
+                      {showStartup && (
+                        <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-5 cursor-default ${highlightedTier === 'startup' ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 max-w-[260px] border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-4 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 max-w-[240px] border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1 hover:z-20'}`}>
+                          <h3 className={`${highlightedTier === 'startup' ? 'text-xl font-black text-[#0D9488]' : 'text-lg font-black text-navy dark:text-white'} mb-2`}>نمو</h3>
+                          <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">الخطوة الأولى لبناء فريق عملك بكفاءة عالية.</p>
+
+                          <div className="flex flex-col items-center mb-5 mt-1">
+                            <span className="text-4xl font-bold text-gray-900 dark:text-white">{startupPrice}</span>
+                            <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
+                          </div>
+
+                          <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
+                            {isYearly ? 'احصل على شهرين مجاناً' : 'بدون التزام (ألغِ في أي وقت)'}
+                          </div>
+
+                          <ul className={`${highlightedTier === 'startup' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
+                            {startupFeatures.map((feature: string, idx: number) => (
+                              <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'startup' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
+                                <CheckCircle size={highlightedTier === 'startup' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'startup' ? 2.5 : 2} />
+                                {feature}
+                              </li>
+                            ))}
+                          </ul>
+
+                          {activeTier === 'startup' && (userProfile as any).subscription_is_yearly === isYearly ? (
+                            <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
+                              <div className="flex items-center gap-2 relative z-10">
+                                <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
+                                <span>باقتك الحالية</span>
+                              </div>
+                              {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
+                            </button>
+                          ) : (
+                            <button onClick={() => handleSubscribe('startup')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'startup' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
+                              اختيار الباقة
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* أعمال (Center) */}
+                      {showBusiness && (
+                        <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-5 cursor-default ${highlightedTier === 'business' ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 max-w-[260px] border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-4 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 max-w-[240px] border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1 hover:z-20'}`}>
+                          <h3 className={`${highlightedTier === 'business' ? 'text-xl font-black text-[#0D9488]' : 'text-lg font-black text-navy dark:text-white'} mb-2`}>أعمال</h3>
+                          <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">الأكثر طلباً للشركات لتسريع وتيرة التوظيف.</p>
+
+                          <div className="flex flex-col items-center mb-5 mt-1">
+                            <span className="text-4xl font-bold text-gray-900 dark:text-white">{businessPrice}</span>
+                            <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
+                          </div>
+
+                          <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
+                            {isYearly ? 'احصل على شهرين مجاناً' : 'الخيار الأكثر طلباً'}
+                          </div>
+
+                          <ul className={`${highlightedTier === 'business' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
+                            {businessFeatures.map((feature: string, idx: number) => (
+                              <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'business' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
+                                <CheckCircle size={highlightedTier === 'business' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'business' ? 2.5 : 2} />
+                                {feature}
+                              </li>
+                            ))}
+                          </ul>
+
+                          {activeTier === 'business' && (userProfile as any).subscription_is_yearly === isYearly ? (
+                            <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
+                              <div className="flex items-center gap-2 relative z-10">
+                                <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
+                                <span>باقتك الحالية</span>
+                              </div>
+                              {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
+                            </button>
+                          ) : (
+                            <button onClick={() => handleSubscribe('business')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'business' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
+                              اختيار الباقة
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* احترافية (Left) */}
+                      {showEnterprise && (
+                        <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-5 cursor-default ${highlightedTier === 'enterprise' ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 max-w-[260px] border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-4 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 max-w-[240px] border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1 hover:z-20'}`}>
+                          <h3 className={`${highlightedTier === 'enterprise' ? 'text-xl font-black text-[#0D9488]' : 'text-lg font-black text-navy dark:text-white'} mb-2`}>الشركات الكبرى</h3>
+                          <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">قدرات لا محدودة للمؤسسات الكبرى والتوظيف المكثف.</p>
+
+                          <div className="flex flex-col items-center mb-5 mt-1">
+                            <span className="text-4xl font-bold text-gray-900 dark:text-white">{enterprisePrice}</span>
+                            <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
+                          </div>
+
+                          <div className={`bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm ${!isYearly && 'opacity-0 select-none'}`}>
+                            احصل على شهرين مجاناً
+                          </div>
+
+                          <ul className={`${highlightedTier === 'enterprise' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
+                            {enterpriseFeatures.map((feature: string, idx: number) => (
+                              <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'enterprise' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
+                                <CheckCircle size={highlightedTier === 'enterprise' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'enterprise' ? 2.5 : 2} />
+                                {feature}
+                              </li>
+                            ))}
+                          </ul>
+
+                          {activeTier === 'enterprise' && (userProfile as any).subscription_is_yearly === isYearly ? (
+                            <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
+                              <div className="flex items-center gap-2 relative z-10">
+                                <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
+                                <span>باقتك الحالية</span>
+                              </div>
+                              {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
+                            </button>
+                          ) : (
+                            <button onClick={() => handleSubscribe('enterprise')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'enterprise' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
+                              اختيار الباقة
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                    </div>
+                  );
+                })()}
+
+                {billingCycle === 'one-time' && (
+                  <div className="flex justify-center w-full mt-2">
+                    {/* التوظيف الفوري */}
+                    <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-6 max-w-[260px] cursor-default ${hasActiveAd ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-2 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1'}`}>
+                      <h3 className="text-xl font-black text-navy dark:text-white mb-2">التوظيف الفوري</h3>
+                      <p className="text-xs font-bold text-slate-600 mb-4 text-center leading-relaxed">حل سريع وفعّال لاستقطاب كفاءة لمنصب واحد.</p>
+
+                      <div className="flex items-end justify-center gap-1.5 mb-4 mt-1">
+                        <span className="text-4xl font-black text-gray-900 dark:text-white leading-none">199</span>
+                        <span className="text-xs font-bold text-slate-500 mb-1">ريال / إعلان</span>
+                      </div>
+
+                      <div className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
+                        دفع لمرة واحدة
+                      </div>
+
+                      <ul className="space-y-2 mb-6 w-full px-1">
+                        {[
+                          "إعلان وظيفي لمدة 45 يوم", "500 سيرة ذاتية للفرز", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
+                        ].map((feature, idx) => (
+                          <li key={idx} className={`flex items-center gap-2 ${hasActiveAd ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-[13px] font-semibold text-slate-700 dark:text-slate-300'}`}>
+                            <CheckCircle size={hasActiveAd ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={hasActiveAd ? 2.5 : 2} />
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+
+                      {hasActiveAd ? (
+                        <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default mt-auto flex flex-col justify-center items-center overflow-hidden">
+                          <div className="flex items-center gap-2 relative z-10">
+                            <CheckCircle size={16} className="text-white" strokeWidth={2.5} />
+                            <span>الإعلان الفعال</span>
+                          </div>
+                          {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
+                        </button>
+                      ) : (
+                        <button onClick={handleBuyAd} className="w-full py-3 rounded-lg text-xs font-bold transition-all mt-auto bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95">
+                          شراء إعلان
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
+            )}
+            {activeTab === "المظهر" && (
+              <div className="max-w-2xl space-y-8">
+                {" "}
+                <div>
+                  {" "}
+                  <h4
+                    className={`text-xl font-bold text-navy dark:text-white mb-2`}
+                  >
+                    تخصيص المظهر
+                  </h4>{" "}
+                  <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
+                    اختر الوضع الذي يريح عينيك أثناء العمل.
+                  </p>{" "}
+                </div>{" "}
+                <div className="flex items-center justify-between p-8 bg-slate-50 dark:bg-slate-800/50 rounded-[32px] border border-slate-100 dark:border-slate-700">
+                  {" "}
+                  <div className="flex items-center gap-4">
+                    {" "}
+                    <div
+                      className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 shadow-sm dark:bg-navy dark:text-primary`}
+                    >
+                      {" "}
+                      {darkMode ? <Moon size={28} /> : <Sun size={28} />}{" "}
+                    </div>{" "}
+                    <div>
+                      {" "}
+                      <p className={`font-bold text-navy dark:text-white`}>
+                        الوضع الليلي
+                      </p>{" "}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        {darkMode ? "مفعل حالياً" : "غير مفعل"}
+                      </p>{" "}
+                    </div>{" "}
+                  </div>{" "}
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={darkMode}
+                      onChange={(e) => setDarkMode(e.target.checked)}
+                    />
+                    <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
+                  </label>
+                </div>{" "}
+              </div>
+            )}{" "}
+          </div>{" "}
+        </div>{" "}
+      </div>
 
-              {(() => {
-                const activeTier = userProfile?.subscription_tier;
-                const highlightedTier = (activeTier === 'startup' || activeTier === 'business' || activeTier === 'enterprise') ? activeTier : 'business';
-                
-                const startupPlan = subscriptionPlans.find(p => p.id === `startup_${isYearly ? 'yearly' : 'monthly'}`);
-                const businessPlan = subscriptionPlans.find(p => p.id === `business_${isYearly ? 'yearly' : 'monthly'}`);
-                const enterprisePlan = subscriptionPlans.find(p => p.id === `enterprise_${isYearly ? 'yearly' : 'monthly'}`);
-                
-                const startupPrice = startupPlan?.price.toLocaleString() || (isYearly ? '4,990' : '499');
-                const businessPrice = businessPlan?.price.toLocaleString() || (isYearly ? '14,990' : '1,499');
-                const enterprisePrice = enterprisePlan?.price.toLocaleString() || (isYearly ? '34,990' : '3,499');
-                
-                const startupFeatures = startupPlan?.features || ["5 وظائف نشطة", isYearly ? "12,000 سيرة ذاتية سنوياً" : "1,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
-                const businessFeatures = businessPlan?.features || ["15 وظيفة نشطة", isYearly ? "60,000 سيرة ذاتية سنوياً" : "5,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
-                const enterpriseFeatures = enterprisePlan?.features || ["وظائف غير محدودة", isYearly ? "180,000 سيرة ذاتية سنوياً" : "15,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 lg:p-10">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-full lg:h-[90vh] rounded-[32px] shadow-2xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-5 md:p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <h3 className="font-bold text-lg md:text-xl text-navy dark:text-white flex items-center gap-2">
+                <Lock size={20} className="text-emerald-500" /> نافذة الدفع الآمن
+              </h3>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
 
-                const showStartup = startupPlan ? startupPlan.is_active !== false : true;
-                const showBusiness = businessPlan ? businessPlan.is_active !== false : true;
-                const showEnterprise = enterprisePlan ? enterprisePlan.is_active !== false : true;
-
-                return billingCycle === 'subscription' && (
-                  <div className="flex flex-col md:flex-row justify-center gap-4 items-center w-full max-w-5xl mx-auto mt-2">
-                    
-                    {/* انطلاق (Right) */}
-                    {showStartup && (
-                    <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-5 cursor-default ${highlightedTier === 'startup' ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 max-w-[260px] border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-4 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 max-w-[240px] border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1 hover:z-20'}`}>
-                      <h3 className={`${highlightedTier === 'startup' ? 'text-xl font-black text-[#0D9488]' : 'text-lg font-black text-navy dark:text-white'} mb-2`}>نمو</h3>
-                      <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">الخطوة الأولى لبناء فريق عملك بكفاءة عالية.</p>
-                      
-                      <div className="flex flex-col items-center mb-5 mt-1">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{startupPrice}</span>
-                        <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
-                      </div>
-                      
-                      <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
-                        {isYearly ? 'احصل على شهرين مجاناً' : 'بدون التزام (ألغِ في أي وقت)'}
-                      </div>
-                      
-                      <ul className={`${highlightedTier === 'startup' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
-                        {startupFeatures.map((feature: string, idx: number) => (
-                          <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'startup' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
-                            <CheckCircle size={highlightedTier === 'startup' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'startup' ? 2.5 : 2} />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                      
-                      {activeTier === 'startup' && (userProfile as any).subscription_is_yearly === isYearly ? (
-                        <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
-                          <div className="flex items-center gap-2 relative z-10">
-                            <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
-                            <span>باقتك الحالية</span>
-                          </div>
-                          {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
-                        </button>
-                      ) : (
-                        <button onClick={() => handleSubscribe('startup')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'startup' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
-                          اختيار الباقة
-                        </button>
-                      )}
-                    </div>
-                    )}
-
-                    {/* أعمال (Center) */}
-                    {showBusiness && (
-                    <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-5 cursor-default ${highlightedTier === 'business' ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 max-w-[260px] border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-4 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 max-w-[240px] border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1 hover:z-20'}`}>
-                      <h3 className={`${highlightedTier === 'business' ? 'text-xl font-black text-[#0D9488]' : 'text-lg font-black text-navy dark:text-white'} mb-2`}>أعمال</h3>
-                      <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">الأكثر طلباً للشركات لتسريع وتيرة التوظيف.</p>
-                      
-                      <div className="flex flex-col items-center mb-5 mt-1">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{businessPrice}</span>
-                        <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
-                      </div>
-                      
-                      <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
-                        {isYearly ? 'احصل على شهرين مجاناً' : 'الخيار الأكثر طلباً'}
-                      </div>
-                      
-                      <ul className={`${highlightedTier === 'business' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
-                        {businessFeatures.map((feature: string, idx: number) => (
-                          <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'business' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
-                            <CheckCircle size={highlightedTier === 'business' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'business' ? 2.5 : 2} />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                      
-                      {activeTier === 'business' && (userProfile as any).subscription_is_yearly === isYearly ? (
-                        <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
-                          <div className="flex items-center gap-2 relative z-10">
-                            <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
-                            <span>باقتك الحالية</span>
-                          </div>
-                          {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
-                        </button>
-                      ) : (
-                        <button onClick={() => handleSubscribe('business')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'business' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
-                          اختيار الباقة
-                        </button>
-                      )}
-                    </div>
-                    )}
-
-                    {/* احترافية (Left) */}
-                    {showEnterprise && (
-                    <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-5 cursor-default ${highlightedTier === 'enterprise' ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 max-w-[260px] border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-4 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 max-w-[240px] border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1 hover:z-20'}`}>
-                      <h3 className={`${highlightedTier === 'enterprise' ? 'text-xl font-black text-[#0D9488]' : 'text-lg font-black text-navy dark:text-white'} mb-2`}>الشركات الكبرى</h3>
-                      <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">قدرات لا محدودة للمؤسسات الكبرى والتوظيف المكثف.</p>
-                      
-                      <div className="flex flex-col items-center mb-5 mt-1">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">{enterprisePrice}</span>
-                        <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
-                      </div>
-                      
-                      <div className={`bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm ${!isYearly && 'opacity-0 select-none'}`}>
-                        احصل على شهرين مجاناً
-                      </div>
-                      
-                      <ul className={`${highlightedTier === 'enterprise' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
-                        {enterpriseFeatures.map((feature: string, idx: number) => (
-                          <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'enterprise' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
-                            <CheckCircle size={highlightedTier === 'enterprise' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'enterprise' ? 2.5 : 2} />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                      
-                      {activeTier === 'enterprise' && (userProfile as any).subscription_is_yearly === isYearly ? (
-                        <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
-                          <div className="flex items-center gap-2 relative z-10">
-                            <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
-                            <span>باقتك الحالية</span>
-                          </div>
-                          {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
-                        </button>
-                      ) : (
-                        <button onClick={() => handleSubscribe('enterprise')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'enterprise' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
-                          اختيار الباقة
-                        </button>
-                      )}
-                    </div>
-                    )}
-
-                  </div>
-                );
-              })()}
-
-              {billingCycle === 'one-time' && (
-                <div className="flex justify-center w-full mt-2">
-                  {/* التوظيف الفوري */}
-                  <div className={`w-full rounded-2xl flex flex-col items-center transition-all duration-300 py-6 px-6 max-w-[260px] cursor-default ${hasActiveAd ? 'bg-gradient-to-b from-[#f4fcf9] to-white dark:from-teal-950/40 dark:to-slate-900 border border-[#0D9488]/40 ring-4 ring-[#0D9488]/10 shadow-[0_30px_60px_-15px_rgba(13,148,136,0.3)] md:-mt-2 relative z-10 antialiased' : 'bg-white dark:bg-slate-800 border border-[#0D9488]/30 border-b-[4px] dark:border-[#0D9488]/30 shadow-[0_8px_30px_rgba(0,0,0,0.04)] hover:border-[#0D9488]/50 hover:shadow-[0_15px_40px_-10px_rgba(13,148,136,0.2)] hover:-translate-y-1'}`}>
-                    <h3 className="text-xl font-black text-navy dark:text-white mb-2">التوظيف الفوري</h3>
-                    <p className="text-xs font-bold text-slate-600 mb-4 text-center leading-relaxed">حل سريع وفعّال لاستقطاب كفاءة لمنصب واحد.</p>
-                    
-                    <div className="flex items-end justify-center gap-1.5 mb-4 mt-1">
-                      <span className="text-4xl font-black text-gray-900 dark:text-white leading-none">199</span>
-                      <span className="text-xs font-bold text-slate-500 mb-1">ريال / إعلان</span>
-                    </div>
-                    
-                    <div className="bg-emerald-100 text-emerald-600 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
-                      دفع لمرة واحدة
-                    </div>
-                    
-                    <ul className="space-y-2 mb-6 w-full px-1">
-                      {[
-                        "إعلان وظيفي لمدة 45 يوم", "500 سيرة ذاتية للفرز", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
-                      ].map((feature, idx) => (
-                        <li key={idx} className={`flex items-center gap-2 ${hasActiveAd ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-[13px] font-semibold text-slate-700 dark:text-slate-300'}`}>
-                          <CheckCircle size={hasActiveAd ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={hasActiveAd ? 2.5 : 2} />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                    
-                    {hasActiveAd ? (
-                      <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default mt-auto flex flex-col justify-center items-center overflow-hidden">
-                        <div className="flex items-center gap-2 relative z-10">
-                          <CheckCircle size={16} className="text-white" strokeWidth={2.5} />
-                          <span>الإعلان الفعال</span>
-                        </div>
-                        {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
-                      </button>
-                    ) : (
-                      <button onClick={handleBuyAd} className="w-full py-3 rounded-lg text-xs font-bold transition-all mt-auto bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95">
-                        شراء إعلان
-                      </button>
-                    )}
-                  </div>
+            <div className="flex-1 w-full relative bg-slate-100 dark:bg-slate-950 overflow-hidden">
+              {paymentHtml ? (
+                <iframe
+                  srcDoc={paymentHtml}
+                  className="w-full h-full border-none absolute inset-0"
+                  title="بوابة الدفع"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-slate-400 font-bold">
+                  جاري التحميل...
                 </div>
               )}
             </div>
-          )}
-          {activeTab === "المظهر" && (
-            <div className="max-w-2xl space-y-8">
-              {" "}
-              <div>
-                {" "}
-                <h4
-                  className={`text-xl font-bold text-navy dark:text-white mb-2`}
-                >
-                  تخصيص المظهر
-                </h4>{" "}
-                <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
-                  اختر الوضع الذي يريح عينيك أثناء العمل.
-                </p>{" "}
-              </div>{" "}
-              <div className="flex items-center justify-between p-8 bg-slate-50 dark:bg-slate-800/50 rounded-[32px] border border-slate-100 dark:border-slate-700">
-                {" "}
-                <div className="flex items-center gap-4">
-                  {" "}
-                  <div
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-white dark:bg-slate-800 text-slate-400 dark:text-slate-500 shadow-sm dark:bg-navy dark:text-primary`}
-                  >
-                    {" "}
-                    {darkMode ? <Moon size={28} /> : <Sun size={28} />}{" "}
-                  </div>{" "}
-                  <div>
-                    {" "}
-                    <p className={`font-bold text-navy dark:text-white`}>
-                      الوضع الليلي
-                    </p>{" "}
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      {darkMode ? "مفعل حالياً" : "غير مفعل"}
-                    </p>{" "}
-                  </div>{" "}
-                </div>{" "}
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={darkMode}
-                    onChange={(e) => setDarkMode(e.target.checked)}
-                  />
-                  <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
-                </label>
-              </div>{" "}
-            </div>
-          )}{" "}
-        </div>{" "}
-      </div>{" "}
-    </div>
 
-    {showPaymentModal && (
-      <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 lg:p-10">
-        <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-full lg:h-[90vh] rounded-[32px] shadow-2xl flex flex-col overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
-          <div className="flex items-center justify-between p-5 md:p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-            <h3 className="font-bold text-lg md:text-xl text-navy dark:text-white flex items-center gap-2">
-              <Lock size={20} className="text-emerald-500" /> نافذة الدفع الآمن
-            </h3>
-            <button
-              onClick={() => setShowPaymentModal(false)}
-              className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition-all"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
-          <div className="flex-1 w-full relative bg-slate-100 dark:bg-slate-950 overflow-hidden">
-            {paymentHtml ? (
-              <iframe 
-                srcDoc={paymentHtml} 
-                className="w-full h-full border-none absolute inset-0" 
-                title="بوابة الدفع"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-slate-400 font-bold">
-                جاري التحميل...
-              </div>
-            )}
-          </div>
-          
-          <div className="p-5 md:p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <div className="p-5 md:p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              تتم عملية الدفع عبر خوادم Neoleap المشفرة والآمنة
-            </div>
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="px-6 py-3.5 font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all flex-1 sm:flex-none text-center"
-              >
-                إلغاء العملية
-              </button>
-              <button
-                onClick={handleConfirmPayment}
-                className="px-8 py-3.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 flex-1 sm:flex-none"
-              >
-                <CheckCircle size={18} /> تأكيد إتمام الدفع
-              </button>
+                تتم عملية الدفع عبر خوادم Neoleap المشفرة والآمنة
+              </div>
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={() => setShowPaymentModal(false)}
+                  className="px-6 py-3.5 font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all flex-1 sm:flex-none text-center"
+                >
+                  إلغاء العملية
+                </button>
+                <button
+                  onClick={handleConfirmPayment}
+                  className="px-8 py-3.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 flex-1 sm:flex-none"
+                >
+                  <CheckCircle size={18} /> تأكيد إتمام الدفع
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
     </>
   );
 };
@@ -2659,9 +2676,8 @@ export const ActiveJobs = ({
               style={{ zIndex: openDropdownId === job.id ? 20 : 1 }}
               whileHover={{ y: -5 }}
               onClick={() => job.status === "مسودة" ? onClone(job) : onManage(job)}
-              className={`bg-white relative cursor-pointer dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-lg group flex flex-col transition-all shadow-slate-200/40 ${
-                expired ? 'opacity-80 grayscale-[25%]' : ''
-              }`}
+              className={`bg-white relative cursor-pointer dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-lg group flex flex-col transition-all shadow-slate-200/40 ${expired ? 'opacity-80 grayscale-[25%]' : ''
+                }`}
             >
               {" "}
               <div className="flex items-start justify-between mb-5 gap-2">

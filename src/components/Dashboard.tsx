@@ -264,7 +264,7 @@ export const Dashboard = ({
   else if (plan === 'one-time') { jobLimit = 1; cvLimit = 500; }
   else if (plan === 'startup' || plan === 'growth') { jobLimit = 3; cvLimit = isYearly ? 12000 : 1000; }
   else if (plan === 'business') { jobLimit = 10; cvLimit = isYearly ? 60000 : 5000; }
-  else if (plan === 'enterprise') { jobLimit = Infinity; cvLimit = isYearly ? 180000 : 15000; }
+  else if (plan === 'enterprise') { jobLimit = 100; cvLimit = isYearly ? 180000 : 15000; }
   const cvsUsed = userProfile?.cvs_processed_count || 0;
   let cvsRemaining = Math.max(0, cvLimit - cvsUsed);
   if (isPreviewMode) cvsRemaining = 0;
@@ -275,10 +275,12 @@ export const Dashboard = ({
   const [jobSearchQuery, setJobSearchQuery] = useState("");
   const [applicantSearchQuery, setApplicantSearchQuery] = useState("");
   const [jobFilter, setJobFilter] = useState("all");
-  const [decisionFilter, setDecisionFilter] = useState<"pending" | "interview" | "accepted" | "rejected" | "filtered">("pending");
+  const [decisionFilter, setDecisionFilter] = useState<"pending" | "interview" | "accepted" | "rejected" | "filtered" | "locked_fomo">("pending");
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [crossNominateApplicant, setCrossNominateApplicant] = useState<Applicant | null>(null);
   const [crossNominateJobId, setCrossNominateJobId] = useState<string>("");
+  const [addonsBoughtThisMonth, setAddonsBoughtThisMonth] = useState(0);
+  const [showSoftUpgradeModal, setShowSoftUpgradeModal] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
   const [isSmartSortOpen, setIsSmartSortOpen] = useState(false);
   const [smartSortState, setSmartSortState] = useState<"all" | "elite" | "latest" | "weak">("all");
@@ -954,7 +956,8 @@ export const Dashboard = ({
                       { id: "interview", label: "المقابلات", color: "text-yellow-600 dark:text-yellow-400" },
                       { id: "accepted", label: "المقبولين", color: "text-green-600 dark:text-green-400" },
                       { id: "rejected", label: "المرفوضين", color: "text-red-600 dark:text-red-400" },
-                      { id: "filtered", label: "تمت تصفيتهم", color: "text-slate-500 dark:text-slate-400" }
+                      { id: "filtered", label: "تمت تصفيتهم", color: "text-slate-500 dark:text-slate-400" },
+                      { id: "locked_fomo", label: "مقفل (سير إضافية)", color: "text-purple-600 dark:text-purple-400" }
                     ].map(tab => (
                       <button
                         key={tab.id}
@@ -962,6 +965,9 @@ export const Dashboard = ({
                         className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${decisionFilter === tab.id ? `bg-white dark:bg-slate-700 shadow-sm ${tab.color}` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
                       >
                         {tab.label}
+                        {tab.id === "locked_fomo" && (
+                          <Lock size={12} className="inline ml-1 mb-0.5" />
+                        )}
                       </button>
                     ))}
                   </div>{" "}
@@ -1123,7 +1129,7 @@ export const Dashboard = ({
                               <Search size={32} className="text-slate-300 dark:text-slate-500" />
                             </div>
                             <h3 className="text-xl font-bold text-navy dark:text-white mb-2">
-                              {decisionFilter === "accepted" ? "لا يوجد مرشحين مقبولين حالياً" : decisionFilter === "rejected" ? "لا يوجد مرشحين مرفوضين حالياً" : decisionFilter === "interview" ? "لا يوجد مرشحين في مرحلة المقابلة حالياً" : decisionFilter === "filtered" ? "لا يوجد مرشحين في قائمة التصفية" : "لا يوجد مرشحين قيد المراجعة في الوقت الحالي"}
+                              {decisionFilter === "accepted" ? "لا يوجد مرشحين مقبولين حالياً" : decisionFilter === "rejected" ? "لا يوجد مرشحين مرفوضين حالياً" : decisionFilter === "interview" ? "لا يوجد مرشحين في مرحلة المقابلة حالياً" : decisionFilter === "filtered" ? "لا يوجد مرشحين في قائمة التصفية" : decisionFilter === "locked_fomo" ? "لا توجد سير ذاتية مقفلة حالياً" : "لا يوجد مرشحين قيد المراجعة في الوقت الحالي"}
                             </h3>
                             <p className="text-slate-500 dark:text-slate-400 font-medium">
                               لم يتم العثور على أي مرشح مطابق لخيارات التصفية الحالية.
@@ -1134,7 +1140,7 @@ export const Dashboard = ({
                     ) : (
                       <AnimatePresence>
                         {visibleApplicants.map((row, index) => {
-                          const isBlurred = plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining <= 0;
+                          const isFomoLocked = row.decision === "locked_fomo" || (plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining <= 0);
                           return (
                             <motion.tr
                               layout
@@ -1142,7 +1148,7 @@ export const Dashboard = ({
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.9 }}
                               key={row.id}
-                              className={`transition-colors group ${isBlurred ? 'opacity-60 pointer-events-none select-none filter blur-[3px]' : 'hover:bg-slate-50 dark:bg-slate-800/80 cursor-pointer'}`}
+                              className={`transition-colors group ${isFomoLocked ? 'bg-slate-50/50 dark:bg-slate-800/30' : 'hover:bg-slate-50 dark:bg-slate-800/80 cursor-pointer'}`}
                             >
                               {isSelectionMode && (
                                 <td className="px-3 py-4 w-10">
@@ -1181,24 +1187,31 @@ export const Dashboard = ({
                                   </button>{" "}
                                   <div
                                     onClick={(e) => {
-                                      if (row.photoUrl) {
+                                      if (row.photoUrl && !isFomoLocked) {
                                         e.stopPropagation();
                                         setLightboxPhoto(row.photoUrl);
                                       }
                                     }}
-                                    className={`w-10 h-10 rounded-[14px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d transition-colors overflow-hidden ${row.photoUrl ? "cursor-pointer hover:opacity-80" : "group-hover:bg-white dark:hover:bg-slate-600"}`}
+                                    className={`w-10 h-10 rounded-[14px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d transition-colors overflow-hidden ${row.photoUrl && !isFomoLocked ? "cursor-pointer hover:opacity-80" : "group-hover:bg-white dark:hover:bg-slate-600"}`}
                                   >
-                                    {row.photoUrl ? (
+                                    {row.photoUrl && !isFomoLocked ? (
                                       <img src={row.photoUrl} alt={row.name} className="w-full h-full object-cover" />
+                                    ) : isFomoLocked ? (
+                                      <Lock size={16} className="text-slate-400" />
                                     ) : (
                                       row.name.charAt(0)
                                     )}{" "}
                                   </div>{" "}
                                   <div className="flex flex-col">
-                                    <span className="font-bold text-navy dark:text-white">
-                                      {row.name}
+                                    <span className={`font-bold text-navy dark:text-white ${isFomoLocked ? 'filter blur-[4px] select-none' : ''}`}>
+                                      {isFomoLocked ? 'متقدم مخفي (نفد الرصيد)' : row.name}
                                     </span>
-                                    {row.nominatedTo && (
+                                    {isFomoLocked && (
+                                      <div className="mt-1 text-[10px] bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-md inline-block font-bold w-fit border border-purple-100 dark:border-purple-800/30 shadow-sm">
+                                        خبرة: {row.voiceEval || "غير محدد"}
+                                      </div>
+                                    )}
+                                    {row.nominatedTo && !isFomoLocked && (
                                       <div className="mt-1 text-[10px] bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md inline-block font-bold w-fit border border-blue-100 dark:border-blue-800/30 shadow-sm">
                                         🔄 تم ترشيحه لـ: {row.nominatedTo}
                                       </div>
@@ -1217,23 +1230,23 @@ export const Dashboard = ({
                                 <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
                                   <div className="w-12 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                                     <div
-                                      className={`h-full ${row.rating >= 80 ? "bg-primary" : row.rating >= 50 ? "bg-orange-500" : "bg-red-500"}`}
-                                      style={{ width: `${row.rating}%` }}
+                                      className={`h-full ${isFomoLocked ? "bg-slate-300 dark:bg-slate-600" : row.rating >= 80 ? "bg-primary" : row.rating >= 50 ? "bg-orange-500" : "bg-red-500"}`}
+                                      style={{ width: isFomoLocked ? '100%' : `${row.rating}%` }}
                                     />{" "}
                                   </div>{" "}
-                                  <span className={`text-sm font-bold ${row.rating >= 80 ? "text-primary" : row.rating >= 50 ? "text-orange-600 dark:text-orange-400" : "text-red-600 dark:text-red-400"}`}>
-                                    {row.rating}%
+                                  <span className={`text-sm font-bold ${isFomoLocked ? "text-slate-400 filter blur-[4px] select-none" : row.rating >= 80 ? "text-primary" : row.rating >= 50 ? "text-orange-600 dark:text-orange-400" : "text-red-600 dark:text-red-400"}`}>
+                                    {isFomoLocked ? "00%" : `${row.rating}%`}
                                   </span>{" "}
                                 </div>{" "}
                               </td>{" "}
                               <td className="px-2 py-3 text-xs text-slate-600 dark:text-slate-300 font-bold whitespace-nowrap text-right">
-                                {row.status}
-                                {row.is_interview_completed && (
+                                {isFomoLocked ? <span className="filter blur-[4px] select-none">مقفل</span> : row.status}
+                                {row.is_interview_completed && !isFomoLocked && (
                                   <span className="mr-2 bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 px-2 py-0.5 rounded-full text-[10px] inline-flex items-center">تمت المقابلة ✅</span>
                                 )}
                               </td>{" "}
                               <td className="px-2 py-3">
-                                <div className="flex items-center justify-center gap-1">
+                                <div className={`flex items-center justify-center gap-1 ${isFomoLocked ? 'filter blur-[4px] select-none pointer-events-none' : ''}`}>
                                   <a
                                     href={`https://wa.me/${row.phone}`}
                                     target="_blank"
@@ -1263,7 +1276,22 @@ export const Dashboard = ({
                               </td>{" "}
                               <td className="px-2 py-3">
                                 <div className="flex items-center justify-end gap-1.5 w-max ml-auto pl-4">
-                                  {row.decision === "filtered" ? (
+                                  {isFomoLocked ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setAddonsBoughtThisMonth(prev => prev + 1);
+                                        if (addonsBoughtThisMonth >= 2 && plan !== 'enterprise') {
+                                          setShowSoftUpgradeModal(true);
+                                        } else {
+                                          alert("سيتم توجيهك لبوابة الدفع لشراء 500 سيرة بـ 149 ريال...");
+                                        }
+                                      }}
+                                      className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg animate-pulse"
+                                    >
+                                      <Lock size={14} /> فك القفل (149 ريال)
+                                    </button>
+                                  ) : row.decision === "filtered" ? (
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -1276,7 +1304,6 @@ export const Dashboard = ({
                                     </button>
                                   ) : row.decision && row.decision !== "pending" ? (
                                     <>
-
                                       <button
                                         onClick={() => {
                                           if (window.confirm("هل أنت متأكد من رغبتك في التراجع عن هذا القرار وإعادته لقيد المراجعة؟")) {
@@ -1317,15 +1344,17 @@ export const Dashboard = ({
                                   <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
                                   <button
                                     onClick={() => onViewDetails(row)}
-                                    className="flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                    disabled={isFomoLocked}
+                                    className={`flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isFomoLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     title="عرض الملف"
                                   >
                                     <FileText size={14} /> عرض الملف{" "}
                                   </button>
                                   <div className="relative">
                                     <button
+                                      disabled={isFomoLocked}
                                       onClick={() => setOpenDropdownId(openDropdownId === row.id ? null : row.id)}
-                                      className="flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 hover:text-navy hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                      className={`flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 hover:text-navy hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${isFomoLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                       <MoreVertical size={16} />
                                     </button>
@@ -1398,12 +1427,19 @@ export const Dashboard = ({
                               <div className="absolute left-0 w-full flex justify-center z-10 -translate-y-full pb-8 pointer-events-auto">
                                 <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl p-8 rounded-[32px] shadow-2xl border border-primary/20 text-center max-w-md mx-auto relative overflow-hidden">
                                   <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 -z-10 translate-x-1/2" />
-                                  <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner-3d">
+                                  <div className="w-16 h-16 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner-3d">
                                     <Lock size={32} />
                                   </div>
-                                  <h4 className="text-xl font-black text-navy dark:text-white mb-2 tracking-tight">انتهت العينّة المجانية 🔒</h4>
-                                  <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">للوصول إلى باقي المتقدمين وفرز ملفاتهم، يرجى تفعيل إحدى باقاتنا</p>
-                                  <button onClick={() => { setActiveTab("الحساب"); setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 50); }} className="w-full bg-primary text-white px-8 py-3.5 rounded-2xl font-bold hover:bg-primary-dark transition-all active:scale-[0.98] shadow-lg shadow-primary/20">ترقية الباقة الآن</button>
+                                  <h4 className="text-xl font-black text-navy dark:text-white mb-2 tracking-tight">نفد رصيد السير الذاتية 🔒</h4>
+                                  <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">للوصول إلى السير الذاتية الإضافية وإجراء الفرز الذكي، يرجى شراء باقة إضافية.</p>
+                                  <button onClick={() => { 
+                                    setAddonsBoughtThisMonth(prev => prev + 1);
+                                    if (addonsBoughtThisMonth >= 2 && plan !== 'enterprise') {
+                                      setShowSoftUpgradeModal(true);
+                                    } else {
+                                      alert("سيتم توجيهك لبوابة الدفع لشراء 500 سيرة بـ 149 ريال...");
+                                    }
+                                  }} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3.5 rounded-2xl font-bold hover:from-purple-700 hover:to-indigo-700 transition-all active:scale-[0.98] shadow-lg shadow-purple-600/20">شراء 500 سيرة بـ 149 ريال</button>
                                 </div>
                               </div>
                             </td>
@@ -1415,6 +1451,74 @@ export const Dashboard = ({
                 </table>
               </div>
             </div>
+
+            {/* Soft Upgrade Modal */}
+            <AnimatePresence>
+              {showSoftUpgradeModal && (
+                <div className="fixed inset-0 bg-navy/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl p-8 max-w-md w-full relative overflow-hidden"
+                  >
+                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+                    <button
+                      onClick={() => setShowSoftUpgradeModal(false)}
+                      className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 transition-colors z-10"
+                    >
+                      <X size={16} />
+                    </button>
+                    
+                    <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
+                      <TrendingUp size={32} />
+                    </div>
+                    
+                    <h3 className="text-2xl font-black text-navy dark:text-white mb-4">
+                      استخدامك عالي! وفر أموالك 🚀
+                    </h3>
+                    
+                    <p className="text-slate-600 dark:text-slate-300 font-medium mb-6 leading-relaxed">
+                      لاحظنا أنك قمت بشراء إضافات متعددة مؤخراً. يمكنك توفير أكثر من 30% من تكاليفك عند الترقية إلى باقة الأعمال بدلاً من شراء الإضافات المتكررة.
+                    </p>
+                    
+                    <div className="space-y-3 mb-8">
+                      <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                        <CheckCircle size={16} className="text-emerald-500" /> 5000 سيرة ذاتية شهرياً
+                      </div>
+                      <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                        <CheckCircle size={16} className="text-emerald-500" /> 10 إعلانات وظيفية
+                      </div>
+                      <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
+                        <CheckCircle size={16} className="text-emerald-500" /> مدير حساب مخصص
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => {
+                          setShowSoftUpgradeModal(false);
+                          setActiveTab("الحساب");
+                          setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 50);
+                        }}
+                        className="flex-1 bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary-dark transition-all"
+                      >
+                        الترقية للوفر
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowSoftUpgradeModal(false);
+                          alert("سيتم توجيهك لبوابة الدفع لشراء 500 سيرة بـ 149 ريال...");
+                        }}
+                        className="flex-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 py-3 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                      >
+                        الاستمرار كإضافة
+                      </button>
+                    </div>
+                  </motion.div>
+                </div>
+              )}
+            </AnimatePresence>
           </div>
         );
       case "إدارة الوظائف":

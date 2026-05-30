@@ -14,39 +14,18 @@ async function check() {
   const { data: applicant, error } = await supabase
     .from('applicants')
     .select('*')
-    .ilike('full_name', '%محلل%')
+    .ilike('full_name', '%المصري%')
     .order('created_at', { ascending: false })
     .limit(1)
     .single();
 
-  const { data: job } = await supabase.from('jobs').select('*').eq('id', applicant.job_id).single();
-
-  const pythonPayload = {
-    applicant_id: applicant.id,
-    job_id: job.id,
-    cv_file_url: applicant.cv_file_url,
-    job_context: {
-      title: job.title,
-      department: job.department,
-      description: job.description,
-      requirements: job.requirements
-    }
-  };
-
-  try {
-    const response = await fetch('http://localhost:8000/api/v1/extract-cv', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer change_me_in_production`
-      },
-      body: JSON.stringify(pythonPayload)
-    });
-    const result = await response.json();
-    console.log("Webhook Response:", result);
-  } catch (err) {
-    console.error("Webhook fetch failed:", err);
-  }
+  console.log({
+    name: applicant.full_name,
+    decision: applicant.decision,
+    match: applicant.match_percentage,
+    just: applicant.ai_justification,
+    flags: applicant.red_flags
+  });
 }
 check();
 check();

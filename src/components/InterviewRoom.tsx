@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Mic, MicOff, PhoneOff, AlertCircle, Play, ShieldCheck, Waves } from 'lucide-react';
 import Vapi from '@vapi-ai/web';
 import { LogoIcon } from '../Shared'; // Assuming LogoIcon is exported from Shared
+import { supabase } from '../lib/supabaseClient';
 
 const VAPI_PUBLIC_KEY = '1325def0-c344-4811-aa65-c3bb5d38ca16';
 const ENGLISH_ASSISTANT_ID = '0486ff5b-3ef4-4a40-bb38-4b0ec6dfd400';
@@ -53,8 +54,23 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
   const startInterview = async () => {
     try {
       setCallStatus('loading');
+
+      // --- 1. Deduct Interview Credit (SaaS Guardrail) ---
+      const { data: appData, error: appError } = await supabase.from('applicants').select('job_id').eq('id', applicantId).single();
+      if (appError) throw new Error("لم يتم العثور على المتقدم");
+
+      const { data: jobData, error: jobError } = await supabase.from('jobs').select('company_id').eq('id', appData.job_id).single();
+      if (jobError) throw new Error("لم يتم العثور على تفاصيل الوظيفة");
+
+      const { data: hasCredit, error: rpcError } = await supabase.rpc('deduct_interview_credit', { p_company_id: jobData.company_id });
+      if (rpcError || !hasCredit) {
+        throw new Error("عذراً، نفد رصيد المقابلات المتاح للشركة. يرجى إبلاغ مسؤول التوظيف لترقية الباقة أو شراء رصيد إضافي.");
+      }
+
+      // --- 2. Start Vapi Call with Limiter ---
       const assistantId = lang === 'en' ? ENGLISH_ASSISTANT_ID : ARABIC_ASSISTANT_ID;
       await vapiRef.current.start(assistantId, {
+        maxDurationSeconds: 600, // SaaS Guardrail: 10 minutes max limit
         variableValues: {
           applicantId: applicantId
         }
