@@ -934,7 +934,11 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
               </div>{" "}
               <div className="flex-1 bg-slate-100 mx-8 mt-8 mb-4 rounded-[32px] border-2 border-slate-200 dark:border-slate-700 overflow-hidden relative flex flex-col justify-end">
                 {applicant?.cv_file_url ? (
-                  <iframe src={applicant.cv_file_url + "#toolbar=0"} className="absolute inset-0 w-full h-full border-none bg-white rounded-[30px]" />
+                  applicant.cv_file_url.match(/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i) ? (
+                    <img src={applicant.cv_file_url} className="absolute inset-0 w-full h-full object-contain bg-slate-50/50 dark:bg-slate-800 rounded-[30px] p-4" alt="CV" />
+                  ) : (
+                    <iframe src={applicant.cv_file_url + "#toolbar=0"} className="absolute inset-0 w-full h-full border-none bg-white rounded-[30px]" />
+                  )
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-slate-400 font-bold bg-white dark:bg-slate-800 rounded-[30px]">
                     لا توجد سيرة ذاتية مرفوعة (أو جاري معالجتها)
@@ -1004,7 +1008,11 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
               </button>
             </div>
             <div className="flex-1 w-full h-full p-4 md:p-8">
-              <iframe src={applicant.cv_file_url} className="w-full h-full rounded-2xl bg-white border-none" />
+              {applicant.cv_file_url.match(/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i) ? (
+                <img src={applicant.cv_file_url} className="w-full h-full object-contain rounded-2xl bg-transparent" alt="CV" />
+              ) : (
+                <iframe src={applicant.cv_file_url} className="w-full h-full rounded-2xl bg-white border-none" />
+              )}
             </div>
           </motion.div>
         )}

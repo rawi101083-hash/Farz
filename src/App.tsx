@@ -1492,6 +1492,7 @@ export default function App() {
     city: "",
     cvs_processed_count: 0,
     fields_locked: false,
+    isLoaded: false,
   });
   const [step, setStep] = useState<FlowStep>(() => {
     if (window.location.pathname.startsWith("/interview/")) return "interview";

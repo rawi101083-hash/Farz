@@ -68,6 +68,29 @@ export const ManageJob = ({
   // Status
   const [status, setStatus] = useState(job.status || "نشط");
 
+  // Manual Unlock State
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [unlockMode, setUnlockMode] = useState<"initial" | "select_people">("initial");
+  const [lockedApplicants, setLockedApplicants] = useState<any[]>([]);
+  const [selectedLockedIds, setSelectedLockedIds] = useState<string[]>([]);
+  const [searchLocked, setSearchLocked] = useState("");
+  const [isLoadingLocked, setIsLoadingLocked] = useState(false);
+
+  const fetchLockedApplicants = async () => {
+    setIsLoadingLocked(true);
+    try {
+      const { data, error } = await supabase.from('applicants')
+        .select('id, full_name, email, decision, created_at, is_cooldown_bypassed')
+        .eq('job_id', job.id)
+        .neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW');
+      if (data) setLockedApplicants(data);
+    } catch(e) {
+      console.error(e);
+    } finally {
+      setIsLoadingLocked(false);
+    }
+  };
+
   // Questions & Attachments
   const [knockoutQuestions, setKnockoutQuestions] = useState<{ text: string; type: "yes_no" | "options"; options?: string[]; requiredAnswer: string }[]>(job.knockoutQuestions || []);
   const [customQuestions, setCustomQuestions] = useState<{ text: string; type: string; options?: string[]; required?: boolean }[]>(job.customQuestions || []);
@@ -704,25 +727,11 @@ export const ManageJob = ({
 
               <button
                 type="button"
-                onClick={async () => {
-                  if (window.confirm("هل أنت متأكد من رغبتك في فك حظر الـ 90 يوماً والسماح للمتقدمين السابقين بالتقديم مرة أخرى على هذه الوظيفة؟")) {
-                    try {
-                      const { data, error } = await supabase.from('applicants').update({ is_cooldown_bypassed: true }).eq('job_id', job.id).select('id');
-                      if (error) {
-                        alert("حدث خطأ أثناء فك الحظر: " + error.message);
-                        console.error("Update error:", error);
-                      } else {
-                        if (data && data.length > 0) {
-                          window.dispatchEvent(new CustomEvent('showToast', { detail: { message: `تم فك الحظر عن ${data.length} متقدمين بنجاح`, type: "success" }}));
-                        } else {
-                          window.dispatchEvent(new CustomEvent('showToast', { detail: { message: "لا يوجد متقدمين محظورين لهذه الوظيفة حالياً", type: "info" }}));
-                        }
-                      }
-                    } catch(e) {
-                      console.error(e);
-                      alert("حدث خطأ غير متوقع");
-                    }
-                  }
+                onClick={() => {
+                  setShowUnlockModal(true);
+                  setUnlockMode("initial");
+                  setSelectedLockedIds([]);
+                  setSearchLocked("");
                 }}
                 className="w-full flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 p-3 rounded-2xl font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors mb-4"
               >
@@ -798,6 +807,137 @@ export const ManageJob = ({
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showUnlockModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-700"
+            >
+              <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-2">
+                  {unlockMode === "initial" ? "فتح التقديم يدوياً" : "تحديد المتقدمين"}
+                </h3>
+                <button
+                  onClick={() => setShowUnlockModal(false)}
+                  className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto flex-1">
+                {unlockMode === "initial" ? (
+                  <div className="space-y-4">
+                    <p className="text-slate-600 dark:text-slate-300 mb-6 font-medium leading-relaxed">
+                      هل ترغب في فك حظر الـ 90 يوماً لجميع المتقدمين السابقين على هذه الوظيفة، أم لأشخاص معينين فقط؟
+                    </p>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const { data, error } = await supabase.from('applicants').update({ is_cooldown_bypassed: true }).eq('job_id', job.id).neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW').select('id');
+                          if (error) throw error;
+                          if (data && data.length > 0) {
+                            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: `تم فك الحظر عن ${data.length} متقدمين بنجاح`, type: "success" }}));
+                          } else {
+                            window.dispatchEvent(new CustomEvent('showToast', { detail: { message: "لا يوجد متقدمين محظورين لهذه الوظيفة حالياً", type: "info" }}));
+                          }
+                          setShowUnlockModal(false);
+                        } catch(e: any) {
+                          alert("حدث خطأ: " + e.message);
+                        }
+                      }}
+                      className="w-full p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Users size={18} /> فتح للكل
+                    </button>
+                    <button
+                      onClick={() => {
+                        setUnlockMode("select_people");
+                        fetchLockedApplicants();
+                      }}
+                      className="w-full p-4 rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Target size={18} /> لأشخاص معينين
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      placeholder="ابحث بالاسم أو الإيميل..."
+                      value={searchLocked}
+                      onChange={e => setSearchLocked(e.target.value)}
+                      className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-navy dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    />
+                    
+                    {isLoadingLocked ? (
+                      <div className="flex justify-center p-8">
+                        <div className="animate-spin w-8 h-8 border-4 border-slate-200 border-b-primary rounded-full"></div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+                        {lockedApplicants.filter(a => (a.full_name || "").toLowerCase().includes(searchLocked.toLowerCase()) || (a.email || "").toLowerCase().includes(searchLocked.toLowerCase())).length === 0 ? (
+                          <div className="text-center p-4 text-slate-500">لا يوجد نتائج</div>
+                        ) : (
+                          lockedApplicants.filter(a => (a.full_name || "").toLowerCase().includes(searchLocked.toLowerCase()) || (a.email || "").toLowerCase().includes(searchLocked.toLowerCase())).map(applicant => (
+                            <label key={applicant.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={selectedLockedIds.includes(applicant.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) setSelectedLockedIds(prev => [...prev, applicant.id]);
+                                  else setSelectedLockedIds(prev => prev.filter(id => id !== applicant.id));
+                                }}
+                                className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
+                              />
+                              <div className="flex-1">
+                                <p className="font-bold text-sm text-navy dark:text-white">{applicant.full_name || "متقدم"}</p>
+                                <p className="text-xs text-slate-500">{applicant.email}</p>
+                              </div>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {unlockMode === "select_people" && (
+                <div className="p-6 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 flex gap-3">
+                  <button
+                    onClick={async () => {
+                      if (selectedLockedIds.length === 0) return alert("الرجاء تحديد شخص واحد على الأقل");
+                      try {
+                        const { data, error } = await supabase.from('applicants').update({ is_cooldown_bypassed: true }).in('id', selectedLockedIds).select('id');
+                        if (error) throw error;
+                        window.dispatchEvent(new CustomEvent('showToast', { detail: { message: `تم فك الحظر عن ${data?.length || 0} متقدمين بنجاح`, type: "success" }}));
+                        setShowUnlockModal(false);
+                      } catch(e: any) {
+                        alert("حدث خطأ: " + e.message);
+                      }
+                    }}
+                    disabled={selectedLockedIds.length === 0}
+                    className="flex-1 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    تأكيد الفتح ({selectedLockedIds.length})
+                  </button>
+                  <button
+                    onClick={() => setUnlockMode("initial")}
+                    className="px-6 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    رجوع
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showWarningModal && (

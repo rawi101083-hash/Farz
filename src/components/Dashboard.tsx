@@ -283,7 +283,14 @@ export const Dashboard = ({
   const [showSoftUpgradeModal, setShowSoftUpgradeModal] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
   const [isSmartSortOpen, setIsSmartSortOpen] = useState(false);
-  const [smartSortState, setSmartSortState] = useState<"all" | "elite" | "latest" | "weak">("all");
+  const [smartSortState, setSmartSortState] = useState<"all" | "elite" | "latest" | "weak">(
+    (localStorage.getItem("sahab_smart_sort") as any) || "all"
+  );
+
+  useEffect(() => {
+    localStorage.setItem("sahab_smart_sort", smartSortState);
+  }, [smartSortState]);
+
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
 
   useEffect(() => {
@@ -393,6 +400,7 @@ export const Dashboard = ({
               hr_notes: raw.hr_notes || "",
               cv_file_url: raw.cv_file_url,
               is_favorite: raw.is_favorite || false,
+              in_talent_pool: raw.in_talent_pool || false,
               skills_match: raw.skills_match || 0,
               experience_match: raw.experience_match || 0,
               education_match: raw.education_match || 0,
@@ -493,7 +501,7 @@ export const Dashboard = ({
     const hasWeak = applicants.some(a => {
       const d = a.decision || "pending";
       const statusMatch = d === decisionFilter;
-      const jobMatch = jobFilter === "all" || a.job.includes(jobs.find(j => j.id === jobFilter)?.title || "");
+      const jobMatch = jobFilter === "all" || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "");
       const favMatch = !showFavoritesOnly || a.is_favorite === true;
       return statusMatch && jobMatch && favMatch && Number(a.rating) < 50;
     });
@@ -511,7 +519,7 @@ export const Dashboard = ({
     const hasElite = applicants.some(a => {
       const d = a.decision || "pending";
       const statusMatch = d === decisionFilter;
-      const jobMatch = jobFilter === "all" || a.job.includes(jobs.find(j => j.id === jobFilter)?.title || "");
+      const jobMatch = jobFilter === "all" || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "");
       const favMatch = !showFavoritesOnly || a.is_favorite === true;
       return statusMatch && jobMatch && favMatch && Number(a.rating) >= 80;
     });
@@ -528,7 +536,7 @@ export const Dashboard = ({
   let visibleApplicants = applicants.filter(a => {
     const d = a.decision || "pending";
     const statusMatch = d === decisionFilter;
-    const jobMatch = jobFilter === "all" || a.job.includes(jobs.find(j => j.id === jobFilter)?.title || "");
+    const jobMatch = jobFilter === "all" || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "");
     const favMatch = !showFavoritesOnly || a.is_favorite === true;
 
     const searchLower = (applicantSearchQuery || "").toLowerCase().trim();
@@ -669,23 +677,38 @@ export const Dashboard = ({
     }
   };
 
-  const handleMoveToPool = (applicant: Applicant) => {
-    setTalentPool(prev => {
-      if (prev.some(t => t.id === applicant.id)) {
-        return prev.map(t => t.id === applicant.id ? { ...t, is_removed_from_pool: false } as Applicant : t);
-      }
-      return [...prev, applicant];
-    });
+  const handleMoveToPool = async (applicant: Applicant) => {
+    // Optimistic UI update
+    setApplicants(prev => prev.map(a => a.id === applicant.id ? { ...a, in_talent_pool: true } : a));
     setToastMessage("تم نقل المرشح لبنك الكفاءات بنجاح!");
     setTimeout(() => setToastMessage(null), 3000);
     setOpenDropdownId(null);
+    
+    // Backend sync
+    if (!applicant.id.startsWith("mock-")) {
+      try {
+        await supabase.from('applicants').update({ in_talent_pool: true }).eq('id', applicant.id);
+      } catch (error) {
+        console.warn("Could not sync talent pool state to backend:", error);
+      }
+    }
   };
 
-  const handleRemoveFromPool = (id: string) => {
-    setTalentPool(prev => prev.map(t => t.id === id ? { ...t, is_removed_from_pool: true } as Applicant : t));
+  const handleRemoveFromPool = async (id: string) => {
+    // Optimistic UI update
+    setApplicants(prev => prev.map(a => a.id === id ? { ...a, in_talent_pool: false } : a));
     setToastMessage("تمت الإزالة من بنك الكفاءات.");
     setTimeout(() => setToastMessage(null), 3000);
     setOpenDropdownId(null);
+    
+    // Backend sync
+    if (!id.startsWith("mock-")) {
+      try {
+        await supabase.from('applicants').update({ in_talent_pool: false }).eq('id', id);
+      } catch (error) {
+        console.warn("Could not sync talent pool state to backend:", error);
+      }
+    }
   };
 
   const handleCrossNominate = async () => {
@@ -786,7 +809,7 @@ export const Dashboard = ({
     if (!job.endDate) return false;
     return new Date() > new Date(job.endDate);
   };
-  const syncedJobs = jobs.map(j => ({ ...j, company: j.company || userProfile?.companyName || userProfile?.name || "", applicants: applicants.filter(a => a.job.includes(j.title || "")).length }));
+  const syncedJobs = jobs.map(j => ({ ...j, company: j.company || userProfile?.companyName || userProfile?.name || "", applicants: applicants.filter(a => (a.job || "").includes(j.title || "")).length }));
   const filteredSearchJobs = syncedJobs.filter((j) =>
     !jobSearchQuery ||
     (j.title || j.campaignTitle || "").toLowerCase().includes(jobSearchQuery.toLowerCase())
@@ -861,7 +884,7 @@ export const Dashboard = ({
             {(() => {
               const baseStatsApps = jobFilter === "all" ? applicants : applicants.filter(a => {
                 const searchJob = jobs.find(j => j.id === jobFilter)?.title || "";
-                return searchJob ? a.job.includes(searchJob) : false;
+                return searchJob ? (a.job || "").includes(searchJob) : false;
               });
               const totalCount = baseStatsApps.length;
               const pendingCount = baseStatsApps.filter(a => !a.decision || a.decision === "pending").length;
@@ -1310,7 +1333,9 @@ export const Dashboard = ({
                                   ) : row.decision && row.decision !== "pending" ? (
                                     <>
                                       <button
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          e.preventDefault();
                                           if (window.confirm("هل أنت متأكد من رغبتك في التراجع عن هذا القرار وإعادته لقيد المراجعة؟")) {
                                             handleDecision(row.id, "pending");
                                           }
@@ -1324,21 +1349,21 @@ export const Dashboard = ({
                                   ) : (
                                     <>
                                       <button
-                                        onClick={() => handleDecision(row.id, "accepted")}
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "accepted"); }}
                                         className="flex items-center justify-center gap-1 bg-green-50 text-green-600 hover:bg-green-500 hover:text-white dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
                                         title="قبول"
                                       >
                                         <CheckCircle size={14} /> قبول
                                       </button>
                                       <button
-                                        onClick={() => handleDecision(row.id, "interview")}
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "interview"); }}
                                         className="flex items-center justify-center gap-1 bg-yellow-50 text-yellow-600 hover:bg-yellow-500 hover:text-white dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
                                         title="مقابلة"
                                       >
                                         مقابلة
                                       </button>
                                       <button
-                                        onClick={() => handleDecision(row.id, "rejected")}
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "rejected"); }}
                                         className="flex items-center justify-center gap-1 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
                                         title="رفض"
                                       >
@@ -1388,7 +1413,7 @@ export const Dashboard = ({
                                                   <Star size={16} className={row.is_favorite ? "text-yellow-500" : "text-slate-400"} fill={row.is_favorite ? "currentColor" : "none"} />
                                                   {row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
                                                 </button>
-                                                {talentPool.some(t => t.id === row.id && !(t as any).is_removed_from_pool) ? (
+                                                  {row.in_talent_pool ? (
                                                   <button
                                                     onClick={() => handleRemoveFromPool(row.id)}
                                                     className="w-full text-right px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
@@ -1675,7 +1700,7 @@ export const Dashboard = ({
           <TalentPool
             jobs={jobs}
             shortlistedIds={shortlistedIds}
-            onToggleShortlist={onToggleShortlist}
+            onToggleShortlist={handleToggleFavorite}
             onCreateJob={onCreateJob}
             onViewDetails={onViewDetails}
             talentPool={talentPool}
@@ -2004,7 +2029,7 @@ export const Dashboard = ({
         </aside>{" "}
         {/* Main Content */}{" "}
         <main className="flex-1 lg:mr-80 flex flex-col min-h-screen">
-          {(!userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
+          {(userProfile?.isLoaded && !userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
             <div className="bg-amber-100 dark:bg-amber-900/50 border-b border-amber-200 dark:border-amber-700/50 mt-16 md:mt-0 z-10 transition-colors">
               <div className="max-w-6xl mx-auto p-3 sm:px-8 flex items-center justify-between text-amber-900 dark:text-amber-100 text-sm md:text-base">
                 <span className="font-bold flex items-center gap-2 max-w-[70%] leading-relaxed">

@@ -814,41 +814,16 @@ export const TalentPool = ({
       </div>
     );
   }
-  const allStarredApplicants: any[] = [];
-
-  // Collect all starred applicants from everywhere
-  (jobs || []).forEach(job => {
-    if (job && job.applicantsList) {
-      job.applicantsList.forEach(app => {
-        if (app && app.id && shortlistedIds && shortlistedIds.includes(app.id) && !allStarredApplicants.find(t => t && t.id === app.id)) {
-          allStarredApplicants.push({ ...app, job: job.title || "غير محدد" });
-        }
-      });
-    }
-  });
-
-  if (externalApplicants && Array.isArray(externalApplicants)) {
-    externalApplicants.forEach(app => {
-      if (app && app.id && shortlistedIds && shortlistedIds.includes(app.id) && !allStarredApplicants.find(t => t && t.id === app.id)) {
-        allStarredApplicants.push({ ...app, job: app.job || "غير محدد" });
-      }
-    });
-  }
-
-  (talentPool || []).forEach(app => {
-    if (app && app.id && shortlistedIds && shortlistedIds.includes(app.id) && !allStarredApplicants.find(t => t && t.id === app.id)) {
-      allStarredApplicants.push(app);
-    }
-  });
-
-  const baseApplicants = showOnlyShortlisted ? allStarredApplicants : (talentPool || []);
+  const baseApplicants = (externalApplicants || []).filter((t: any) => t.in_talent_pool);
 
   const allUniqueSkills = Array.from(new Set(
-    baseApplicants.filter((t: any) => t && !t.is_removed_from_pool).flatMap((t: any) => t.skills || [])
+    baseApplicants.flatMap((t: any) => t.skills || [])
   )).filter(Boolean).sort();
 
   const filteredTalents = baseApplicants.filter((t: any) => {
-    if (!t || t.is_removed_from_pool) return false;
+    if (!t) return false;
+    
+    if (showOnlyShortlisted && !t.is_favorite) return false;
     const matchesJob =
       jobFilter === "all" ||
       (t.job && typeof t.job === 'string' && t.job.includes((jobs || []).find((j: any) => j && j.id === jobFilter)?.title || ""));
@@ -880,20 +855,15 @@ export const TalentPool = ({
         </div>{" "}
         <div className="flex bg-white dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <button
-            onClick={() => setShowOnlyShortlisted(false)}
-            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${!showOnlyShortlisted ? "bg-navy text-white shadow-lg shadow-navy/20" : "text-slate-400 dark:text-slate-500 hover:text-navy dark:text-white"}`}
-          >
-            الكل{" "}
-          </button>{" "}
-          <button
-            onClick={() => setShowOnlyShortlisted(true)}
-            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${showOnlyShortlisted ? "bg-primary text-white shadow-lg shadow-primary/20" : "text-slate-400 dark:text-slate-500 hover:text-navy dark:text-white"}`}
+            onClick={() => setShowOnlyShortlisted(!showOnlyShortlisted)}
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${showOnlyShortlisted ? "bg-yellow-100 text-yellow-600 border border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-500 dark:border-yellow-800/50" : "text-slate-500 dark:text-slate-400 hover:text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"}`}
           >
             <Star
               size={16}
               fill={showOnlyShortlisted ? "currentColor" : "none"}
+              className={showOnlyShortlisted ? "text-yellow-600 dark:text-yellow-500" : ""}
             />{" "}
-            المفضلين{" "}
+            عرض المفضلين فقط{" "}
           </button>{" "}
         </div>{" "}
       </header>{" "}
@@ -979,9 +949,9 @@ export const TalentPool = ({
                     e.stopPropagation();
                     onToggleShortlist(talent.id);
                   }}
-                  className={`p-2 rounded-xl transition-all ${shortlistedIds.includes(talent.id) ? "bg-yellow-100 text-yellow-500 shadow-lg shadow-yellow-200/50" : "bg-slate-50 dark:bg-slate-800/50 text-slate-300 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"}`}
+                  className={`p-2 rounded-xl transition-all ${talent.is_favorite ? "bg-yellow-100 text-yellow-500 shadow-lg shadow-yellow-200/50" : "bg-slate-50 dark:bg-slate-800/50 text-slate-300 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"}`}
                 >
-                  <Star size={20} fill={shortlistedIds.includes(talent.id) ? "currentColor" : "none"} />
+                  <Star size={20} fill={talent.is_favorite ? "currentColor" : "none"} />
                 </button>
                 <div className="relative">
                   <button
