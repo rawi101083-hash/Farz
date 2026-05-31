@@ -445,10 +445,10 @@ export const ApplicantForm = ({
         if (q.includes("دكتوراه")) return 5;
         return 0;
       };
-      
+
       const reqRank = getQualRank(activeRole.qualification);
       const appRank = getQualRank(formDataState.education);
-      
+
       if (appRank < reqRank) {
         isAutoRejected = true;
         autoRejectReason = "المؤهل أقل من الحد الأدنى المطلوب";
@@ -468,7 +468,7 @@ export const ApplicantForm = ({
 
       const reqRank = getExpRank(activeRole.experience);
       const appRank = getExpRank(formDataState.experience);
-      
+
       if (appRank < reqRank) {
         isAutoRejected = true;
         autoRejectReason = "سنوات الخبرة أقل من الحد الأدنى المطلوب";
@@ -478,7 +478,7 @@ export const ApplicantForm = ({
     if (isAutoRejected) {
       console.log(`Applicant Auto-Rejected (${autoRejectReason}). Appended skipAI=true to avoid API costs.`);
     }
-    
+
     // Asynchronous background task for PDF OCR and AI webhook
     const processAndSubmitBackground = async () => {
       if (isPreview) {
@@ -486,7 +486,7 @@ export const ApplicantForm = ({
         console.log("Preview Mode: Skipping database and webhook execution.");
         return;
       }
-      
+
       // --- Double Protection Shield (Background Logic) ---
       const cvFile = resumeFile || submitData.resume || submitData.cv || (formRef.current?.querySelector('input[type="file"]') as HTMLInputElement)?.files?.[0];
       try {
@@ -497,7 +497,7 @@ export const ApplicantForm = ({
           const hashBuffer = await crypto.subtle.digest('SHA-256', data);
           const hashArray = Array.from(new Uint8Array(hashBuffer));
           const deviceFingerprint = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-          
+
           let fileHash = "";
           if (cvFile && cvFile instanceof File) {
             const fileBuffer = await cvFile.arrayBuffer();
@@ -505,28 +505,28 @@ export const ApplicantForm = ({
             const fileHashArray = Array.from(new Uint8Array(fileHashBuffer));
             fileHash = fileHashArray.map(b => b.toString(16).padStart(2, '0')).join('');
           }
-          
+
           const ninetyDaysAgo = new Date();
           ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-          
+
           let query = supabase.from('applicants')
             .select('id, created_at')
             .eq('job_id', job.id)
             .eq('is_cooldown_bypassed', false)
             .gte('created_at', ninetyDaysAgo.toISOString());
-            
+
           if (fileHash) {
             query = query.or(`device_fingerprint.eq.${deviceFingerprint},file_hash.eq.${fileHash}`);
           } else {
             query = query.eq('device_fingerprint', deviceFingerprint);
           }
-          
+
           const { data: existingApps } = await query;
           if (existingApps && existingApps.length > 0) {
             console.log("Duplicate application detected in background. Skipping processing to prevent spam.");
             return;
           }
-          
+
           submitData._deviceFingerprint = deviceFingerprint;
           submitData._fileHash = fileHash;
         }
@@ -535,7 +535,6 @@ export const ApplicantForm = ({
       }
       let cv_file_url = "";
       let applicant_db_id = "";
-      const cvFile = resumeFile || submitData.resume || submitData.cv || (formRef.current?.querySelector('input[type="file"]') as HTMLInputElement)?.files?.[0];
 
       try {
         if (cvFile && cvFile instanceof File) {
@@ -574,7 +573,7 @@ export const ApplicantForm = ({
             else if (companyPlan === 'growth') limit = 1000;
             else if (companyPlan === 'business') limit = 5000;
             else if (companyPlan === 'enterprise') limit = 15000;
-            
+
             if (limit > 0 && cvsCount >= limit) {
               skipWebhook = true;
             } else if (limit === 0) {
@@ -596,7 +595,7 @@ export const ApplicantForm = ({
             email: (submitData.email || "").toString(),
             phone: (submitData.phone || "").toString(),
             cv_file_url: cv_file_url || null,
-            decision: isAutoRejected ? "filtered" : "pending",
+            decision: isAutoRejected ? "filtered" : "processing",
             rejection_reason: isAutoRejected ? `مرفوض آلياً (${autoRejectReason})` : null,
             custom_answers: customAnswers,
             device_fingerprint: submitData._deviceFingerprint || null,
@@ -625,7 +624,7 @@ export const ApplicantForm = ({
       }
 
       const API_BASE_URL = "https://farz-cv-processo-1.onrender.com";
-      
+
       const pythonPayload = {
         applicant_id: applicant_db_id,
         job_id: job?.id || "",
@@ -653,25 +652,27 @@ export const ApplicantForm = ({
           `${API_BASE_URL}/api/v1/extract-cv`,
           {
             method: "POST",
-            headers: { 
+            headers: {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${import.meta.env.VITE_FARZ_API_KEY || "change_me_in_production"}`
             },
             body: JSON.stringify(pythonPayload)
           }
         );
-        
+
         // Increment cvs count is now handled securely by Supabase Backend Triggers (increment_cv_on_insert)
       } catch (error) {
         console.error("Webhook error:", error);
       }
     };
 
-    // Fire and forget (Background processing)
-    processAndSubmitBackground().catch(console.error);
-
     // UX: Instant feedback, Zero blocking
     setFormStep("success");
+
+    // Fire and forget (Background processing) in the next tick to ensure UI paints instantly
+    setTimeout(() => {
+      processAndSubmitBackground().catch(console.error);
+    }, 100);
   };
   const now = new Date();
   const jobStart = job?.startDate ? new Date(job.startDate) : new Date(0);
@@ -699,7 +700,7 @@ export const ApplicantForm = ({
           <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-10">
             {isPreview ? "هذه مجرد معاينة حية لشكل الشاشة التي ستظهر للمتقدمين. لم يتم حفظ أي بيانات فعلية في النظام." : "شكراً لاهتمامك بالانضمام إلينا. سنقوم بمراجعة طلبك والتواصل معك في أقرب وقت. نتمنى لك التوفيق!"}
           </p>
-          {isCampaign && (
+          {isCampaign && job?.roles && job.roles.length > 1 && (
             <div className="space-y-4">
               <button
                 type="button"
@@ -926,7 +927,7 @@ export const ApplicantForm = ({
               ) : (
                 <div className="flex items-center justify-between p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800/50 shadow-sm mt-4">
                   <div className="flex items-center gap-4">
-                    <a 
+                    <a
                       href={resumeFile ? URL.createObjectURL(resumeFile) : "#"}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -936,11 +937,11 @@ export const ApplicantForm = ({
                       <FileText size={24} />
                     </a>
                     <div>
-                      <a 
+                      <a
                         href={resumeFile ? URL.createObjectURL(resumeFile) : "#"}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-bold text-primary hover:underline hover:text-teal-600 mb-1 flex items-center gap-1.5 cursor-pointer transition-colors" 
+                        className="font-bold text-primary hover:underline hover:text-teal-600 mb-1 flex items-center gap-1.5 cursor-pointer transition-colors"
                         title={resumeFileName || "عرض الملف"}
                       >
                         {resumeFileName ? (resumeFileName.length > 25 ? resumeFileName.substring(0, 25) + "..." : resumeFileName) : "السيرة الذاتية المرفقة"}
@@ -1017,11 +1018,11 @@ export const ApplicantForm = ({
                     value={formDataState.phone}
                     onChange={(e) => {
                       let val = e.target.value.replace(/\D/g, '');
-                      
+
                       // Restrict starting digits
                       if (val.length === 1 && val !== '0' && val !== '5') val = '';
                       if (val.length >= 2 && val.startsWith('0') && val[1] !== '5') val = '0';
-                      
+
                       // Dynamic max length
                       if (val.startsWith('5') && val.length > 9) {
                         val = val.slice(0, 9);
@@ -1030,7 +1031,7 @@ export const ApplicantForm = ({
                       } else if (val.length > 10) {
                         val = val.slice(0, 10);
                       }
-                      
+
                       setFormDataState((prev) => ({ ...prev, phone: val }));
                     }}
                     placeholder="5xxxxxxxx"

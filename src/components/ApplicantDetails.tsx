@@ -23,6 +23,36 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
   const [interviewTime, setInterviewTime] = useState("10:00");
   const [interviewText, setInterviewText] = useState("");
 
+  const [dynamicPercentile, setDynamicPercentile] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!job?.id || !applicant?.id) return;
+    const fetchScores = async () => {
+      const { data } = await supabase
+        .from('applicants')
+        .select('match_percentage')
+        .eq('job_id', job.id)
+        .neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW');
+        
+      if (data && data.length > 0) {
+        const scores = data.map((d: any) => d.match_percentage || 0).sort((a: number, b: number) => b - a);
+        const currentScore = applicant.match_percentage || applicant.rating || 0;
+        
+        if (!scores.includes(currentScore)) {
+          scores.push(currentScore);
+          scores.sort((a: number, b: number) => b - a);
+        }
+        
+        const rank = scores.indexOf(currentScore) + 1;
+        const total = scores.length;
+        const betterThanCount = Math.max(0, total - rank);
+        const pct = total > 1 ? Math.round((betterThanCount / total) * 100) : 100;
+        
+        setDynamicPercentile(pct);
+      }
+    };
+    fetchScores();
+  }, [job?.id, applicant?.id, applicant?.match_percentage, applicant?.rating]);
 
   const REJECTION_REASONS = [
     "غير مطابق للشروط",
@@ -242,7 +272,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
   const actualSummary = applicant?.ai_justification ?? applicant?.aiSummary ?? "";
   const actualStrengths = safeParseArray(applicant?.top_strengths);
   const actualWeaknesses = safeParseArray(applicant?.top_weaknesses);
-  const topPercentile = applicant?.top_percentile;
+  const topPercentile = dynamicPercentile || applicant?.top_percentile;
   const redFlags = safeParseArray(applicant?.red_flags);
   const interviewQuestions = safeParseArray(applicant?.interview_questions);
   const attachments = safeParseArray(applicant?.attachments);
@@ -448,7 +478,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                   
                   {topPercentile && (
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
-                      ضمن أفضل <span className="text-primary">{topPercentile}%</span> من المتقدمين
+                      أفضل من <span className="text-primary">{topPercentile}%</span> من المتقدمين
                     </span>
                   )}
                 </div>
@@ -550,10 +580,10 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
 
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700">
                     <h3 className="text-lg font-bold text-navy dark:text-white mb-6 flex items-center gap-2">
-                      <Sparkles size={20} className="text-primary" /> 🤖 مبررات التقييم
+                      <Sparkles size={20} className="text-primary" /> ملخص المطابقة
                     </h3>
                     <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                      {actualSummary}
+                      {actualSummary || applicant?.aiSummary || "لا يوجد ملخص متاح حالياً"}
                     </p>
                   </div>
 

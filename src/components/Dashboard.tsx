@@ -347,13 +347,18 @@ export const Dashboard = ({
           .from('applicants')
           .select('*')
           .in('job_id', jobIds)
-          .neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW')
           .order('created_at', { ascending: false });
 
         const latestDecisions = window.localStorage ? JSON.parse(window.localStorage.getItem("sahab_decisions") || "{}") : {};
 
         if (!error && data) {
-          mappedList = data.map((raw: any) => {
+          const filteredData = data.filter((raw: any) => 
+            raw.decision !== 'CORRUPT_FILE_DO_NOT_SHOW' && 
+            raw.decision !== 'processing' && 
+            raw.decision !== 'failed'
+          );
+          
+          mappedList = filteredData.map((raw: any) => {
             let actualJobTitle = "طلب غير محدد";
             const matchedJob = jobs.find(j => j.id === raw.job_id);
             let actualAskExpectedSalary = matchedJob?.askExpectedSalary;
@@ -379,7 +384,7 @@ export const Dashboard = ({
               email: raw.email || "applicant@example.com",
               source: raw.source || "غير محدد",
               skills: Array.isArray(raw.skills) ? raw.skills : [],
-              aiSummary: raw.ai_justification || "قيد التحليل أو تعذر الاستخراج...",
+              aiSummary: raw.ai_summary || raw.ai_justification || "قيد التحليل أو تعذر الاستخراج...",
               voiceEval: "",
               voiceEvalUrl: raw.voice_eval_url || "",
               customAnswers: raw.custom_answers,
@@ -402,7 +407,7 @@ export const Dashboard = ({
               red_flags: raw.red_flags,
               interview_questions: raw.interview_questions,
               attachments: raw.attachments,
-              ai_justification: raw.ai_justification
+              ai_justification: raw.ai_summary || raw.ai_justification
             } as any;
           });
         }
