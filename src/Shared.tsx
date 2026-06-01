@@ -316,13 +316,15 @@ export interface Role {
   isSalaryHidden?: boolean;
   askExpectedSalary?: "hidden" | "open" | "ranges";
   expectedSalaryRanges?: string[];
-  knockoutQuestions?: { text: string; type: "yes_no" | "options"; options?: string[]; requiredAnswer: string }[];
+  knockoutQuestions?: { text: string; type: "yes_no" | "options" | "age_condition" | "nationality" | "education" | "experience"; options?: string[]; requiredAnswer: string | string[]; minAge?: number; maxAge?: number }[];
   requireVoiceInterview?: boolean;
   voiceInterviewTemplate?: "general" | "sales" | "custom";
   voiceInterviewQuestions?: string[];
   photoRequirement?: "optional" | "required" | "none";
   portfolioRequirement?: "optional" | "required" | "none";
-  directUpload?: boolean;
+  askNationality?: boolean;
+  askEducation?: boolean;
+  askExperience?: boolean;
   // Visibility controls (AI gets data, applicant may not see it)
   hideRoleSummary?: boolean;
   hideResponsibilities?: boolean;
@@ -383,7 +385,9 @@ export interface Job {
   isSalaryHidden?: boolean;
   askExpectedSalary?: "hidden" | "open" | "ranges";
   expectedSalaryRanges?: string[];
-  knockoutQuestions?: { text: string; type: "yes_no" | "options"; options?: string[]; requiredAnswer: string }[];
+  askNationality?: boolean;
+  askEducation?: boolean;
+  askExperience?: boolean;
   // Visibility controls (AI gets data, applicant may not see it)
   hideRoleSummary?: boolean;
   hideResponsibilities?: boolean;
@@ -391,6 +395,7 @@ export interface Job {
   hideBenefits?: boolean;
   hideTargetMajors?: boolean;
   hideSkillsAndLanguages?: boolean;
+  visits_count?: number;
   aiChatHistory?: { role: "user" | "assistant"; content: string }[];
 }
 // --- Components ---
@@ -793,7 +798,8 @@ export const TalentPool = ({
     const score = parseInt(scoreStr);
     if (score >= 85) return "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800";
     if (score >= 70) return "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400 border border-orange-200 dark:border-orange-800";
-    return "bg-slate-100 text-slate-600 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700";
+    if (score >= 50) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800";
+    return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-800";
   };
   if (jobs.length === 0) {
     return (
@@ -1009,9 +1015,38 @@ export const TalentPool = ({
             <h3 className="text-xl font-bold text-navy dark:text-white mb-1">
               {talent.name}
             </h3>{" "}
-            <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 text-sm font-medium mb-6">
-              {talent.job}
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-6">
+              الوظيفة المقدم إليها: <span className="text-navy dark:text-white">{talent.job}</span>
             </p>{" "}
+            <div className="space-y-3 mb-6 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-bold">
+                  <span className="text-slate-600 dark:text-slate-400">تطابق المهارات</span>
+                  <span className="text-navy dark:text-white">{talent.skills_match || 0}%</span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-1000 ${talent.skills_match >= 80 ? 'bg-green-500' : talent.skills_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.skills_match || 0}%` }}></div>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-bold">
+                  <span className="text-slate-600 dark:text-slate-400">تطابق الخبرة</span>
+                  <span className="text-navy dark:text-white">{talent.experience_match || 0}%</span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-1000 ${talent.experience_match >= 80 ? 'bg-green-500' : talent.experience_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.experience_match || 0}%` }}></div>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[11px] font-bold">
+                  <span className="text-slate-600 dark:text-slate-400">تطابق التعليم</span>
+                  <span className="text-navy dark:text-white">{talent.education_match || 0}%</span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-1000 ${talent.education_match >= 80 ? 'bg-green-500' : talent.education_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.education_match || 0}%` }}></div>
+                </div>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2 mb-8">
               {(talent.skills || []).slice(0, 3).map((skill: string, index: number) => (
                 <span
@@ -1031,7 +1066,7 @@ export const TalentPool = ({
             <div className="flex items-center gap-2 pt-6 border-t border-slate-50 dark:border-slate-700">
               <button
                 onClick={(e) => { e.stopPropagation(); onViewDetails(talent); }}
-                className="w-full flex items-center justify-center gap-2 bg-navy text-white hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-lg shadow-navy/20"
+                className="w-full flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-lg shadow-primary/20"
               >
                 <FileText size={18} /> عرض الملف{" "}
               </button>{" "}

@@ -139,6 +139,25 @@ export const ManageJob = ({
   const [showWarningModal, setShowWarningModal] = useState(false);
   const [pendingTabChange, setPendingTabChange] = useState<string | null>(null);
 
+  const [passedCount, setPassedCount] = useState<number | null>(null);
+
+  React.useEffect(() => {
+    const fetchPassedCount = async () => {
+      try {
+        const { count, error } = await supabase
+          .from('applicants')
+          .select('*', { count: 'exact', head: true })
+          .eq('job_id', job.id)
+          .not('decision', 'in', '("filtered", "rejected", "CORRUPT_FILE_DO_NOT_SHOW")');
+        
+        if (!error && count !== null) {
+          setPassedCount(count);
+        }
+      } catch (err) {}
+    };
+    fetchPassedCount();
+  }, [job.id]);
+
   // Knockout Input state
   const [newKqText, setNewKqText] = useState("");
   const [newKqAnswer, setNewKqAnswer] = useState("نعم");
@@ -754,12 +773,12 @@ export const ManageJob = ({
             {/* Funnel Analytics */}
             <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50">
               <h3 className="font-bold text-navy dark:text-white mb-4 flex items-center gap-2">
-                <Target size={18} className="text-primary"/> قمع التحويل (Funnel)
+                <Target size={18} className="text-primary"/> معدل التحويل
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
                   <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Eye size={14} className="text-primary"/> الزيارات</span>
-                  <span className="font-bold text-navy dark:text-white">غير متاح</span>
+                  <span className="font-bold text-navy dark:text-white">{job.visits_count || 0}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
                   <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Users size={14} className="text-primary"/> إجمالي المتقدمين</span>
@@ -767,7 +786,7 @@ export const ManageJob = ({
                 </div>
                 <div className="flex justify-between items-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
                   <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5"><CheckCircle size={14} className="text-primary"/> المجتازين للفرز</span>
-                  <span className="font-bold text-emerald-700 dark:text-emerald-400">---</span>
+                  <span className="font-bold text-emerald-700 dark:text-emerald-400">{passedCount !== null ? passedCount : "..."}</span>
                 </div>
               </div>
             </div>

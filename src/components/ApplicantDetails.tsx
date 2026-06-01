@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
 const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void }) => {
@@ -24,6 +24,13 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
   const [interviewText, setInterviewText] = useState("");
 
   const [dynamicPercentile, setDynamicPercentile] = useState<number | null>(null);
+
+  // AI Interview Custom Questions State
+  const [showInterviewQuestionsModal, setShowInterviewQuestionsModal] = useState(false);
+  const [interviewQuestion1, setInterviewQuestion1] = useState("");
+  const [interviewQuestion2, setInterviewQuestion2] = useState("");
+  const [interviewSendMethod, setInterviewSendMethod] = useState<'whatsapp'|'email'|null>(null);
+  const [isSavingQuestions, setIsSavingQuestions] = useState(false);
 
   useEffect(() => {
     if (!job?.id || !applicant?.id) return;
@@ -356,20 +363,18 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                   </select>
                 </div>
                 <div className="flex gap-2">
-                  <a
-                    href={`https://wa.me/${candidate.whatsapp}?text=${encodeURIComponent(`مرحباً ${actualName}، ندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${window.location.origin}/interview/${applicant.id}?lang=${interviewLang}`)}`}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    onClick={() => { setInterviewSendMethod('whatsapp'); setShowInterviewQuestionsModal(true); }}
                     className="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white border border-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-900/50 dark:hover:bg-green-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
                   >
                     <MessageCircle size={16} /> إرسال المقابلة (واتساب)
-                  </a>
-                  <a
-                    href={`mailto:${candidate.email}?subject=${encodeURIComponent(`دعوة لمقابلة الذكاء الاصطناعي - ${companyName}`)}&body=${encodeURIComponent(`مرحباً ${actualName}،\n\nندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${window.location.origin}/interview/${applicant.id}?lang=${interviewLang}\n\nمع التوفيق.`)}`}
+                  </button>
+                  <button
+                    onClick={() => { setInterviewSendMethod('email'); setShowInterviewQuestionsModal(true); }}
                     className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-900/50 dark:hover:bg-blue-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
                   >
                     <Mail size={16} /> إرسال المقابلة (إيميل)
-                  </a>
+                  </button>
                 </div>
               </div>
             )}
@@ -566,15 +571,37 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                       <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400 mb-4 flex items-center gap-2">
                         <Mic size={20} /> تقرير المقابلة الصوتية (AI)
                       </h3>
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3">
+                      <div className="flex flex-col gap-4 mb-4">
+                        <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3 w-fit">
                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">التقييم النهائي:</span>
                           <span className="text-lg font-black text-purple-600 dark:text-purple-400">{applicant?.interview_score || "-"} / 10</span>
                         </div>
+                        
+                        {applicant?.voiceEvalUrl && (
+                          <div className="w-full bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                            <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">التسجيل الصوتي للمقابلة:</span>
+                            <audio controls src={applicant.voiceEvalUrl} className="w-full h-10 outline-none" />
+                          </div>
+                        )}
                       </div>
-                      <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap">
-                        {applicant?.interview_summary || "جاري جلب الملخص..."}
-                      </p>
+                      
+                      <div className="space-y-4">
+                        <div className="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-purple-100 dark:border-purple-800/20">
+                          <h4 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">ملخص المقابلة</h4>
+                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap">
+                            {applicant?.interview_summary || "لا يوجد ملخص."}
+                          </p>
+                        </div>
+                        
+                        {applicant?.interview_transcript && (
+                          <div className="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-purple-100 dark:border-purple-800/20 max-h-60 overflow-y-auto custom-scrollbar">
+                            <h4 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">التفريغ النصي للمحادثة (Transcript)</h4>
+                            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium whitespace-pre-wrap">
+                              {applicant.interview_transcript}
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -1100,6 +1127,122 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
             <CheckCircle size={20} className="text-primary" />
             {toastMessage}
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showInterviewQuestionsModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-800 rounded-[32px] p-8 max-w-lg w-full shadow-2xl relative"
+            >
+              <button
+                onClick={() => setShowInterviewQuestionsModal(false)}
+                className="absolute top-6 left-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              >
+                <X size={24} />
+              </button>
+              
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
+                <Mic size={28} />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-navy dark:text-white mb-2">
+                أسئلة المقابلة الإضافية (اختياري)
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm leading-relaxed">
+                هل ترغب في إضافة سؤالين محددين ليقوم الذكاء الاصطناعي بطرحهما على المتقدم أثناء المقابلة؟
+              </p>
+
+              <div className="space-y-4 mb-8">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">السؤال الأول (مخصص):</label>
+                  <input 
+                    type="text" 
+                    value={interviewQuestion1}
+                    onChange={(e) => setInterviewQuestion1(e.target.value)}
+                    placeholder="مثال: كيف تعاملت مع عميل غاضب في السابق؟"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">السؤال الثاني (مخصص):</label>
+                  <input 
+                    type="text" 
+                    value={interviewQuestion2}
+                    onChange={(e) => setInterviewQuestion2(e.target.value)}
+                    placeholder="مثال: اشرح لي تجربة قمت فيها بإدارة فريق عمل."
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowInterviewQuestionsModal(false)}
+                  className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 rounded-2xl font-bold transition-all"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={async () => {
+                    setIsSavingQuestions(true);
+                    try {
+                      const q = [];
+                      if (interviewQuestion1.trim()) q.push(interviewQuestion1.trim());
+                      if (interviewQuestion2.trim()) q.push(interviewQuestion2.trim());
+                      
+                      if (q.length > 0) {
+                        await supabase
+                          .from('applicants')
+                          .update({ client_interview_questions: q, decision: 'interviewing' })
+                          .eq('id', applicant?.id);
+                      } else {
+                        await supabase
+                          .from('applicants')
+                          .update({ decision: 'interviewing' })
+                          .eq('id', applicant?.id);
+                      }
+                      
+                      // Update locally
+                      if (applicant) applicant.decision = 'interviewing';
+                      if (onStatusUpdate) onStatusUpdate(applicant.id, 'interviewing', false);
+                      
+                      const link = `${window.location.origin}/interview/${applicant?.id}?lang=${interviewLang}`;
+                      if (interviewSendMethod === 'whatsapp') {
+                        const text = `مرحباً ${actualName}، ندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${link}`;
+                        window.open(`https://wa.me/${candidate.whatsapp}?text=${encodeURIComponent(text)}`, "_blank");
+                      } else {
+                        const subject = `دعوة لمقابلة الذكاء الاصطناعي - ${companyName}`;
+                        const body = `مرحباً ${actualName}،\n\nندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${link}\n\nمع التوفيق.`;
+                        window.location.href = `mailto:${candidate.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      }
+                      
+                      setShowInterviewQuestionsModal(false);
+                    } catch(e) {
+                      console.error(e);
+                    } finally {
+                      setIsSavingQuestions(false);
+                    }
+                  }}
+                  disabled={isSavingQuestions}
+                  className={`flex-1 py-3.5 rounded-2xl font-bold transition-all text-white flex items-center justify-center gap-2 ${interviewSendMethod === 'whatsapp' ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'} ${isSavingQuestions ? 'opacity-70 cursor-wait' : ''}`}
+                >
+                  {isSavingQuestions ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      {interviewSendMethod === 'whatsapp' ? <MessageCircle size={18} /> : <Mail size={18} />}
+                      إرسال المقابلة
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
 

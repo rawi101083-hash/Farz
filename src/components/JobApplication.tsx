@@ -61,6 +61,8 @@ import {
 } from "lucide-react";
 import { skillsDictionary, getUserSavedSkills, saveUserSkills, SAUDI_CITIES, SearchableSelect, VerificationModal, FlowStep, CustomAttachment, Role, Job, ImageLightbox, EmptyState, PreviewModal, TalentPoolModal, TalentPool, GlobalJobSelector, Reports, SettingsPage, ActiveJobs, Applicant, mockApplicants, FastScreening } from '../Shared';
 import { getVoiceInterviewFeatureEnabled } from '../config';
+import { MultiSearchableSelect } from './MultiSearchableSelect';
+import { countriesList } from '../data/countries';
 
 export const ApplicantForm = ({
   job,
@@ -85,7 +87,7 @@ export const ApplicantForm = ({
     fullName: "",
     phone: "",
     email: "",
-    nationality: "سعودي/سعودية",
+    nationality: "السعودية",
     city: "",
     education: "",
     experience: "",
@@ -135,6 +137,29 @@ export const ApplicantForm = ({
     ogDesc.setAttribute('content', desc);
   }, [job]);
 
+  // Track Unique Visits (90 days)
+  useEffect(() => {
+    if (!job?.id) return;
+    const trackVisit = async () => {
+      const visitKey = `visit_${job.id}`;
+      const lastVisit = localStorage.getItem(visitKey);
+      const now = Date.now();
+      const NINETY_DAYS = 90 * 24 * 60 * 60 * 1000;
+
+      // If no visit recorded, or 90 days have passed since the last one
+      if (!lastVisit || (now - parseInt(lastVisit)) > NINETY_DAYS) {
+        localStorage.setItem(visitKey, now.toString());
+        try {
+          // Increment via Supabase RPC
+          await supabase.rpc('increment_job_visit', { p_job_id: job.id });
+        } catch (err) {
+          console.error("Error tracking visit", err);
+        }
+      }
+    };
+    trackVisit();
+  }, [job?.id]);
+
   const roles = job?.roles || [];
   const activeRole = isCampaign
     ? roles.find((r) => r.id === selectedRoleId)
@@ -181,9 +206,9 @@ export const ApplicantForm = ({
         return;
       }
       const fileExt = file.name.split('.').pop()?.toLowerCase();
-      const allowedExts = ['pdf', 'docx', 'jpg', 'jpeg', 'png'];
+      const allowedExts = ['pdf', 'docx'];
       if (!allowedExts.includes(fileExt || '')) {
-        alert("صيغة الملف غير مدعومة، يرجى رفع PDF أو DOCX أو صور (JPG, PNG)");
+        alert("صيغة الملف غير مدعومة، يرجى رفع ملفات PDF أو DOCX فقط");
         return;
       }
       setResumeFileName(file.name);
@@ -194,6 +219,8 @@ export const ApplicantForm = ({
 
     setIsParsed(true);
   };
+  const hasKnockout = (type: string) => activeRole?.knockoutQuestions?.some((q: any) => q.type === type) || job?.knockoutQuestions?.some((q: any) => q.type === type) || false;
+
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -258,6 +285,17 @@ export const ApplicantForm = ({
 
     let hasErrors = false;
     const newErrors: Record<string, string> = {};
+
+    const fullNameVal = formValues.fullName as string;
+    if (fullNameVal) {
+      const words = fullNameVal.trim().split(/\s+/);
+      if (words.length < 3) {
+        alert("يرجى إدخال الاسم الثلاثي (3 أسماء على الأقل)");
+        hasErrors = true;
+        // Optionally focus the field or return early
+        return;
+      }
+    }
 
     const linkedinVal = formValues.linkedin as string;
     if (linkedinVal && linkedinVal.trim() !== "") {
@@ -410,8 +448,14 @@ export const ApplicantForm = ({
     if (activeRole?.knockoutQuestions && Array.isArray(activeRole.knockoutQuestions) && activeRole.knockoutQuestions.length > 0) {
       const answers = formDataState.knockoutAnswers || {};
       isAutoRejected = activeRole.knockoutQuestions.some((kq: any, idx: number) => {
-        const ans = answers[idx];
+        let ans = answers[idx];
+        if (kq.type === "nationality") ans = formDataState.nationality;
+        else if (kq.type === "education") ans = formDataState.education;
+        else if (kq.type === "experience") ans = formDataState.experience;
+        else if (kq.type === "city") ans = formDataState.city;
+
         if (!ans) return false;
+
         if (kq.type === "age_condition") {
           const age = Number(ans);
           if (isNaN(age)) return true;
@@ -419,61 +463,53 @@ export const ApplicantForm = ({
           if (kq.maxAge !== undefined && kq.maxAge !== null && age > kq.maxAge) return true;
           return false;
         }
+
+        if (kq.type === "nationality") {
+          const accepted = kq.requiredAnswer ? kq.requiredAnswer.split(",") : [];
+          if (accepted.length > 0 && !accepted.includes(ans)) return true;
+          return false;
+        }
+
+        if (kq.type === "city") {
+          const accepted = kq.requiredAnswer ? kq.requiredAnswer.split(",") : [];
+          if (accepted.length === 0) return false;
+          if (accepted.includes("لا يشترط / كافة المدن")) return false;
+          if (!accepted.includes(ans)) return true;
+          return false;
+        }
+
+        if (kq.type === "education") {
+          const getQualRank = (q?: string) => {
+            if (!q || q.includes("لا يشترط")) return 0;
+            if (q.includes("ثانوي")) return 1;
+            if (q.includes("دبلوم")) return 2;
+            if (q.includes("بكالوريوس")) return 3;
+            if (q.includes("ماجستير")) return 4;
+            if (q.includes("دكتوراه")) return 5;
+            return 0;
+          };
+          const reqRank = getQualRank(kq.requiredAnswer);
+          const appRank = getQualRank(ans);
+          return appRank < reqRank;
+        }
+
+        if (kq.type === "experience") {
+          let ansYearsMax = 0;
+          if (ans.includes("أقل من سنة")) ansYearsMax = 0;
+          else if (ans.includes("1-3")) ansYearsMax = 3;
+          else if (ans.includes("3-5")) ansYearsMax = 5;
+          else if (ans.includes("5+")) ansYearsMax = 10;
+          
+          if (ansYearsMax < Number(kq.requiredAnswer)) return true;
+          return false;
+        }
+
         return ans !== kq.requiredAnswer;
       });
       if (isAutoRejected) autoRejectReason = "لم يجتز أسئلة الاستبعاد التلقائي";
     }
 
-    // 2. City Check
-    if (!isAutoRejected && activeRole?.autoRejectCity && formDataState.city) {
-      // If the job locations do NOT include the applicant's city AND do not have "لا يشترط / كافة المدن"
-      const allowedLocs = activeRole.locations || [];
-      if (!allowedLocs.includes(formDataState.city) && !allowedLocs.includes("لا يشترط / كافة المدن")) {
-        isAutoRejected = true;
-        autoRejectReason = "المدينة لا تطابق متطلبات الوظيفة";
-      }
-    }
 
-    // 3. Qualification Check
-    if (!isAutoRejected && activeRole?.autoRejectQualification && formDataState.education) {
-      const getQualRank = (q?: string) => {
-        if (!q || q.includes("لا يشترط")) return 0;
-        if (q.includes("ثانوي")) return 1;
-        if (q.includes("دبلوم")) return 2;
-        if (q.includes("بكالوريوس")) return 3;
-        if (q.includes("ماجستير")) return 4;
-        if (q.includes("دكتوراه")) return 5;
-        return 0;
-      };
-
-      const reqRank = getQualRank(activeRole.qualification);
-      const appRank = getQualRank(formDataState.education);
-
-      if (appRank < reqRank) {
-        isAutoRejected = true;
-        autoRejectReason = "المؤهل أقل من الحد الأدنى المطلوب";
-      }
-    }
-
-    // 4. Experience Check
-    if (!isAutoRejected && activeRole?.autoRejectExperience && formDataState.experience) {
-      const getExpRank = (e?: string) => {
-        if (!e || e.includes("لا يشترط")) return 0;
-        if (e.includes("أقل من سنة")) return 1;
-        if (e.includes("1-3")) return 2;
-        if (e.includes("3-5")) return 3;
-        if (e.includes("5+")) return 4;
-        return 0;
-      };
-
-      const reqRank = getExpRank(activeRole.experience);
-      const appRank = getExpRank(formDataState.experience);
-
-      if (appRank < reqRank) {
-        isAutoRejected = true;
-        autoRejectReason = "سنوات الخبرة أقل من الحد الأدنى المطلوب";
-      }
-    }
 
     if (isAutoRejected) {
       console.log(`Applicant Auto-Rejected (${autoRejectReason}). Appended skipAI=true to avoid API costs.`);
@@ -897,7 +933,7 @@ export const ApplicantForm = ({
                 >
                   <input
                     type="file"
-                    accept=".pdf, .docx, .jpg, .jpeg, .png"
+                    accept=".pdf, .docx"
                     onChange={handleFileUpload}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
@@ -911,7 +947,7 @@ export const ApplicantForm = ({
                       <p className="text-navy dark:text-white font-bold text-lg mb-2">
                         ملف السيرة الذاتية
                       </p>
-                      <p className="text-sm font-bold text-red-600 dark:text-red-400 mt-1">
+                      <p className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">
                         (يُقبل ملفات PDF و DOCX فقط)
                       </p>
                     </>
@@ -953,7 +989,7 @@ export const ApplicantForm = ({
                   <div className="relative">
                     <input
                       type="file"
-                      accept=".pdf, .docx, .jpg, .jpeg, .png"
+                      accept=".pdf, .docx"
                       onChange={handleFileUpload}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     />
@@ -974,7 +1010,7 @@ export const ApplicantForm = ({
 
               <div className="space-y-3">
                 <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                  الاسم الكامل <span className="text-red-500">*</span>
+                  الاسم الثلاثي <span className="text-red-500">*</span>
                 </label>
                 <input
                   required
@@ -982,7 +1018,7 @@ export const ApplicantForm = ({
                   type="text"
                   value={formDataState.fullName}
                   onChange={handleInputChange}
-                  placeholder="مثال: عبدالله خالد"
+                  placeholder="مثال: عبدالله خالد محمد"
                   className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
                 />
               </div>
@@ -1045,102 +1081,105 @@ export const ApplicantForm = ({
 
 
 
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                  الجنسية <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    required
-                    name="nationality"
-                    value={formDataState.nationality}
-                    onChange={handleInputChange}
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                  >
-                    <option value="سعودي/سعودية" className="bg-white text-navy dark:bg-slate-800 dark:text-white">سعودي / سعودية</option>
-                    <option value="غير ذلك" className="bg-white text-navy dark:bg-slate-800 dark:text-white">غير ذلك (أخرى)</option>
-                  </select>
-                  <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                    <ArrowLeft size={18} className="-rotate-90" />
+              {(hasKnockout("nationality") || (activeRole?.askNationality ?? job?.askNationality)) && (
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                    الجنسية <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <MultiSearchableSelect
+                      options={countriesList}
+                      value={formDataState.nationality}
+                      onChange={(val) => setFormDataState(prev => ({ ...prev, nationality: val as string }))}
+                      multiple={false}
+                      placeholder="اختر الجنسية..."
+                      className="w-full"
+                    />
                   </div>
                 </div>
-              </div>
+              )}
 
 
 
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                  المدينة <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    required
-                    name="city"
-                    value={formDataState.city}
-                    onChange={handleInputChange}
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المدينة</option>
-                    {SAUDI_CITIES.filter(city => city !== "لا يشترط / كافة المدن").map(city => (
-                      <option key={city} value={city} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{city}</option>
-                    ))}
-                    <option value="أخرى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مدينة أخرى</option>
-                  </select>
-                  <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                    <ArrowLeft size={18} className="-rotate-90" />
+              {hasKnockout("city") && (
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                    المدينة <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      required
+                      name="city"
+                      value={formDataState.city}
+                      onChange={handleInputChange}
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المدينة</option>
+                      {SAUDI_CITIES.filter(city => city !== "لا يشترط / كافة المدن").map(city => (
+                        <option key={city} value={city} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{city}</option>
+                      ))}
+                      <option value="أخرى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مدينة أخرى</option>
+                    </select>
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                      <ArrowLeft size={18} className="-rotate-90" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                  أعلى مؤهل علمي <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    required
-                    name="education"
-                    value={formDataState.education}
-                    onChange={handleInputChange}
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المؤهل</option>
-                    <option value="ثانوية عامة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوية عامة</option>
-                    <option value="دبلوم" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
-                    <option value="بكالوريوس" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
-                    <option value="ماجستير" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
-                    <option value="دكتوراه" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دكتوراه</option>
-                  </select>
-                  <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                    <ChevronDown size={18} />
+              {(hasKnockout("education") || (activeRole?.askEducation ?? job?.askEducation)) && (
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                    أعلى مؤهل علمي <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      required
+                      name="education"
+                      value={formDataState.education}
+                      onChange={handleInputChange}
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المؤهل</option>
+                      <option value="ثانوية عامة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوية عامة</option>
+                      <option value="دبلوم" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
+                      <option value="بكالوريوس" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
+                      <option value="ماجستير" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
+                      <option value="دكتوراه" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دكتوراه</option>
+                    </select>
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                      <ChevronDown size={18} />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                  سنوات الخبرة <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    required
-                    name="experience"
-                    value={formDataState.experience}
-                    onChange={handleInputChange}
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر سنوات الخبرة</option>
-                    <option value="لا يشترط خبرة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط خبرة</option>
-                    <option value="أقل من سنة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أقل من سنة</option>
-                    <option value="1-3 سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">1-3 سنوات</option>
-                    <option value="3-5 سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">3-5 سنوات</option>
-                    <option value="5+ سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
-                  </select>
-                  <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                    <ChevronDown size={18} />
+              {(hasKnockout("experience") || (activeRole?.askExperience ?? job?.askExperience)) && (
+                <div className="space-y-3">
+                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                    سنوات الخبرة <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      required
+                      name="experience"
+                      value={formDataState.experience}
+                      onChange={handleInputChange}
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر سنوات الخبرة</option>
+                      <option value="لا يشترط خبرة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط خبرة</option>
+                      <option value="أقل من سنة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أقل من سنة</option>
+                      <option value="1-3 سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">1-3 سنوات</option>
+                      <option value="3-5 سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">3-5 سنوات</option>
+                      <option value="5+ سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
+                    </select>
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                      <ChevronDown size={18} />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {((activeRole?.types?.length || 0) > 1 || (!activeRole?.types && (job?.types?.length || 0) > 1)) && (
                 <div className="space-y-3">
@@ -1274,6 +1313,7 @@ export const ApplicantForm = ({
                 </div>
               )}{" "}
               {activeRole?.knockoutQuestions?.map((q: any, idx: number) => {
+                if (["nationality", "education", "experience", "city"].includes(q.type)) return null;
                 const options = q.type === "options" && Array.isArray(q.options) && q.options.length > 0 ? q.options : ["نعم", "لا"];
                 const qText = q.type === "age_condition" ? "العمر" : q.text;
                 const isLong = qText && qText.length > 40;
@@ -1553,41 +1593,7 @@ export const ApplicantForm = ({
                     </div>{" "}
                   </div>
                 )}{" "}
-              <div className="space-y-3 md:col-span-2 mt-4 pt-6 center">
-                {!showLinkedinInput ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowLinkedinInput(true)}
-                    className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-all text-sm font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-5 py-3 rounded-xl border-none cursor-pointer w-full md:w-1/2 mx-auto"
-                  >
-                    + إضافة رابط لينكد إن <span className="font-normal text-slate-400 text-xs">(اختياري)</span>
-                  </button>
-                ) : (
-                  <>
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                      رابط لينكد إن (LinkedIn)
-                      <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>
-                    </label>
-                    <input
-                      name="linkedin"
-                      type="url"
-                      value={formDataState.linkedin}
-                      onChange={handleInputChange}
-                      placeholder="https://linkedin.com/in/..."
-                      dir="ltr"
-                      className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${linkedinError ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium`}
-                    />
-                    {linkedinError && (
-                      <p className="text-red-500 text-xs font-bold mt-1 text-right">
-                        {linkedinError}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-
-
-              <div className="space-y-3 md:col-span-1 mt-4 pt-6 border-t border-slate-100 dark:border-slate-700">
+              <div className="space-y-3 md:col-span-1">
                 <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
                   كيف عرفت عن هذه الوظيفة؟
                   <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>
@@ -1611,6 +1617,39 @@ export const ApplicantForm = ({
                     <ArrowLeft size={18} className="-rotate-90" />
                   </div>
                 </div>
+              </div>
+
+              <div className="space-y-3 md:col-span-2 mt-4 pt-6 border-t border-slate-100 dark:border-slate-700 text-center">
+                {!showLinkedinInput ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowLinkedinInput(true)}
+                    className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-all text-sm font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-5 py-4 rounded-xl border-none cursor-pointer w-full md:w-1/2 mx-auto"
+                  >
+                    + إضافة رابط لينكد إن <span className="font-normal text-slate-400 text-xs">(اختياري)</span>
+                  </button>
+                ) : (
+                  <>
+                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2 justify-center">
+                      رابط لينكد إن (LinkedIn)
+                      <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>
+                    </label>
+                    <input
+                      name="linkedin"
+                      type="url"
+                      value={formDataState.linkedin}
+                      onChange={handleInputChange}
+                      placeholder="https://linkedin.com/in/..."
+                      dir="ltr"
+                      className={`w-full md:w-1/2 mx-auto block px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${linkedinError ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium`}
+                    />
+                    {linkedinError && (
+                      <p className="text-red-500 text-xs font-bold mt-1 text-center w-full md:w-1/2 mx-auto">
+                        {linkedinError}
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
 
               <button

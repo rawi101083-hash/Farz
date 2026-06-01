@@ -258,13 +258,30 @@ export const Dashboard = ({
   const [isYearlyDev, setIsYearlyDev] = useState(false);
   const isYearly = import.meta.env.DEV ? isYearlyDev : (userProfile?.is_yearly || false);
 
-  let jobLimit = 0;
-  let cvLimit = 0;
-  if (plan === 'free') { jobLimit = 0; cvLimit = 0; }
-  else if (plan === 'one-time') { jobLimit = 1; cvLimit = 500; }
-  else if (plan === 'startup' || plan === 'growth') { jobLimit = 3; cvLimit = isYearly ? 12000 : 1000; }
-  else if (plan === 'business') { jobLimit = 10; cvLimit = isYearly ? 60000 : 5000; }
-  else if (plan === 'enterprise') { jobLimit = 100; cvLimit = isYearly ? 180000 : 15000; }
+  let jobLimit = userProfile?.jobs_limit ?? 0;
+  let cvLimit = userProfile?.cv_limit ?? 0;
+  let interviewsLimit = userProfile?.interviews_limit ?? 0;
+
+  if (!jobLimit) {
+    if (plan === 'free') jobLimit = 0;
+    else if (plan === 'one-time') jobLimit = 1;
+    else if (plan === 'startup' || plan === 'growth') jobLimit = 3;
+    else if (plan === 'business') jobLimit = 10;
+    else if (plan === 'enterprise') jobLimit = 100;
+  }
+  if (!cvLimit) {
+    if (plan === 'free') cvLimit = 0;
+    else if (plan === 'one-time') cvLimit = 500;
+    else if (plan === 'startup' || plan === 'growth') cvLimit = isYearly ? 12000 : 1000;
+    else if (plan === 'business') cvLimit = isYearly ? 60000 : 5000;
+    else if (plan === 'enterprise') cvLimit = isYearly ? 180000 : 15000;
+  }
+  if (!interviewsLimit) {
+    if (plan === 'free' || plan === 'one-time') interviewsLimit = 0;
+    else if (plan === 'startup' || plan === 'growth') interviewsLimit = 100;
+    else if (plan === 'business') interviewsLimit = 500;
+    else if (plan === 'enterprise') interviewsLimit = 1500;
+  }
   const cvsUsed = userProfile?.cvs_processed_count || 0;
   let cvsRemaining = Math.max(0, cvLimit - cvsUsed);
   if (isPreviewMode) cvsRemaining = 0;
@@ -272,6 +289,14 @@ export const Dashboard = ({
   let cvColor = 'bg-primary';
   if (cvPercent < 20) cvColor = 'bg-red-500';
   else if (cvPercent <= 50) cvColor = 'bg-amber-500';
+
+  const interviewsUsed = userProfile?.used_interviews || 0;
+  let interviewsRemaining = Math.max(0, interviewsLimit - interviewsUsed);
+  if (isPreviewMode) interviewsRemaining = 0;
+  const interviewPercent = interviewsLimit > 0 ? (interviewsRemaining / interviewsLimit) * 100 : 100;
+  let interviewColor = 'bg-primary';
+  if (interviewPercent < 20) interviewColor = 'bg-red-500';
+  else if (interviewPercent <= 50) interviewColor = 'bg-amber-500';
   const [jobSearchQuery, setJobSearchQuery] = useState("");
   const [applicantSearchQuery, setApplicantSearchQuery] = useState("");
   const [jobFilter, setJobFilter] = useState("all");
@@ -383,7 +408,7 @@ export const Dashboard = ({
               name: raw.full_name || "متقدم جديد",
               job: actualJobTitle,
               rating: raw.match_score || raw.match_percentage || 0,
-              status: raw.availability || raw.status || "غير محدد",
+              status: (Array.isArray(raw.custom_answers) ? raw.custom_answers.find((a: any) => a.question === "مدة الانضمام / الجاهزية للعمل")?.answer : null) || raw.availability || raw.status || "غير محدد",
               expectedSalary: raw.expected_salary || "",
               askExpectedSalary: actualAskExpectedSalary,
               color: "emerald",
@@ -392,8 +417,8 @@ export const Dashboard = ({
               source: raw.source || "غير محدد",
               skills: Array.isArray(raw.skills) ? raw.skills : [],
               aiSummary: raw.ai_summary || raw.ai_justification || "قيد التحليل أو تعذر الاستخراج...",
-              voiceEval: "",
-              voiceEvalUrl: raw.voice_eval_url || "",
+              voiceEval: raw.voice_eval || "",
+              voiceEvalUrl: raw.voice_eval || raw.voice_eval_url || "",
               customAnswers: raw.custom_answers,
               decision: (raw.decision === 'evaluated' ? 'pending' : raw.decision) || latestDecisions[raw.id] || "pending",
               rejection_reason: raw.rejection_reason || "",
@@ -535,7 +560,9 @@ export const Dashboard = ({
 
   let visibleApplicants = applicants.filter(a => {
     const d = a.decision || "pending";
-    const statusMatch = d === decisionFilter;
+    const statusMatch = decisionFilter === "interview" 
+      ? (d === "interview" || d === "interviewing") 
+      : d === decisionFilter;
     const jobMatch = jobFilter === "all" || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "");
     const favMatch = !showFavoritesOnly || a.is_favorite === true;
 
@@ -1113,13 +1140,16 @@ export const Dashboard = ({
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">التقييم الآلي</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الجاهزية</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">معلومات التواصل</th>
+                      {decisionFilter === "interview" && (
+                        <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">حالة المقابلة</th>
+                      )}
                       <th className="px-2 py-4 whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5 w-max ml-auto pl-4">
-                          <div className="flex justify-center text-navy dark:text-white font-bold w-[150px]">
+                          <div className="flex justify-center text-navy dark:text-white font-bold w-[200px]">
                             الإجراءات
                           </div>
                           <div className="w-px h-5 mx-1 opacity-0"></div>
-                          <div className="w-[94px] opacity-0"></div>
+                          <div className="w-[126px] opacity-0"></div>
                         </div>
                       </th>
                     </tr>
@@ -1269,9 +1299,6 @@ export const Dashboard = ({
                               </td>{" "}
                               <td className="px-2 py-3 text-xs text-slate-600 dark:text-slate-300 font-bold whitespace-nowrap text-right">
                                 {isFomoLocked ? <span className="filter blur-[4px] select-none">مقفل</span> : row.status}
-                                {row.is_interview_completed && !isFomoLocked && (
-                                  <span className="mr-2 bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 px-2 py-0.5 rounded-full text-[10px] inline-flex items-center">تمت المقابلة ✅</span>
-                                )}
                               </td>{" "}
                               <td className="px-2 py-3">
                                 <div className={`flex items-center justify-center gap-1 ${isFomoLocked ? 'filter blur-[4px] select-none pointer-events-none' : ''}`}>
@@ -1302,6 +1329,27 @@ export const Dashboard = ({
                                   </a>{" "}
                                 </div>{" "}
                               </td>{" "}
+                              {decisionFilter === "interview" && (
+                                <td className="px-2 py-3">
+                                  <div className="flex justify-center">
+                                    {isFomoLocked ? (
+                                      <span className="filter blur-[4px] select-none text-xs text-slate-400 font-bold">مقفل</span>
+                                    ) : row.is_interview_completed ? (
+                                      <span className="bg-green-50 text-green-600 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800/30 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-sm">
+                                        <Mic size={14} /> تمت المقابلة
+                                      </span>
+                                    ) : row.decision === "interviewing" ? (
+                                      <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-sm">
+                                        <Clock size={14} /> جاري المقابلة
+                                      </span>
+                                    ) : (
+                                      <span className="bg-transparent text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center min-w-[80px]">
+                                        لا يوجد
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                              )}
                               <td className="px-2 py-3">
                                 <div className="flex items-center justify-end gap-1.5 w-max ml-auto pl-4">
                                   {isFomoLocked ? (
@@ -2012,7 +2060,7 @@ export const Dashboard = ({
                   )
                 ) : (
                   <>
-                    <span>السير الذاتية المتبقية</span>
+                    <span>رصيد السير الذاتية</span>
                     <span>{plan === 'enterprise' ? '∞' : `${cvsRemaining} / ${cvLimit}`}</span>
                   </>
                 )}
@@ -2021,6 +2069,18 @@ export const Dashboard = ({
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${cvsRemaining <= 0 && cvLimit > 0 ? 'bg-red-500' : cvColor}`}
                   style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (cvsRemaining / (cvLimit || 1)) * 100)}%` }}
+                />
+              </div>
+
+              {/* Interviews Balance */}
+              <div className="flex justify-between items-center text-xs font-bold text-slate-300 pt-2 border-t border-slate-700/50">
+                <span>رصيد المقابلات</span>
+                <span>{plan === 'enterprise' ? '∞' : `${interviewsRemaining} / ${interviewsLimit}`}</span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${interviewsRemaining <= 0 && interviewsLimit > 0 ? 'bg-red-500' : interviewColor}`}
+                  style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (interviewsRemaining / (interviewsLimit || 1)) * 100)}%` }}
                 />
               </div>
             </div>

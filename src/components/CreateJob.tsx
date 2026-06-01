@@ -85,7 +85,8 @@ import skillsDictionaryRaw from "../skillsDictionary.json";
 import { FEATURE_FLAGS, getVoiceInterviewFeatureEnabled } from "../config";
 
 import { Job, SearchableSelect, VerificationModal, PreviewModal, ImageLightbox, SAUDI_CITIES, getUserSavedSkills, saveUserSkills, skillsDictionary, CustomAttachment, Role } from '../Shared';
-
+import { MultiSearchableSelect } from './MultiSearchableSelect';
+import { countriesList } from '../data/countries';
 export const CreateJob = ({
   createJobType = "single",
   initialData = null,
@@ -416,10 +417,10 @@ export const CreateJob = ({
   >(baseRole?.knockoutQuestions || []);
   const [isKnockoutExpanded, setIsKnockoutExpanded] = useState(true);
   const [newKqText, setNewKqText] = useState("");
-  const [newKqType, setNewKqType] = useState<"yes_no" | "options" | "age_condition">("yes_no");
+  const [newKqType, setNewKqType] = useState<"yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience">("yes_no");
   const [newKqMinAge, setNewKqMinAge] = useState<number | "">("");
   const [newKqMaxAge, setNewKqMaxAge] = useState<number | "">("");
-  const [newKqOptions, setNewKqOptions] = useState<string[]>([]);
+  const [newKqOptions, setNewKqOptions] = useState<string[]>(["نعم", "لا"]);
   const [newKqOptionInput, setNewKqOptionInput] = useState("");
   const [newKqRequiredAnswer, setNewKqRequiredAnswer] = useState("نعم");
 
@@ -689,21 +690,23 @@ export const CreateJob = ({
     setCustomQuestions(customQuestions.filter((_, i) => i !== index));
   };
   const toggleAttachment = (attachment: string) => {
-    if (attachment === "لا يتطلب مرفقات") {
-      setRequiredAttachments(["لا يتطلب مرفقات"]);
+    if (attachment === "سيرة ذاتية PDF") {
+      if (!requiredAttachments.includes("سيرة ذاتية PDF")) {
+        setRequiredAttachments([...requiredAttachments, "سيرة ذاتية PDF"]);
+      }
       return;
     }
-    let newAttachments = requiredAttachments.filter(
-      (a) => a !== "لا يتطلب مرفقات",
-    );
+    let newAttachments = [...requiredAttachments];
     if (newAttachments.includes(attachment)) {
       newAttachments = newAttachments.filter((a) => a !== attachment);
     } else {
       newAttachments.push(attachment);
     }
-    setRequiredAttachments(
-      newAttachments.length > 0 ? newAttachments : ["لا يتطلب مرفقات"],
-    );
+    // Always ensure CV is required
+    if (!newAttachments.includes("سيرة ذاتية PDF")) {
+      newAttachments.push("سيرة ذاتية PDF");
+    }
+    setRequiredAttachments(newAttachments);
   };
   const addCustomAttachment = () => {
     if (!newAttachmentName.trim()) {
@@ -1900,12 +1903,6 @@ export const CreateJob = ({
                         </AnimatePresence>
                       </div>
                     )}
-                    <label className="flex items-center gap-2 cursor-pointer mt-2 w-fit" onClick={() => setAutoRejectCity(!autoRejectCity)}>
-                      <div className={`w-10 h-5 flex items-center rounded-full p-1 transition-colors ${autoRejectCity ? 'bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
-                        <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${autoRejectCity ? 'translate-x-5' : 'translate-x-0'}`} />
-                      </div>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">استبعاد من لا يطابق المدينة</span>
-                    </label>
                   </div>
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
@@ -1923,12 +1920,6 @@ export const CreateJob = ({
                         <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
                       </select>
                     </div>
-                    <label className="flex items-center gap-2 cursor-pointer mt-2 w-fit" onClick={() => setAutoRejectExperience(!autoRejectExperience)}>
-                      <div className={`w-10 h-5 flex items-center rounded-full p-1 transition-colors ${autoRejectExperience ? 'bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
-                        <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${autoRejectExperience ? 'translate-x-5' : 'translate-x-0'}`} />
-                      </div>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">استبعاد من يملك خبرة أقل</span>
-                    </label>
                   </div>
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
@@ -1947,12 +1938,6 @@ export const CreateJob = ({
                         <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
                       </select>
                     </div>
-                    <label className="flex items-center gap-2 cursor-pointer mt-2 w-fit" onClick={() => setAutoRejectQualification(!autoRejectQualification)}>
-                      <div className={`w-10 h-5 flex items-center rounded-full p-1 transition-colors ${autoRejectQualification ? 'bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
-                        <div className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${autoRejectQualification ? 'translate-x-5' : 'translate-x-0'}`} />
-                      </div>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">استبعاد من يحمل مؤهلاً أقل</span>
-                    </label>
                   </div>
                 </div>
 
@@ -2432,12 +2417,11 @@ export const CreateJob = ({
                         <label className="text-sm font-bold text-navy dark:text-white mb-4 block flex items-center gap-2">
                           المرفقات الأساسية المطلوبة
                         </label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {" "}
                           {[
                             { id: "سيرة ذاتية PDF", title: "ملف السيرة الذاتية", subtitle: "(يُقبل ملفات PDF و DOCX فقط)" },
-                            { id: "رابط معرض أعمال/Portfolio", title: "رابط معرض أعمال/Portfolio" },
-                            { id: "لا يتطلب مرفقات", title: "لا يتطلب مرفقات" },
+                            { id: "رابط معرض أعمال/Portfolio", title: "رابط معرض أعمال/Portfolio" }
                           ].map((opt) => (
                             <div key={opt.id} className="relative">
                               <label
@@ -2655,20 +2639,29 @@ export const CreateJob = ({
                                   </label>
                                 </div>
                                 <div className="space-y-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                                  <input
-                                    type="text"
-                                    value={newKqText}
-                                    onChange={(e) => setNewKqText(e.target.value)}
-                                    placeholder="نص السؤال (مثال: هل أنت سعودي الجنسية؟)"
-                                    className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:border-red-400 transition-all font-medium text-sm"
-                                  />
-                                  <div className="grid grid-cols-2 gap-4">
+                                  {!["nationality", "city", "education", "experience"].includes(newKqType) && (
+                                    <input
+                                      type="text"
+                                      value={newKqText}
+                                      onChange={(e) => setNewKqText(e.target.value)}
+                                      placeholder="نص السؤال (مثال: هل أنت سعودي الجنسية؟)"
+                                      className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:border-red-400 transition-all font-medium text-sm"
+                                    />
+                                  )}
+                                  <div className={`grid ${["nationality", "city", "education", "experience"].includes(newKqType) ? "grid-cols-1 md:grid-cols-3" : "grid-cols-2"} gap-4`}>
                                     <select
                                       value={newKqType}
                                       onChange={(e) => {
-                                        setNewKqType(e.target.value as "yes_no" | "options" | "age_condition");
-                                        if (e.target.value === "yes_no") {
+                                        const val = e.target.value as "yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience";
+                                        setNewKqType(val);
+                                        if (val === "yes_no") {
                                           setNewKqRequiredAnswer("نعم");
+                                        } else if (val === "nationality") {
+                                          setNewKqRequiredAnswer("");
+                                        } else if (val === "city") {
+                                          setNewKqRequiredAnswer("");
+                                        } else if (val === "education" || val === "experience") {
+                                          setNewKqRequiredAnswer("");
                                         } else {
                                           setNewKqRequiredAnswer(newKqOptions[0] || "");
                                         }
@@ -2678,13 +2671,17 @@ export const CreateJob = ({
                                       <option value="yes_no" className="bg-white text-navy dark:bg-slate-800 dark:text-white">نعم / لا</option>
                                       <option value="options" className="bg-white text-navy dark:bg-slate-800 dark:text-white">خيارات متعددة</option>
                                       <option value="age_condition" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شرط العمر</option>
+                                      <option value="nationality" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الجنسيات المقبولة</option>
+                                      <option value="city" className="bg-white text-navy dark:bg-slate-800 dark:text-white">المدن المقبولة</option>
+                                      <option value="education" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى للمؤهل</option>
+                                      <option value="experience" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى لسنوات الخبرة</option>
                                     </select>
 
                                     {newKqType === "age_condition" ? (
                                       <div className="flex items-center gap-4">
                                         <input
                                           type="number"
-                                          placeholder="الحد الأدنى (اختياري)"
+                                          placeholder="الحد الأدنى (مطلوب)"
                                           value={newKqMinAge}
                                           onChange={(e) => setNewKqMinAge(e.target.value ? Number(e.target.value) : "")}
                                           className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm"
@@ -2697,6 +2694,54 @@ export const CreateJob = ({
                                           className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm"
                                         />
                                       </div>
+                                    ) : newKqType === "nationality" ? (
+                                      <div className="md:col-span-2">
+                                        <MultiSearchableSelect
+                                          options={countriesList}
+                                          value={newKqRequiredAnswer}
+                                          onChange={(val) => setNewKqRequiredAnswer(val as string)}
+                                          multiple={true}
+                                          placeholder="اختر الجنسيات المقبولة..."
+                                        />
+                                      </div>
+                                    ) : newKqType === "city" ? (
+                                      <div className="md:col-span-2">
+                                        <MultiSearchableSelect
+                                          options={SAUDI_CITIES}
+                                          value={newKqRequiredAnswer}
+                                          onChange={(val) => setNewKqRequiredAnswer(val as string)}
+                                          multiple={true}
+                                          placeholder="اختر المدن المقبولة..."
+                                        />
+                                      </div>
+                                    ) : newKqType === "education" ? (
+                                      <select
+                                        value={newKqRequiredAnswer}
+                                        onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
+                                        className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
+                                      >
+                                        <option value="" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر الحد الأدنى للمؤهل...</option>
+                                        <option value="ثانوي" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوي</option>
+                                        <option value="دبلوم" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
+                                        <option value="بكالوريوس" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
+                                        <option value="ماجستير" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
+                                        <option value="دكتوراه" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دكتوراه</option>
+                                      </select>
+                                    ) : newKqType === "experience" ? (
+                                      <select
+                                        value={newKqRequiredAnswer}
+                                        onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
+                                        className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
+                                      >
+                                        <option value="" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر الحد الأدنى للخبرة...</option>
+                                        <option value="0" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: أقل من سنة</option>
+                                        <option value="1" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: سنة</option>
+                                        <option value="2" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: سنتين</option>
+                                        <option value="3" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 3 سنوات</option>
+                                        <option value="4" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 4 سنوات</option>
+                                        <option value="5" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 5 سنوات</option>
+                                        <option value="10" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 10 سنوات</option>
+                                      </select>
                                     ) : newKqType === "yes_no" ? (
                                       <select
                                         value={newKqRequiredAnswer}
@@ -2735,7 +2780,7 @@ export const CreateJob = ({
                                               if (newKqOptionInput.trim() && !newKqOptions.includes(newKqOptionInput.trim())) {
                                                 const up = [...newKqOptions, newKqOptionInput.trim()];
                                                 setNewKqOptions(up);
-                                                if (!newKqRequiredAnswer) setNewKqRequiredAnswer(up[0]);
+                                                if (!newKqRequiredAnswer) setNewKqRequiredAnswer(up[0] || "");
                                                 setNewKqOptionInput("");
                                               }
                                             }
@@ -2747,11 +2792,11 @@ export const CreateJob = ({
                                             if (newKqOptionInput.trim() && !newKqOptions.includes(newKqOptionInput.trim())) {
                                               const up = [...newKqOptions, newKqOptionInput.trim()];
                                               setNewKqOptions(up);
-                                              if (!newKqRequiredAnswer) setNewKqRequiredAnswer(up[0]);
+                                              if (!newKqRequiredAnswer) setNewKqRequiredAnswer(up[0] || "");
                                               setNewKqOptionInput("");
                                             }
                                           }}
-                                          className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-white rounded-xl font-bold text-sm transition-all"
+                                          className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-white px-4 rounded-xl font-bold transition-all"
                                         >
                                           إضافة
                                         </button>

@@ -1585,6 +1585,7 @@ export default function App() {
             status: raw.status || "مسودة",
             createdAt: raw.created_at ? raw.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
             applicants: 0,
+            visits_count: raw.visits_count || 0,
             directUpload: raw.direct_upload || false,
             roles: Array.isArray(raw.roles) ? raw.roles : []
           }));
@@ -1684,6 +1685,11 @@ export default function App() {
               subscription_is_yearly: localStorage.getItem('subscription_is_yearly') === 'true',
               cvs_processed_count: data.cvs_processed_count || 0,
               fields_locked: data.fields_locked || false,
+              cv_limit: data.cv_limit || 0,
+              jobs_limit: data.jobs_limit || 0,
+              interviews_limit: data.interviews_limit || 0,
+              used_jobs: data.used_jobs || 0,
+              used_interviews: data.used_interviews || 0,
             }));
             // Force Settings tab if profile is incomplete
             if (!isProfileComplete) {
