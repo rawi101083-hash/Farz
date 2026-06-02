@@ -89,7 +89,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       // --- 1. Fetch Applicant Data & Check Status ---
       const { data: appData, error: appError } = await supabase
         .from('applicants')
-        .select('job_id, client_interview_questions, interview_questions, is_interview_completed, has_started_interview, name')
+        .select('job_id, client_interview_questions, interview_questions, is_interview_completed, has_started_interview, full_name')
         .eq('id', applicantId)
         .single();
         
@@ -142,7 +142,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       // --- 2. Start Vapi Call with Limiter ---
       const assistantId = lang === 'en' ? ENGLISH_ASSISTANT_ID : ARABIC_ASSISTANT_ID;
       
-      const firstName = appData.name ? appData.name.trim().split(' ')[0] : "عزيزي المتقدم";
+      const firstName = appData.full_name ? appData.full_name.trim().split(' ')[0] : "عزيزي المتقدم";
       
       await vapiRef.current.start(assistantId, {
         maxDurationSeconds: 600, // SaaS Guardrail: 10 minutes max limit
