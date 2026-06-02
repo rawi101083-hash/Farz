@@ -390,6 +390,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                   </button>
                   <button
                     onClick={async () => {
+                      if (!window.confirm("تنبيه: هذا المتقدم قد أجرى المقابلة مسبقاً. هل تريد تأكيد فك القفل وإعادة فتح المقابلة له؟")) return;
                       try {
                         await supabase
                           .from('applicants')
