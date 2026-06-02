@@ -117,12 +117,22 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       // --- Prepare Interview Questions to Send to Vapi ---
       const safeParseArray = (val: any): string[] => {
         if (!val) return [];
-        if (Array.isArray(val)) return val.map(String).filter(Boolean);
-        try {
-          const parsed = JSON.parse(val);
-          if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
-        } catch { }
-        return [];
+        let arr: any[] = [];
+        if (Array.isArray(val)) {
+          arr = val;
+        } else {
+          try {
+            const parsed = JSON.parse(val);
+            if (Array.isArray(parsed)) arr = parsed;
+          } catch { }
+        }
+        return arr.map(item => {
+          if (typeof item === 'string') return item;
+          if (item && typeof item === 'object') {
+            return item.q || item.question || item.text || String(item);
+          }
+          return String(item);
+        }).filter(Boolean);
       };
 
       const clientQs = safeParseArray(appData.client_interview_questions);
