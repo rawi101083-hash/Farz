@@ -56,7 +56,12 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       setCallStatus('loading');
 
       // --- 1. Deduct Interview Credit (SaaS Guardrail) ---
-      const { data: appData, error: appError } = await supabase.from('applicants').select('job_id').eq('id', applicantId).single();
+      const { data: appData, error: appError } = await supabase
+        .from('applicants')
+        .select('job_id, client_interview_questions, interview_questions')
+        .eq('id', applicantId)
+        .single();
+        
       if (appError) throw new Error("لم يتم العثور على المتقدم");
 
       const { data: jobData, error: jobError } = await supabase.from('jobs').select('company_id').eq('id', appData.job_id).single();
@@ -67,12 +72,29 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         throw new Error("عذراً، نفد رصيد المقابلات المتاح للشركة. يرجى إبلاغ مسؤول التوظيف لترقية الباقة أو شراء رصيد إضافي.");
       }
 
+      // --- Prepare Interview Questions to Send to Vapi ---
+      const safeParseArray = (val: any): string[] => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val.map(String).filter(Boolean);
+        try {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+        } catch { }
+        return [];
+      };
+
+      const clientQs = safeParseArray(appData.client_interview_questions);
+      const aiQs = safeParseArray(appData.interview_questions);
+      // Client questions (if any) take priority, otherwise AI generated questions
+      const finalQs = clientQs.length > 0 ? clientQs : aiQs;
+
       // --- 2. Start Vapi Call with Limiter ---
       const assistantId = lang === 'en' ? ENGLISH_ASSISTANT_ID : ARABIC_ASSISTANT_ID;
       await vapiRef.current.start(assistantId, {
         maxDurationSeconds: 600, // SaaS Guardrail: 10 minutes max limit
         variableValues: {
-          applicantId: applicantId
+          applicantId: applicantId,
+          interview_questions: finalQs.join("\n")
         }
       });
     } catch (err: any) {
