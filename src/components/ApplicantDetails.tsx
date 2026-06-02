@@ -388,29 +388,27 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                   >
                     <Mail size={16} /> إرسال المقابلة (إيميل)
                   </button>
-                  {(applicant?.is_interview_completed || applicant?.has_started_interview) && (
-                    <button
-                      onClick={async () => {
-                        try {
-                          await supabase
-                            .from('applicants')
-                            .update({ has_started_interview: false, is_interview_completed: false })
-                            .eq('id', applicant.id);
-                          if (applicant) {
-                            applicant.has_started_interview = false;
-                            applicant.is_interview_completed = false;
-                          }
-                          setToastMessage("تم فتح الرابط للمتقدم بنجاح!");
-                          setTimeout(() => setToastMessage(null), 3000);
-                        } catch (err) {
-                          console.error(err);
+                  <button
+                    onClick={async () => {
+                      try {
+                        await supabase
+                          .from('applicants')
+                          .update({ has_started_interview: false, is_interview_completed: false })
+                          .eq('id', applicant.id);
+                        if (applicant) {
+                          applicant.has_started_interview = false;
+                          applicant.is_interview_completed = false;
                         }
-                      }}
-                      className="bg-orange-50 text-orange-600 hover:bg-orange-600 hover:text-white border border-orange-100 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-900/50 dark:hover:bg-orange-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
-                    >
-                      <RefreshCw size={16} /> إعادة فتح المقابلة
-                    </button>
-                  )}
+                        setToastMessage("تم فتح الرابط للمتقدم بنجاح!");
+                        setTimeout(() => setToastMessage(null), 3000);
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    className="bg-orange-50 text-orange-600 hover:bg-orange-600 hover:text-white border border-orange-100 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-900/50 dark:hover:bg-orange-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                  >
+                    <RefreshCw size={16} /> إعادة فتح المقابلة
+                  </button>
                 </div>
               </div>
             )}
