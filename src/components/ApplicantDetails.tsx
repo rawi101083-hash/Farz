@@ -1223,12 +1223,21 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                       if (q.length > 0) {
                         await supabase
                           .from('applicants')
-                          .update({ client_interview_questions: q, decision: 'interviewing' })
+                          .update({ 
+                            client_interview_questions: q, 
+                            decision: 'interviewing',
+                            has_started_interview: false,
+                            is_interview_completed: false
+                          })
                           .eq('id', applicant?.id);
                       } else {
                         await supabase
                           .from('applicants')
-                          .update({ decision: 'interviewing' })
+                          .update({ 
+                            decision: 'interviewing',
+                            has_started_interview: false,
+                            is_interview_completed: false
+                          })
                           .eq('id', applicant?.id);
                       }
 
