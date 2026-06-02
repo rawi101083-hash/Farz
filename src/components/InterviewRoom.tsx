@@ -21,6 +21,23 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
   // Use a ref to store vapi instance so it persists
   const vapiRef = useRef<any>(null);
 
+  // Check if interview was already started/completed on load
+  useEffect(() => {
+    const checkStatus = async () => {
+      if (!applicantId) return;
+      const { data } = await supabase
+        .from('applicants')
+        .select('is_interview_completed, has_started_interview')
+        .eq('id', applicantId)
+        .single();
+        
+      if (data && (data.is_interview_completed || data.has_started_interview)) {
+        setCallStatus('ended');
+      }
+    };
+    checkStatus();
+  }, [applicantId]);
+
   useEffect(() => {
     vapiRef.current = new Vapi(VAPI_PUBLIC_KEY);
     const vapi = vapiRef.current;
@@ -37,7 +54,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       console.error("VAPI ERROR LOG:", error);
       setCallStatus('error');
       // Extract the real error message if available, otherwise fallback
-      const errorMsg = error?.message || error?.error?.message || JSON.stringify(error) || 'حدث خطأ أثناء الاتصال. يرجى التأكد من سماحيات المايكروفون والمحاولة مرة أخرى.';
+      const errorMsg = error?.message || error?.error?.message || JSON.stringify(error) || 'حدث خطأ غير متوقع في الاتصال. يرجى التأكد من المايكروفون وإعادة المحاولة.';
       setErrorMessage(errorMsg);
     });
 
@@ -55,14 +72,21 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
     try {
       setCallStatus('loading');
 
-      // --- 1. Deduct Interview Credit (SaaS Guardrail) ---
+      // --- 1. Fetch Applicant Data & Check Status ---
       const { data: appData, error: appError } = await supabase
         .from('applicants')
-        .select('job_id, client_interview_questions, interview_questions')
+        .select('job_id, client_interview_questions, interview_questions, is_interview_completed, has_started_interview, name')
         .eq('id', applicantId)
         .single();
         
       if (appError) throw new Error("لم يتم العثور على المتقدم");
+
+      // Check if interview is already started or completed
+      if (appData.is_interview_completed || appData.has_started_interview) {
+        setCallStatus('ended');
+        // Override the default text in render for ended status
+        return;
+      }
 
       const { data: jobData, error: jobError } = await supabase.from('jobs').select('company_id').eq('id', appData.job_id).single();
       if (jobError) throw new Error("لم يتم العثور على تفاصيل الوظيفة");
@@ -87,16 +111,14 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       const aiQs = safeParseArray(appData.interview_questions);
       
       // الخطة: إجمالي الأسئلة هو 4 أسئلة فقط
-      // الأولوية لأسئلة العميل، ثم نكمل الباقي من أسئلة الذكاء الاصطناعي (الفارز)
+      // الأولوية لأسئلة العميل، ثم نكمل الباقي من أسئلة الذكاء الاصطناعي
       let finalQs: string[] = [...clientQs];
       
       if (finalQs.length < 4) {
         const needed = 4 - finalQs.length;
-        // نأخذ من أسئلة الذكاء الاصطناعي العدد المتبقي فقط ليكمل 4 أسئلة
         finalQs.push(...aiQs.slice(0, needed));
       }
       
-      // للتأكيد النهائي أن الإجمالي لا يتجاوز 4 أسئلة أبداً
       finalQs = finalQs.slice(0, 4);
 
       // --- 2. Start Vapi Call with Limiter ---
@@ -105,9 +127,14 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         maxDurationSeconds: 600, // SaaS Guardrail: 10 minutes max limit
         variableValues: {
           applicantId: applicantId,
+          applicantName: appData.name || "عزيزي المتقدم", // إرسال اسم المتقدم
           interview_questions: finalQs.join("\n")
         }
       });
+
+      // Mark as started immediately to prevent refreshing and retrying
+      await supabase.from('applicants').update({ has_started_interview: true }).eq('id', applicantId);
+
     } catch (err: any) {
       console.error(err);
       setCallStatus('error');
