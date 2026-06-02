@@ -42,8 +42,12 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
     vapiRef.current = new Vapi(VAPI_PUBLIC_KEY);
     const vapi = vapiRef.current;
 
-    vapi.on('call-start', () => {
+    vapi.on('call-start', async () => {
       setCallStatus('active');
+      // Mark as started ONLY when the connection is fully established and AI starts talking
+      if (applicantId) {
+        await supabase.from('applicants').update({ has_started_interview: true }).eq('id', applicantId);
+      }
     });
 
     vapi.on('call-end', () => {
@@ -131,9 +135,6 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
           interview_questions: finalQs.join("\n")
         }
       });
-
-      // Mark as started immediately to prevent refreshing and retrying
-      await supabase.from('applicants').update({ has_started_interview: true }).eq('id', applicantId);
 
     } catch (err: any) {
       console.error(err);
