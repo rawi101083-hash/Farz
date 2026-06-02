@@ -10,7 +10,7 @@ const ENGLISH_ASSISTANT_ID = '0486ff5b-3ef4-4a40-bb38-4b0ec6dfd400';
 const ARABIC_ASSISTANT_ID = '465bda68-de37-4d5c-88c1-37df8164c98f';
 
 export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, onBack: () => void }) => {
-  const [callStatus, setCallStatus] = useState<'idle' | 'loading' | 'active' | 'ended' | 'error'>('idle');
+  const [callStatus, setCallStatus] = useState<'checking' | 'idle' | 'loading' | 'active' | 'ended' | 'error'>('checking');
   const [errorMessage, setErrorMessage] = useState('');
   const [volumeLevel, setVolumeLevel] = useState(0);
 
@@ -24,7 +24,10 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
   // Check if interview was already started/completed on load
   useEffect(() => {
     const checkStatus = async () => {
-      if (!applicantId) return;
+      if (!applicantId) {
+        setCallStatus('ended');
+        return;
+      }
       const { data } = await supabase
         .from('applicants')
         .select('is_interview_completed, has_started_interview')
@@ -36,6 +39,9 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         setCallStatus('ended');
       } else if (data.is_interview_completed || data.has_started_interview) {
         setCallStatus('ended');
+      } else {
+        // Safe to show the start button
+        setCallStatus('idle');
       }
     };
     checkStatus();
@@ -208,6 +214,19 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
                 <Play size={20} fill="currentColor" />
                 ابدأ المقابلة الآن
               </button>
+            </motion.div>
+          )}
+
+          {callStatus === 'checking' && (
+            <motion.div
+              key="checking"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="flex flex-col items-center py-10"
+            >
+              <div className="w-16 h-16 border-4 border-slate-100 border-t-primary rounded-full animate-spin mb-6" />
+              <p className="text-lg font-bold text-navy dark:text-white mb-2">جاري فحص حالة المقابلة...</p>
             </motion.div>
           )}
 
