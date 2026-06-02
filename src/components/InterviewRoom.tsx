@@ -31,7 +31,10 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         .eq('id', applicantId)
         .single();
         
-      if (data && (data.is_interview_completed || data.has_started_interview)) {
+      if (!data) {
+        // If no data is returned (e.g. invalid or deleted applicant), show ended screen directly
+        setCallStatus('ended');
+      } else if (data.is_interview_completed || data.has_started_interview) {
         setCallStatus('ended');
       }
     };
@@ -83,7 +86,11 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         .eq('id', applicantId)
         .single();
         
-      if (appError) throw new Error("لم يتم العثور على المتقدم");
+      if (appError) {
+        // If applicant is deleted or not found, just show the ended screen to avoid ugly errors
+        setCallStatus('ended');
+        return;
+      }
 
       // Check if interview is already started or completed
       if (appData.is_interview_completed || appData.has_started_interview) {
