@@ -85,8 +85,19 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
 
       const clientQs = safeParseArray(appData.client_interview_questions);
       const aiQs = safeParseArray(appData.interview_questions);
-      // Client questions (if any) take priority, otherwise AI generated questions
-      const finalQs = clientQs.length > 0 ? clientQs : aiQs;
+      
+      // الخطة: إجمالي الأسئلة هو 4 أسئلة فقط
+      // الأولوية لأسئلة العميل، ثم نكمل الباقي من أسئلة الذكاء الاصطناعي (الفارز)
+      let finalQs: string[] = [...clientQs];
+      
+      if (finalQs.length < 4) {
+        const needed = 4 - finalQs.length;
+        // نأخذ من أسئلة الذكاء الاصطناعي العدد المتبقي فقط ليكمل 4 أسئلة
+        finalQs.push(...aiQs.slice(0, needed));
+      }
+      
+      // للتأكيد النهائي أن الإجمالي لا يتجاوز 4 أسئلة أبداً
+      finalQs = finalQs.slice(0, 4);
 
       // --- 2. Start Vapi Call with Limiter ---
       const assistantId = lang === 'en' ? ENGLISH_ASSISTANT_ID : ARABIC_ASSISTANT_ID;
