@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
-const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void }) => {
+const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, userProfile?: any }) => {
   const [activeTab, setActiveTab] = useState<"analysis" | "requirements" | "interview" | "notes">("analysis");
   const [isAILoading, setIsAILoading] = useState(false);
   const [isFullscreenCV, setIsFullscreenCV] = useState(false);
@@ -29,7 +29,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
   const [showInterviewQuestionsModal, setShowInterviewQuestionsModal] = useState(false);
   const [interviewQuestion1, setInterviewQuestion1] = useState("");
   const [interviewQuestion2, setInterviewQuestion2] = useState("");
-  const [interviewSendMethod, setInterviewSendMethod] = useState<'whatsapp'|'email'|null>(null);
+  const [interviewSendMethod, setInterviewSendMethod] = useState<'whatsapp' | 'email' | null>(null);
   const [isSavingQuestions, setIsSavingQuestions] = useState(false);
 
   useEffect(() => {
@@ -40,21 +40,21 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
         .select('match_percentage')
         .eq('job_id', job.id)
         .neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW');
-        
+
       if (data && data.length > 0) {
         const scores = data.map((d: any) => d.match_percentage || 0).sort((a: number, b: number) => b - a);
         const currentScore = applicant.match_percentage || applicant.rating || 0;
-        
+
         if (!scores.includes(currentScore)) {
           scores.push(currentScore);
           scores.sort((a: number, b: number) => b - a);
         }
-        
+
         const rank = scores.indexOf(currentScore) + 1;
         const total = scores.length;
         const betterThanCount = Math.max(0, total - rank);
         const pct = total > 1 ? Math.round((betterThanCount / total) * 100) : 100;
-        
+
         setDynamicPercentile(pct);
       }
     };
@@ -178,6 +178,19 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
     }
   };
 
+  const [deleteStatus, setDeleteStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+
+  const plan = userProfile?.subscription_tier || 'free';
+  let interviewsLimit = userProfile?.interviews_limit ?? 0;
+  if (!interviewsLimit) {
+    if (plan === 'free' || plan === 'one-time') interviewsLimit = 0;
+    else if (plan === 'startup' || plan === 'growth') interviewsLimit = 100;
+    else if (plan === 'business') interviewsLimit = 500;
+    else if (plan === 'enterprise') interviewsLimit = 1500;
+  }
+  const interviewsUsed = userProfile?.used_interviews || 0;
+  const interviewsRemaining = Math.max(0, interviewsLimit - interviewsUsed);
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isScheduling, setIsScheduling] = useState(false);
 
@@ -260,12 +273,12 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
   const safeParseArray = (val: any) => {
     if (!val) return [];
     if (typeof val === 'string') {
-      try { val = JSON.parse(val); } catch(e) { return []; }
+      try { val = JSON.parse(val); } catch (e) { return []; }
     }
     if (!Array.isArray(val)) return [val];
     return val.map(item => {
       if (typeof item === 'string') {
-        try { return JSON.parse(item); } catch(e) { return item; }
+        try { return JSON.parse(item); } catch (e) { return item; }
       }
       return item;
     });
@@ -353,7 +366,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
               <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-bold text-slate-500 dark:text-slate-400">لغة الذكاء الاصطناعي:</span>
-                  <select 
+                  <select
                     value={interviewLang}
                     onChange={(e) => setInterviewLang(e.target.value as 'ar' | 'en')}
                     className="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1 outline-none focus:border-primary"
@@ -480,7 +493,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                     {displayMatch >= 80 ? <CheckCircle size={16} /> : displayMatch >= 50 ? <AlertTriangle size={16} /> : <X size={16} />}
                     {displayMatch >= 80 ? "ملاءمة عالية جداً" : displayMatch >= 50 ? "ملاءمة جزئية" : "غير مطابق"}
                   </div>
-                  
+
                   {topPercentile && (
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
                       أفضل من <span className="text-primary">{topPercentile}%</span> من المتقدمين
@@ -576,7 +589,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400">التقييم النهائي:</span>
                           <span className="text-lg font-black text-purple-600 dark:text-purple-400">{applicant?.interview_score || "-"} / 10</span>
                         </div>
-                        
+
                         {applicant?.voiceEvalUrl && (
                           <div className="w-full bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
                             <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">التسجيل الصوتي للمقابلة:</span>
@@ -584,7 +597,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="space-y-4">
                         <div className="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-purple-100 dark:border-purple-800/20">
                           <h4 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">ملخص المقابلة</h4>
@@ -592,7 +605,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                             {applicant?.interview_summary || "لا يوجد ملخص."}
                           </p>
                         </div>
-                        
+
                         {applicant?.interview_transcript && (
                           <div className="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-purple-100 dark:border-purple-800/20 max-h-60 overflow-y-auto custom-scrollbar">
                             <h4 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">التفريغ النصي للمحادثة (Transcript)</h4>
@@ -698,7 +711,19 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                   {/* إجابات المتقدم على الأسئلة المخصصة */}
                   {(() => {
                     const answers = safeParseArray(applicant?.custom_answers || applicant?.customAnswers);
-                    const regularAnswers = answers.filter((a: any) => !a?.isKnockout);
+                    let regularAnswers = answers.filter((a: any) => !a?.isKnockout && a?.answer && a.answer.toString().trim() !== "");
+                    
+                    if (candidate.email && !regularAnswers.some(a => a.question === "البريد الإلكتروني")) {
+                      regularAnswers = [{ question: "البريد الإلكتروني", answer: candidate.email }, ...regularAnswers];
+                    }
+                    if (candidate.phone && !regularAnswers.some(a => a.question === "رقم الجوال")) {
+                      let formattedPhone = candidate.phone;
+                      if (formattedPhone.startsWith("5")) {
+                        formattedPhone = "0" + formattedPhone;
+                      }
+                      regularAnswers = [{ question: "رقم الجوال", answer: formattedPhone }, ...regularAnswers];
+                    }
+
                     const knockoutAnswers = answers.filter((a: any) => a?.isKnockout);
                     const jobKnockoutQuestions = safeParseArray(job?.knockoutQuestions);
 
@@ -765,7 +790,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                               <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
                                 {att.type === 'image' ? <ImageIcon size={14} /> : att.type === 'video' ? <Video size={14} /> : <Paperclip size={14} />}
                               </div>
-                              <span className="text-sm font-bold text-navy dark:text-white truncate">{att.name || `مرفق ${i+1}`}</span>
+                              <span className="text-sm font-bold text-navy dark:text-white truncate">{att.name || `مرفق ${i + 1}`}</span>
                             </div>
                             <ExternalLink size={14} className="text-slate-400 group-hover:text-primary transition-colors shrink-0" />
                           </a>
@@ -1145,11 +1170,11 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
               >
                 <X size={24} />
               </button>
-              
+
               <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
                 <Mic size={28} />
               </div>
-              
+
               <h3 className="text-2xl font-bold text-navy dark:text-white mb-2">
                 أسئلة المقابلة الإضافية (اختياري)
               </h3>
@@ -1160,8 +1185,8 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
               <div className="space-y-4 mb-8">
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">السؤال الأول (مخصص):</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={interviewQuestion1}
                     onChange={(e) => setInterviewQuestion1(e.target.value)}
                     placeholder="مثال: كيف تعاملت مع عميل غاضب في السابق؟"
@@ -1170,8 +1195,8 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">السؤال الثاني (مخصص):</label>
-                  <input 
-                    type="text" 
+                  <input
+                    type="text"
                     value={interviewQuestion2}
                     onChange={(e) => setInterviewQuestion2(e.target.value)}
                     placeholder="مثال: اشرح لي تجربة قمت فيها بإدارة فريق عمل."
@@ -1194,7 +1219,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                       const q = [];
                       if (interviewQuestion1.trim()) q.push(interviewQuestion1.trim());
                       if (interviewQuestion2.trim()) q.push(interviewQuestion2.trim());
-                      
+
                       if (q.length > 0) {
                         await supabase
                           .from('applicants')
@@ -1206,11 +1231,11 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                           .update({ decision: 'interviewing' })
                           .eq('id', applicant?.id);
                       }
-                      
+
                       // Update locally
                       if (applicant) applicant.decision = 'interviewing';
                       if (onStatusUpdate) onStatusUpdate(applicant.id, 'interviewing', false);
-                      
+
                       const link = `${window.location.origin}/interview/${applicant?.id}?lang=${interviewLang}`;
                       if (interviewSendMethod === 'whatsapp') {
                         const text = `مرحباً ${actualName}، ندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${link}`;
@@ -1220,9 +1245,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate }: { onBack: 
                         const body = `مرحباً ${actualName}،\n\nندعوك لإجراء مقابلة الذكاء الاصطناعي الفورية عبر الرابط التالي:\n${link}\n\nمع التوفيق.`;
                         window.location.href = `mailto:${candidate.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
                       }
-                      
+
                       setShowInterviewQuestionsModal(false);
-                    } catch(e) {
+                    } catch (e) {
                       console.error(e);
                     } finally {
                       setIsSavingQuestions(false);

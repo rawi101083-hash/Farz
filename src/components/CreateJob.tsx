@@ -2662,6 +2662,8 @@ export const CreateJob = ({
                                           setNewKqRequiredAnswer("");
                                         } else if (val === "education" || val === "experience") {
                                           setNewKqRequiredAnswer("");
+                                        } else if (val === "availability") {
+                                          setNewKqRequiredAnswer("");
                                         } else {
                                           setNewKqRequiredAnswer(newKqOptions[0] || "");
                                         }
@@ -2675,6 +2677,7 @@ export const CreateJob = ({
                                       <option value="city" className="bg-white text-navy dark:bg-slate-800 dark:text-white">المدن المقبولة</option>
                                       <option value="education" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى للمؤهل</option>
                                       <option value="experience" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى لسنوات الخبرة</option>
+                                      <option value="availability" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأقصى لمدة الانضمام</option>
                                     </select>
 
                                     {newKqType === "age_condition" ? (
@@ -2741,6 +2744,19 @@ export const CreateJob = ({
                                         <option value="4" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 4 سنوات</option>
                                         <option value="5" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 5 سنوات</option>
                                         <option value="10" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 10 سنوات</option>
+                                      </select>
+                                    ) : newKqType === "availability" ? (
+                                      <select
+                                        value={newKqRequiredAnswer}
+                                        onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
+                                        className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
+                                      >
+                                        <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر أقصى مدة مقبولة...</option>
+                                        <option value="فوري" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فوري (مقبول المتاح فوراً فقط)</option>
+                                        <option value="أسبوع" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوع (مقبول المتاح فوراً أو خلال أسبوع)</option>
+                                        <option value="أسبوعين" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوعين (كحد أقصى)</option>
+                                        <option value="شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شهر (كحد أقصى)</option>
+                                        <option value="أكثر من شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أكثر من شهر (قبول الجميع)</option>
                                       </select>
                                     ) : newKqType === "yes_no" ? (
                                       <select

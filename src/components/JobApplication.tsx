@@ -415,12 +415,21 @@ export const ApplicantForm = ({
         question: q.text,
         answer: submitData[`customQuestion_${idx}`],
       })) : []),
-      ...(activeRole?.knockoutQuestions && Array.isArray(activeRole.knockoutQuestions) ? activeRole.knockoutQuestions.map((q: any, idx: number) => ({
-        question: q.text,
-        answer: formDataState.knockoutAnswers ? (formDataState.knockoutAnswers[idx] || "لم يتم الإجابة") : "لم يتم الإجابة",
-        isKnockout: true,
-        requiredAnswer: q.requiredAnswer
-      })) : [])
+      ...(activeRole?.knockoutQuestions && Array.isArray(activeRole.knockoutQuestions) ? activeRole.knockoutQuestions.map((q: any, idx: number) => {
+        let ans = formDataState.knockoutAnswers ? formDataState.knockoutAnswers[idx] : undefined;
+        if (q.type === "nationality") ans = submitData.nationality || formDataState.nationality;
+        else if (q.type === "education") ans = submitData.education || formDataState.education;
+        else if (q.type === "experience") ans = submitData.experience || formDataState.experience;
+        else if (q.type === "city") ans = submitData.city || formDataState.city;
+        else if (q.type === "availability") ans = submitData.availability || (formDataState as any).availability;
+
+        return {
+          question: q.text,
+          answer: ans || "لم يتم الإجابة",
+          isKnockout: true,
+          requiredAnswer: q.requiredAnswer
+        };
+      }) : [])
     ];
     const submittedCustomAttachments = (Array.isArray(customAttachments) ? customAttachments : []).map(
       (att: any, idx: number) => ({
@@ -453,6 +462,7 @@ export const ApplicantForm = ({
         else if (kq.type === "education") ans = formDataState.education;
         else if (kq.type === "experience") ans = formDataState.experience;
         else if (kq.type === "city") ans = formDataState.city;
+        else if (kq.type === "availability") ans = (formDataState as any).availability;
 
         if (!ans) return false;
 
@@ -502,6 +512,21 @@ export const ApplicantForm = ({
           
           if (ansYearsMax < Number(kq.requiredAnswer)) return true;
           return false;
+        }
+
+        if (kq.type === "availability") {
+          const getAvailValue = (val?: string) => {
+            if (!val) return 99;
+            if (val.includes("فوري")) return 0;
+            if (val.includes("أسبوعين")) return 2;
+            if (val.includes("أسبوع")) return 1;
+            if (val.includes("شهر") && !val.includes("أكثر")) return 4;
+            if (val.includes("أكثر من شهر")) return 5;
+            return 99;
+          };
+          const reqVal = getAvailValue(kq.requiredAnswer);
+          const appVal = getAvailValue(ans);
+          return appVal > reqVal;
         }
 
         return ans !== kq.requiredAnswer;
@@ -1101,7 +1126,6 @@ export const ApplicantForm = ({
 
 
 
-              {hasKnockout("city") && (
                 <div className="space-y-3">
                   <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
                     المدينة <span className="text-red-500">*</span>
@@ -1125,7 +1149,6 @@ export const ApplicantForm = ({
                     </div>
                   </div>
                 </div>
-              )}
 
               {(hasKnockout("education") || (activeRole?.askEducation ?? job?.askEducation)) && (
                 <div className="space-y-3">
@@ -1223,6 +1246,7 @@ export const ApplicantForm = ({
                   >
                     <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المدة</option>
                     <option value="فوري" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فوري</option>
+                    <option value="أسبوع" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوع</option>
                     <option value="أسبوعين" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوعين</option>
                     <option value="شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شهر</option>
                     <option value="أكثر من شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أكثر من شهر</option>
@@ -1313,7 +1337,7 @@ export const ApplicantForm = ({
                 </div>
               )}{" "}
               {activeRole?.knockoutQuestions?.map((q: any, idx: number) => {
-                if (["nationality", "education", "experience", "city"].includes(q.type)) return null;
+                if (["nationality", "education", "experience", "city", "availability"].includes(q.type)) return null;
                 const options = q.type === "options" && Array.isArray(q.options) && q.options.length > 0 ? q.options : ["نعم", "لا"];
                 const qText = q.type === "age_condition" ? "العمر" : q.text;
                 const isLong = qText && qText.length > 40;

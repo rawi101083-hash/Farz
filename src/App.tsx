@@ -2148,6 +2148,7 @@ export default function App() {
                 onBack={() => setStep("dashboard")} 
                 applicant={selectedApplicantForDetails} 
                 job={jobs.find(j => j.id === selectedApplicantForDetails?.job_id || j.title === selectedApplicantForDetails?.job)}
+                userProfile={userProfile}
                 onStatusUpdate={(id, decision, isOffer) => setDashboardPendingAction({ id, decision, isOffer })}
               />
             )}{" "}
