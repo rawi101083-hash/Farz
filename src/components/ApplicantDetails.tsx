@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
 const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, userProfile?: any }) => {
@@ -362,7 +362,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
             >
               <CheckCircle size={16} /> قبول
             </button>
-            {(applicant?.decision === "interview" || applicant?.decision === "interviewing") && !applicant?.is_interview_completed && (
+            {(applicant?.decision === "interview" || applicant?.decision === "interviewing") && (
               <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-xs font-bold text-slate-500 dark:text-slate-400">لغة الذكاء الاصطناعي:</span>
@@ -375,7 +375,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                     <option value="en">English</option>
                   </select>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => { setInterviewSendMethod('whatsapp'); setShowInterviewQuestionsModal(true); }}
                     className="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white border border-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-900/50 dark:hover:bg-green-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
@@ -388,6 +388,29 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                   >
                     <Mail size={16} /> إرسال المقابلة (إيميل)
                   </button>
+                  {(applicant?.is_interview_completed || applicant?.has_started_interview) && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          await supabase
+                            .from('applicants')
+                            .update({ has_started_interview: false, is_interview_completed: false })
+                            .eq('id', applicant.id);
+                          if (applicant) {
+                            applicant.has_started_interview = false;
+                            applicant.is_interview_completed = false;
+                          }
+                          setToastMessage("تم فتح الرابط للمتقدم بنجاح!");
+                          setTimeout(() => setToastMessage(null), 3000);
+                        } catch (err) {
+                          console.error(err);
+                        }
+                      }}
+                      className="bg-orange-50 text-orange-600 hover:bg-orange-600 hover:text-white border border-orange-100 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-900/50 dark:hover:bg-orange-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                    >
+                      <RefreshCw size={16} /> إعادة فتح المقابلة
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -1223,21 +1246,12 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                       if (q.length > 0) {
                         await supabase
                           .from('applicants')
-                          .update({ 
-                            client_interview_questions: q, 
-                            decision: 'interviewing',
-                            has_started_interview: false,
-                            is_interview_completed: false
-                          })
+                          .update({ client_interview_questions: q, decision: 'interviewing' })
                           .eq('id', applicant?.id);
                       } else {
                         await supabase
                           .from('applicants')
-                          .update({ 
-                            decision: 'interviewing',
-                            has_started_interview: false,
-                            is_interview_completed: false
-                          })
+                          .update({ decision: 'interviewing' })
                           .eq('id', applicant?.id);
                       }
 
