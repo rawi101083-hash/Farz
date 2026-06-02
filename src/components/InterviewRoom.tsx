@@ -127,11 +127,14 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
 
       // --- 2. Start Vapi Call with Limiter ---
       const assistantId = lang === 'en' ? ENGLISH_ASSISTANT_ID : ARABIC_ASSISTANT_ID;
+      
+      const firstName = appData.name ? appData.name.trim().split(' ')[0] : "عزيزي المتقدم";
+      
       await vapiRef.current.start(assistantId, {
         maxDurationSeconds: 600, // SaaS Guardrail: 10 minutes max limit
         variableValues: {
           applicantId: applicantId,
-          applicantName: appData.name || "عزيزي المتقدم", // إرسال اسم المتقدم
+          applicantName: firstName, // إرسال الاسم الأول فقط
           interview_questions: finalQs.join("\n")
         }
       });
