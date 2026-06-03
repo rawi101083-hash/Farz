@@ -646,6 +646,22 @@ export const ApplicantForm = ({
         }
       }
 
+      const job_context = {
+        jobTitle: activeRole?.title || job?.title || "",
+        minEducation: (activeRole?.qualification ?? job?.qualification) === "لا يشترط مؤهل" ? "لا يشترط" : (activeRole?.qualification ?? job?.qualification ?? "لا يشترط"),
+        minExperience: (activeRole?.experience ?? job?.experience) === "لا يشترط خبرة" ? "لا يشترط" : (activeRole?.experience ?? job?.experience ?? "لا يشترط"),
+        responsibilities: activeRole?.responsibilities ?? job?.responsibilities ?? "",
+        roleDescription: activeRole?.description ?? job?.description ?? "",
+        textQualifications: activeRole?.qualifications ?? job?.qualifications ?? "",
+        targetMajors: activeRole?.targetMajors ?? job?.targetMajors ?? [],
+        targetSkills: activeRole?.targetSkills ?? job?.targetSkills ?? [],
+        requiredLanguages: activeRole?.requiredLanguages ?? job?.requiredLanguages ?? [],
+        aiCustomPrompts: [
+          "قاعدة صارمة: يمنع منعاً باتاً استبعاد المرشح أو تعيين حالته كمرفوض بمجرد حصوله على نسبة منخفضة. يجب أن يبقى المتقدم في قائمة قيد الإجراء مهما كانت نسبته حتى لو كانت 0.",
+          activeRole?.aiInstructions ?? job?.aiInstructions ?? ""
+        ].filter(Boolean).join("\n\n")
+      };
+
       // 2. Save to database
       try {
         const { data: dbData, error: dbError } = await supabase
@@ -660,7 +676,8 @@ export const ApplicantForm = ({
             rejection_reason: isAutoRejected ? `مرفوض آلياً (${autoRejectReason})` : null,
             custom_answers: customAnswers,
             device_fingerprint: submitData._deviceFingerprint || null,
-            file_hash: submitData._fileHash || null
+            file_hash: submitData._fileHash || null,
+            job_context: job_context
           }])
           .select("id")
           .single();
@@ -691,21 +708,7 @@ export const ApplicantForm = ({
         job_id: job?.id || "",
         cv_file_url: cv_file_url,
         device_fingerprint: btoa(navigator.userAgent + window.screen.width + window.screen.height),
-        job_context: {
-          jobTitle: activeRole?.title || job?.title || "",
-          minEducation: (activeRole?.qualification ?? job?.qualification) === "لا يشترط مؤهل" ? "لا يشترط" : (activeRole?.qualification ?? job?.qualification ?? "لا يشترط"),
-          minExperience: (activeRole?.experience ?? job?.experience) === "لا يشترط خبرة" ? "لا يشترط" : (activeRole?.experience ?? job?.experience ?? "لا يشترط"),
-          responsibilities: activeRole?.responsibilities ?? job?.responsibilities ?? "",
-          roleDescription: activeRole?.description ?? job?.description ?? "",
-          textQualifications: activeRole?.qualifications ?? job?.qualifications ?? "",
-          targetMajors: activeRole?.targetMajors ?? job?.targetMajors ?? [],
-          targetSkills: activeRole?.targetSkills ?? job?.targetSkills ?? [],
-          requiredLanguages: activeRole?.requiredLanguages ?? job?.requiredLanguages ?? [],
-          aiCustomPrompts: [
-            "قاعدة صارمة: يمنع منعاً باتاً استبعاد المرشح أو تعيين حالته كمرفوض بمجرد حصوله على نسبة منخفضة. يجب أن يبقى المتقدم في قائمة قيد الإجراء مهما كانت نسبته حتى لو كانت 0.",
-            activeRole?.aiInstructions ?? job?.aiInstructions ?? ""
-          ].filter(Boolean).join("\n\n")
-        }
+        job_context: job_context
       };
 
       try {
