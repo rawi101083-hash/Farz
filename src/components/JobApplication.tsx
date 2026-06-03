@@ -717,8 +717,7 @@ export const ApplicantForm = ({
           {
             method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${import.meta.env.VITE_FARZ_API_KEY || "change_me_in_production"}`
+              "Content-Type": "application/json"
             },
             body: JSON.stringify(pythonPayload)
           }

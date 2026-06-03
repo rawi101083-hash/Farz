@@ -1206,6 +1206,11 @@ export const Dashboard = ({
                               animate={{ opacity: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.9 }}
                               key={row.id}
+                              onClick={() => {
+                                if (!isFomoLocked) {
+                                  onViewDetails(row);
+                                }
+                              }}
                               className={`transition-colors group ${isFomoLocked ? 'bg-slate-50/50 dark:bg-slate-800/30' : 'hover:bg-slate-50 dark:bg-slate-800/80 cursor-pointer'}`}
                             >
                               {isSelectionMode && (
@@ -1250,7 +1255,7 @@ export const Dashboard = ({
                                         setLightboxPhoto(row.photoUrl);
                                       }
                                     }}
-                                    className={`w-10 h-10 rounded-[14px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d transition-colors overflow-hidden ${row.photoUrl && !isFomoLocked ? "cursor-pointer hover:opacity-80" : "group-hover:bg-white dark:hover:bg-slate-600"}`}
+                                    className={`w-10 h-10 rounded-[14px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d transition-colors overflow-hidden ${row.photoUrl && !isFomoLocked ? "cursor-pointer hover:opacity-80" : "group-hover:text-primary dark:group-hover:text-primary group-hover:bg-primary/10 dark:group-hover:bg-primary/20"}`}
                                   >
                                     {row.photoUrl && !isFomoLocked ? (
                                       <img src={row.photoUrl} alt={row.name} className="w-full h-full object-cover" />
@@ -1421,7 +1426,7 @@ export const Dashboard = ({
                                   )}
                                   <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
                                   <button
-                                    onClick={() => onViewDetails(row)}
+                                    onClick={(e) => { e.stopPropagation(); onViewDetails(row); }}
                                     disabled={isFomoLocked}
                                     className={`flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isFomoLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     title="عرض الملف"
@@ -1431,7 +1436,7 @@ export const Dashboard = ({
                                   <div className="relative">
                                     <button
                                       disabled={isFomoLocked}
-                                      onClick={() => setOpenDropdownId(openDropdownId === row.id ? null : row.id)}
+                                      onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === row.id ? null : row.id); }}
                                       className={`flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 hover:text-navy hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${isFomoLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                       <MoreVertical size={16} />

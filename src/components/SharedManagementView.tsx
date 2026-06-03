@@ -179,7 +179,7 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
                   </tr>
                 ) : (
                   visibleApplicants.map((app) => (
-                    <tr key={app.id} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+                    <tr key={app.id} onClick={() => setSelectedApplicant(app)} className="border-b border-slate-100 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors cursor-pointer">
                       <td className="px-6 py-4">
                         <div className="font-bold text-navy dark:text-white text-base truncate max-w-[200px]">
                           {app.name}
@@ -206,7 +206,7 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center">
                           <button
-                            onClick={() => setSelectedApplicant(app)}
+                            onClick={(e) => { e.stopPropagation(); setSelectedApplicant(app); }}
                             className="px-5 py-2.5 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold text-navy dark:text-white hover:border-primary hover:text-primary transition-all flex items-center gap-2 shadow-sm"
                           >
                             <FileText size={16} /> عرض الملف
