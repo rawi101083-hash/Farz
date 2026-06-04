@@ -1691,6 +1691,7 @@ export default function App() {
               interviews_limit: data.interviews_limit || 0,
               used_jobs: data.used_jobs || 0,
               used_interviews: data.used_interviews || 0,
+              isLoaded: true,
             }));
             // Force Settings tab if profile is incomplete
             if (!isProfileComplete) {
@@ -2073,7 +2074,14 @@ export default function App() {
               <LandingPage onStart={() => setStep("registerCompany")} onOpenBookingModal={() => setShowBookingModal(true)} />
             )}{" "}
 
-            {step === "dashboard" && (
+            {step === "dashboard" && !userProfile.isLoaded ? (
+              <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+                <div className="flex flex-col items-center">
+                  <div className="w-16 h-16 border-4 border-slate-200 dark:border-slate-800 border-t-primary rounded-full animate-spin mb-4"></div>
+                  <p className="text-slate-500 dark:text-slate-400 font-bold">جاري تحميل بيانات حسابك...</p>
+                </div>
+              </div>
+            ) : step === "dashboard" && (
               <Dashboard
                 activeTab={dashboardTab}
                 setActiveTab={setDashboardTab}
