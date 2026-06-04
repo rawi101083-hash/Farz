@@ -31,6 +31,27 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
   const [interviewQuestion2, setInterviewQuestion2] = useState("");
   const [interviewSendMethod, setInterviewSendMethod] = useState<'whatsapp' | 'email' | null>(null);
   const [isSavingQuestions, setIsSavingQuestions] = useState(false);
+  const [pendingInterviewsCount, setPendingInterviewsCount] = useState(0);
+
+  useEffect(() => {
+    if (!userProfile?.id) return;
+    const fetchPending = async () => {
+      const { data: companyJobs } = await supabase.from('jobs').select('id').eq('company_id', userProfile.id);
+      if (!companyJobs || companyJobs.length === 0) return;
+      const jobIds = companyJobs.map((j: any) => j.id);
+
+      const { count } = await supabase
+        .from('applicants')
+        .select('id', { count: 'exact', head: true })
+        .in('job_id', jobIds)
+        .eq('decision', 'interviewing')
+        .eq('has_started_interview', false)
+        .neq('interview_revoked', true);
+        
+      setPendingInterviewsCount(count || 0);
+    };
+    fetchPending();
+  }, [userProfile?.id, isSavingQuestions, applicant?.interview_revoked]);
 
   useEffect(() => {
     if (!job?.id || !applicant?.id) return;
@@ -190,6 +211,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
   }
   const interviewsUsed = userProfile?.used_interviews || 0;
   const interviewsRemaining = Math.max(0, interviewsLimit - interviewsUsed);
+  const overbooked = pendingInterviewsCount >= interviewsRemaining && interviewsRemaining > 0;
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [isScheduling, setIsScheduling] = useState(false);
@@ -394,25 +416,57 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                       try {
                         await supabase
                           .from('applicants')
-                          .update({ has_started_interview: false, is_interview_completed: false })
+                          .update({ has_started_interview: false, is_interview_completed: false, interview_revoked: false })
                           .eq('id', applicant.id);
                         if (applicant) {
                           applicant.has_started_interview = false;
                           applicant.is_interview_completed = false;
+                          applicant.interview_revoked = false;
                         }
-                        setToastMessage("تم فتح الرابط للمتقدم بنجاح!");
-                        setTimeout(() => setToastMessage(null), 3000);
+                        if (onStatusUpdate) onStatusUpdate(applicant.id, applicant.decision || 'interview', false);
+                        alert("تم فك القفل بنجاح، يمكنك الآن إعادة إرسال الرابط.");
                       } catch (err) {
-                        console.error(err);
+                        alert("حدث خطأ أثناء فك القفل.");
                       }
                     }}
-                    className="bg-orange-50 text-orange-600 hover:bg-orange-600 hover:text-white border border-orange-100 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-900/50 dark:hover:bg-orange-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                    className="bg-yellow-50 text-yellow-600 hover:bg-yellow-600 hover:text-white border border-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-900/50 dark:hover:bg-yellow-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
                   >
-                    <RefreshCw size={16} /> إعادة فتح المقابلة
+                    <RefreshCw size={16} /> إعادة فتح رابط المقابلة
                   </button>
                 </div>
               </div>
             )}
+            
+            {/* Revoke Link Button */}
+            {applicant?.decision === 'interviewing' && !applicant?.has_started_interview && !applicant?.interview_revoked && (
+              <div className="flex flex-col gap-2 bg-rose-50 dark:bg-rose-900/10 p-4 rounded-xl border border-rose-100 dark:border-rose-800/30">
+                <p className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                  تم إرسال رابط المقابلة مسبقاً. إذا لم يتجاوب المتقدم، يمكنك إلغاء الرابط لاسترجاع الحجز.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm("هل أنت متأكد من إلغاء رابط المقابلة لهذا المتقدم؟")) return;
+                    try {
+                      await supabase.from('applicants').update({ interview_revoked: true }).eq('id', applicant.id);
+                      if (applicant) applicant.interview_revoked = true;
+                      setPendingInterviewsCount(prev => Math.max(0, prev - 1));
+                      alert("تم إلغاء الرابط بنجاح.");
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  className="bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 w-fit mt-1"
+                >
+                  <Ban size={16} /> إلغاء رابط المقابلة
+                </button>
+              </div>
+            )}
+            {applicant?.interview_revoked && (
+              <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold p-3 rounded-xl flex items-center gap-2 border border-slate-200 dark:border-slate-700">
+                <Ban size={16} /> تم إلغاء رابط المقابلة لهذا المتقدم.
+              </div>
+            )}
+            
             {applicant?.decision !== "interview" && applicant?.decision !== "interviewing" && (
               <button
                 onClick={() => {
@@ -1200,6 +1254,16 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
               <h3 className="text-2xl font-bold text-navy dark:text-white mb-2">
                 أسئلة المقابلة الإضافية (اختياري)
               </h3>
+              
+              {/* Overbooking Warning */}
+              {overbooked && (
+                <div className="mb-6 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 p-4 rounded-xl flex gap-3 text-orange-800 dark:text-orange-300">
+                  <AlertTriangle size={20} className="shrink-0 mt-0.5 text-orange-500" />
+                  <p className="text-sm font-bold leading-relaxed">
+                    تنبيه: رصيدك المتبقي ({interviewsRemaining}) مقابلات، ولديك ({pendingInterviewsCount}) دعوات معلقة لم تُستخدم بعد. أول ({interviewsRemaining}) متقدمين سيدخلون سيتم قبولهم، وسيُعطل الرابط تلقائياً عن البقية.
+                  </p>
+                </div>
+              )}
               <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm leading-relaxed">
                 هل ترغب في إضافة سؤالين محددين ليقوم الذكاء الاصطناعي بطرحهما على المتقدم أثناء المقابلة؟
               </p>
@@ -1245,17 +1309,30 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                       if (q.length > 0) {
                         await supabase
                           .from('applicants')
-                          .update({ client_interview_questions: q, decision: 'interviewing' })
+                          .update({ 
+                            client_interview_questions: q, 
+                            decision: 'interviewing', 
+                            interview_sent_at: new Date().toISOString(),
+                            interview_revoked: false
+                          })
                           .eq('id', applicant?.id);
                       } else {
                         await supabase
                           .from('applicants')
-                          .update({ decision: 'interviewing' })
+                          .update({ 
+                            decision: 'interviewing',
+                            interview_sent_at: new Date().toISOString(),
+                            interview_revoked: false
+                          })
                           .eq('id', applicant?.id);
                       }
 
                       // Update locally
-                      if (applicant) applicant.decision = 'interviewing';
+                      if (applicant) {
+                        applicant.decision = 'interviewing';
+                        applicant.interview_sent_at = new Date().toISOString();
+                        applicant.interview_revoked = false;
+                      }
                       if (onStatusUpdate) onStatusUpdate(applicant.id, 'interviewing', false);
 
                       const link = `${window.location.origin}/interview/${applicant?.id}?lang=${interviewLang}`;

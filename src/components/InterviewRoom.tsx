@@ -32,12 +32,18 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       }
       const { data } = await supabase
         .from('applicants')
-        .select('is_interview_completed, has_started_interview')
+        .select('is_interview_completed, has_started_interview, interview_revoked, interview_sent_at')
         .eq('id', applicantId)
         .single();
         
       if (!data) {
         setCallStatus('ended');
+      } else if (data.interview_revoked) {
+        setCallStatus('error');
+        setErrorMessage("عذراً، تم إلغاء أو سحب دعوة المقابلة من قبل جهة التوظيف.");
+      } else if (data.interview_sent_at && (Date.now() - new Date(data.interview_sent_at).getTime() > 72 * 60 * 60 * 1000)) {
+        setCallStatus('error');
+        setErrorMessage("عذراً، انتهت صلاحية هذا الرابط (صالح لمدة 72 ساعة فقط).");
       } else if (data.is_interview_completed || data.has_started_interview) {
         setCallStatus('ended');
       } else {
@@ -89,7 +95,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       // --- 1. Fetch Applicant Data & Check Status ---
       const { data: appData, error: appError } = await supabase
         .from('applicants')
-        .select('job_id, client_interview_questions, interview_questions, is_interview_completed, has_started_interview, full_name')
+        .select('job_id, client_interview_questions, interview_questions, is_interview_completed, has_started_interview, full_name, interview_revoked, interview_sent_at')
         .eq('id', applicantId)
         .single();
         
@@ -99,10 +105,21 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         return;
       }
 
-      // Check if interview is already started or completed
+      // Check if interview is already started or completed or revoked or expired
+      if (appData.interview_revoked) {
+        setCallStatus('error');
+        setErrorMessage("عذراً، تم إلغاء أو سحب دعوة المقابلة من قبل جهة التوظيف.");
+        return;
+      }
+      
+      if (appData.interview_sent_at && (Date.now() - new Date(appData.interview_sent_at).getTime() > 72 * 60 * 60 * 1000)) {
+        setCallStatus('error');
+        setErrorMessage("عذراً، انتهت صلاحية هذا الرابط (صالح لمدة 72 ساعة فقط).");
+        return;
+      }
+
       if (appData.is_interview_completed || appData.has_started_interview) {
         setCallStatus('ended');
-        // Override the default text in render for ended status
         return;
       }
 

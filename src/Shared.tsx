@@ -395,6 +395,14 @@ export interface Job {
   hideBenefits?: boolean;
   hideTargetMajors?: boolean;
   hideSkillsAndLanguages?: boolean;
+  aiOverrideFields?: {
+    roleSummary?: string;
+    responsibilities?: string;
+    qualifications?: string;
+    targetMajors?: string[];
+    targetSkills?: string[];
+    languages?: string[];
+  };
   visits_count?: number;
   aiChatHistory?: { role: "user" | "assistant"; content: string }[];
 }
@@ -2913,6 +2921,8 @@ interface Applicant {
   interview_transcript?: string;
   interview_summary?: string;
   interview_score?: number;
+  interview_sent_at?: string;
+  interview_revoked?: boolean;
 }
 const mockApplicants: Applicant[] = [
   {

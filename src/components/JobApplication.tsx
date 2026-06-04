@@ -646,19 +646,23 @@ export const ApplicantForm = ({
         }
       }
 
+      const sourceRole = activeRole || job;
+      const isAiOverridden = sourceRole?.aiOverrideFields != null && Object.keys(sourceRole.aiOverrideFields).length > 0;
+      const overrideFields = sourceRole?.aiOverrideFields || {};
+
       const job_context = {
-        jobTitle: activeRole?.title || job?.title || "",
-        minEducation: (activeRole?.qualification ?? job?.qualification) === "لا يشترط مؤهل" ? "لا يشترط" : (activeRole?.qualification ?? job?.qualification ?? "لا يشترط"),
-        minExperience: (activeRole?.experience ?? job?.experience) === "لا يشترط خبرة" ? "لا يشترط" : (activeRole?.experience ?? job?.experience ?? "لا يشترط"),
-        responsibilities: activeRole?.responsibilities ?? job?.responsibilities ?? "",
-        roleDescription: activeRole?.description ?? job?.description ?? "",
-        textQualifications: activeRole?.qualifications ?? job?.qualifications ?? "",
-        targetMajors: activeRole?.targetMajors ?? job?.targetMajors ?? [],
-        targetSkills: activeRole?.targetSkills ?? job?.targetSkills ?? [],
-        requiredLanguages: activeRole?.requiredLanguages ?? job?.requiredLanguages ?? [],
+        jobTitle: sourceRole?.title || "",
+        minEducation: sourceRole?.qualification === "لا يشترط مؤهل" ? "لا يشترط" : (sourceRole?.qualification ?? "لا يشترط"),
+        minExperience: sourceRole?.experience === "لا يشترط خبرة" ? "لا يشترط" : (sourceRole?.experience ?? "لا يشترط"),
+        responsibilities: isAiOverridden && overrideFields.responsibilities ? overrideFields.responsibilities : (sourceRole?.responsibilities ?? ""),
+        roleDescription: isAiOverridden && overrideFields.roleSummary ? overrideFields.roleSummary : (sourceRole?.description ?? ""),
+        textQualifications: isAiOverridden && overrideFields.qualifications ? overrideFields.qualifications : (sourceRole?.qualifications ?? ""),
+        targetMajors: isAiOverridden && overrideFields.targetMajors && overrideFields.targetMajors.length > 0 ? overrideFields.targetMajors : (sourceRole?.targetMajors ?? []),
+        targetSkills: isAiOverridden && overrideFields.targetSkills && overrideFields.targetSkills.length > 0 ? overrideFields.targetSkills : (sourceRole?.targetSkills ?? []),
+        requiredLanguages: isAiOverridden && overrideFields.languages && overrideFields.languages.length > 0 ? overrideFields.languages : (sourceRole?.requiredLanguages ?? []),
         aiCustomPrompts: [
           "قاعدة صارمة: يمنع منعاً باتاً استبعاد المرشح أو تعيين حالته كمرفوض بمجرد حصوله على نسبة منخفضة. يجب أن يبقى المتقدم في قائمة قيد الإجراء مهما كانت نسبته حتى لو كانت 0.",
-          activeRole?.aiInstructions ?? job?.aiInstructions ?? ""
+          sourceRole?.aiInstructions ?? ""
         ].filter(Boolean).join("\n\n")
       };
 

@@ -1587,7 +1587,8 @@ export default function App() {
             applicants: 0,
             visits_count: raw.visits_count || 0,
             directUpload: raw.direct_upload || false,
-            roles: Array.isArray(raw.roles) ? raw.roles : []
+            roles: Array.isArray(raw.roles) ? raw.roles : [],
+            aiOverrideFields: raw.ai_override_fields || undefined
           }));
 
           setJobs(prevJobs => {
@@ -1740,7 +1741,8 @@ export default function App() {
                 createdAt: data.created_at ? data.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
                 applicants: 0,
                 directUpload: data.direct_upload || false,
-                roles: Array.isArray(data.roles) ? data.roles : []
+                roles: Array.isArray(data.roles) ? data.roles : [],
+                aiOverrideFields: data.ai_override_fields || undefined
              };
              setSelectedJob(fetchedJob as Job);
              setStep(
@@ -1867,7 +1869,8 @@ export default function App() {
           status: newJob.status,
           created_at: new Date().toISOString(),
           direct_upload: newJob.directUpload || false,
-          roles: newJob.roles || []
+          roles: newJob.roles || [],
+          ai_override_fields: newJob.aiOverrideFields || undefined
         };
         const { error } = await supabase.from('jobs').insert([jobForDB]);
         if (error) {
