@@ -843,7 +843,14 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                               {regularAnswers.map((ans: any, i: number) => (
                                 <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
                                   <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {i + 1}: {ans.question}</p>
-                                  <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ans.answer}</p>
+                                  {typeof ans.answer === 'string' && (ans.answer.startsWith('http://') || ans.answer.startsWith('https://')) && !ans.answer.includes(' ') ? (
+                                    <a href={ans.answer} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 mt-1 px-4 py-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 font-bold rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors shadow-sm">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                                      عرض المرفق / الرابط
+                                    </a>
+                                  ) : (
+                                    <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ans.answer}</p>
+                                  )}
                                 </div>
                               ))}
                             </div>

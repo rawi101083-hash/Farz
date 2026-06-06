@@ -248,7 +248,7 @@ export const CreateJob = ({
       const expected = {
         campaignTitle: (initialData?.campaignTitle || initialData?.title || "").trim(),
         campaignDescription: (initialData?.campaignDescription || "").trim(),
-        company: (initialData?.company || userProfile?.companyName || "").trim(),
+        company: (initialData?.company || localStorage.getItem("last_used_company") || "").trim(),
         enableWelcomeUI: !!(initialData?.campaignTitle),
         rolesStr: initialData?.recordType === "campaign" && initialData.roles ? JSON.stringify(cleanRolesForComparison(initialData.roles)) : "[]",
 
@@ -328,7 +328,7 @@ export const CreateJob = ({
   });
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => {
     if (initialData?.companyLogo && !initialData.companyLogo.startsWith("blob:")) return initialData.companyLogo;
-    return userProfile?.companyLogo || null;
+    return localStorage.getItem("last_used_logo") || null;
   });
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(initialData?.status === "مسودة" ? initialData.id : null);
@@ -354,7 +354,8 @@ export const CreateJob = ({
   const [expectedSalaryRanges, setExpectedSalaryRanges] = useState<string[]>(initialData?.expectedSalaryRanges || []);
   const [salaryRangeInput, setSalaryRangeInput] = useState("");
   const defaultStart = new Date().toISOString().slice(0, 16);
-  const defaultEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  const defaultDays = (userProfile?.subscription_tier === 'immediate' || userProfile?.subscription_tier === 'one-time') ? 45 : 30;
+  const defaultEnd = new Date(Date.now() + defaultDays * 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 16);
   const [startDate, setStartDate] = useState(
@@ -1067,7 +1068,7 @@ export const CreateJob = ({
       roles: finalRoles,
       startDate,
       endDate: isOpenEnded ? undefined : endDate,
-      company: userProfile?.companyName || company,
+      company: company,
       entityType: userProfile?.entityType,
       city: userProfile?.city,
       location: createJobType === "quick_link" ? "غير محدد" : location,
@@ -1685,7 +1686,7 @@ export const CreateJob = ({
                             </label>
                           )}
                           {companyLogo && (
-                            <button type="button" onClick={() => { setCompanyLogo(null); localStorage.removeItem("savedCompanyLogo"); }} className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors">إزالة الشعار</button>
+                            <button type="button" onClick={() => { setCompanyLogo(null); localStorage.removeItem("last_used_logo"); localStorage.removeItem("savedCompanyLogo"); }} className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors">إزالة الشعار</button>
                           )}
                         </div>
                       </div>
@@ -3612,7 +3613,7 @@ export const CreateJob = ({
             description: (!enableWelcomeUI && adType === "single" && createJobType !== "quick_link") ? (roleDesc || "").trim() : (adType === "campaign" ? (enableWelcomeUI ? campaignDescription : "") : ""),
             startDate,
             endDate: isOpenEnded ? undefined : endDate,
-            company: userProfile?.companyName || company,
+            company: company,
             entityType: userProfile?.entityType,
             city: userProfile?.city,
             location: createJobType === "quick_link" ? "غير محدد" : location,
@@ -4395,7 +4396,7 @@ const ManageJob = ({
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-navy dark:text-white mr-2 flex items-center gap-1">الشركة / الفرع <span className="text-red-500">*</span></label>
-                      <input type="text" value={company} onChange={(e) => setCompany(e.target.value)} required className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
+                      <input type="text" value={company} onChange={(e) => { setCompany(e.target.value); localStorage.setItem("last_used_company", e.target.value); }} required className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

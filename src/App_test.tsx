@@ -88,6 +88,9 @@ import {
   Pencil,
   AlertTriangle,
   Linkedin,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownLeft,
 } from "lucide-react";
 import skillsDictionaryRaw from "./skillsDictionary.json";
 import { FEATURE_FLAGS } from "./config";
@@ -7927,7 +7930,7 @@ const SettingsPage = ({
           className={`flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 dark:bg-slate-900/50`}
         >
           {" "}
-          {["الملف الشخصي", "ملف الشركة", "باقة الاشتراك", "المظهر"].map((tab) => (
+          {["الملف الشخصي", "ملف الشركة", "باقة الاشتراك", "المحفظة", "المظهر"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -8118,6 +8121,46 @@ const SettingsPage = ({
                   </div>
                 ))}{" "}
               </div>{" "}
+            </div>
+          )}{" "}
+          {activeTab === "المحفظة" && (
+            <div className="max-w-4xl space-y-8">
+              <div>
+                <h4 className="text-xl font-bold text-navy dark:text-white mb-2">محفظة الرصيد</h4>
+                <p className="text-slate-500 dark:text-slate-400 font-medium">
+                  أضف رصيداً لدفع اشتراكاتك والخدمات الإضافية بسهولة وأمان.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="md:col-span-1 bg-gradient-to-br from-primary to-primary/80 rounded-[32px] p-8 text-white shadow-xl shadow-primary/20 relative overflow-hidden">
+                  <div className="absolute -top-6 -right-6 p-6 opacity-20"><Wallet size={160} /></div>
+                  <h3 className="text-white/80 font-medium mb-2 relative z-10">الرصيد المتاح</h3>
+                  <div className="flex items-baseline gap-2 relative z-10 mb-8">
+                    <span className="text-5xl font-bold drop-shadow-md">0</span>
+                    <span className="text-xl font-medium text-white/80">ر.س</span>
+                  </div>
+                  <button onClick={() => alert('نظام ميسور قيد التجهيز. هذه الواجهة للتدريب حالياً.')} className="w-full bg-white text-primary py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 relative z-10 group">
+                    <Plus size={20} className="group-hover:scale-110 transition-transform" /> شحن الرصيد
+                  </button>
+                </div>
+
+                <div className="md:col-span-2 bg-slate-50 dark:bg-slate-800/50 rounded-[32px] border border-slate-100 dark:border-slate-700 p-8 flex flex-col">
+                  <div className="flex items-center justify-between mb-6">
+                    <h4 className="font-bold text-navy dark:text-white text-lg">سجل العمليات</h4>
+                    <span className="text-xs font-bold text-slate-400 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">آخر 30 يوم</span>
+                  </div>
+                  <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 py-10">
+                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-3xl flex items-center justify-center text-slate-300 dark:text-slate-600 shadow-inner">
+                      <Clock size={32} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-500 dark:text-slate-400 mb-1">لا توجد عمليات سابقة</p>
+                      <p className="text-sm text-slate-400 dark:text-slate-500">ستظهر هنا عمليات شحن وسحب الرصيد الخاصة بك.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}{" "}
           {activeTab === "المظهر" && (

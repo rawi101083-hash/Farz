@@ -1547,7 +1547,15 @@ export default function App() {
   const [createJobType, setCreateJobType] = useState<"single" | "campaign" | "quick_link">(
     "single",
   );
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<Job[]>(() => {
+    try {
+      const saved = localStorage.getItem("sahab_jobs_db_v1");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to load jobs from localStorage", e);
+    }
+    return [];
+  });
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -1560,6 +1568,7 @@ export default function App() {
             title: raw.title,
             recordType: raw.record_type || 'single',
             company: raw.department || raw.company_name || "",
+            companyLogo: raw.company_logo || null,
             department: raw.department || "",
             location: raw.location || "",
             type: raw.type || "",
@@ -1691,6 +1700,9 @@ export default function App() {
               interviews_limit: data.interviews_limit || 0,
               used_jobs: data.used_jobs || 0,
               used_interviews: data.used_interviews || 0,
+              extra_cv_credits: data.extra_cv_credits || 0,
+              extra_interview_credits: data.extra_interview_credits || 0,
+              addons_bought_this_month: data.addons_bought_this_month || 0,
               isLoaded: true,
             }));
             // Force Settings tab if profile is incomplete
@@ -1871,7 +1883,8 @@ export default function App() {
           created_at: new Date().toISOString(),
           direct_upload: newJob.directUpload || false,
           roles: newJob.roles || [],
-          ai_override_fields: newJob.aiOverrideFields || undefined
+          ai_override_fields: newJob.aiOverrideFields || undefined,
+          company_logo: newJob.companyLogo || null
         };
         const { error } = await supabase.from('jobs').insert([jobForDB]);
         if (error) {
@@ -1951,12 +1964,8 @@ export default function App() {
   ) => {
     // Check Subscription Limits
     const activeCount = jobs.filter(j => j.status === 'نشط' || j.status === 'مسودة').length;
-    let limit = 0;
-    if (userProfile.subscription_tier === 'one-time') limit = 1;
-    else if (userProfile.subscription_tier === 'growth') limit = 3;
-    else if (userProfile.subscription_tier === 'business') limit = 10;
-    else if (userProfile.subscription_tier === 'enterprise') limit = Infinity;
-    
+    let limit = userProfile?.jobs_limit || 0;
+    if (userProfile?.subscription_tier === 'enterprise') limit = Infinity;
     if (limit === 0) {
       alert("عذراً، يجب عليك اختيار باقة اشتراك لتمكين إضافة الإعلانات.");
       setDashboardTab("باقات فرز");

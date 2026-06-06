@@ -405,12 +405,13 @@ export const ApplicantForm = ({
     setIsSubmitting(true);
     const formData = new FormData(formRef.current);
     const submitData = Object.fromEntries(formData.entries());
-    const customAnswers = [
+    let customAnswers = [
       { question: "المدينة", answer: submitData.city || formDataState.city },
       { question: "أعلى مؤهل علمي", answer: submitData.education || formDataState.education },
       { question: "سنوات الخبرة", answer: submitData.experience || formDataState.experience },
       ...((formDataState.type || submitData.type) ? [{ question: "نوع العمل", answer: submitData.type || formDataState.type }] : []),
       { question: "مدة الانضمام / الجاهزية للعمل", answer: submitData.availability || (formDataState as any).availability || "" },
+      { question: "رابط لينكد إن", answer: submitData.linkedin || formDataState.linkedin || "" },
       ...(Array.isArray(customQuestions) ? customQuestions.map((q: any, idx: number) => ({
         question: q.text,
         answer: submitData[`customQuestion_${idx}`],
@@ -431,21 +432,9 @@ export const ApplicantForm = ({
         };
       }) : [])
     ];
-    const submittedCustomAttachments = (Array.isArray(customAttachments) ? customAttachments : []).map(
-      (att: any, idx: number) => ({
-        attachment_name: att.attachment_name,
-        attachment_type: att.attachment_type,
-        answer:
-          att.attachment_type === "link"
-            ? submitData[`customAttachment_${idx}`]
-            : (submitData[`customAttachment_${idx}`] as File)?.name || "",
-      }),
-    );
+    // Keep customAttachments inside submitData so we can process and upload them in processAndSubmitBackground
     (Array.isArray(customQuestions) ? customQuestions : []).forEach(
       (_: any, idx: number) => delete submitData[`customQuestion_${idx}`],
-    );
-    (Array.isArray(customAttachments) ? customAttachments : []).forEach(
-      (_: any, idx: number) => delete submitData[`customAttachment_${idx}`],
     );
     portfolioLinksState.forEach((_, idx) => {
       delete submitData[`portfolio_${idx}`];
@@ -621,6 +610,46 @@ export const ApplicantForm = ({
         console.error("Failed to upload:", err);
       }
 
+      // --- Upload and Process Custom Attachments ---
+      try {
+        const customAttachmentsDef = Array.isArray(customAttachments) ? customAttachments : [];
+        for (let i = 0; i < customAttachmentsDef.length; i++) {
+          const attDef = customAttachmentsDef[i];
+          const attVal = submitData[`customAttachment_${i}`];
+          
+          if (!attVal) continue;
+          
+          if (attDef.attachment_type === "link") {
+            customAnswers.push({ question: attDef.attachment_name, answer: attVal as string });
+          } else {
+            const attFile = attVal as File;
+            if (attFile && attFile instanceof File) {
+              const fileExt = attFile.name.split('.').pop() || "bin";
+              const fileName = `custom_att_${Date.now()}_${i}.${fileExt}`;
+              const filePath = `${job?.id || 'general'}/${fileName}`;
+
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from("cv_uploads")
+                .upload(filePath, attFile);
+
+              if (!uploadError && uploadData) {
+                const { data: publicUrlData } = supabase.storage
+                  .from("cv_uploads")
+                  .getPublicUrl(uploadData.path);
+                
+                customAnswers.push({ question: attDef.attachment_name, answer: publicUrlData.publicUrl });
+              }
+            }
+          }
+        }
+        
+        // Clean up from submitData now that they are processed
+        customAttachmentsDef.forEach((_: any, idx: number) => delete submitData[`customAttachment_${idx}`]);
+      } catch (err) {
+        console.error("Failed to process custom attachments:", err);
+      }
+
+
       let skipWebhook = false;
       if (job?.company_id) {
         try {
@@ -679,6 +708,7 @@ export const ApplicantForm = ({
             decision: isAutoRejected ? "filtered" : "processing",
             rejection_reason: isAutoRejected ? `مرفوض آلياً (${autoRejectReason})` : null,
             custom_answers: customAnswers,
+            expected_salary: submitData.expectedSalary || (formDataState as any).expectedSalary || null,
             device_fingerprint: submitData._deviceFingerprint || null,
             file_hash: submitData._fileHash || null,
             job_context: job_context

@@ -56,6 +56,9 @@ import {
   AlertTriangle,
   Linkedin,
   Check,
+  Wallet,
+  ArrowDownLeft,
+  ArrowUpRight,
 } from "lucide-react";
 import { addDays, addMonths, addYears } from "date-fns";
 import {
@@ -812,14 +815,6 @@ export const TalentPool = ({
   if (jobs.length === 0) {
     return (
       <div className="space-y-10">
-        <header>
-          <h1 className="text-4xl font-bold mb-3 text-navy dark:text-white">
-            بنك الكفاءات
-          </h1>{" "}
-          <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
-            استكشف جميع المتقدمين عبر كافة الوظائف المتاحة.
-          </p>{" "}
-        </header>{" "}
         <EmptyState
           title="لوحة التحكم بانتظارك! لم تقم بإنشاء أي شواغر وظيفية حتى الآن."
           actionLabel="أنشئ أول وظيفة الآن"
@@ -859,14 +854,6 @@ export const TalentPool = ({
   return (
     <div className="space-y-10">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-bold mb-3 text-navy dark:text-white">
-            بنك الكفاءات
-          </h1>{" "}
-          <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
-            استكشف جميع المتقدمين عبر كافة الوظائف المتاحة.
-          </p>{" "}
-        </div>{" "}
         <div className="flex bg-white dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <button
             onClick={() => setShowOnlyShortlisted(!showOnlyShortlisted)}
@@ -1394,14 +1381,6 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
   ];
   return (
     <div className="space-y-6 pb-6">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold mb-3 text-navy dark:text-white">
-          التقارير
-        </h1>{" "}
-        <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium text-lg">
-          نظرة شاملة ودقيقة على أداء عمليات التوظيف والبيانات التحليلية.
-        </p>{" "}
-      </header>{" "}
       {/* Top Row: Metric Cards */}{" "}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {[
@@ -1809,6 +1788,7 @@ export const SettingsPage = ({
   const [lockConfirmed, setLockConfirmed] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentHtml, setPaymentHtml] = useState("");
+  const [showWalletHistory, setShowWalletHistory] = useState(false);
 
   // Locked field display component
   const LockedField = ({ value, label }: { value: string; label: string }) => (
@@ -2055,15 +2035,6 @@ export const SettingsPage = ({
       </AnimatePresence>
       <div className="space-y-10">
         {" "}
-        <header>
-          {" "}
-          <h1 className={`text-4xl font-bold mb-3 text-navy dark:text-white`}>
-            إدارة الحساب
-          </h1>{" "}
-          <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
-            إدارة حسابك، اشتراكك، وتكاملات النظام.
-          </p>{" "}
-        </header>{" "}
         <div
           className={`bg-white dark:bg-slate-800 border-white dark:bg-slate-800 dark:border-slate-700 rounded-[40px] border shadow-xl shadow-slate-200/40 overflow-hidden transition-colors duration-300`}
         >
@@ -2072,7 +2043,7 @@ export const SettingsPage = ({
             className={`flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 dark:bg-slate-900/50`}
           >
             {" "}
-            {["الملف الشخصي", "بيانات المنشأة", "باقات فرز", "المظهر"].map((tab) => (
+            {["الملف الشخصي", "بيانات المنشأة", "باقات فرز", "المحفظة", "المظهر"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -2097,7 +2068,12 @@ export const SettingsPage = ({
                   <label className="cursor-pointer relative overflow-hidden w-24 h-24 rounded-3xl bg-slate-100 border-slate-200 dark:bg-slate-700 dark:border-slate-600 flex items-center justify-center border-2 border-dashed group hover:border-primary/50 transition-colors">
                     <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
-                        setUserProfile({ ...userProfile, companyLogo: URL.createObjectURL(e.target.files[0]) });
+                        const file = e.target.files[0];
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setUserProfile({ ...userProfile, companyLogo: reader.result });
+                        };
+                        reader.readAsDataURL(file);
                       }
                     }} />
                     {userProfile.companyLogo ? (
@@ -2148,13 +2124,6 @@ export const SettingsPage = ({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {" "}
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-bold text-navy dark:text-slate-300">نوع الكيان</label>
-                    <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 gap-1.5 rounded-2xl w-full">
-                      <button type="button" onClick={() => setUserProfile({ ...userProfile, entityType: "company" })} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${userProfile.entityType === "company" ? "bg-white dark:bg-slate-700 text-navy dark:text-white shadow-sm" : "text-slate-500"}`}>جهة اعتبارية (شركة/مؤسسة)</button>
-                      <button type="button" onClick={() => setUserProfile({ ...userProfile, entityType: "freelance" })} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${userProfile.entityType === "freelance" ? "bg-white dark:bg-slate-700 text-navy dark:text-white shadow-sm" : "text-slate-500"}`}>فرد مستقل (عمل حر)</button>
-                    </div>
-                  </div>
 
                   <div className="space-y-2 md:col-span-2 group">
                     <label className="text-sm font-bold text-navy dark:text-slate-300">
@@ -2274,6 +2243,113 @@ export const SettingsPage = ({
                 </button>{" "}
               </div>
             )}{" "}
+            {activeTab === "المحفظة" && (
+              <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <h4 className="text-2xl font-black text-navy dark:text-white mb-2 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#0D9488]/10 text-[#0D9488] flex items-center justify-center">
+                        <Wallet size={24} />
+                      </div>
+                      محفظة سحاب
+                    </h4>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">
+                      أدر أموالك بسهولة، راجع جميع حركاتك المالية في مكان واحد.
+                    </p>
+                  </div>
+                  <button onClick={() => alert('بوابة ميسور قيد التجهيز للربط الحقيقي')} className="bg-[#0D9488] hover:bg-[#0f766e] text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-[#0D9488]/20 transition-all active:scale-95 flex items-center gap-2">
+                    <Plus size={20} /> شحن الرصيد
+                  </button>
+                </div>
+
+                <div className="flex flex-col items-center max-w-md mx-auto w-full">
+                  {/* Wallet Card - Adaptive Light/Dark */}
+                  <div className="bg-white dark:bg-slate-800 rounded-[32px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 relative overflow-hidden h-[240px] w-full flex flex-col justify-between transition-all duration-500 group mb-8">
+                    <div className="absolute -left-10 -top-10 w-40 h-40 bg-[#0D9488]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#0D9488]/10 transition-colors duration-500"></div>
+                    <div className="absolute right-6 top-8 opacity-[0.03] dark:opacity-5 text-navy dark:text-white"><CreditCard size={120} /></div>
+                    
+                    <div className="relative z-10 flex justify-between items-start">
+                      <div>
+                        <p className="text-slate-400 dark:text-slate-500 font-bold text-sm tracking-wide mb-2">الرصيد المتاح</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-5xl font-black tracking-tight text-navy dark:text-white">0.00</span>
+                          <span className="text-lg font-bold text-slate-400">ر.س</span>
+                        </div>
+                      </div>
+                      <div className="w-12 h-12 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-600 flex items-center justify-center text-[#0D9488]">
+                        <Wallet size={24} />
+                      </div>
+                    </div>
+
+                    <div className="relative z-10 flex justify-between items-end mt-auto">
+                      <p className="text-xs font-bold text-slate-400 dark:text-slate-500">مربوطة بالدفع التلقائي</p>
+                      <div className="flex gap-1.5 opacity-50">
+                        <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-600"></div>
+                        <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-600 -mr-3"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Toggle Button for History */}
+                  <button 
+                    onClick={() => setShowWalletHistory(!showWalletHistory)} 
+                    className="text-navy dark:text-white font-bold hover:text-[#0D9488] transition-colors flex items-center gap-2 mb-6"
+                  >
+                     {showWalletHistory ? <ChevronDown className="rotate-180 transition-transform" size={18} /> : <Clock size={18} />}
+                     {showWalletHistory ? 'إخفاء سجل العمليات' : 'عرض سجل العمليات'}
+                  </button>
+
+                  {/* Transaction History - Elegant List */}
+                  {showWalletHistory && (
+                    <div className="w-full bg-white dark:bg-slate-800 rounded-[32px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col animate-in fade-in slide-in-from-top-4 duration-300">
+                      <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100 dark:border-slate-700/50">
+                        <div>
+                          <h4 className="font-bold text-navy dark:text-white text-xl flex items-center gap-2">
+                            سجل العمليات
+                          </h4>
+                          <p className="text-sm text-slate-400 mt-1">يغنيك عن فواتير الاشتراكات السابقة</p>
+                        </div>
+                        <button className="text-sm font-bold text-slate-500 hover:text-navy dark:text-slate-400 dark:hover:text-white transition-colors flex items-center gap-2">
+                          <Download size={16} /> تحميل
+                        </button>
+                      </div>
+                      
+                      <div className="flex-1 space-y-4 max-h-[400px] overflow-y-auto pr-2 -mr-2">
+                        {[
+                          { id: 1, title: 'إيداع رصيد المحفظة', desc: 'بواسطة Apple Pay', amount: '+2,500.00', type: 'deposit', date: 'اليوم، 10:30 صباحاً', status: 'ناجح' },
+                          { id: 2, title: 'اشتراك باقة أعمال (شهري)', desc: 'دفع عبر الرصيد', amount: '-1,499.00', type: 'withdrawal', date: 'أمس، 01:15 مساءً', status: 'ناجح' },
+                          { id: 3, title: 'شراء رصيد 50 رسالة SMS', desc: 'إضافة خدمات', amount: '-50.00', type: 'withdrawal', date: '04 يونيو، 09:00 صباحاً', status: 'ناجح' },
+                        ].map((tx) => (
+                          <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 group cursor-default">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm shrink-0 ${tx.type === 'deposit' ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}>
+                                {tx.type === 'deposit' ? <ArrowDownLeft size={24} /> : <ArrowUpRight size={24} />}
+                              </div>
+                              <div>
+                                <p className="font-bold text-navy dark:text-white group-hover:text-[#0D9488] transition-colors text-sm sm:text-base">{tx.title}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">{tx.desc}</p>
+                                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 hidden sm:block"></span>
+                                  <p className="text-[10px] sm:text-xs text-slate-400 hidden sm:flex items-center gap-1"><Clock size={10} /> {tx.date}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-left shrink-0">
+                              <p className={`font-black text-sm sm:text-base ${tx.type === 'deposit' ? 'text-[#0D9488]' : 'text-navy dark:text-white'}`} dir="ltr">
+                                {tx.amount} <span className="text-[10px] font-bold text-slate-400">ر.س</span>
+                              </p>
+                              <span className={`inline-flex items-center gap-1 mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${tx.type === 'deposit' ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
+                                <CheckCircle size={8} /> {tx.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             {activeTab === "باقات فرز" && (
               <div className="space-y-8 pb-10 flex flex-col items-center">
 
@@ -2327,9 +2403,9 @@ export const SettingsPage = ({
                   const businessPrice = businessPlan?.price.toLocaleString() || (isYearly ? '14,990' : '1,499');
                   const enterprisePrice = enterprisePlan?.price.toLocaleString() || (isYearly ? '34,990' : '3,499');
 
-                  const startupFeatures = startupPlan?.features || ["5 وظائف نشطة", isYearly ? "12,000 سيرة ذاتية سنوياً" : "1,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
-                  const businessFeatures = businessPlan?.features || ["15 وظيفة نشطة", isYearly ? "60,000 سيرة ذاتية سنوياً" : "5,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
-                  const enterpriseFeatures = enterprisePlan?.features || ["وظائف غير محدودة", isYearly ? "180,000 سيرة ذاتية سنوياً" : "15,000 سيرة ذاتية شهرياً", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+                  const startupFeatures = startupPlan?.features || ["5 وظائف نشطة", isYearly ? "12,000 سيرة ذاتية سنوياً" : "1,000 سيرة ذاتية شهرياً", "5 مقابلات صوتية بالذكاء الاصطناعي", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+                  const businessFeatures = businessPlan?.features || ["15 وظيفة نشطة", isYearly ? "60,000 سيرة ذاتية سنوياً" : "5,000 سيرة ذاتية شهرياً", "15 مقابلة صوتية بالذكاء الاصطناعي", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
+                  const enterpriseFeatures = enterprisePlan?.features || ["وظائف غير محدودة", isYearly ? "180,000 سيرة ذاتية سنوياً" : "15,000 سيرة ذاتية شهرياً", "40 مقابلة صوتية بالذكاء الاصطناعي", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"];
 
                   const showStartup = startupPlan ? startupPlan.is_active !== false : true;
                   const showBusiness = businessPlan ? businessPlan.is_active !== false : true;
@@ -2480,7 +2556,7 @@ export const SettingsPage = ({
 
                       <ul className="space-y-2 mb-6 w-full px-1">
                         {[
-                          "إعلان وظيفي لمدة 45 يوم", "500 سيرة ذاتية للفرز", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
+                          "إعلان وظيفي لمدة 45 يوم", "500 سيرة ذاتية للفرز", "مقابلة صوتية واحدة بالذكاء الاصطناعي", "لوحة تحكم متكاملة", "تقارير فرز دقيقة", "أرشفة بيانات المتقدمين"
                         ].map((feature, idx) => (
                           <li key={idx} className={`flex items-center gap-2 ${hasActiveAd ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-[13px] font-semibold text-slate-700 dark:text-slate-300'}`}>
                             <CheckCircle size={hasActiveAd ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={hasActiveAd ? 2.5 : 2} />

@@ -47,7 +47,7 @@ import {
   Sun,
   Eye,
   Download,
-  ChevronDown, ChevronLeft, ChevronRight,
+  ChevronDown,
   Mic,
   Square,
   RotateCcw,
@@ -342,28 +342,8 @@ export const Dashboard = ({
     setSubTabState(tab);
     localStorage.setItem("dashboardSubTab", tab);
   };
-  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
-    const saved = localStorage.getItem('isSidebarOpen');
-    return saved !== null ? saved === 'true' : true;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('isSidebarOpen', isSidebarOpen.toString());
-  }, [isSidebarOpen]);
   const [applicants, setApplicantsState] = useState<Applicant[]>([]);
   const [isLoadingApplicants, setIsLoadingApplicants] = useState<boolean>(true);
-
-    // Load from IndexedDB instantly on mount
-  useEffect(() => {
-    import('../lib/applicantsCache').then(({ loadFromIDB }) => {
-      loadFromIDB("cache_v1").then((cachedData) => {
-        if (cachedData && Array.isArray(cachedData.applicants)) {
-          setApplicantsState(prev => prev.length === 0 ? cachedData.applicants : prev);
-          setIsLoadingApplicants(false);
-        }
-      });
-    });
-  }, []);
 
   useEffect(() => {
     if (!isLoadingApplicants) {
@@ -470,11 +450,6 @@ export const Dashboard = ({
 
         setApplicantsState(prev => {
           const next = JSON.stringify(prev) !== JSON.stringify(mappedList) ? mappedList : prev;
-          
-          import('../lib/applicantsCache').then(({ setGlobalApplicantsCache }) => {
-            setGlobalApplicantsCache(next, currentJobsStr);
-          });
-          
           return next;
         });
       } catch (err) {
@@ -487,16 +462,16 @@ export const Dashboard = ({
     fetchApplicants();
     
     // Supabase Realtime Subscription for instant updates without looping
-    // Supabase Realtime Subscription for instant updates
     const channel = supabase
       .channel('public:applicants')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'applicants' }, payload => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applicants' }, () => {
+        // Trigger a re-fetch when any change happens in the applicants table
         fetchApplicants();
       })
       .subscribe();
 
     return () => {
-      
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, [jobs, talentPool]);
@@ -889,22 +864,16 @@ export const Dashboard = ({
       case "الرئيسية":
         return (
           <div className="max-w-6xl mx-auto space-y-8">
-            <header className="relative flex justify-between items-center w-full mb-8">
-              <div className="flex items-center">
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
-                  className="w-11 h-11 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white flex items-center justify-center transition-all"
-                >
-                  {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-                </button>
-              </div>
-              <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none">
-                <p className="text-slate-500 dark:text-slate-400 font-medium text-sm md:text-base whitespace-nowrap">
-                  مرحباً بك مجدداً إليك نظرة شاملة على نشاط اليوم
+            <header className="flex justify-between items-center w-full mb-8 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold mb-2 text-navy dark:text-white">
+                  طلبات التوظيف
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400 font-medium text-sm md:text-base">
+                  مرحباً بك مجدداً. إليك نظرة شاملة على نشاط اليوم.
                 </p>
               </div>
-              <div className="flex items-center gap-3 shrink-0 relative z-10">
+              <div className="flex items-center gap-3 shrink-0">
                 {FEATURE_FLAGS.enable_fast_sorting && (
                   <button
                     onClick={() => setActiveTab("الفرز السريع")}
@@ -1069,11 +1038,11 @@ export const Dashboard = ({
                       </button>
                     ))}
                   </div>{" "}
-
-
-
-
-
+                  <button
+                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                    className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 border ${showFavoritesOnly ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700'}`}
+                  >
+                    <Star size={16} fill={showFavoritesOnly ? "currentColor" : "none"} className={showFavoritesOnly ? "text-yellow-500" : "text-slate-400"} /> عرض المفضلين </button>
                   <div className="relative">
                     <Search
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
@@ -1180,18 +1149,7 @@ export const Dashboard = ({
                       )}
                       <th className="px-2 pr-14 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">اسم المتقدم</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الوظيفة المقدم إليها</th>
-<th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">
-  <div className="flex items-center gap-3">
-    <span>التقييم الآلي</span>
-    <button
-      onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-      title="عرض المفضلين فقط"
-      className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all shadow-sm flex items-center gap-1.5 border ${showFavoritesOnly ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700'}`}
-    >
-      <Star size={14} fill={showFavoritesOnly ? "currentColor" : "none"} className={showFavoritesOnly ? "text-yellow-500" : "text-slate-400"} /> المفضلين
-    </button>
-  </div>
-</th>
+                      <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">التقييم الآلي</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الجاهزية</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">معلومات التواصل</th>
                       {decisionFilter === "interview" && (
@@ -1290,7 +1248,7 @@ export const Dashboard = ({
                                 <div className="flex items-center gap-2 whitespace-nowrap">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleToggleFavorite(row.id); }}
-                                    className={`transition-all ${row.is_favorite ? "text-yellow-500 scale-75" : "text-slate-200 hover:text-yellow-500"}`}
+                                    className={`transition-all ${row.is_favorite ? "text-yellow-500 scale-110" : "text-slate-200 hover:text-yellow-500"}`}
                                     title={row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
                                   >
                                     <Star
@@ -1700,7 +1658,15 @@ export const Dashboard = ({
         }
         return (
           <div className="max-w-6xl mx-auto space-y-8">
-            <header className="flex flex-col md:flex-row items-center justify-end gap-6">
+            <header className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div>
+                <h1 className="text-4xl font-bold mb-3 text-navy dark:text-white">
+                  إدارة الوظائف
+                </h1>{" "}
+                <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
+                  أدر جميع الوظائف المتاحة والمنتهية وتابع المتقدمين.
+                </p>{" "}
+              </div>{" "}
               <div className="flex flex-wrap gap-3 mt-4 md:mt-0">
                 {FEATURE_FLAGS.enable_fast_sorting && (
                   <button
@@ -2018,29 +1984,19 @@ export const Dashboard = ({
         )}
       </AnimatePresence>
       <div className="flex min-h-screen bg-slate-100 dark:bg-slate-900">
-
-
-
-
-
-
-
-
         {/* Sidebar */}{" "}
-        <aside className={`${isSidebarOpen ? 'w-80 p-8' : 'w-20 p-4'} bg-navy text-white hidden lg:flex flex-col fixed h-full right-0 shadow-2xl z-20 transition-all duration-300`}>
+        <aside className="w-80 bg-navy text-white p-8 hidden lg:flex flex-col fixed h-full right-0 shadow-2xl z-20">
           <div className="flex items-center gap-4 mb-16 px-2">
             <LogoIcon />{" "}
-            {isSidebarOpen && (
             <span className="text-3xl font-black tracking-tighter text-white flex-1">
               فرز
-            </span>
-          )}{" "}
+            </span>{" "}
             <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              title={isSidebarOpen ? 'تصغير القائمة' : 'توسيع القائمة'}
+              onClick={() => setDarkMode(!darkMode)}
+              title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
               className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all shrink-0"
             >
-              {isSidebarOpen ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
+              {darkMode ? <Sun size={17} /> : <Moon size={17} />}
             </button>
           </div>{" "}
           <nav className="space-y-3 flex-1 pb-6">
@@ -2055,39 +2011,39 @@ export const Dashboard = ({
               <button
                 key={item.name}
                 onClick={() => setActiveTab(item.name)}
-                className={`w-full flex items-center ${isSidebarOpen ? "gap-4 px-5 py-4 justify-start" : "justify-center p-4"} rounded-2xl transition-all font-semibold ${activeTab === item.name ? "bg-mint text-employer-green shadow-xl shadow-mint/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-200 hover:bg-slate-700/50"}`}
+                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl transition-all font-semibold ${activeTab === item.name ? "bg-mint text-employer-green shadow-xl shadow-mint/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-200 hover:bg-slate-700/50"}`}
               >
-                <div className={`transition-transform duration-300 ${isSidebarOpen ? "" : "scale-110"}`}>{item.icon}</div> {isSidebarOpen && <span>{item.name}</span>}{" "}
+                {item.icon} <span>{item.name}</span>{" "}
               </button>
             ))}{" "}
           </nav>{" "}
           <div className="mt-auto flex flex-col gap-4 pt-6 border-t border-white dark:border-slate-700/10 shrink-0">
-            <div className={`flex items-center ${isSidebarOpen ? 'gap-3 p-3 bg-white/5 dark:bg-slate-800/30 rounded-2xl border border-white/10 dark:border-slate-700' : 'justify-center w-full'} transition-all duration-300`}>
+            <div className="flex items-center gap-3 p-3 bg-white/5 dark:bg-slate-800/30 rounded-2xl border border-white/10 dark:border-slate-700">
               <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-primary overflow-hidden shrink-0 flex items-center justify-center">
-                {userProfile?.avatar || userProfile?.companyLogo ? (
-                  <img src={userProfile?.avatar || userProfile?.companyLogo} alt="Admin" referrerPolicy="no-referrer" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"; }} />
+                {userProfile.avatar || userProfile.companyLogo ? (
+                  <img src={userProfile.avatar || userProfile.companyLogo} alt="Admin" referrerPolicy="no-referrer" className="w-full h-full object-cover" />
                 ) : (
                   <User className="text-slate-400" size={20} />
                 )}
               </div>
-            {isSidebarOpen && ( <div className="overflow-hidden flex-1">
-                <p className="text-sm font-bold text-white" title={userProfile?.name || "مستخدم جديد"}>
-                  {(userProfile?.name || "مستخدم جديد").length > 25 ? (userProfile?.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile?.name || "مستخدم جديد")}
+              <div className="overflow-hidden flex-1">
+                <p className="text-sm font-bold text-white" title={userProfile.name || "مستخدم جديد"}>
+                  {(userProfile.name || "مستخدم جديد").length > 25 ? (userProfile.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile.name || "مستخدم جديد")}
                 </p>
-                {userProfile?.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile?.title}</p>}
-            </div> )}
-            {isSidebarOpen && <button
+                {userProfile.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile.title}</p>}
+              </div>
+              <button
                 onClick={async () => await supabase.auth.signOut()}
                 className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shrink-0"
                 title="تسجيل الخروج"
               >
                 <LogOut size={16} />
-            </button>}
+              </button>
             </div>
 
 
             {/* Usage Widget */}
-{isSidebarOpen && ( <div className="bg-slate-800/40 rounded-2xl p-4 pt-5 border border-slate-700/50 space-y-4 relative mt-3">
+            <div className="bg-slate-800/40 rounded-2xl p-4 pt-5 border border-slate-700/50 space-y-4 relative mt-3">
               <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#1b2537] border border-slate-700 px-3 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1.5 shadow-md whitespace-nowrap">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_5px_rgba(13,148,136,0.8)]"></div>
                 {plan === 'startup' || plan === 'growth' ? 'نمو' : plan === 'business' ? 'أعمال' : plan === 'enterprise' ? 'الشركات الكبرى' : 'المجانية'}
@@ -2144,12 +2100,12 @@ export const Dashboard = ({
                   style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (interviewsRemaining / (interviewsLimit || 1)) * 100)}%` }}
                 />
               </div>
-</div> )}
+            </div>
 
           </div>
         </aside>{" "}
         {/* Main Content */}{" "}
-        <main className={`flex-1 ${isSidebarOpen ? 'lg:mr-80' : 'lg:mr-20'} flex flex-col min-h-screen transition-all duration-300`}>
+        <main className="flex-1 lg:mr-80 flex flex-col min-h-screen">
           {(userProfile?.isLoaded && !userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
             <div className="bg-amber-100 dark:bg-amber-900/50 border-b border-amber-200 dark:border-amber-700/50 mt-16 md:mt-0 z-10 transition-colors">
               <div className="max-w-6xl mx-auto p-3 sm:px-8 flex items-center justify-between text-amber-900 dark:text-amber-100 text-sm md:text-base">
