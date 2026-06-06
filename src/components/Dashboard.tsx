@@ -1074,6 +1074,12 @@ export const Dashboard = ({
 
 
 
+          <button
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+            className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 border ${showFavoritesOnly ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700'}`}
+          >
+            <Star size={16} fill={showFavoritesOnly ? "currentColor" : "none"} className={showFavoritesOnly ? "text-yellow-500" : "text-slate-400"} /> عرض المفضلين
+          </button>
                   <div className="relative">
                     <Search
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
@@ -1180,18 +1186,7 @@ export const Dashboard = ({
                       )}
                       <th className="px-2 pr-14 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">اسم المتقدم</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الوظيفة المقدم إليها</th>
-<th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">
-  <div className="flex items-center gap-3">
-    <span>التقييم الآلي</span>
-    <button
-      onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-      title="عرض المفضلين فقط"
-      className={`px-3 py-1.5 rounded-lg font-bold text-xs transition-all shadow-sm flex items-center gap-1.5 border ${showFavoritesOnly ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700'}`}
-    >
-      <Star size={14} fill={showFavoritesOnly ? "currentColor" : "none"} className={showFavoritesOnly ? "text-yellow-500" : "text-slate-400"} /> المفضلين
-    </button>
-  </div>
-</th>
+<th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">التقييم الآلي</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الجاهزية</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">معلومات التواصل</th>
                       {decisionFilter === "interview" && (
@@ -2149,7 +2144,7 @@ export const Dashboard = ({
           </div>
         </aside>{" "}
         {/* Main Content */}{" "}
-        <main className={`flex-1 ${isSidebarOpen ? 'lg:mr-80' : 'lg:mr-20'} flex flex-col min-h-screen transition-all duration-300`}>
+        <main className={`flex-1 ${isSidebarOpen ? 'lg:pr-80' : 'lg:pr-20'} flex flex-col min-h-screen transition-all duration-300`}>
           {(userProfile?.isLoaded && !userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
             <div className="bg-amber-100 dark:bg-amber-900/50 border-b border-amber-200 dark:border-amber-700/50 mt-16 md:mt-0 z-10 transition-colors">
               <div className="max-w-6xl mx-auto p-3 sm:px-8 flex items-center justify-between text-amber-900 dark:text-amber-100 text-sm md:text-base">

@@ -853,21 +853,21 @@ export const TalentPool = ({
   });
   return (
     <div className="space-y-10">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div className="flex bg-white dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-          <button
-            onClick={() => setShowOnlyShortlisted(!showOnlyShortlisted)}
-            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${showOnlyShortlisted ? "bg-yellow-100 text-yellow-600 border border-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-500 dark:border-yellow-800/50" : "text-slate-500 dark:text-slate-400 hover:text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"}`}
-          >
-            <Star
-              size={16}
-              fill={showOnlyShortlisted ? "currentColor" : "none"}
-              className={showOnlyShortlisted ? "text-yellow-600 dark:text-yellow-500" : ""}
-            />{" "}
-            عرض المفضلين فقط{" "}
-          </button>{" "}
-        </div>{" "}
-      </header>{" "}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       <GlobalJobSelector
         jobs={jobs}
         selectedFilter={jobFilter}
@@ -911,6 +911,13 @@ export const TalentPool = ({
                 <option value="-70" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-white font-medium">أقل من 70%</option>
               </select>{" "}
             </div>{" "}
+            <button
+              onClick={() => setShowOnlyShortlisted(!showOnlyShortlisted)}
+              className={`px-4 py-4 rounded-2xl font-bold transition-all shadow-sm flex items-center gap-2 border ${showOnlyShortlisted ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700'}`}
+              title="عرض المفضلين فقط"
+            >
+              <Star size={18} fill={showOnlyShortlisted ? "currentColor" : "none"} className={showOnlyShortlisted ? "text-yellow-500" : "text-slate-400"} /> عرض المفضلين
+            </button>
           </div>{" "}
         </div>{" "}
       </div>{" "}
