@@ -26,18 +26,20 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
   useEffect(() => {
     const checkStatus = async () => {
       if (!applicantId) {
-        setCallStatus('ended');
+        setCallStatus('error');
+        setErrorMessage("عذراً، هذا الرابط غير صحيح أو مفقود.");
         setIsChecking(false);
         return;
       }
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('applicants')
         .select('is_interview_completed, has_started_interview, interview_revoked, interview_sent_at')
         .eq('id', applicantId)
         .single();
         
-      if (!data) {
-        setCallStatus('ended');
+      if (error || !data) {
+        setCallStatus('error');
+        setErrorMessage("عذراً، الرابط غير صالح أو أن بيانات المتقدم غير موجودة في النظام.");
       } else if (data.interview_revoked) {
         setCallStatus('error');
         setErrorMessage("عذراً، تم إلغاء أو سحب دعوة المقابلة من قبل جهة التوظيف.");
@@ -100,8 +102,8 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         .single();
         
       if (appError) {
-        // If applicant is deleted or not found, just show the ended screen to avoid ugly errors
-        setCallStatus('ended');
+        setCallStatus('error');
+        setErrorMessage("عذراً، الرابط غير صالح أو أن بيانات المتقدم غير موجودة في النظام.");
         return;
       }
 
