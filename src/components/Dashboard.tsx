@@ -478,6 +478,7 @@ export const Dashboard = ({
         // Fake applicants logic has been permanently removed based on user request.
 
 
+        const currentJobsStr = JSON.stringify(jobIds);
         setApplicantsState(prev => {
           const next = JSON.stringify(prev) !== JSON.stringify(mappedList) ? mappedList : prev;
           
@@ -1340,14 +1341,14 @@ export const Dashboard = ({
                                     )}
                                   </div>
                                 </div>{" "}
-                              </td>{" "}
+                              </td>
                               <td className="px-2 py-3">
                                 <div className="flex justify-start">
                                   <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white px-2 py-1 rounded-md text-[11px] font-bold inline-flex items-center justify-center whitespace-nowrap w-fit">
                                     {row.job}{" "}
                                   </span>{" "}
                                 </div>
-                              </td>{" "}
+                              </td>
                               <td className="px-2 py-3">
                                 <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
                                   <div className="w-12 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -1360,10 +1361,10 @@ export const Dashboard = ({
                                     {isFomoLocked ? "00%" : `${row.rating}%`}
                                   </span>{" "}
                                 </div>{" "}
-                              </td>{" "}
+                              </td>
                               <td className="px-2 py-3 text-xs text-slate-600 dark:text-slate-300 font-bold whitespace-nowrap text-right">
                                 {isFomoLocked ? <span className="filter blur-[4px] select-none">مقفل</span> : row.status}
-                              </td>{" "}
+                              </td>
                               <td className="px-2 py-3">
                                 <div className={`flex items-center justify-center gap-1 ${isFomoLocked ? 'filter blur-[4px] select-none pointer-events-none' : ''}`}>
                                   <a
@@ -1392,7 +1393,7 @@ export const Dashboard = ({
                                     <Phone size={15} />{" "}
                                   </a>{" "}
                                 </div>{" "}
-                              </td>{" "}
+                              </td>
                               {decisionFilter === "interview" && (
                                 <td className="px-2 py-3">
                                   <div className="flex justify-center">
@@ -1559,7 +1560,7 @@ export const Dashboard = ({
                                     })()}
                                   </div>
                                 </div>{" "}
-                              </td>{" "}
+                              </td>
                             </motion.tr>
                           );
                         })}
