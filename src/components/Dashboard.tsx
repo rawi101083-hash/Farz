@@ -351,7 +351,13 @@ export const Dashboard = ({
   useEffect(() => {
     localStorage.setItem('isSidebarOpen', isSidebarOpen.toString());
   }, [isSidebarOpen]);
-  const [applicants, setApplicantsState] = useState<Applicant[]>([]);
+  const [applicants, setApplicantsState] = useState<Applicant[]>(() => {
+    try {
+      const saved = localStorage.getItem("sahab_applicants_fast_cache");
+      if (saved) return JSON.parse(saved);
+    } catch(e) {}
+    return [];
+  });
   const [isLoadingApplicants, setIsLoadingApplicants] = useState<boolean>(true);
 
     // Load from IndexedDB instantly on mount

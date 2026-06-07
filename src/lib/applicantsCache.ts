@@ -63,6 +63,8 @@ export const setGlobalApplicantsCache = (data: Applicant[], jobsStr: string) => 
     return lightWeightApp as Applicant;
   });
 
+  try { localStorage.setItem("sahab_applicants_fast_cache", JSON.stringify(lightWeightData)); } catch(e) {}
+
   saveToIDB("cache_v1", {
     applicants: lightWeightData,
     jobsStr: jobsStr,
