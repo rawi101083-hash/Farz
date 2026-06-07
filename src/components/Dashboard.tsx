@@ -249,6 +249,7 @@ export const Dashboard = ({
   pendingAction?: { id: string; decision: string; isOffer?: boolean } | null;
   clearPendingAction?: () => void;
 }) => {
+  const isInitialJobLoad = useRef(true);
   // Compute Limits
   const activeCount = jobs.filter(j => j.status === 'نشط' || j.status === 'مسودة').length;
   const isPreviewMode = Date.now() < 1777221464725;
@@ -389,10 +390,13 @@ export const Dashboard = ({
       try {
         const jobIds = jobs.map(j => j.id);
         if (jobIds.length === 0) {
-          setApplicantsState([]);
+          if (!isInitialJobLoad.current) {
+            setApplicantsState([]);
+          }
           setIsLoadingApplicants(false);
           return;
         }
+        isInitialJobLoad.current = false;
 
         let mappedList: Applicant[] = [];
         const { data, error } = await supabase
