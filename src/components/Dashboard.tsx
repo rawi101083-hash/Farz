@@ -2171,7 +2171,7 @@ export const Dashboard = ({
               </div>
             </div>
           )}
-          <div className="flex-1 p-10 pt-24 lg:pt-10 w-full max-w-[100vw]">
+          <div className="flex-1 p-10 pt-24 lg:pt-10 w-full min-w-0 max-w-full">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
