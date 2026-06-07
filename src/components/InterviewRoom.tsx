@@ -27,7 +27,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
     const checkStatus = async () => {
       if (!applicantId) {
         setCallStatus('error');
-        setErrorMessage("عذراً، هذا الرابط غير صحيح أو مفقود.");
+        setErrorMessage("عذراً، هذا الرابط غير صالح. يرجى التواصل مع جهة التوظيف للحصول على رابط جديد.");
         setIsChecking(false);
         return;
       }
@@ -39,7 +39,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         
       if (error || !data) {
         setCallStatus('error');
-        setErrorMessage("عذراً، الرابط غير صالح أو أن بيانات المتقدم غير موجودة في النظام.");
+        setErrorMessage("عذراً، هذا الرابط غير صالح. يرجى التواصل مع جهة التوظيف للحصول على الرابط الصحيح.");
       } else if (data.interview_revoked) {
         setCallStatus('error');
         setErrorMessage("عذراً، تم إلغاء أو سحب دعوة المقابلة من قبل جهة التوظيف.");
@@ -103,7 +103,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         
       if (appError) {
         setCallStatus('error');
-        setErrorMessage("عذراً، الرابط غير صالح أو أن بيانات المتقدم غير موجودة في النظام.");
+        setErrorMessage("عذراً، هذا الرابط غير صالح. يرجى التواصل مع جهة التوظيف للحصول على الرابط الصحيح.");
         return;
       }
 
