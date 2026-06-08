@@ -55,6 +55,7 @@ import {
   Pencil,
   AlertTriangle,
   Linkedin,
+  Rocket,
 } from "lucide-react";
 import {
   BarChart,
@@ -110,10 +111,14 @@ const CompactJobSelector = ({
   const filteredJobs = jobs
     .filter((j) => j.status !== "مسودة")
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-    .filter((j) =>
-      (j.title || "").toLowerCase().includes(search.toLowerCase()) ||
-      (j.company || "").toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((j) => {
+      if (!search) return true;
+      const term = search.toLowerCase();
+      const titleMatch = (j.title || "").toLowerCase().includes(term);
+      const companyMatch = (j.company || "").toLowerCase().includes(term);
+      const numberMatch = j.job_number ? String(j.job_number).includes(term) : false;
+      return titleMatch || companyMatch || numberMatch;
+    })
     .slice(0, 50);
 
   const selectedJob = jobs.find((j) => j.id === selectedFilter);
@@ -123,9 +128,19 @@ const CompactJobSelector = ({
     const dateStr = `${date.getMonth() + 1}/${date.getFullYear()}`;
     return (
       <div className="flex items-center justify-between w-full text-right gap-3">
-        <div className="flex flex-col gap-1">
-          <span className="font-bold text-navy dark:text-white truncate max-w-[150px]">{job.title || "إعلان وظائف"}</span>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{dateStr}</span>
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <span className="font-bold text-navy dark:text-white truncate max-w-[150px]" title={job.title || "إعلان وظائف"}>
+            {job.title || "إعلان وظائف"}
+          </span>
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+            <span>{dateStr}</span>
+            {job.job_number && (
+              <>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="shrink-0 text-slate-400 dark:text-slate-500">رقم: {job.job_number}</span>
+              </>
+            )}
+          </div>
         </div>
         <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold whitespace-nowrap ${job.status === "نشط" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"}`}>
           {job.status}
@@ -137,13 +152,15 @@ const CompactJobSelector = ({
   return (
     <div className="relative z-[60]" ref={ref}>
       <div
-        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-xl cursor-pointer flex items-center justify-between hover:border-primary/50 transition-colors h-[42px] min-w-[200px]"
+        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-md transition-all shadow-sm h-[42px] min-w-[200px]"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="font-bold text-sm text-navy dark:text-white truncate">
-          {selectedFilter === "all" ? "تصفية حسب الوظيفة: الكل" : (selectedJob?.title || "كل الوظائف")}
+          {selectedFilter === "all" 
+            ? "تصفية حسب الوظيفة: الكل" 
+            : `${selectedJob?.title || "كل الوظائف"}${selectedJob?.job_number ? ` (${selectedJob.job_number})` : ""}`}
         </span>
-        <ChevronDown size={14} className={`text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown size={14} className={`text-slate-400 transition-transform shrink-0 ${isOpen ? "rotate-180" : ""}`} />
       </div>
 
       <AnimatePresence>
@@ -163,7 +180,7 @@ const CompactJobSelector = ({
                 onChange={e => setSearch(e.target.value)}
               />
             </div>
-            <div className="max-h-64 overflow-y-auto p-2 scrollbar-thin">
+            <div className="max-h-64 overflow-y-auto p-2 hide-scrollbar">
               <div
                 className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === "all" ? "bg-primary/10 text-primary font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300"}`}
                 onClick={() => { onFilterChange("all"); setIsOpen(false); setSearch(""); }}
@@ -249,6 +266,14 @@ export const Dashboard = ({
   pendingAction?: { id: string; decision: string; isOffer?: boolean } | null;
   clearPendingAction?: () => void;
 }) => {
+  const markInterviewSent = async (id: string) => {
+    setApplicants(prev => prev.map(a => a.id === id ? { ...a, interview_sent: true } : a));
+    const { error } = await supabase.from('applicants').update({ interview_sent: true }).eq('id', id);
+    if (error) {
+      console.warn("Could not sync interview_sent to backend:", error);
+    }
+  };
+
   const isInitialJobLoad = useRef(true);
   // Compute Limits
   const activeCount = jobs.filter(j => j.status === 'نشط' || j.status === 'مسودة').length;
@@ -264,21 +289,22 @@ export const Dashboard = ({
   let interviewsLimit = userProfile?.interviews_limit ?? 0;
 
   if (!jobLimit) {
-    if (plan === 'free') jobLimit = 0;
+    if (plan === 'free') jobLimit = 1;
     else if (plan === 'one-time') jobLimit = 1;
     else if (plan === 'startup' || plan === 'growth') jobLimit = 3;
     else if (plan === 'business') jobLimit = 10;
     else if (plan === 'enterprise') jobLimit = 100;
   }
   if (!cvLimit) {
-    if (plan === 'free') cvLimit = 0;
+    if (plan === 'free') cvLimit = 50;
     else if (plan === 'one-time') cvLimit = 500;
     else if (plan === 'startup' || plan === 'growth') cvLimit = isYearly ? 12000 : 1000;
     else if (plan === 'business') cvLimit = isYearly ? 60000 : 5000;
     else if (plan === 'enterprise') cvLimit = isYearly ? 180000 : 15000;
   }
   if (!interviewsLimit) {
-    if (plan === 'free' || plan === 'one-time') interviewsLimit = 0;
+    if (plan === 'free') interviewsLimit = 1;
+    else if (plan === 'one-time') interviewsLimit = 0;
     else if (plan === 'startup' || plan === 'growth') interviewsLimit = 100;
     else if (plan === 'business') interviewsLimit = 500;
     else if (plan === 'enterprise') interviewsLimit = 1500;
@@ -300,8 +326,32 @@ export const Dashboard = ({
   else if (interviewPercent <= 50) interviewColor = 'bg-amber-500';
   const [jobSearchQuery, setJobSearchQuery] = useState("");
   const [applicantSearchQuery, setApplicantSearchQuery] = useState("");
-  const [jobFilter, setJobFilter] = useState("all");
-  const [decisionFilter, setDecisionFilter] = useState<"pending" | "interview" | "accepted" | "rejected" | "filtered" | "locked_fomo">("pending");
+  const [jobFilter, setJobFilter] = useState(() => {
+    try {
+      return window.localStorage.getItem("sahab_dashboard_jobFilter") || "all";
+    } catch {
+      return "all";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("sahab_dashboard_jobFilter", jobFilter);
+    } catch {}
+  }, [jobFilter]);
+  const [decisionFilter, setDecisionFilter] = useState<"pending" | "interview" | "accepted" | "rejected" | "filtered" | "locked_fomo">(() => {
+    try {
+      return (sessionStorage.getItem("sahab_decision_filter") as any) || "pending";
+    } catch {
+      return "pending";
+    }
+  });
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("sahab_decision_filter", decisionFilter);
+    } catch {}
+  }, [decisionFilter]);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [crossNominateApplicant, setCrossNominateApplicant] = useState<Applicant | null>(null);
   const [crossNominateJobId, setCrossNominateJobId] = useState<string>("");
@@ -396,9 +446,7 @@ export const Dashboard = ({
       try {
         const jobIds = jobs.map(j => j.id);
         if (jobIds.length === 0) {
-          if (!isInitialJobLoad.current) {
-            setApplicantsState([]);
-          }
+          setApplicantsState([]);
           setIsLoadingApplicants(false);
           return;
         }
@@ -456,10 +504,13 @@ export const Dashboard = ({
               cv_file_url: raw.cv_file_url,
               is_favorite: raw.is_favorite || false,
               in_talent_pool: raw.in_talent_pool || false,
+              nominatedTo: raw.nominated_to,
               skills_match: raw.skills_match || 0,
               experience_match: raw.experience_match || 0,
               education_match: raw.education_match || 0,
+              interview_sent: raw.interview_sent || false,
               is_interview_completed: raw.is_interview_completed || false,
+              has_started_interview: raw.has_started_interview || false,
               interview_transcript: raw.interview_transcript || "",
               interview_summary: raw.interview_summary || "",
               interview_score: raw.interview_score || 0,
@@ -497,17 +548,20 @@ export const Dashboard = ({
 
     fetchApplicants();
     
-    // Supabase Realtime Subscription for instant updates without looping
     // Supabase Realtime Subscription for instant updates
+    let debounceTimer: NodeJS.Timeout;
     const channel = supabase
       .channel('public:applicants')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'applicants' }, payload => {
-        fetchApplicants();
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          fetchApplicants();
+        }, 1500);
       })
       .subscribe();
 
     return () => {
-      
+      if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [jobs, talentPool]);
@@ -519,6 +573,8 @@ export const Dashboard = ({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [showUndoConfirmModal, setShowUndoConfirmModal] = useState(false);
+  const [undoTargetId, setUndoTargetId] = useState<string | null>(null);
   const [applicantToInterview, setApplicantToInterview] = useState<Applicant | null>(null);
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewTime, setInterviewTime] = useState("");
@@ -609,16 +665,38 @@ export const Dashboard = ({
   let visibleApplicants = applicants.filter(a => {
     const d = a.decision || "pending";
     const statusMatch = decisionFilter === "interview" 
-      ? (d === "interview" || d === "interviewing") 
+      ? (d === "interview" || d === "interview_sent" || d === "interviewing") 
       : d === decisionFilter;
     const jobMatch = jobFilter === "all" || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "");
     const favMatch = !showFavoritesOnly || a.is_favorite === true;
 
     const searchLower = (applicantSearchQuery || "").toLowerCase().trim();
+    
+    // Normalize phone numbers to handle 05x, 966x, +966x formats for precise matching
+    const searchDigits = searchLower.replace(/\D/g, "");
+    const searchPhoneNormalized = searchDigits.startsWith("966") 
+      ? searchDigits.substring(3) 
+      : (searchDigits.startsWith("0") ? searchDigits.substring(1) : searchDigits);
+
+    const appDigits = (a.phone || "").replace(/\D/g, "");
+    const appPhoneNormalized = appDigits.startsWith("966") 
+      ? appDigits.substring(3) 
+      : (appDigits.startsWith("0") ? appDigits.substring(1) : appDigits);
+
+    const phoneMatch = searchPhoneNormalized && appPhoneNormalized 
+      ? appPhoneNormalized.includes(searchPhoneNormalized) 
+      : false;
+
+    const matchedJob = jobs.find(j => j.title && (a.job || "").includes(j.title));
+    const jobTitleMatch = matchedJob ? (matchedJob.title || "").toLowerCase().includes(searchLower) : false;
+    const jobNumberMatch = matchedJob?.job_number ? String(matchedJob.job_number).includes(searchLower) : false;
+
     const searchMatch = !searchLower || (
-      a.name?.toLowerCase().includes(searchLower) ||
-      a.phone?.includes(searchLower) ||
-      a.email?.toLowerCase().includes(searchLower)
+      (a.name || "").toLowerCase().includes(searchLower) ||
+      phoneMatch ||
+      (a.email || "").toLowerCase().trim().includes(searchLower) ||
+      jobTitleMatch ||
+      jobNumberMatch
     );
 
     const smartSortMatch =
@@ -651,7 +729,7 @@ export const Dashboard = ({
     }
   };
 
-  const handleDecision = async (id: string, decision: "accepted" | "rejected" | "pending" | "interview" | "filtered") => {
+  const handleDecision = async (id: string, decision: "accepted" | "rejected" | "pending" | "interview" | "filtered" | "interview_sent") => {
     const applicant = applicants.find(a => a.id === id);
     if (!applicant) return;
     const prevDecision = applicant.decision || "pending";
@@ -662,6 +740,9 @@ export const Dashboard = ({
     const updatePayload: any = { decision: targetDecision };
     if (decision === "rejected" || decision === "filtered") {
       updatePayload.rejection_reason = "استبعاد يدوي من الإدارة";
+    } else if (decision === "pending") {
+      updatePayload.interview_revoked = true;
+      updatePayload.interview_sent = false;
     }
 
     // 1. Optimistic UI update
@@ -802,35 +883,48 @@ export const Dashboard = ({
       nominatedTo: undefined,
       aiSummary: "تم الترشيح المتقاطع من شاغر سابق.",
       date: new Date().toISOString(),
+      source: "ترشيح متقاطع",
     };
 
-    setApplicants(prev => [...prev, clonedApplicant]);
-
-    // Backend Sync
-    try {
-      // First, we need to fetch the original applicant's raw data to clone it properly
-      const { data: originalRaw } = await supabase.from('applicants').select('*').eq('id', crossNominateApplicant.id).single();
-
-      if (originalRaw) {
-        const { id, created_at, job_id, decision, rejection_reason, source, ...restOfRaw } = originalRaw;
-
-        await supabase.from('applicants').insert([{
-          ...restOfRaw,
-          id: newId,
-          job_id: crossNominateJobId,
-          decision: 'pending',
-          source: 'ترشيح متقاطع',
-          ai_justification: 'تم الترشيح المتقاطع من شاغر سابق.'
-        }]);
-      }
-    } catch (err) {
-      console.error("Could not sync cross-nomination to backend", err);
-    }
+    setApplicants(prev => {
+      const updatedOriginals = prev.map(a => 
+        a.id === crossNominateApplicant.id 
+          ? { ...a, nominatedTo: targetJob.title } 
+          : a
+      );
+      return [...updatedOriginals, clonedApplicant];
+    });
 
     setToastMessage(`تم ترشيح المتقدم للوظيفة بنجاح`);
     setTimeout(() => setToastMessage(null), 3000);
     setCrossNominateApplicant(null);
     setCrossNominateJobId("");
+
+    // Backend Sync (Async)
+    (async () => {
+      try {
+        // First, we need to fetch the original applicant's raw data to clone it properly
+        const { data: originalRaw } = await supabase.from('applicants').select('*').eq('id', crossNominateApplicant.id).single();
+
+        if (originalRaw) {
+          const { id, created_at, job_id, decision, rejection_reason, source, ...restOfRaw } = originalRaw;
+
+          await supabase.from('applicants').insert([{
+            ...restOfRaw,
+            id: newId,
+            job_id: crossNominateJobId,
+            decision: 'pending',
+            source: 'ترشيح متقاطع',
+            ai_justification: 'تم الترشيح المتقاطع من شاغر سابق.'
+          }]);
+
+          // Also update the original applicant's nominated_to field
+          await supabase.from('applicants').update({ nominated_to: targetJob.title }).eq('id', crossNominateApplicant.id);
+        }
+      } catch (err) {
+        console.error("Could not sync cross-nomination to backend", err);
+      }
+    })();
   };
 
   const handleFilterOut = async (id: string) => {
@@ -885,10 +979,13 @@ export const Dashboard = ({
     return new Date() > new Date(job.endDate);
   };
   const syncedJobs = jobs.map(j => ({ ...j, company: j.company || userProfile?.companyName || userProfile?.name || "", applicants: applicants.filter(a => (a.job || "").includes(j.title || "")).length }));
-  const filteredSearchJobs = syncedJobs.filter((j) =>
-    !jobSearchQuery ||
-    (j.title || j.campaignTitle || "").toLowerCase().includes(jobSearchQuery.toLowerCase())
-  );
+  const filteredSearchJobs = syncedJobs.filter((j) => {
+    if (!jobSearchQuery) return true;
+    const query = jobSearchQuery.toLowerCase();
+    const titleMatch = (j.title || j.campaignTitle || "").toLowerCase().includes(query);
+    const numberMatch = j.job_number ? String(j.job_number).includes(query) : false;
+    return titleMatch || numberMatch;
+  });
 
   const activeJobsList = filteredSearchJobs.filter((j) => !isJobExpired(j) && j.status !== "مسودة");
   const inactiveJobsList = filteredSearchJobs.filter((j) => isJobExpired(j) && j.status !== "مسودة");
@@ -902,13 +999,6 @@ export const Dashboard = ({
           <div className="max-w-6xl mx-auto space-y-8">
             <header className="relative flex justify-between items-center w-full mb-8">
               <div className="flex items-center">
-                <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
-                  className="w-11 h-11 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white flex items-center justify-center transition-all"
-                >
-                  {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-                </button>
               </div>
               <div className="absolute left-1/2 -translate-x-1/2 text-center pointer-events-none">
                 <p className="text-slate-500 dark:text-slate-400 font-medium text-sm md:text-base whitespace-nowrap">
@@ -972,62 +1062,72 @@ export const Dashboard = ({
               const acceptedCount = baseStatsApps.filter(a => a.decision === "accepted").length;
 
               return (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   {[
                     {
                       label: "إجمالي المتقدمين",
                       value: totalCount.toString(),
                       change: `+${totalCount}`,
-                      icon: <Users className="text-teal-600" />,
-                      color: "bg-teal-50",
+                      icon: <Users size={20} className="text-teal-600 dark:text-teal-400" />,
+                      bgClass: "bg-white dark:bg-slate-800/80",
+                      iconBg: "bg-teal-100 dark:bg-teal-900/50",
+                      borderColor: "border-teal-100/50 dark:border-teal-900/30",
                     },
                     {
                       label: "قيد المراجعة",
                       value: pendingCount.toString(),
-                      change: pendingCount > 0 ? "يجب اتخاذ قرار" : "مكتمل",
-                      icon: <Clock className="text-orange-500" />,
-                      color: "bg-orange-50",
+                      change: pendingCount > 0 ? "اتخاذ قرار" : "مكتمل",
+                      icon: <Clock size={20} className="text-orange-500 dark:text-orange-400" />,
+                      bgClass: "bg-white dark:bg-slate-800/80",
+                      iconBg: "bg-orange-100 dark:bg-orange-900/50",
+                      borderColor: "border-orange-100/50 dark:border-orange-900/30",
                     },
                     {
                       label: "تم قبولهم",
                       value: acceptedCount.toString(),
                       change: `+${acceptedCount} مرشحين`,
-                      icon: <CheckCircle className="text-indigo-500" />,
-                      color: "bg-indigo-50",
+                      icon: <CheckCircle size={20} className="text-indigo-500 dark:text-indigo-400" />,
+                      bgClass: "bg-white dark:bg-slate-800/80",
+                      iconBg: "bg-indigo-100 dark:bg-indigo-900/50",
+                      borderColor: "border-indigo-100/50 dark:border-indigo-900/30",
                     },
                   ].map((stat, idx) => (
                     <motion.div
                       key={idx}
-                      whileHover={{ y: -5 }}
-                      className="bg-white dark:bg-slate-800 p-8 rounded-[32px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40"
+                      whileHover={{ y: -3, scale: 1.01 }}
+                      className={`p-5 rounded-2xl border ${stat.borderColor} shadow-sm ${stat.bgClass} flex items-center justify-between relative overflow-hidden group`}
                     >
-                      <div className="flex items-center justify-between mb-6">
-                        <div
-                          className={`w-14 h-14 ${stat.color} rounded-2xl flex items-center justify-center shadow-inner-3d`}
-                        >
-                          {stat.icon}{" "}
-                        </div>{" "}
-                        <span
-                          className={`text-xs font-bold px-3 py-1.5 rounded-xl ${stat.change.includes("+") ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}`}
-                        >
-                          {stat.change}{" "}
-                        </span>{" "}
-                      </div>{" "}
-                      <p className="text-slate-500 dark:text-slate-300 text-sm font-bold mb-1">
-                        {stat.label}
-                      </p>{" "}
-                      <p className="text-4xl font-bold text-navy dark:text-white">
-                        {stat.value}
-                      </p>{" "}
+                      {/* Decorative Background Blur */}
+                      <div className="absolute -left-6 -top-6 w-24 h-24 bg-white/40 dark:bg-white/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+                      
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className={`w-12 h-12 ${stat.iconBg} rounded-xl flex items-center justify-center shadow-inner`}>
+                          {stat.icon}
+                        </div>
+                        <div>
+                          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-1">
+                            {stat.label}
+                          </p>
+                          <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">
+                            {stat.value}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="relative z-10">
+                        <span className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold ${stat.change.includes("+") || stat.change === "مكتمل" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"}`}>
+                          {stat.change}
+                        </span>
+                      </div>
                     </motion.div>
-                  ))}{" "}
+                  ))}
                 </div>
               );
             })()}
             {/* Data Table */}{" "}
             <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-white dark:border-slate-700 shadow-2xl shadow-slate-200/50 overflow-hidden">
               <div className="p-8 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50 dark:bg-slate-800/50">
-                <h3 className="font-bold text-lg text-navy dark:text-white">
+                <h3 className="font-bold text-lg text-navy dark:text-white whitespace-nowrap">
                   قائمة المرشحين
                 </h3>{" "}
                 <div className="flex flex-wrap items-center gap-4">
@@ -1040,7 +1140,7 @@ export const Dashboard = ({
                         setIsSelectionMode(true);
                       }
                     }}
-                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 ${isSelectionMode ? 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 border border-transparent' : 'bg-white text-navy border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-white dark:border-slate-700 dark:hover:bg-slate-700'}`}
+                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-md ${isSelectionMode ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border border-transparent' : 'bg-white text-navy border border-slate-200 dark:bg-slate-800 dark:text-white dark:border-slate-700'}`}
                   >
                     <CheckSquare size={18} />
                     <span className="whitespace-nowrap w-[85px] text-center">{isSelectionMode ? "إلغاء التصفية" : "تصفية"}</span>
@@ -1061,7 +1161,7 @@ export const Dashboard = ({
                   <CompactJobSelector jobs={jobs} selectedFilter={jobFilter} onFilterChange={(id) => setJobFilter(id)} />
                   <div className="flex bg-slate-100/50 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto hide-scrollbar max-w-full">
                     {[
-                      { id: "pending", label: "قيد المراجعة", color: "text-navy dark:text-white" },
+                      { id: "pending", label: "قيد المراجعة", color: "text-orange-600 dark:text-orange-400" },
                       { id: "interview", label: "المقابلات", color: "text-yellow-600 dark:text-yellow-400" },
                       { id: "accepted", label: "المقبولين", color: "text-green-600 dark:text-green-400" },
                       { id: "rejected", label: "المرفوضين", color: "text-red-600 dark:text-red-400" },
@@ -1087,7 +1187,7 @@ export const Dashboard = ({
 
           <button
             onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 border ${showFavoritesOnly ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700'}`}
+            className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 border hover:-translate-y-0.5 hover:shadow-md ${showFavoritesOnly ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'}`}
           >
             <Star size={16} fill={showFavoritesOnly ? "currentColor" : "none"} className={showFavoritesOnly ? "text-yellow-500" : "text-slate-400"} /> عرض المفضلين
           </button>
@@ -1106,16 +1206,15 @@ export const Dashboard = ({
                   </div>{" "}
                   <button
                     onClick={exportToCSV}
-                    className="bg-green-50 dark:bg-green-900/40 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-green-100 dark:hover:bg-green-900/60 transition-all shadow-sm flex items-center gap-2"
+                    className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:-translate-y-0.5 hover:shadow-md transition-all shadow-sm flex items-center gap-2"
                   >
                     <Download size={18} /> تصدير CSV{" "}
                   </button>{" "}
                   <div className="relative" ref={smartSortRef}>
                     <button
                       onClick={() => setIsSmartSortOpen(!isSmartSortOpen)}
-                      className={`relative hover:from-indigo-500 hover:to-purple-500 text-white border border-indigo-400/50 dark:border-indigo-500/30 px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center justify-between overflow-hidden group bg-gradient-to-r from-indigo-600 to-purple-600 w-48`}
+                      className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 border border-slate-200 dark:border-slate-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:-translate-y-0.5 hover:shadow-md transition-all shadow-sm flex items-center justify-between group w-48"
                     >
-                      <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out rounded-2xl" />
                       <div className="flex items-center gap-2 relative z-10">
                         <Filter size={18} />
                         <span>
@@ -1138,30 +1237,30 @@ export const Dashboard = ({
                           <div className="py-2">
                             <button
                               onClick={() => { setSmartSortState("all"); setIsSmartSortOpen(false); }}
-                              className={`w-full text-right px-4 py-3 text-sm font-bold flex items-center gap-3 transition-colors ${smartSortState === "all" ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400" : "text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"}`}
+                              className={`w-full text-right px-4 py-3 text-sm font-bold flex items-center gap-3 transition-colors ${smartSortState === "all" ? "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400" : "text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"}`}
                             >
-                              <Filter size={16} className={smartSortState === "all" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"} />
+                              <Filter size={16} className={smartSortState === "all" ? "text-teal-600 dark:text-teal-400" : "text-slate-400"} />
                               عرض الكل (الافتراضي)
                             </button>
                             <button
                               onClick={handleSetEliteSort}
-                              className={`w-full text-right px-4 py-3 text-sm font-bold flex items-center gap-3 transition-colors ${smartSortState === "elite" ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400" : "text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"}`}
+                              className={`w-full text-right px-4 py-3 text-sm font-bold flex items-center gap-3 transition-colors ${smartSortState === "elite" ? "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400" : "text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"}`}
                             >
-                              <Star size={16} className={smartSortState === "elite" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"} />
+                              <Star size={16} className={smartSortState === "elite" ? "text-teal-600 dark:text-teal-400" : "text-slate-400"} />
                               الأعلى مطابقة (+80%)
                             </button>
                             <button
                               onClick={handleSetWeakSort}
-                              className={`w-full text-right px-4 py-3 text-sm font-bold flex items-center gap-3 transition-colors ${smartSortState === "weak" ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400" : "text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"}`}
+                              className={`w-full text-right px-4 py-3 text-sm font-bold flex items-center gap-3 transition-colors ${smartSortState === "weak" ? "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400" : "text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"}`}
                             >
-                              <AlertTriangle size={16} className={smartSortState === "weak" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"} />
+                              <AlertTriangle size={16} className={smartSortState === "weak" ? "text-teal-600 dark:text-teal-400" : "text-slate-400"} />
                               غير المطابقين (-50%)
                             </button>
                             <button
                               onClick={() => { setSmartSortState("latest"); setIsSmartSortOpen(false); }}
-                              className={`w-full text-right px-4 py-3 text-sm font-bold flex items-center gap-3 transition-colors ${smartSortState === "latest" ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400" : "text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"}`}
+                              className={`w-full text-right px-4 py-3 text-sm font-bold flex items-center gap-3 transition-colors ${smartSortState === "latest" ? "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400" : "text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700"}`}
                             >
-                              <Clock size={16} className={smartSortState === "latest" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"} />
+                              <Clock size={16} className={smartSortState === "latest" ? "text-teal-600 dark:text-teal-400" : "text-slate-400"} />
                               الأحدث تسجيلاً
                             </button>
                           </div>
@@ -1171,7 +1270,7 @@ export const Dashboard = ({
                   </div>{" "}
                 </div>{" "}
               </div>{" "}
-              <div className="overflow-x-auto min-h-[60vh]">
+              <div className="overflow-x-auto overflow-y-hidden min-h-[60vh] hide-scrollbar">
                 <table className="w-full text-right">
                   <thead className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-200 text-xs uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
                     <tr>
@@ -1203,13 +1302,14 @@ export const Dashboard = ({
                       {decisionFilter === "interview" && (
                         <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">حالة المقابلة</th>
                       )}
-                      <th className="px-2 py-4 whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5 w-max ml-auto pl-4">
-                          <div className="flex justify-center text-navy dark:text-white font-bold w-[200px]">
+                      <th className="px-2 py-4 font-bold text-navy dark:text-white whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5 w-full pl-4">
+                          <div className={`flex justify-center shrink-0 ${decisionFilter === "pending" ? "w-[200px]" : decisionFilter === "locked_fomo" ? "w-[160px]" : "w-[75px]"}`}>
                             الإجراءات
                           </div>
-                          <div className="w-px h-5 mx-1 opacity-0"></div>
-                          <div className="w-[126px] opacity-0"></div>
+                          <div className="w-px h-5 mx-1 opacity-0 shrink-0"></div>
+                          <div className="w-[110px] opacity-0 shrink-0"></div>
+                          <div className="w-8 opacity-0 shrink-0"></div>
                         </div>
                       </th>
                     </tr>
@@ -1217,7 +1317,7 @@ export const Dashboard = ({
                   <tbody>
                     {jobs.length === 0 ? (
                       <tr>
-                        <td colSpan={isSelectionMode ? 7 : 6} className="p-0">
+                        <td colSpan={6 + (isSelectionMode ? 1 : 0) + (decisionFilter === "interview" ? 1 : 0)} className="p-0">
                           <EmptyState
                             title="لوحة التحكم بانتظارك! لم تقم بإنشاء أي شواغر وظيفية حتى الآن."
                             actionLabel="أنشئ إعلان وظيفي الآن"
@@ -1227,7 +1327,7 @@ export const Dashboard = ({
                       </tr>
                     ) : isLoadingApplicants && applicants.length === 0 ? (
                       <tr>
-                        <td colSpan={isSelectionMode ? 7 : 6} className="p-8">
+                        <td colSpan={6 + (isSelectionMode ? 1 : 0) + (decisionFilter === "interview" ? 1 : 0)} className="p-8">
                           <div className="flex flex-col items-center justify-center min-h-[400px] text-center bg-white dark:bg-slate-800/50">
                             <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
                             <h3 className="text-xl font-bold text-navy dark:text-white mb-2">
@@ -1241,7 +1341,7 @@ export const Dashboard = ({
                       </tr>
                     ) : visibleApplicants.length === 0 ? (
                       <tr>
-                        <td colSpan={isSelectionMode ? 7 : 6} className="p-0">
+                        <td colSpan={6 + (isSelectionMode ? 1 : 0) + (decisionFilter === "interview" ? 1 : 0)} className="p-0">
                           <div className="flex flex-col items-center justify-center min-h-[400px] text-center bg-white dark:bg-slate-800/50">
                             <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner-3d">
                               <Search size={32} className="text-slate-300 dark:text-slate-500" />
@@ -1335,8 +1435,16 @@ export const Dashboard = ({
                                       </div>
                                     )}
                                     {row.nominatedTo && !isFomoLocked && (
-                                      <div className="mt-1 text-[10px] bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-md inline-block font-bold w-fit border border-blue-100 dark:border-blue-800/30 shadow-sm">
-                                        🔄 تم ترشيحه لـ: {row.nominatedTo}
+                                      <div 
+                                        className="mt-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md inline-block font-bold w-fit max-w-[180px] truncate border border-primary/20 shadow-sm"
+                                        title={`تم ترشيحه لـ: ${row.nominatedTo}`}
+                                      >
+                                        تم ترشيحه لـ: {row.nominatedTo}
+                                      </div>
+                                    )}
+                                    {row.source === 'ترشيح متقاطع' && !isFomoLocked && (
+                                      <div className="mt-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md inline-block font-bold w-fit border border-primary/20 shadow-sm">
+                                        تم ترشيحه
                                       </div>
                                     )}
                                   </div>
@@ -1344,23 +1452,32 @@ export const Dashboard = ({
                               </td>
                               <td className="px-2 py-3">
                                 <div className="flex justify-start">
-                                  <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white px-2 py-1 rounded-md text-[11px] font-bold inline-flex items-center justify-center whitespace-nowrap w-fit">
-                                    {row.job}{" "}
-                                  </span>{" "}
+                                  <span 
+                                    className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white px-2 py-1 rounded-md text-[11px] font-bold inline-flex items-center justify-center whitespace-nowrap w-fit max-w-[140px] truncate"
+                                    title={row.job}
+                                  >
+                                    {row.job}
+                                  </span>
                                 </div>
                               </td>
                               <td className="px-2 py-3">
-                                <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
-                                  <div className="w-12 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                                    <div
-                                      className={`h-full ${isFomoLocked ? "bg-slate-300 dark:bg-slate-600" : row.rating >= 80 ? "bg-primary" : row.rating >= 50 ? "bg-orange-500" : "bg-red-500"}`}
-                                      style={{ width: isFomoLocked ? '100%' : `${row.rating}%` }}
-                                    />{" "}
-                                  </div>{" "}
-                                  <span className={`text-sm font-bold ${isFomoLocked ? "text-slate-400 filter blur-[4px] select-none" : row.rating >= 80 ? "text-primary" : row.rating >= 50 ? "text-orange-600 dark:text-orange-400" : "text-red-600 dark:text-red-400"}`}>
-                                    {isFomoLocked ? "00%" : `${row.rating}%`}
-                                  </span>{" "}
-                                </div>{" "}
+                                {row.rejection_reason && row.rejection_reason.includes("مرفوض آلياً") ? (
+                                  <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2.5 py-1 rounded-md border border-rose-100 dark:border-rose-800/50 whitespace-nowrap">
+                                    مستبعد آلياً
+                                  </span>
+                                ) : (
+                                  <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
+                                    <div className={`w-16 h-2.5 rounded-full overflow-hidden ${isFomoLocked ? "bg-slate-100 dark:bg-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] border border-slate-200/50 dark:border-slate-700/50" : row.rating >= 80 ? "bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d" : row.rating >= 50 ? "bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d" : "bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d"}`}>
+                                      <div
+                                        className={`h-full rounded-full transition-all duration-500 ${isFomoLocked ? "bg-slate-300 dark:bg-slate-600" : row.rating >= 80 ? "bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" : row.rating >= 50 ? "bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" : "bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"}`}
+                                        style={{ width: isFomoLocked ? '100%' : `${row.rating}%` }}
+                                      />
+                                    </div>
+                                    <span className={`text-sm font-bold ${isFomoLocked ? "text-slate-400 filter blur-[4px] select-none" : row.rating >= 80 ? "text-teal-600 dark:text-teal-400" : row.rating >= 50 ? "text-amber-600 dark:text-amber-500" : "text-rose-600 dark:text-rose-500"}`}>
+                                      {isFomoLocked ? "00%" : `${row.rating}%`}
+                                    </span>
+                                  </div>
+                                )}
                               </td>
                               <td className="px-2 py-3 text-xs text-slate-600 dark:text-slate-300 font-bold whitespace-nowrap text-right">
                                 {isFomoLocked ? <span className="filter blur-[4px] select-none">مقفل</span> : row.status}
@@ -1371,7 +1488,13 @@ export const Dashboard = ({
                                     href={`https://wa.me/${row.phone}`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="w-8 h-8 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded-lg flex items-center justify-center hover:bg-green-500 dark:hover:bg-green-500/60 dark:hover:text-green-100 hover:text-white transition-all shadow-sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (row.decision === "interview") {
+                                        markInterviewSent(row.id);
+                                      }
+                                    }}
+                                    className="w-8 h-8 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300 rounded-lg flex items-center justify-center hover:bg-teal-100 dark:hover:bg-teal-900/50 hover:text-teal-700 transition-all shadow-sm"
                                     title="واتساب"
                                   >
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
@@ -1380,6 +1503,12 @@ export const Dashboard = ({
                                   </a>{" "}
                                   <a
                                     href={`mailto:${row.email}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (row.decision === "interview") {
+                                        markInterviewSent(row.id);
+                                      }
+                                    }}
                                     className="w-8 h-8 bg-navy/5 dark:bg-slate-700/50 text-navy dark:text-slate-200 rounded-lg flex items-center justify-center hover:bg-navy dark:hover:bg-slate-600 hover:text-white transition-all shadow-sm"
                                     title="إيميل"
                                   >
@@ -1387,6 +1516,7 @@ export const Dashboard = ({
                                   </a>{" "}
                                   <a
                                     href={`tel:${row.phone}`}
+                                    onClick={(e) => e.stopPropagation()}
                                     className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-lg flex items-center justify-center hover:bg-blue-500 dark:hover:bg-blue-500/60 dark:hover:text-blue-100 hover:text-white transition-all shadow-sm"
                                     title="اتصال"
                                   >
@@ -1400,23 +1530,27 @@ export const Dashboard = ({
                                     {isFomoLocked ? (
                                       <span className="filter blur-[4px] select-none text-xs text-slate-400 font-bold">مقفل</span>
                                     ) : row.is_interview_completed ? (
-                                      <span className="bg-green-50 text-green-600 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800/30 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-sm">
-                                        <Mic size={14} /> تمت المقابلة
+                                      <span className="bg-green-50 text-green-600 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                        <Mic size={13} /> تمت المقابلة
                                       </span>
-                                    ) : row.decision === "interviewing" ? (
-                                      <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-sm">
-                                        <Clock size={14} /> جاري المقابلة
+                                    ) : (row.has_started_interview && !row.is_interview_completed) ? (
+                                      <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                        <Clock size={13} /> جاري المقابلة
+                                      </span>
+                                    ) : (row.interview_sent || row.decision === "interviewing") ? (
+                                      <span className="bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                        <Clock size={13} /> بانتظار المتقدم
                                       </span>
                                     ) : (
-                                      <span className="bg-transparent text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center justify-center min-w-[80px]">
-                                        لا يوجد
+                                      <span className="text-slate-400 dark:text-slate-500 font-bold flex justify-center w-full">
+                                        -
                                       </span>
                                     )}
                                   </div>
                                 </td>
                               )}
                               <td className="px-2 py-3">
-                                <div className="flex items-center justify-end gap-1.5 w-max ml-auto pl-4">
+                                <div className="flex items-center justify-end gap-1.5 w-full pl-4">
                                   {isFomoLocked ? (
                                     <button
                                       onClick={(e) => {
@@ -1449,9 +1583,8 @@ export const Dashboard = ({
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           e.preventDefault();
-                                          if (window.confirm("هل أنت متأكد من رغبتك في التراجع عن هذا القرار وإعادته لقيد المراجعة؟")) {
-                                            handleDecision(row.id, "pending");
-                                          }
+                                          setUndoTargetId(row.id);
+                                          setShowUndoConfirmModal(true);
                                         }}
                                         className="flex items-center justify-center gap-1 border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-400 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
                                         title="تراجع"
@@ -1463,21 +1596,21 @@ export const Dashboard = ({
                                     <>
                                       <button
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "accepted"); }}
-                                        className="flex items-center justify-center gap-1 bg-green-50 text-green-600 hover:bg-green-500 hover:text-white dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                        className="flex items-center justify-center gap-1 bg-teal-50 text-teal-600 hover:bg-teal-100 hover:text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 dark:hover:text-teal-300 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
                                         title="قبول"
                                       >
                                         <CheckCircle size={14} /> قبول
                                       </button>
                                       <button
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "interview"); }}
-                                        className="flex items-center justify-center gap-1 bg-yellow-50 text-yellow-600 hover:bg-yellow-500 hover:text-white dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                        className="flex items-center justify-center gap-1 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 dark:hover:bg-amber-900/50 dark:hover:text-amber-400 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
                                         title="مقابلة"
                                       >
                                         مقابلة
                                       </button>
                                       <button
                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "rejected"); }}
-                                        className="flex items-center justify-center gap-1 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                        className="flex items-center justify-center gap-1 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-500 dark:hover:bg-rose-900/50 dark:hover:text-rose-400 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
                                         title="رفض"
                                       >
                                         <X size={14} /> رفض
@@ -1528,23 +1661,25 @@ export const Dashboard = ({
                                                 </button>
                                                   {row.in_talent_pool ? (
                                                   <button
-                                                    onClick={() => handleRemoveFromPool(row.id)}
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveFromPool(row.id); }}
                                                     className="w-full text-right px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
                                                   >
                                                     <Database size={16} className="text-red-500" /> إزالة من بنك الكفاءات
                                                   </button>
                                                 ) : (
                                                   <button
-                                                    onClick={() => handleMoveToPool(row)}
+                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleMoveToPool(row); }}
                                                     className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
                                                   >
                                                     <Database size={16} className="text-slate-400" /> إضافة إلى بنك الكفاءات
                                                   </button>
                                                 )}
                                                 <button
-                                                  onClick={() => {
+                                                  onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
                                                     setCrossNominateApplicant(row);
-                                                    setCrossNominateJobId(jobs.find(j => j.status === "نشط")?.id || "");
+                                                    setCrossNominateJobId(jobs.find(j => j.title === row.job)?.id || jobs.find(j => j.status === "نشط")?.id || "");
                                                     setOpenDropdownId(null);
                                                   }}
                                                   className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
@@ -1770,7 +1905,7 @@ export const Dashboard = ({
                   <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
                   <input
                     type="text"
-                    placeholder="ابحث باسم المسمى الوظيفي..."
+                    placeholder="ابحث باسم المسمى الوظيفي أو الرقم..."
                     value={jobSearchQuery}
                     onChange={(e) => setJobSearchQuery(e.target.value)}
                     className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 pr-11 pl-4 py-3 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium dark:text-white dark:placeholder-slate-400"
@@ -1812,7 +1947,7 @@ export const Dashboard = ({
             externalApplicants={applicants}
             onCrossNominate={(applicant) => {
               setCrossNominateApplicant(applicant);
-              setCrossNominateJobId(jobs.find(j => j.status === "نشط")?.id || "");
+              setCrossNominateJobId(jobs.find(j => j.title === applicant.job)?.id || jobs.find(j => j.status === "نشط")?.id || "");
             }}
           />
         );
@@ -1989,16 +2124,19 @@ export const Dashboard = ({
                   اختر الوظيفة التي تود ترشيح المتقدم <span className="text-primary font-bold">{crossNominateApplicant.name}</span> لها:
                 </p>
 
-                <select
-                  value={crossNominateJobId}
-                  onChange={(e) => setCrossNominateJobId(e.target.value)}
-                  className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:border-primary font-medium"
-                >
-                  <option value="" disabled className="bg-white text-navy dark:bg-slate-800 dark:text-white">-- اختر وظيفة نشطة --</option>
-                  {jobs.filter(j => j.status === "نشط").map(j => (
-                    <option key={j.id} value={j.id} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{j.title}</option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={crossNominateJobId}
+                    onChange={(e) => setCrossNominateJobId(e.target.value)}
+                    className="w-full pr-5 pl-12 py-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:border-primary font-medium appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled className="bg-white text-navy dark:bg-slate-800 dark:text-white">-- اختر وظيفة نشطة --</option>
+                    {jobs.filter(j => j.status === "نشط").map(j => (
+                      <option key={j.id} value={j.id} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{j.title}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
               </div>
 
               <div className="flex items-center gap-3">
@@ -2034,20 +2172,32 @@ export const Dashboard = ({
 
         {/* Sidebar */}{" "}
         <aside className={`${isSidebarOpen ? 'w-80 p-8' : 'w-20 p-4'} bg-navy text-white hidden lg:flex flex-col fixed h-full right-0 shadow-2xl z-20 transition-all duration-300`}>
-          <div className="flex items-center gap-4 mb-16 px-2">
-            <LogoIcon />{" "}
-            {isSidebarOpen && (
-            <span className="text-3xl font-black tracking-tighter text-white flex-1">
-              فرز
-            </span>
-          )}{" "}
-            <button
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              title={isSidebarOpen ? 'تصغير القائمة' : 'توسيع القائمة'}
-              className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all shrink-0"
-            >
-              {isSidebarOpen ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
-            </button>
+          <div className="flex flex-col gap-6 mb-12">
+            <div className="flex items-center gap-4 px-2">
+              <LogoIcon />{" "}
+              {isSidebarOpen && (
+              <span className="text-3xl font-black tracking-tighter text-white flex-1">
+                فرز
+              </span>
+            )}{" "}
+              <button
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                title={isSidebarOpen ? 'تصغير القائمة' : 'توسيع القائمة'}
+                className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all shrink-0 ml-auto"
+              >
+                {isSidebarOpen ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
+              </button>
+            </div>
+            
+            <div className={`flex px-2 ${isSidebarOpen ? 'justify-start' : 'justify-center'}`}>
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
+                className="w-11 h-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white flex items-center justify-center transition-all shadow-sm"
+              >
+                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+            </div>
           </div>{" "}
           <nav className="space-y-3 flex-1 pb-6">
             {[
@@ -2067,7 +2217,19 @@ export const Dashboard = ({
               </button>
             ))}{" "}
           </nav>{" "}
-          <div className="mt-auto flex flex-col gap-4 pt-6 border-t border-white dark:border-slate-700/10 shrink-0">
+          <div className="mt-auto flex flex-col gap-4 pt-6 shrink-0">
+            {!isSidebarOpen && (
+              <button
+                onClick={async () => await supabase.auth.signOut()}
+                className="w-10 h-10 mx-auto flex items-center justify-center rounded-xl transition-all text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20 hover:text-red-300"
+                title="تسجيل الخروج"
+              >
+                <LogOut size={18} className="shrink-0" />
+              </button>
+            )}
+
+            <div className="border-t border-white/10 dark:border-slate-700/10 w-full my-1" />
+
             <div className={`flex items-center ${isSidebarOpen ? 'gap-3 p-3 bg-white/5 dark:bg-slate-800/30 rounded-2xl border border-white/10 dark:border-slate-700' : 'justify-center w-full'} transition-all duration-300`}>
               <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-primary overflow-hidden shrink-0 flex items-center justify-center">
                 {userProfile?.avatar || userProfile?.companyLogo ? (
@@ -2076,19 +2238,21 @@ export const Dashboard = ({
                   <User className="text-slate-400" size={20} />
                 )}
               </div>
-            {isSidebarOpen && ( <div className="overflow-hidden flex-1">
-                <p className="text-sm font-bold text-white" title={userProfile?.name || "مستخدم جديد"}>
-                  {(userProfile?.name || "مستخدم جديد").length > 25 ? (userProfile?.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile?.name || "مستخدم جديد")}
-                </p>
-                {userProfile?.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile?.title}</p>}
-            </div> )}
-            {isSidebarOpen && <button
-                onClick={async () => await supabase.auth.signOut()}
-                className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shrink-0"
-                title="تسجيل الخروج"
-              >
-                <LogOut size={16} />
-            </button>}
+              {isSidebarOpen && ( <div className="overflow-hidden flex-1">
+                  <p className="text-sm font-bold text-white">
+                    {(userProfile?.name || "مستخدم جديد").length > 25 ? (userProfile?.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile?.name || "مستخدم جديد")}
+                  </p>
+                  {userProfile?.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile?.title}</p>}
+              </div> )}
+              {isSidebarOpen && (
+                <button
+                  onClick={async () => await supabase.auth.signOut()}
+                  className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shrink-0"
+                  title="تسجيل الخروج"
+                >
+                  <LogOut size={16} />
+                </button>
+              )}
             </div>
 
 
@@ -2117,11 +2281,11 @@ export const Dashboard = ({
                       className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 text-red-400 py-2.5 px-2 rounded-xl cursor-pointer hover:from-red-500/20 hover:to-orange-500/20 transition-all active:scale-95 shadow-sm group"
                     >
                       <Lock size={14} className="group-hover:scale-110 transition-transform" />
-                      <span className="text-[11px] font-bold">انتهت الفترة التجريبية! بادر بالترقية الآن</span>
+                      <span className="text-[11px] font-bold">نفد الرصيد المجاني! بادر بالترقية الآن</span>
                     </div>
                   ) : (
                     <>
-                      <span>الباقة التجريبية</span>
+                      <span>رصيد السير الذاتية</span>
                       <span>{cvLimit - cvsRemaining} / {cvLimit}</span>
                     </>
                   )
@@ -2221,6 +2385,72 @@ export const Dashboard = ({
           )}
         </AnimatePresence>
 
+        {/* Undo Confirm Modal */}
+        <AnimatePresence>
+          {showUndoConfirmModal && undoTargetId && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-navy/60 backdrop-blur-sm"
+                onClick={() => {
+                  setShowUndoConfirmModal(false);
+                  setUndoTargetId(null);
+                }}
+              />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                className="bg-white dark:bg-slate-800 w-full max-w-md rounded-[32px] shadow-2xl relative z-10 overflow-hidden border border-slate-100 dark:border-slate-700 p-8 text-center"
+              >
+                <div className="w-16 h-16 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-6 mx-auto">
+                  <RotateCcw className="text-red-500" size={32} />
+                </div>
+                <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">
+                  تأكيد التراجع
+                </h3>
+                <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-6">
+                  هل أنت متأكد من رغبتك في التراجع عن هذا القرار وإعادة المتقدم لقيد المراجعة؟
+                  {(() => {
+                    const targetApp = applicants.find(a => a.id === undoTargetId);
+                    if (targetApp && (targetApp.interview_sent || targetApp.decision === 'interview_sent' || targetApp.decision === 'interviewing' || targetApp.has_started_interview)) {
+                      return (
+                        <span className="block mt-4 text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-900/20 p-3 rounded-xl border border-red-100 dark:border-red-900/50">
+                          سيتم إبطال رابط المقابلة ولن يتمكن المتقدم من إجرائها.
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowUndoConfirmModal(false);
+                      handleDecision(undoTargetId, "pending");
+                      setUndoTargetId(null);
+                    }}
+                    className="flex-1 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white py-3.5 rounded-xl font-bold transition-all"
+                  >
+                    نعم، تراجع
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowUndoConfirmModal(false);
+                      setUndoTargetId(null);
+                    }}
+                    className="flex-1 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 py-3.5 rounded-xl font-bold transition-all"
+                  >
+                    إلغاء
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
         {/* Welcome Modal for First-Time Users */}
         <AnimatePresence>
           {showWelcomeModal && (
@@ -2248,7 +2478,7 @@ export const Dashboard = ({
                 </div>
 
                 <h2 className="text-[22px] font-black text-navy dark:text-white mb-3 tracking-tight">
-                  مرحباً بك في منصة فرز، {(userProfile?.name || "مستخدم جديد").length > 20 ? (userProfile?.name || "مستخدم جديد").substring(0, 20) + "..." : (userProfile?.name || "مستخدم جديد")}
+                  مرحباً بك في منصة فرز
                 </h2>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium px-2">
                   مساحتك جاهزة. ابدأ الآن في فرز المتقدمين واختيار أفضل الكفاءات بضغطة زر.

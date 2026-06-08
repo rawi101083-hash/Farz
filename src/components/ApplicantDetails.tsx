@@ -306,6 +306,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
     });
   };
 
+  const isAutoRejected = applicant?.rejection_reason && applicant.rejection_reason.includes("مرفوض آلياً");
   const actualMatch = applicant?.matchScore ?? applicant?.rating ?? 0;
   const displayMatch = actualMatch > 1 ? actualMatch : Math.round(actualMatch * 100);
   const strokeOffsetMatch = actualMatch > 1 ? actualMatch / 100 : actualMatch;
@@ -438,7 +439,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
             )}
             
             {/* Revoke Link Button */}
-            {applicant?.decision === 'interviewing' && !applicant?.has_started_interview && !applicant?.interview_revoked && (
+            {((applicant?.decision === 'interview_sent' || applicant?.interview_sent || applicant?.decision === 'interviewing') && !applicant?.has_started_interview && !applicant?.interview_revoked) && (
               <div className="flex flex-col gap-2 bg-rose-50 dark:bg-rose-900/10 p-4 rounded-xl border border-rose-100 dark:border-rose-800/30">
                 <p className="text-xs font-bold text-rose-600 dark:text-rose-400">
                   تم إرسال رابط المقابلة مسبقاً. إذا لم يتجاوب المتقدم، يمكنك إلغاء الرابط لاسترجاع الحجز.
@@ -519,6 +520,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                   </div>
                 </div>
               </div>{" "}
+              {!isAutoRejected && (
               <div className="bg-slate-50/50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-[32px] p-8 mb-8 flex flex-col items-center relative overflow-hidden">
                 {/* Subtle Background Glow */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
@@ -606,7 +608,8 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                     </div>
                   </div>
                 </div>
-              </div>{" "}
+              </div>
+              )}
               <div className="flex bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-[20px] mb-8 border border-slate-100 dark:border-slate-700/50 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                 <button
                   onClick={() => setActiveTab("analysis")}
@@ -620,12 +623,14 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                 >
                   متطلبات التقديم
                 </button>
+                {!isAutoRejected && (
                 <button
                   onClick={() => setActiveTab("interview")}
                   className={`min-w-[120px] flex-1 py-3 px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${activeTab === "interview" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
                   خطة المقابلة
                 </button>
+                )}
                 <button
                   onClick={() => setActiveTab("notes")}
                   className={`min-w-[120px] flex-1 py-3 px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${activeTab === "notes" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
@@ -641,7 +646,14 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                   <p className="text-slate-500 dark:text-slate-400 font-medium">يقوم النظام بقراءة وتقييم البيانات حالياً.</p>
                 </motion.div>
               )}
-              {activeTab === "analysis" && !isAILoading && (
+              {activeTab === "analysis" && !isAILoading && isAutoRejected && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center py-16 bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800/30 rounded-[32px]">
+                   <Ban size={48} className="text-rose-500/50 mb-4" />
+                   <h3 className="text-2xl font-black text-rose-600 dark:text-rose-400">مستبعد آلياً</h3>
+                   <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium text-center px-4 max-w-lg leading-relaxed">تم استبعاد المتقدم تلقائياً لعدم اجتيازه الأسئلة الاستبعادية.</p>
+                </motion.div>
+              )}
+              {activeTab === "analysis" && !isAILoading && !isAutoRejected && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
 
                   {applicant?.expectedSalary && (applicant?.askExpectedSalary === "open" || applicant?.askExpectedSalary === "ranges") && (
@@ -806,29 +818,18 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                     return (
                       <>
                         {/* أسئلة الاستبعاد المباشر */}
-                        {jobKnockoutQuestions.length > 0 && (
+                        {knockoutAnswers.length > 0 && (
                           <div className="bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800/30 p-6 rounded-[32px] mt-6">
                             <h4 className="font-bold text-rose-700 dark:text-rose-400 mb-4 flex items-center gap-2">
                               <Ban size={18} /> إجابات أسئلة الاستبعاد المباشر (Knockout)
                             </h4>
                             <div className="space-y-4">
-                              {jobKnockoutQuestions.map((kq: any, i: number) => {
-                                const kqText = typeof kq === 'string' ? kq : (kq?.text || "");
-                                const ansObj = knockoutAnswers.find((a: any) => a.question === kqText);
-                                const isAnswered = kqText.includes("تجريبي") ? false : !!ansObj;
-                                return (
-                                  <div key={i} className={"p-4 rounded-2xl shadow-sm border " + (isAnswered ? "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700" : "bg-slate-50 dark:bg-slate-800/50 border-dashed border-slate-200 dark:border-slate-600 opacity-80")}>
-                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {i + 1}: {kqText}</p>
-                                    {isAnswered ? (
-                                      <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ansObj.answer}</p>
-                                    ) : (
-                                      <div className="inline-flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 mt-1">
-                                        <span className="text-[11px] font-bold">لم يُطرح عليه هذا السؤال (قدم قبل التحديث)</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                              {knockoutAnswers.map((ansObj: any, i: number) => (
+                                <div key={i} className="p-4 rounded-2xl shadow-sm border bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700">
+                                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {i + 1}: {ansObj.question}</p>
+                                  <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ansObj.answer}</p>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         )}
@@ -1318,7 +1319,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                           .from('applicants')
                           .update({ 
                             client_interview_questions: q, 
-                            decision: 'interviewing', 
+                            interview_sent: true,
                             interview_sent_at: new Date().toISOString(),
                             interview_revoked: false
                           })
@@ -1327,7 +1328,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                         await supabase
                           .from('applicants')
                           .update({ 
-                            decision: 'interviewing',
+                            interview_sent: true,
                             interview_sent_at: new Date().toISOString(),
                             interview_revoked: false
                           })
@@ -1336,11 +1337,13 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
 
                       // Update locally
                       if (applicant) {
-                        applicant.decision = 'interviewing';
+                        applicant.interview_sent = true;
                         applicant.interview_sent_at = new Date().toISOString();
                         applicant.interview_revoked = false;
                       }
-                      if (onStatusUpdate) onStatusUpdate(applicant.id, 'interviewing', false);
+                      if (onStatusUpdate) {
+                        // Notify parent of the update implicitly (no decision change)
+                      }
 
                       const link = `${window.location.origin}/interview/${applicant?.id}?lang=${interviewLang}`;
                       if (interviewSendMethod === 'whatsapp') {

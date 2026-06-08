@@ -42,7 +42,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         setErrorMessage("عذراً، هذا الرابط غير صالح.");
       } else if (data.interview_revoked) {
         setCallStatus('error');
-        setErrorMessage("عذراً، تم إلغاء أو سحب دعوة المقابلة من قبل جهة التوظيف.");
+        setErrorMessage("عذراً، هذا الرابط غير صالح.");
       } else if (data.interview_sent_at && (Date.now() - new Date(data.interview_sent_at).getTime() > 72 * 60 * 60 * 1000)) {
         setCallStatus('error');
         setErrorMessage("عذراً، انتهت صلاحية هذا الرابط (صالح لمدة 72 ساعة فقط).");
@@ -110,7 +110,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       // Check if interview is already started or completed or revoked or expired
       if (appData.interview_revoked) {
         setCallStatus('error');
-        setErrorMessage("عذراً، تم إلغاء أو سحب دعوة المقابلة من قبل جهة التوظيف.");
+        setErrorMessage("عذراً، هذا الرابط غير صالح.");
         return;
       }
       

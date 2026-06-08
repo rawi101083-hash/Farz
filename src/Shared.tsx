@@ -23,6 +23,7 @@ import {
   Briefcase,
   LogOut,
   Lock,
+  Building2,
   Mail,
   Shield,
   CreditCard,
@@ -338,6 +339,7 @@ export interface Role {
 }
 export interface Job {
   id: string;
+  job_number?: number;
   company_id?: string;
   recordType?: "single" | "campaign" | "quick_link";
   campaignTitle?: string;
@@ -463,40 +465,29 @@ export const EmptyState = ({
   onAction: () => void;
 }) => (
   <motion.div
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="flex flex-col items-center justify-center py-20 px-8 text-center bg-white dark:bg-slate-800 rounded-[40px] border border-slate-100 dark:border-slate-700 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 relative overflow-hidden w-full mx-auto"
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="flex flex-col items-center justify-center py-12 px-4 text-center w-full max-w-md mx-auto"
   >
-    <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-primary/5 to-transparent -z-10" />
-    <div className="absolute -top-32 -right-32 w-96 h-96 bg-primary/10 rounded-full blur-3xl opacity-50" />
-    <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl opacity-50" />
-
-    <div className="mb-10 relative" style={{ perspective: "1000px" }}>
+    <div className="mb-4">
       <motion.div
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-        className="relative z-10"
+        animate={{ y: [0, -6, 0] }}
+        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500"
       >
-        <div className="w-32 h-32 bg-slate-50 dark:bg-slate-800/80 rounded-[32px] flex items-center justify-center mx-auto shadow-inner-3d border border-white/50 dark:border-slate-700">
-          <Search size={56} className="text-slate-300 dark:text-slate-500" strokeWidth={1.5} />
-        </div>
-        <div className="absolute -bottom-2 -right-2 w-14 h-14 bg-gradient-to-br from-primary to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-12 border-2 border-white dark:border-slate-800">
-          <Briefcase size={24} className="text-white drop-shadow-md" strokeWidth={2} />
-        </div>
+        <Search size={24} strokeWidth={2} />
       </motion.div>
     </div>
 
-    <h3 className="text-2xl md:text-3xl font-black text-navy dark:text-white mb-6 max-w-lg leading-tight text-center relative z-10">
+    <h3 className="text-base md:text-lg font-bold text-slate-700 dark:text-slate-300 mb-5 leading-relaxed text-center">
       {title}
     </h3>
 
     <button
       onClick={onAction}
-      className="bg-primary text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-primary-dark transition-all shadow-xl shadow-primary/30 active:scale-95 flex items-center gap-3 mt-2 relative z-10 group"
+      className="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-teal-600 transition-colors flex items-center gap-2 mx-auto shadow-sm active:scale-95"
     >
-      <div className="bg-white/20 p-1.5 rounded-lg group-hover:bg-white/30 transition-colors">
-        <Plus size={20} strokeWidth={3} />
-      </div>
+      <Plus size={16} strokeWidth={2.5} />
       {actionLabel}
     </button>
   </motion.div>
@@ -720,13 +711,13 @@ const CompactSkillSelector = ({
         size={18}
       />
       <div
-        className={`pr-12 pl-10 py-4 rounded-2xl cursor-pointer flex items-center justify-between transition-all min-w-[160px] border ${selectedFilter === "all" ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-primary/50" : "bg-primary/10 border-primary/50 dark:bg-primary/20 dark:border-primary/50"}`}
+        className={`pr-12 pl-4 py-4 rounded-2xl cursor-pointer flex items-center gap-1.5 transition-all min-w-[160px] border ${selectedFilter === "all" ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-primary/50" : "bg-primary/10 border-primary/50 dark:bg-primary/20 dark:border-primary/50"}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <span className={`font-medium truncate max-w-[120px] ${selectedFilter === "all" ? "text-navy dark:text-white" : "font-bold text-primary"}`}>
+        <span className={`font-medium truncate ${selectedFilter === "all" ? "text-navy dark:text-white" : "font-bold text-primary"}`}>
           {selectedFilter === "all" ? "المهارة: الكل" : selectedFilter}
         </span>
-        <ChevronDown size={14} className={`transition-transform ${selectedFilter === "all" ? "text-slate-400" : "text-primary"} ${isOpen ? "rotate-180" : ""}`} />
+        <ChevronDown size={14} className={`transition-transform shrink-0 ${selectedFilter === "all" ? "text-slate-400" : "text-primary"} ${isOpen ? "rotate-180" : ""}`} />
       </div>
 
       <AnimatePresence>
@@ -1125,10 +1116,14 @@ export const GlobalJobSelector = ({
   const filteredJobs = jobs
     .filter((j) => j.status !== "مسودة")
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-    .filter((j) =>
-      (j.title || "").toLowerCase().includes(search.toLowerCase()) ||
-      (j.company || "").toLowerCase().includes(search.toLowerCase())
-    )
+    .filter((j) => {
+      if (!search) return true;
+      const term = search.toLowerCase();
+      const titleMatch = (j.title || "").toLowerCase().includes(term);
+      const companyMatch = (j.company || "").toLowerCase().includes(term);
+      const numberMatch = j.job_number ? String(j.job_number).includes(term) : false;
+      return titleMatch || companyMatch || numberMatch;
+    })
     .slice(0, 50);
 
   const selectedJob = jobs.find((j) => j.id === selectedFilter);
@@ -1138,9 +1133,19 @@ export const GlobalJobSelector = ({
     const dateStr = `${date.getMonth() + 1}/${date.getFullYear()}`;
     return (
       <div className="flex items-center justify-between w-full text-right gap-3">
-        <div className="flex flex-col gap-1">
-          <span className="font-bold text-navy dark:text-white truncate max-w-[200px]">{job.title || "إعلان وظائف"}</span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{dateStr}</span>
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <span className="font-bold text-navy dark:text-white truncate max-w-[200px]" title={job.title || "إعلان وظائف"}>
+            {job.title || "إعلان وظائف"}
+          </span>
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+            <span>{dateStr}</span>
+            {job.job_number && (
+              <>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <span className="shrink-0 text-slate-400 dark:text-slate-500">رقم: {job.job_number}</span>
+              </>
+            )}
+          </div>
         </div>
         <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold whitespace-nowrap ${job.status === "نشط" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"}`}>
           {job.status}
@@ -1150,7 +1155,7 @@ export const GlobalJobSelector = ({
   };
 
   return (
-    <div className="relative z-20 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white dark:bg-slate-800/50 backdrop-blur-sm p-6 rounded-[32px] border border-white dark:border-slate-700 shadow-sm">
+    <div className="relative z-[70] flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white dark:bg-slate-800/50 backdrop-blur-sm p-6 rounded-[32px] border border-white dark:border-slate-700 shadow-sm">
       <div className="flex items-center gap-4">
         <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
           <Filter size={20} />
@@ -1165,7 +1170,9 @@ export const GlobalJobSelector = ({
               onClick={() => setIsOpen(!isOpen)}
             >
               <span className={`font-bold text-sm truncate max-w-[200px] ${selectedFilter === "all" ? "text-navy dark:text-white" : "text-primary"}`}>
-                {selectedFilter === "all" ? "المسمى: الكل" : (selectedJob?.title || "كل الوظائف")}
+                {selectedFilter === "all" 
+                  ? "المسمى: الكل" 
+                  : `${selectedJob?.title || "كل الوظائف"}${selectedJob?.job_number ? ` (${selectedJob.job_number})` : ""}`}
               </span>
               <ChevronDown size={16} className={`transition-transform ${selectedFilter === "all" ? "text-slate-400" : "text-primary"} ${isOpen ? "rotate-180" : ""}`} />
             </div>
@@ -1732,6 +1739,13 @@ export const SettingsPage = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
   const isLocked = userProfile.fields_locked === true;
+  const [taxLocked, setTaxLocked] = useState(() => isLocked && !!userProfile.taxNumber?.trim());
+
+  useEffect(() => {
+    if (isLocked && userProfile.taxNumber?.trim()) {
+      setTaxLocked(true);
+    }
+  }, [isLocked]);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -1749,41 +1763,22 @@ export const SettingsPage = ({
   useEffect(() => {
     const newErrors: Record<string, string> = {};
     if (!isLocked) {
-      // Only validate CR/Tax if not already locked
       if (userProfile.entityType === 'company') {
-        if (!userProfile.companyName?.trim()) {
-          newErrors.companyName = "هذا الحقل مطلوب لإصدار الفواتير";
-        }
+        if (!userProfile.companyName?.trim()) newErrors.companyName = "هذا الحقل مطلوب";
         if (!userProfile.commercialRegistration?.trim()) {
-          newErrors.cr = "هذا الحقل مطلوب لإصدار الفواتير";
-        } else if (!/^\d{10}$/.test(userProfile.commercialRegistration)) {
-          newErrors.cr = "يجب أن يتكون السجل التجاري من 10 أرقام بالضبط";
+          newErrors.cr = "هذا الحقل مطلوب";
+        } else if (userProfile.commercialRegistration.length !== 10) {
+          newErrors.cr = "يجب أن يتكون من 10 أرقام";
         }
-        if (userProfile.taxNumber?.trim() && !/^3\d{13}3$/.test(userProfile.taxNumber)) {
-          newErrors.tax = "يجب أن يتكون الرقم الضريبي من 15 رقماً ويبدأ وينتهي بالرقم 3 (معيار ZATCA)";
-        }
-        if (!userProfile.city?.trim()) {
-          newErrors.city = "هذا الحقل مطلوب لإصدار الفواتير";
-        }
-      } else if (userProfile.entityType === 'freelance') {
-        if (!userProfile.companyName?.trim()) {
-          newErrors.companyName = "هذا الحقل مطلوب لإصدار الفواتير";
-        }
-        if (!userProfile.freelanceDocument?.trim()) {
-          newErrors.freelance = "هذا الحقل مطلوب لإصدار الفواتير";
-        }
-        if (!userProfile.city?.trim()) {
-          newErrors.city = "هذا الحقل مطلوب لإصدار الفواتير";
-        }
+        if (!userProfile.city?.trim()) newErrors.city = "هذا الحقل مطلوب";
+      } else {
+        if (!userProfile.companyName?.trim()) newErrors.companyName = "هذا الحقل مطلوب";
+        if (!userProfile.freelanceDocument?.trim()) newErrors.freelance = "هذا الحقل مطلوب";
+        if (!userProfile.city?.trim()) newErrors.city = "هذا الحقل مطلوب";
       }
-    } else {
-      // Locked — only validate flexible fields
-      if (!userProfile.companyName?.trim()) {
-        newErrors.companyName = "هذا الحقل مطلوب";
-      }
-      if (!userProfile.city?.trim()) {
-        newErrors.city = "هذا الحقل مطلوب";
-      }
+    }
+    if (!taxLocked && userProfile.taxNumber?.trim() && userProfile.taxNumber.length !== 15) {
+      newErrors.tax = "يجب أن يتكون من 15 رقم";
     }
     setErrors(newErrors);
   }, [userProfile.companyName, userProfile.commercialRegistration, userProfile.taxNumber, userProfile.freelanceDocument, userProfile.city, userProfile.entityType, isLocked]);
@@ -1796,6 +1791,43 @@ export const SettingsPage = ({
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentHtml, setPaymentHtml] = useState("");
   const [showWalletHistory, setShowWalletHistory] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [walletTransactions, setWalletTransactions] = useState<any[]>([]);
+  const [isLoadingWallet, setIsLoadingWallet] = useState(false);
+
+  useEffect(() => {
+    const fetchWalletData = async () => {
+      if (activeTab !== "المحفظة") return;
+      setIsLoadingWallet(true);
+      try {
+        const { supabase: sb } = await import('./lib/supabaseClient');
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session?.user?.id) return;
+        
+        let { data: wallet } = await sb.from('wallets').select('*').eq('user_id', session.user.id).single();
+        
+        if (!wallet) {
+          const { data: newWallet } = await sb.from('wallets').insert([{ user_id: session.user.id }]).select().single();
+          wallet = newWallet;
+        }
+
+        if (wallet) {
+          setWalletBalance(wallet.balance || 0);
+          const { data: txs } = await sb.from('wallet_transactions')
+            .select('*')
+            .eq('wallet_id', wallet.id)
+            .order('created_at', { ascending: false });
+          
+          if (txs) setWalletTransactions(txs);
+        }
+      } catch (err) {
+        console.error("Failed to fetch wallet data", err);
+      } finally {
+        setIsLoadingWallet(false);
+      }
+    };
+    fetchWalletData();
+  }, [activeTab]);
 
   // Locked field display component
   const LockedField = ({ value, label }: { value: string; label: string }) => (
@@ -1806,64 +1838,72 @@ export const SettingsPage = ({
     </div>
   );
 
-  const executeSave = async () => {
-    setIsSaving(true);
-    setSaveSuccess(false);
-    try {
-      const { supabase: sb } = await import('./lib/supabaseClient');
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) throw new Error('غير مسجل الدخول');
+  const executeSave = () => {
+    // Immediately show success in the UI
+    setSaveSuccess(true);
+    setIsSaving(false);
+    setShowLockModal(false);
+    setLockConfirmed(false);
+    setTimeout(() => setSaveSuccess(false), 3000);
 
-      const shouldLock = !isLocked &&
-        (!!userProfile.commercialRegistration?.trim() || !!userProfile.freelanceDocument?.trim());
+    const shouldLock = !isLocked &&
+      (!!userProfile.commercialRegistration?.trim() || !!userProfile.freelanceDocument?.trim());
 
-      const payload: any = {
-        id: user.id,
-        company_name: userProfile.companyName || userProfile.name || '',
-        entity_type: userProfile.entityType,
-        city: userProfile.city || null,
-        subscription_plan: userProfile.subscription_tier || 'free',
-        company_logo: userProfile.companyLogo || null,
-      };
-
-      if (!isLocked) {
-        payload.commercial_registration = userProfile.commercialRegistration?.trim() || null;
-        payload.freelance_document = userProfile.freelanceDocument?.trim() || null;
-        payload.tax_number = userProfile.taxNumber?.trim() || null;
-        if (shouldLock) {
-          payload.fields_locked = true;
-        }
-      }
-
-      const { error } = await sb.from('companies').upsert(payload, { onConflict: 'id' });
-      if (error) throw error;
-
-      // Update name and title in user_metadata
-      const { error: updateError } = await sb.auth.updateUser({
-        data: {
-          full_name: userProfile.name || '',
-          job_title: userProfile.title || ''
-        }
-      });
-      if (updateError) console.error("Failed to update user_metadata", updateError);
-
-      if (shouldLock) {
-        setUserProfile({ ...userProfile, fields_locked: true });
-      }
-      setSaveSuccess(true);
-      setShowLockModal(false);
-      setLockConfirmed(false);
-      setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err: any) {
-      const msg = err.message || 'خطأ غير متوقع';
-      if (msg.includes('ZATCA_LOCKED')) {
-        alert('🔒 رفض النظام: هذه الحقول مقفلة في قاعدة البيانات ولا يمكن تعديلها.');
-      } else {
-        alert('حدث خطأ أثناء الحفظ: ' + msg);
-      }
-    } finally {
-      setIsSaving(false);
+    if (shouldLock) {
+      setUserProfile(prev => ({ ...prev, fields_locked: true }));
     }
+    if (userProfile.taxNumber?.trim()) {
+      setTaxLocked(true);
+    }
+
+    // Run the actual database save asynchronously in the background
+    (async () => {
+      try {
+        const { supabase: sb } = await import('./lib/supabaseClient');
+        const { data: { user } } = await sb.auth.getUser();
+        if (!user) throw new Error('غير مسجل الدخول');
+
+        const payload: any = {
+          id: user.id,
+          company_name: userProfile.companyName || userProfile.name || '',
+          entity_type: userProfile.entityType,
+          city: userProfile.city || null,
+          subscription_plan: userProfile.subscription_tier || 'free',
+          company_logo: userProfile.companyLogo || null,
+        };
+
+        if (!isLocked) {
+          payload.commercial_registration = userProfile.commercialRegistration?.trim() || null;
+          payload.freelance_document = userProfile.freelanceDocument?.trim() || null;
+          if (shouldLock) {
+            payload.fields_locked = true;
+          }
+        }
+        
+        // Allow saving tax number even after lock, if it wasn't provided initially
+        payload.tax_number = userProfile.taxNumber?.trim() || null;
+
+        const { error } = await sb.from('companies').upsert(payload, { onConflict: 'id' });
+        if (error) throw error;
+
+        // Update name and title in user_metadata
+        const { error: updateError } = await sb.auth.updateUser({
+          data: {
+            full_name: userProfile.name || '',
+            job_title: userProfile.title || ''
+          }
+        });
+        if (updateError) console.error("Failed to update user_metadata", updateError);
+      } catch (err: any) {
+        console.error("Background save failed:", err);
+        const msg = err.message || 'خطأ غير متوقع';
+        if (msg.includes('ZATCA_LOCKED')) {
+          alert('🔒 رفض النظام: هذه الحقول مقفلة في قاعدة البيانات ولا يمكن تعديلها.');
+        } else {
+          alert('حدث خطأ أثناء الحفظ في الخلفية: ' + msg);
+        }
+      }
+    })();
   };
 
   const handleSaveProfile = () => {
@@ -2091,20 +2131,20 @@ export const SettingsPage = ({
                   </label>
                   <div>
                     <h4 className="font-bold text-navy dark:text-white mb-1">الصورة الشخصية</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">يفضل استخدام صورة مربعة واضحة المعالم</p>
+
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-navy dark:text-slate-300">الاسم</label>
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">الاسم:</label>
                     <input type="text" value={userProfile.name} onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-navy dark:text-slate-300">المسمى الوظيفي</label>
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">المسمى الوظيفي:</label>
                     <input type="text" value={userProfile.title} onChange={(e) => setUserProfile({ ...userProfile, title: e.target.value })} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-bold text-navy dark:text-slate-300">البريد الإلكتروني</label>
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">البريد الإلكتروني:</label>
                     <input type="text" readOnly value={userEmail || "لا يوجد بريد مسجل"} className="w-full px-6 py-4 bg-slate-100 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 border rounded-2xl outline-none cursor-not-allowed font-medium select-none" />
                   </div>
                 </div>
@@ -2118,7 +2158,7 @@ export const SettingsPage = ({
                   ) : saveSuccess ? (
                     <><CheckCircle size={18} />تم الحفظ بنجاح!</>
                   ) : (
-                    'حفظ التغييرات'
+                    'حفظ'
                   )}
                 </button>
               </div>
@@ -2134,23 +2174,27 @@ export const SettingsPage = ({
 
                   <div className="space-y-2 md:col-span-2 group">
                     <label className="text-sm font-bold text-navy dark:text-slate-300">
-                      {userProfile.entityType === "company" ? "اسم المنشأة" : "اسم الفرد / المشروع"} <span className="text-red-500">*</span>
+                      {userProfile.entityType === "company" ? "اسم المنشأة" : "الاسم الكامل"} <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      value={userProfile.companyName || ""}
-                      onChange={(e) => setUserProfile({ ...userProfile, companyName: e.target.value })}
-                      placeholder={userProfile.entityType === "company" ? "شركة الحلول الذكية..." : "عبدالله محمد..."}
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
-                    />
-                    {errors.companyName && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.companyName}</p>}
+                    {isLocked ? (
+                      <LockedField value={userProfile.companyName || ""} label="Company" />
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          value={userProfile.companyName || ""}
+                          onChange={(e) => setUserProfile({ ...userProfile, companyName: e.target.value })}
+                          placeholder=""
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                        />
+                      </>
+                    )}
                   </div>
 
                   {userProfile.entityType === "company" ? (
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
-                        رقم السجل التجاري (CR)
-                        {!isLocked && <span className="text-red-500">*</span>}
+                        رقم السجل التجاري (CR) <span className="text-red-500">*</span>
                       </label>
                       {isLocked ? (
                         <LockedField value={userProfile.commercialRegistration || ""} label="CR" />
@@ -2159,20 +2203,24 @@ export const SettingsPage = ({
                           <input
                             type="text"
                             value={userProfile.commercialRegistration || ""}
-                            onChange={(e) => setUserProfile({ ...userProfile, commercialRegistration: e.target.value })}
-                            placeholder="1010XXXXXX"
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, '');
+                              if (val.length <= 10) {
+                                setUserProfile({ ...userProfile, commercialRegistration: val });
+                              }
+                            }}
+                            placeholder=""
                             className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                             dir="ltr"
                           />
-                          {errors.cr && <p className="text-red-500 text-xs mt-1 font-bold">{errors.cr}</p>}
+                          {errors.cr && errors.cr !== "هذا الحقل مطلوب" && <p className="text-red-500 text-xs mt-1 font-bold">{errors.cr}</p>}
                         </>
                       )}
                     </div>
                   ) : (
                     <div className="space-y-2 group">
                       <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
-                        رقم وثيقة العمل الحر أو الهوية
-                        {!isLocked && <span className="text-red-500">*</span>}
+                        رقم وثيقة العمل الحر <span className="text-red-500">*</span>
                       </label>
                       {isLocked ? (
                         <LockedField value={userProfile.freelanceDocument || ""} label="Freelance ID" />
@@ -2182,41 +2230,50 @@ export const SettingsPage = ({
                             type="text"
                             value={userProfile.freelanceDocument || ""}
                             onChange={(e) => setUserProfile({ ...userProfile, freelanceDocument: e.target.value })}
-                            placeholder="FL-XXXXXX"
+                            placeholder="FL-xxxxxxxx"
                             className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                             dir="ltr"
                           />
-                          {errors.freelance && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.freelance}</p>}
                         </>
                       )}
-                    </div>
+                  </div>
                   )}
 
                   <div className="space-y-2 group">
                     <label className="text-sm font-bold text-navy dark:text-slate-300">مدينة المقر الرئيسي (لأغراض الفوترة) <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      value={userProfile.city || ""}
-                      onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
-                      placeholder="الرياض، جدة..."
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
-                    />
-                    {errors.city && <p className="text-red-500 text-xs mt-1 font-bold transition-all">{errors.city}</p>}
+                    {isLocked ? (
+                      <LockedField value={userProfile.city || ""} label="City" />
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          value={userProfile.city || ""}
+                          onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
+                          placeholder=""
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                        />
+                      </>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-navy dark:text-slate-300 flex items-center gap-2">
                       الرقم الضريبي (Tax ID)
                       <span className="text-xs text-slate-400 font-normal bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">اختياري</span>
                     </label>
-                    {isLocked ? (
+                    {taxLocked ? (
                       <LockedField value={userProfile.taxNumber || ""} label="Tax ID" />
                     ) : (
                       <>
                         <input
                           type="text"
                           value={userProfile.taxNumber || ""}
-                          onChange={(e) => setUserProfile({ ...userProfile, taxNumber: e.target.value })}
-                          placeholder="3000XXXXXXXXX003"
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            if (val.length <= 15) {
+                              setUserProfile({ ...userProfile, taxNumber: val });
+                            }
+                          }}
+                          placeholder=""
                           className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                           dir="ltr"
                           maxLength={15}
@@ -2245,26 +2302,15 @@ export const SettingsPage = ({
                   ) : saveSuccess ? (
                     <><CheckCircle size={18} />تم الحفظ بنجاح!</>
                   ) : (
-                    'حفظ التغييرات'
+                    'حفظ'
                   )}
                 </button>{" "}
               </div>
             )}{" "}
             {activeTab === "المحفظة" && (
               <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <h4 className="text-2xl font-black text-navy dark:text-white mb-2 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-[#0D9488]/10 text-[#0D9488] flex items-center justify-center">
-                        <Wallet size={24} />
-                      </div>
-                      محفظة سحاب
-                    </h4>
-                    <p className="text-slate-500 dark:text-slate-400 font-medium">
-                      أدر أموالك بسهولة، راجع جميع حركاتك المالية في مكان واحد.
-                    </p>
-                  </div>
-                  <button onClick={() => alert('بوابة ميسور قيد التجهيز للربط الحقيقي')} className="bg-[#0D9488] hover:bg-[#0f766e] text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-[#0D9488]/20 transition-all active:scale-95 flex items-center gap-2">
+                <div className="flex justify-end mb-4">
+                  <button onClick={() => alert('بوابة ميسور قيد التجهيز للربط الحقيقي')} className="bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2">
                     <Plus size={20} /> شحن الرصيد
                   </button>
                 </div>
@@ -2279,8 +2325,10 @@ export const SettingsPage = ({
                       <div>
                         <p className="text-slate-400 dark:text-slate-500 font-bold text-sm tracking-wide mb-2">الرصيد المتاح</p>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-5xl font-black tracking-tight text-navy dark:text-white">0.00</span>
-                          <span className="text-lg font-bold text-slate-400">ر.س</span>
+                          <span className="text-4xl font-black tracking-tight text-navy dark:text-white">
+                            {isLoadingWallet ? '...' : Number(walletBalance || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                          <span className="text-base font-bold text-slate-400">ر.س</span>
                         </div>
                       </div>
                       <div className="w-12 h-12 bg-slate-50 dark:bg-slate-700/50 rounded-2xl border border-slate-100 dark:border-slate-600 flex items-center justify-center text-[#0D9488]">
@@ -2289,10 +2337,10 @@ export const SettingsPage = ({
                     </div>
 
                     <div className="relative z-10 flex justify-between items-end mt-auto">
-                      <p className="text-xs font-bold text-slate-400 dark:text-slate-500">مربوطة بالدفع التلقائي</p>
-                      <div className="flex gap-1.5 opacity-50">
-                        <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-600"></div>
-                        <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-600 -mr-3"></div>
+                      <div></div>
+                      <div className="flex items-center opacity-90">
+                        <div className="w-8 h-8 rounded-full bg-emerald-300/80 dark:bg-emerald-600/80"></div>
+                        <div className="w-8 h-8 rounded-full bg-teal-400/80 dark:bg-teal-500/80 -mr-4 mix-blend-multiply dark:mix-blend-screen"></div>
                       </div>
                     </div>
                   </div>
@@ -2314,43 +2362,50 @@ export const SettingsPage = ({
                           <h4 className="font-bold text-navy dark:text-white text-xl flex items-center gap-2">
                             سجل العمليات
                           </h4>
-                          <p className="text-sm text-slate-400 mt-1">يغنيك عن فواتير الاشتراكات السابقة</p>
                         </div>
-                        <button className="text-sm font-bold text-slate-500 hover:text-navy dark:text-slate-400 dark:hover:text-white transition-colors flex items-center gap-2">
-                          <Download size={16} /> تحميل
-                        </button>
                       </div>
                       
                       <div className="flex-1 space-y-4 max-h-[400px] overflow-y-auto pr-2 -mr-2">
-                        {[
-                          { id: 1, title: 'إيداع رصيد المحفظة', desc: 'بواسطة Apple Pay', amount: '+2,500.00', type: 'deposit', date: 'اليوم، 10:30 صباحاً', status: 'ناجح' },
-                          { id: 2, title: 'اشتراك باقة أعمال (شهري)', desc: 'دفع عبر الرصيد', amount: '-1,499.00', type: 'withdrawal', date: 'أمس، 01:15 مساءً', status: 'ناجح' },
-                          { id: 3, title: 'شراء رصيد 50 رسالة SMS', desc: 'إضافة خدمات', amount: '-50.00', type: 'withdrawal', date: '04 يونيو، 09:00 صباحاً', status: 'ناجح' },
-                        ].map((tx) => (
+                        {isLoadingWallet ? (
+                          <div className="flex justify-center p-8"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>
+                        ) : walletTransactions.length === 0 ? (
+                          <div className="text-center py-8 text-slate-500 font-bold">لا توجد عمليات مسجلة.</div>
+                        ) : walletTransactions.map((tx) => {
+                          const amountNum = Number(tx.amount || 0);
+                          const isDeposit = tx.transaction_type === 'deposit' || tx.transaction_type === 'refund' || amountNum > 0;
+                          const amountStr = (isDeposit ? '+' : '-') + Math.abs(amountNum).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                          const dateObj = new Date(tx.created_at);
+                          const dateStr = dateObj.toLocaleDateString('ar-SA') + '، ' + dateObj.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+                          const statusStr = tx.status === 'success' ? 'ناجح' : tx.status === 'pending' ? 'معلق' : tx.status === 'failed' ? 'مرفوض' : tx.status;
+                          
+                          let title = tx.transaction_type === 'deposit' ? 'إيداع رصيد المحفظة' : tx.transaction_type === 'subscription_fee' ? 'اشتراك باقة' : tx.transaction_type === 'addon_fee' ? 'شراء إضافة' : tx.transaction_type;
+                          if (!title) title = isDeposit ? 'إيداع' : 'خصم';
+
+                          return (
                           <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 group cursor-default">
                             <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm shrink-0 ${tx.type === 'deposit' ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}>
-                                {tx.type === 'deposit' ? <ArrowDownLeft size={24} /> : <ArrowUpRight size={24} />}
+                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm shrink-0 ${isDeposit ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}>
+                                {isDeposit ? <ArrowDownLeft size={24} /> : <ArrowUpRight size={24} />}
                               </div>
                               <div>
-                                <p className="font-bold text-navy dark:text-white group-hover:text-[#0D9488] transition-colors text-sm sm:text-base">{tx.title}</p>
+                                <p className="font-bold text-navy dark:text-white group-hover:text-[#0D9488] transition-colors text-sm sm:text-base">{title}</p>
                                 <div className="flex items-center gap-2 mt-1">
-                                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">{tx.desc}</p>
+                                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">{tx.description || 'عملية مالية'}</p>
                                   <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 hidden sm:block"></span>
-                                  <p className="text-[10px] sm:text-xs text-slate-400 hidden sm:flex items-center gap-1"><Clock size={10} /> {tx.date}</p>
+                                  <p className="text-[10px] sm:text-xs text-slate-400 hidden sm:flex items-center gap-1"><Clock size={10} /> {dateStr}</p>
                                 </div>
                               </div>
                             </div>
                             <div className="text-left shrink-0">
-                              <p className={`font-black text-sm sm:text-base ${tx.type === 'deposit' ? 'text-[#0D9488]' : 'text-navy dark:text-white'}`} dir="ltr">
-                                {tx.amount} <span className="text-[10px] font-bold text-slate-400">ر.س</span>
+                              <p className={`font-black text-sm sm:text-base ${isDeposit ? 'text-[#0D9488]' : 'text-navy dark:text-white'}`} dir="ltr">
+                                {amountStr} <span className="text-[10px] font-bold text-slate-400">ر.س</span>
                               </p>
-                              <span className={`inline-flex items-center gap-1 mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${tx.type === 'deposit' ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
-                                <CheckCircle size={8} /> {tx.status}
+                              <span className={`inline-flex items-center gap-1 mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isDeposit ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
+                                <CheckCircle size={8} /> {statusStr}
                               </span>
                             </div>
                           </div>
-                        ))}
+                        )})}
                       </div>
                     </div>
                   )}
@@ -2446,7 +2501,8 @@ export const SettingsPage = ({
                           </ul>
 
                           {activeTier === 'startup' && (userProfile as any).subscription_is_yearly === isYearly ? (
-                            <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
+                            <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden group">
+                              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />
                               <div className="flex items-center gap-2 relative z-10">
                                 <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
                                 <span>باقتك الحالية</span>
@@ -2454,8 +2510,9 @@ export const SettingsPage = ({
                               {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
                             </button>
                           ) : (
-                            <button onClick={() => handleSubscribe('startup')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'startup' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
-                              اختيار الباقة
+                            <button onClick={() => handleSubscribe('startup')} className={`relative w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 overflow-hidden ${highlightedTier === 'startup' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
+                              {highlightedTier === 'startup' && <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />}
+                              <span className="relative z-10">اختيار الباقة</span>
                             </button>
                           )}
                         </div>
@@ -2486,7 +2543,8 @@ export const SettingsPage = ({
                           </ul>
 
                           {activeTier === 'business' && (userProfile as any).subscription_is_yearly === isYearly ? (
-                            <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
+                            <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden group">
+                              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />
                               <div className="flex items-center gap-2 relative z-10">
                                 <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
                                 <span>باقتك الحالية</span>
@@ -2494,8 +2552,9 @@ export const SettingsPage = ({
                               {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
                             </button>
                           ) : (
-                            <button onClick={() => handleSubscribe('business')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'business' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
-                              اختيار الباقة
+                            <button onClick={() => handleSubscribe('business')} className={`relative w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 overflow-hidden ${highlightedTier === 'business' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
+                              {highlightedTier === 'business' && <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />}
+                              <span className="relative z-10">اختيار الباقة</span>
                             </button>
                           )}
                         </div>
@@ -2526,7 +2585,8 @@ export const SettingsPage = ({
                           </ul>
 
                           {activeTier === 'enterprise' && (userProfile as any).subscription_is_yearly === isYearly ? (
-                            <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden">
+                            <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden group">
+                              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />
                               <div className="flex items-center gap-2 relative z-10">
                                 <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
                                 <span>باقتك الحالية</span>
@@ -2534,8 +2594,9 @@ export const SettingsPage = ({
                               {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
                             </button>
                           ) : (
-                            <button onClick={() => handleSubscribe('enterprise')} className={`w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 ${highlightedTier === 'enterprise' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
-                              اختيار الباقة
+                            <button onClick={() => handleSubscribe('enterprise')} className={`relative w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 overflow-hidden ${highlightedTier === 'enterprise' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
+                              {highlightedTier === 'enterprise' && <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />}
+                              <span className="relative z-10">اختيار الباقة</span>
                             </button>
                           )}
                         </div>
@@ -2600,9 +2661,7 @@ export const SettingsPage = ({
                   >
                     تخصيص المظهر
                   </h4>{" "}
-                  <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
-                    اختر الوضع الذي يريح عينيك أثناء العمل.
-                  </p>{" "}
+
                 </div>{" "}
                 <div className="flex items-center justify-between p-8 bg-slate-50 dark:bg-slate-800/50 rounded-[32px] border border-slate-100 dark:border-slate-700">
                   {" "}
@@ -2763,7 +2822,7 @@ export const ActiveJobs = ({
           onClick={() => setOpenDropdownId(null)}
         />
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
         {" "}
         {jobs.map((job) => {
           const expired = isJobExpired(job);
@@ -2771,89 +2830,96 @@ export const ActiveJobs = ({
             <motion.div
               key={job.id}
               style={{ zIndex: openDropdownId === job.id ? 20 : 1 }}
-              whileHover={{ y: -5 }}
+              whileHover={{ y: -3 }}
               onClick={() => job.status === "مسودة" ? onClone(job) : onManage(job)}
-              className={`bg-white relative cursor-pointer dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-lg group flex flex-col transition-all shadow-slate-200/40 ${expired ? 'opacity-80 grayscale-[25%]' : ''
-                }`}
+              className="bg-white relative cursor-pointer dark:bg-slate-800 p-4 rounded-2xl border border-white dark:border-slate-700 shadow-md hover:shadow-lg group flex flex-col transition-all shadow-slate-200/20"
             >
               {" "}
-              <div className="flex items-start justify-between mb-5 gap-2">
-                <div className="flex items-center gap-4 min-w-0">
+              <div className="flex items-start justify-between mb-3 gap-2">
+                <div className="flex items-center gap-3 min-w-0">
                   <div
-                    className={`w-12 h-12 shrink-0 bg-primary/10 text-primary rounded-xl flex items-center justify-center shadow-inner-3d`}
+                    className="w-10 h-10 shrink-0 bg-primary/10 text-primary rounded-xl flex items-center justify-center shadow-inner-3d"
                   >
                     {getJobIcon(job.title || job.campaignTitle)}
                   </div>
                   <div className="min-w-0">
                     <h3
-                      className={`text-lg font-bold mb-1 text-navy dark:text-white truncate`}
+                      className="text-base font-bold text-navy dark:text-white truncate"
                       title={job.title || job.campaignTitle || "عنوان غير محدد"}
                     >
                       {job.title || job.campaignTitle || "عنوان غير محدد"}
                     </h3>
-                    <p className={`text-sm font-medium text-slate-500 dark:text-slate-400 truncate`} title={job.company || "جهة غير محددة"}>
-                      {job.company || "جهة غير محددة"}
-                    </p>
+                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-slate-500">
+                      <span className="truncate" title={job.company || "جهة غير محددة"}>
+                        {job.company || "جهة غير محددة"}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div
-                  className={`shrink-0 px-3 py-1 rounded-full text-xs font-bold ${expired ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400" : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"}`}
-                >
-                  {expired ? "منتهي/مغلق" : job.status}
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${
+                      expired 
+                        ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400" 
+                        : job.status === "مسودة"
+                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                          : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    }`}
+                  >
+                    {expired ? "منتهي/مغلق" : job.status}
+                  </span>
+                  {job.job_number && (
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100/80 dark:bg-slate-700/80 text-slate-500 dark:text-slate-300 border border-slate-200/50 dark:border-slate-600/50">
+                      رقم: {job.job_number}
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 group flex flex-col justify-center">
-                  <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 shrink-0 rounded-lg bg-white dark:bg-slate-700 shadow-sm border border-slate-100 dark:border-slate-600 flex items-center justify-center text-primary transition-colors duration-300">
-                      <Users size={18} strokeWidth={2.5} />
+
+              {/* Scale-down original boxy subcards */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 group flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="w-7 h-7 shrink-0 rounded-lg bg-white dark:bg-slate-700 shadow-sm border border-slate-100 dark:border-slate-600 flex items-center justify-center text-primary transition-colors duration-300">
+                      <Users size={14} strokeWidth={2.5} />
                     </div>
-                    <div>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 truncate">
                         المتقدمين
                       </p>
-                      <p className="text-lg font-bold text-navy dark:text-white leading-none">
+                      <p className="text-sm font-black text-navy dark:text-white leading-none truncate">
                         {job.applicants}
                       </p>
                     </div>
                   </div>
                 </div>
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 group flex flex-col justify-center">
-                  <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 shrink-0 rounded-lg bg-white dark:bg-slate-700 shadow-sm border border-slate-100 dark:border-slate-600 flex items-center justify-center text-primary transition-colors duration-300">
-                      <Briefcase size={18} strokeWidth={2.5} />
+                <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 group flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="w-7 h-7 shrink-0 rounded-lg bg-white dark:bg-slate-700 shadow-sm border border-slate-100 dark:border-slate-600 flex items-center justify-center text-primary transition-colors duration-300">
+                      <Briefcase size={14} strokeWidth={2.5} />
                     </div>
-                    <div>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5">
+                    <div className="min-w-0">
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 truncate">
                         نوع العمل
                       </p>
-                      <p className="text-sm font-bold text-navy dark:text-white leading-none mt-1">
+                      <p className="text-xs font-bold text-navy dark:text-white leading-none truncate" title={job.type}>
                         {job.type}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
-              <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-700/50 mt-auto">
+
+              <div className="flex items-center justify-between pt-3 border-t border-slate-50 dark:border-slate-700/50 mt-auto">
                 {" "}
                 <div className="flex items-center gap-3">
                   {" "}
-                  <span className="text-xs text-slate-400 dark:text-slate-500 font-medium whitespace-nowrap">
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium whitespace-nowrap">
                     نُشر: {job.createdAt}
                   </span>{" "}
                 </div>{" "}
                 <div className="flex items-center gap-2">
                   {" "}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      job.status === "مسودة" ? onClone(job) : onManage(job);
-                    }}
-                    className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all active:scale-[0.95] bg-navy text-white shadow-lg shadow-navy/10`}
-                  >
-                    {" "}
-                    {job.status === "مسودة" ? "إكمال المسودة" : "إدارة الوظيفة"}{" "}
-                  </button>{" "}
                   <div className="relative">
                     {" "}
                     <button
@@ -3006,6 +3072,7 @@ interface Applicant {
   interview_score?: number;
   interview_sent_at?: string;
   interview_revoked?: boolean;
+  source?: string;
 }
 const mockApplicants: Applicant[] = [
   {

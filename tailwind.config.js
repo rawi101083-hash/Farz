@@ -7,6 +7,20 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
+      keyframes: {
+        shine: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+        'gradient-move': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        }
+      },
+      animation: {
+        shine: 'shine 2s infinite',
+        'gradient-move': 'gradient-move 3s ease infinite',
+      },
       fontFamily: {
         sans: ['"IBM Plex Sans Arabic"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },

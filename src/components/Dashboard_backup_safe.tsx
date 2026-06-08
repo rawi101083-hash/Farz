@@ -2067,11 +2067,11 @@ export const Dashboard = ({
                       className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 text-red-400 py-2.5 px-2 rounded-xl cursor-pointer hover:from-red-500/20 hover:to-orange-500/20 transition-all active:scale-95 shadow-sm group"
                     >
                       <Lock size={14} className="group-hover:scale-110 transition-transform" />
-                      <span className="text-[11px] font-bold">انتهت الفترة التجريبية! بادر بالترقية الآن</span>
+                      <span className="text-[11px] font-bold">نفد الرصيد المجاني! بادر بالترقية الآن</span>
                     </div>
                   ) : (
                     <>
-                      <span>الباقة التجريبية</span>
+                      <span>رصيد السير الذاتية</span>
                       <span>{cvLimit - cvsRemaining} / {cvLimit}</span>
                     </>
                   )

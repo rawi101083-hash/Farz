@@ -18,6 +18,12 @@
     text-align: right;
     font-family: system-ui, -apple-system, sans-serif !important;
   }
+
+  /* Disable Edge default password reveal eye */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none !important;
+  }
 }
 
 @layer utilities {
@@ -37,4 +43,15 @@
   .depth-2 {
     box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
   }
+}
+
+/* Global Scrollbar Hiding Utility */
+.hide-scrollbar {
+  -ms-overflow-style: none !important;  /* IE and Edge */
+  scrollbar-width: none !important;  /* Firefox */
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari and Opera */
+  width: 0 !important;
+  height: 0 !important;
 }

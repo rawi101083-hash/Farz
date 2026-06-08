@@ -140,22 +140,33 @@ export const ManageJob = ({
   const [pendingTabChange, setPendingTabChange] = useState<string | null>(null);
 
   const [passedCount, setPassedCount] = useState<number | null>(null);
+  const [totalAppsCount, setTotalAppsCount] = useState<number | null>(null);
 
   React.useEffect(() => {
-    const fetchPassedCount = async () => {
+    const fetchCounts = async () => {
       try {
-        const { count, error } = await supabase
+        const { count: passed, error: err1 } = await supabase
           .from('applicants')
           .select('*', { count: 'exact', head: true })
           .eq('job_id', job.id)
           .not('decision', 'in', '("filtered", "rejected", "CORRUPT_FILE_DO_NOT_SHOW")');
         
-        if (!error && count !== null) {
-          setPassedCount(count);
+        if (!err1 && passed !== null) {
+          setPassedCount(passed);
+        }
+
+        const { count: total, error: err2 } = await supabase
+          .from('applicants')
+          .select('*', { count: 'exact', head: true })
+          .eq('job_id', job.id)
+          .neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW');
+
+        if (!err2 && total !== null) {
+          setTotalAppsCount(total);
         }
       } catch (err) {}
     };
-    fetchPassedCount();
+    fetchCounts();
   }, [job.id]);
 
   // Knockout Input state
@@ -782,7 +793,7 @@ export const ManageJob = ({
                 </div>
                 <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
                   <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Users size={14} className="text-primary"/> إجمالي المتقدمين</span>
-                  <span className="font-bold text-navy dark:text-white">{job.applicants}</span>
+                  <span className="font-bold text-navy dark:text-white">{totalAppsCount !== null ? totalAppsCount : job.applicants}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
                   <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5"><CheckCircle size={14} className="text-primary"/> المجتازين للفرز</span>

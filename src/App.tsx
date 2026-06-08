@@ -40,7 +40,7 @@ class ErrorBoundary extends React.Component<any, any> {
 }
 import { supabase } from "./lib/supabaseClient";
 import { motion, AnimatePresence } from "motion/react";
-import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target, Moon, Sun , Eye, EyeOff, Building2, User } from 'lucide-react';
+import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target, Moon, Sun , Eye, EyeOff, Building2, User, Mic } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import skillsDictionaryRaw from "./skillsDictionary.json";
 ;
@@ -238,7 +238,7 @@ const PublicJobPage = ({
             <Lock size={32} />
           </div>
           <h2 className="text-2xl font-bold text-navy dark:text-white mb-4">الإعلان غير متاح</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium">عذراً، هذا الإعلان غير متاح حالياً أو معلق كمسودة، يُرجى مراجعة الشركة الناشرة للإعلان.</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">عذراً، هذا الإعلان غير متاح.</p>
         </div>
       </div>
     );
@@ -952,13 +952,13 @@ const LoginPage = ({
             {!isForgotPassword && (
               <div className="mt-6 text-center">
                 {mode === "login" ? (
-                  <button type="button" onClick={() => setMode("register")} className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors">
-                    ليس لديك حساب؟ إنشاء حساب جديد
-                  </button>
+                  <div className="text-sm font-bold text-slate-600 dark:text-slate-400">
+                    ليس لديك حساب؟ <button type="button" onClick={() => setMode("register")} className="text-primary hover:text-primary/80 transition-colors">إنشاء حساب جديد</button>
+                  </div>
                 ) : (
-                  <button type="button" onClick={() => setMode("login")} className="text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors">
-                    لديك حساب بالفعل؟ تسجيل الدخول
-                  </button>
+                  <div className="text-sm font-bold text-slate-600 dark:text-slate-400">
+                    لديك حساب بالفعل؟ <button type="button" onClick={() => setMode("login")} className="text-primary hover:text-primary/80 transition-colors">تسجيل الدخول</button>
+                  </div>
                 )}
               </div>
             )}
@@ -1163,13 +1163,19 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
             قدرات تقنية متقدمة لعملية التوظيف
           </h2>{" "}
         </div>{" "}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {" "}
           {[
             {
               title: "محرك استخراج البيانات (Data Parsing)",
               desc: "تحويل السير الذاتية المعقدة بمختلف صيغها إلى بيانات منظمة وجداول جاهزة للتحليل في ثوانٍ.",
               icon: <FileText className="text-primary fill-primary/20" size={32} />,
+              color: "bg-primary/10",
+            },
+            {
+              title: "مقابلات بالذكاء الاصطناعي",
+              desc: "إجراء مقابلات مبرمجة ومؤتمتة بالذكاء الاصطناعي لتقييم المهارات التقنية والشخصية بدقة وبدون تحيز.",
+              icon: <Mic className="text-primary fill-primary/20" size={32} />,
               color: "bg-primary/10",
             },
             {
@@ -1229,7 +1235,7 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
               <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Target size={32} />
               </div>
-              <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">99% دقة مطابقة</h3>
+              <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">100% دقة مطابقة</h3>
               <p className="text-slate-500 dark:text-slate-400 font-medium">خوارزميات ترشح الكفاءات بدون تحيز</p>
             </div>
             <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm card-3d">
@@ -1473,9 +1479,25 @@ const BookingModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
 };
 
 export default function App() {
+  const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [talentPool, setTalentPool] = useState<Applicant[]>([]);
   const [applicantSelectedRoleId, setApplicantSelectedRoleId] = useState<string | null>(null);
-  const [selectedApplicantForDetails, setSelectedApplicantForDetails] = useState<Applicant | null>(null);
+  const [selectedApplicantForDetails, setSelectedApplicantForDetails] = useState<Applicant | null>(() => {
+    const saved = sessionStorage.getItem("sahab_selected_applicant");
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (selectedApplicantForDetails) {
+      sessionStorage.setItem("sahab_selected_applicant", JSON.stringify(selectedApplicantForDetails));
+    } else {
+      sessionStorage.removeItem("sahab_selected_applicant");
+    }
+  }, [selectedApplicantForDetails]);
   const [userProfile, setUserProfile] = useState({
     id: "",
     name: "",
@@ -1501,7 +1523,13 @@ export default function App() {
   });
   const [session, setSession] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
-  const [dashboardTab, setDashboardTab] = useState("الرئيسية");
+  const [dashboardTab, setDashboardTab] = useState(() => {
+    return sessionStorage.getItem("sahab_dashboard_tab") || "الرئيسية";
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem("sahab_dashboard_tab", dashboardTab);
+  }, [dashboardTab]);
   const [dashboardPendingAction, setDashboardPendingAction] = useState<{ id: string, decision: string, isOffer?: boolean } | null>(null);
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("sahab_dark_mode") === "true";
@@ -1538,7 +1566,22 @@ export default function App() {
     window.addEventListener("showToast", handler);
     return () => window.removeEventListener("showToast", handler);
   }, []);
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(() => {
+    const saved = sessionStorage.getItem("sahab_selected_job");
+    try {
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (selectedJob) {
+      sessionStorage.setItem("sahab_selected_job", JSON.stringify(selectedJob));
+    } else {
+      sessionStorage.removeItem("sahab_selected_job");
+    }
+  }, [selectedJob]);
   const [clonedJob, setClonedJob] = useState<Job | null>(null);
   const [shortlistedIds, setShortlistedIds] = useState<string[]>([]);
 
@@ -1558,72 +1601,23 @@ export default function App() {
   });
 
   useEffect(() => {
-    const fetchJobs = async () => {
-      try {
-        const { data, error } = await supabase.from('jobs').select('*').order('created_at', { ascending: false });
-        if (data && !error) {
-          const mappedDbJobs: Job[] = data.map((raw: any) => ({
-            id: raw.id,
-            company_id: raw.company_id,
-            title: raw.title,
-            recordType: raw.record_type || 'single',
-            company: raw.department || raw.company_name || "",
-            companyLogo: raw.company_logo || null,
-            department: raw.department || "",
-            location: raw.location || "",
-            type: raw.type || "",
-            types: Array.isArray(raw.types) ? raw.types : [],
-            autoRejectCity: raw.auto_reject_city || false,
-            autoRejectQualification: raw.auto_reject_qualification || false,
-            autoRejectExperience: raw.auto_reject_experience || false,
-            experience: raw.experience_level || "",
-            qualification: raw.qualification || "",
-            description: raw.description || "",
-            responsibilities: raw.responsibilities || "",
-            qualifications: raw.qualifications_details || "",
-            targetMajors: Array.isArray(raw.target_majors) ? raw.target_majors : [],
-            targetSkills: Array.isArray(raw.target_skills) ? raw.target_skills : [],
-            requiredLanguages: Array.isArray(raw.required_languages) ? raw.required_languages : [],
-            salaryMin: raw.salary_min || 0,
-            salaryMax: raw.salary_max || 0,
-            hideSalary: raw.hide_salary || false,
-            knockoutQuestions: Array.isArray(raw.knockout_questions) ? raw.knockout_questions : [],
-            customQuestions: Array.isArray(raw.custom_questions) ? raw.custom_questions : [],
-            customAttachments: Array.isArray(raw.custom_attachments) ? raw.custom_attachments : [],
-            aiInstructions: raw.ai_instructions || "",
-            status: raw.status || "مسودة",
-            createdAt: raw.created_at ? raw.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-            applicants: 0,
-            visits_count: raw.visits_count || 0,
-            directUpload: raw.direct_upload || false,
-            roles: Array.isArray(raw.roles) ? raw.roles : [],
-            aiOverrideFields: raw.ai_override_fields || undefined
-          }));
+    if (session && step && step !== "landing" && step !== "login" && step !== "registerCompany") {
+      sessionStorage.setItem("sahab_active_step", step);
+    }
+  }, [step, session]);
 
-          setJobs(prevJobs => {
-            const drafts = prevJobs.filter(j => j.status === "مسودة" && !mappedDbJobs.find(dbj => dbj.id === j.id));
-            return [...drafts, ...mappedDbJobs];
-          });
-        }
-      } catch (err) {
-        console.warn("Failed to fetch jobs from Supabase", err);
-      }
-    };
-    fetchJobs();
-  }, []);
-
+  // Jobs fetching moved to user-dependent useEffect
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user || null);
       if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
-        // Restore last tab from sessionStorage (Deep Linking)
-        const savedTab = sessionStorage.getItem('sahab_last_tab');
-        if (savedTab) {
-          setDashboardTab(savedTab);
-          sessionStorage.removeItem('sahab_last_tab');
+        const savedStep = sessionStorage.getItem('sahab_active_step');
+        if (savedStep && savedStep !== "landing" && savedStep !== "login" && savedStep !== "registerCompany") {
+          setStep(savedStep as FlowStep);
+        } else {
+          setStep("dashboard");
         }
-        setStep("dashboard");
       }
     });
 
@@ -1638,32 +1632,63 @@ export default function App() {
         setStep("updatePassword");
       } else if (_event === 'TOKEN_REFRESHED' || _event === 'SIGNED_IN') {
         if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
-          // Restore saved tab on re-login after session timeout
-          const savedTab = sessionStorage.getItem('sahab_last_tab');
-          if (savedTab) {
-            setDashboardTab(savedTab);
-            sessionStorage.removeItem('sahab_last_tab');
-          }
+          const savedStep = sessionStorage.getItem('sahab_active_step');
           setStep(prevStep => {
             if (prevStep === "updatePassword") return "updatePassword";
-            if (["landing", "login", "registerCompany"].includes(prevStep)) return "dashboard";
+            if (["landing", "login", "registerCompany"].includes(prevStep)) {
+              return (savedStep as FlowStep) || "dashboard";
+            }
             return prevStep;
           });
         }
       } else if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
+        const savedStep = sessionStorage.getItem('sahab_active_step');
         setStep(prevStep => {
           if (prevStep === "updatePassword") return "updatePassword";
-          if (["landing", "login", "registerCompany"].includes(prevStep)) return "dashboard";
+          if (["landing", "login", "registerCompany"].includes(prevStep)) {
+            return (savedStep as FlowStep) || "dashboard";
+          }
           return prevStep;
         });
       } else if (!session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
         if (_event === 'SIGNED_OUT') {
-          // Save current tab before logout for session timeout scenarios
-          setDashboardTab(prev => {
-            sessionStorage.setItem('sahab_last_tab', prev);
-            return prev;
-          });
+          sessionStorage.removeItem("sahab_active_step");
+          sessionStorage.removeItem("sahab_dashboard_tab");
+          sessionStorage.removeItem("sahab_selected_applicant");
+          sessionStorage.removeItem("sahab_selected_job");
+          sessionStorage.removeItem("sahab_decision_filter");
+          sessionStorage.removeItem("sahab_job_filter");
           setStep("landing");
+          localStorage.removeItem("sahab_jobs_db_v1");
+          localStorage.removeItem("sahab_applicants_fast_cache");
+          localStorage.removeItem("sahab_decisions");
+          setJobs([]);
+          setUserProfile({
+            id: "",
+            name: "",
+            title: "",
+            companyName: "",
+            entityType: "company",
+            commercialRegistration: "",
+            freelanceDocument: "",
+            taxNumber: "",
+            city: "",
+            companyLogo: "",
+            subscription_tier: "free",
+            subscription_end_date: null,
+            subscription_is_yearly: false,
+            cvs_processed_count: 0,
+            fields_locked: false,
+            cv_limit: 0,
+            jobs_limit: 0,
+            interviews_limit: 0,
+            used_jobs: 0,
+            used_interviews: 0,
+            extra_cv_credits: 0,
+            extra_interview_credits: 0,
+            addons_bought_this_month: 0,
+            isLoaded: false,
+          });
         }
       }
     });
@@ -1709,14 +1734,75 @@ export default function App() {
             if (!isProfileComplete) {
               setDashboardTab("الحساب");
             }
+          } else {
+            // Handle new user or error cases so we don't get stuck in loading
+            setUserProfile(prev => ({ ...prev, id: user.id, name: user.user_metadata?.full_name || prev.name, isLoaded: true }));
+            setDashboardTab("الحساب");
           }
         } catch (err) {
           console.error("Error fetching company profile:", err);
+          setUserProfile(prev => ({ ...prev, id: user.id, name: user.user_metadata?.full_name || prev.name, isLoaded: true }));
+          setDashboardTab("الحساب");
         }
       };
+      
+      const fetchUserJobs = async () => {
+        try {
+          const { data, error } = await supabase.from('jobs').select('*').eq('company_id', user.id).order('created_at', { ascending: false });
+          if (data && !error) {
+            const mappedDbJobs: Job[] = data.map((raw: any) => ({
+              id: raw.id,
+              company_id: raw.company_id,
+              title: raw.title,
+              recordType: raw.record_type || 'single',
+              company: raw.department || raw.company_name || "",
+              companyLogo: raw.company_logo || null,
+              department: raw.department || "",
+              location: raw.location || "",
+              type: raw.type || "",
+              types: Array.isArray(raw.types) ? raw.types : [],
+              autoRejectCity: raw.auto_reject_city || false,
+              autoRejectQualification: raw.auto_reject_qualification || false,
+              autoRejectExperience: raw.auto_reject_experience || false,
+              experience: raw.experience_level || "",
+              qualification: raw.qualification || "",
+              description: raw.description || "",
+              responsibilities: raw.responsibilities || "",
+              qualifications: raw.qualifications_details || "",
+              targetMajors: Array.isArray(raw.target_majors) ? raw.target_majors : [],
+              targetSkills: Array.isArray(raw.target_skills) ? raw.target_skills : [],
+              requiredLanguages: Array.isArray(raw.required_languages) ? raw.required_languages : [],
+              salaryMin: raw.salary_min || 0,
+              salaryMax: raw.salary_max || 0,
+              hideSalary: raw.hide_salary || false,
+              knockoutQuestions: Array.isArray(raw.knockout_questions) ? raw.knockout_questions : [],
+              customQuestions: Array.isArray(raw.custom_questions) ? raw.custom_questions : [],
+              customAttachments: Array.isArray(raw.custom_attachments) ? raw.custom_attachments : [],
+              aiInstructions: raw.ai_instructions || "",
+              status: raw.status || "مسودة",
+              createdAt: raw.created_at ? raw.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+              applicants: 0,
+              visits_count: raw.visits_count || 0,
+              directUpload: raw.direct_upload || false,
+              roles: Array.isArray(raw.roles) ? raw.roles : [],
+              aiOverrideFields: raw.ai_override_fields || undefined,
+              job_number: raw.job_number
+            }));
+
+            setJobs(prevJobs => {
+              const drafts = prevJobs.filter(j => j.status === "مسودة" && !mappedDbJobs.find(dbj => dbj.id === j.id));
+              return [...drafts, ...mappedDbJobs];
+            });
+          }
+        } catch (err) {
+          console.warn("Failed to fetch jobs from Supabase", err);
+        }
+      };
+      
       fetchCompanyProfile();
+      fetchUserJobs();
     }
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -1755,7 +1841,8 @@ export default function App() {
                 applicants: 0,
                 directUpload: data.direct_upload || false,
                 roles: Array.isArray(data.roles) ? data.roles : [],
-                aiOverrideFields: data.ai_override_fields || undefined
+                aiOverrideFields: data.ai_override_fields || undefined,
+                job_number: data.job_number
              };
              setSelectedJob(fetchedJob as Job);
              setStep(
@@ -1849,52 +1936,50 @@ export default function App() {
     }
 
     // Backend Sync (Supabase)
-    if (resolvedStatus !== "مسودة") {
-      try {
-        const actualCompanyId = session?.user?.id || "00000000-0000-0000-0000-000000000000";
-        const jobForDB = {
-          id: newJob.id,
-          company_id: actualCompanyId,
-          title: newJob.title,
-          record_type: newJob.recordType || 'single',
-          department: newJob.company || newJob.department,
-          location: newJob.location,
-          type: newJob.type,
-          types: newJob.types || [],
-          auto_reject_city: newJob.autoRejectCity || false,
-          auto_reject_qualification: newJob.autoRejectQualification || false,
-          auto_reject_experience: newJob.autoRejectExperience || false,
-          experience_level: newJob.experience,
-          qualification: newJob.qualification,
-          description: newJob.description,
-          responsibilities: newJob.responsibilities,
-          qualifications_details: newJob.qualifications,
-          target_majors: newJob.targetMajors,
-          target_skills: newJob.targetSkills,
-          required_languages: newJob.requiredLanguages,
-          salary_min: newJob.salaryMin === "" ? null : Number(newJob.salaryMin) || null,
-          salary_max: newJob.salaryMax === "" ? null : Number(newJob.salaryMax) || null,
-          hide_salary: newJob.hideSalary,
-          knockout_questions: newJob.knockoutQuestions,
-          custom_questions: newJob.customQuestions,
-          custom_attachments: newJob.customAttachments,
-          ai_instructions: newJob.aiInstructions,
-          status: newJob.status,
-          created_at: new Date().toISOString(),
-          direct_upload: newJob.directUpload || false,
-          roles: newJob.roles || [],
-          ai_override_fields: newJob.aiOverrideFields || undefined,
-          company_logo: newJob.companyLogo || null
-        };
-        const { error } = await supabase.from('jobs').insert([jobForDB]);
-        if (error) {
-          console.error("Supabase Error saving job:", error);
-          alert("فشل حفظ الوظيفة في قاعدة البيانات، يرجى المحاولة مرة أخرى: " + error.message);
-        }
-      } catch (err: any) {
-        console.error("Could not sync job to Supabase:", err);
-        alert("فشل الاتصال بقاعدة البيانات. يرجى التحقق من اتصالك والمحاولة مجدداً.");
+    try {
+      const actualCompanyId = session?.user?.id || "00000000-0000-0000-0000-000000000000";
+      const jobForDB = {
+        id: newJob.id,
+        company_id: actualCompanyId,
+        title: newJob.title,
+        record_type: newJob.recordType || 'single',
+        department: newJob.company || newJob.department,
+        location: newJob.location,
+        type: newJob.type,
+        types: newJob.types || [],
+        auto_reject_city: newJob.autoRejectCity || false,
+        auto_reject_qualification: newJob.autoRejectQualification || false,
+        auto_reject_experience: newJob.autoRejectExperience || false,
+        experience_level: newJob.experience,
+        qualification: newJob.qualification,
+        description: newJob.description,
+        responsibilities: newJob.responsibilities,
+        qualifications_details: newJob.qualifications,
+        target_majors: newJob.targetMajors,
+        target_skills: newJob.targetSkills,
+        required_languages: newJob.requiredLanguages,
+        salary_min: newJob.salaryMin === "" ? null : Number(newJob.salaryMin) || null,
+        salary_max: newJob.salaryMax === "" ? null : Number(newJob.salaryMax) || null,
+        hide_salary: newJob.hideSalary,
+        knockout_questions: newJob.knockoutQuestions,
+        custom_questions: newJob.customQuestions,
+        custom_attachments: newJob.customAttachments,
+        ai_instructions: newJob.aiInstructions,
+        status: newJob.status,
+        created_at: new Date().toISOString(),
+        direct_upload: newJob.directUpload || false,
+        roles: newJob.roles || [],
+        ai_override_fields: newJob.aiOverrideFields || undefined,
+        company_logo: newJob.companyLogo || null
+      };
+      const { error } = await supabase.from('jobs').upsert([jobForDB]);
+      if (error) {
+        console.error("Supabase Error saving job:", error);
+        alert("فشل حفظ الوظيفة في قاعدة البيانات، يرجى المحاولة مرة أخرى: " + error.message);
       }
+    } catch (err: any) {
+      console.error("Could not sync job to Supabase:", err);
+      alert("فشل الاتصال بقاعدة البيانات. يرجى التحقق من اتصالك والمحاولة مجدداً.");
     }
 
     // إذا كانت الوظيفة ستحفظ كمسودة صراحةً، لا ننتقل لصفحة النجاح
@@ -1965,6 +2050,13 @@ export default function App() {
     // Check Subscription Limits
     const activeCount = jobs.filter(j => j.status === 'نشط' || j.status === 'مسودة').length;
     let limit = userProfile?.jobs_limit || 0;
+    if (!limit) {
+      if (userProfile?.subscription_tier === 'free') limit = 1;
+      else if (userProfile?.subscription_tier === 'one-time') limit = 1;
+      else if (userProfile?.subscription_tier === 'startup' || userProfile?.subscription_tier === 'growth') limit = 3;
+      else if (userProfile?.subscription_tier === 'business') limit = 10;
+      else if (userProfile?.subscription_tier === 'enterprise') limit = Infinity;
+    }
     if (userProfile?.subscription_tier === 'enterprise') limit = Infinity;
     if (limit === 0) {
       alert("عذراً، يجب عليك اختيار باقة اشتراك لتمكين إضافة الإعلانات.");
@@ -2130,16 +2222,28 @@ export default function App() {
                 onShowOnboarding={() => setShowOnboardingGlobal(true)}
                 talentPool={talentPool}
                 setTalentPool={setTalentPool}
-                onDeleteJob={(id) => {
+                onDeleteJob={async (id) => {
                   setJobs(prev => {
                     const newJobs = prev.filter(j => j.id !== id);
-                    // تحديث الذاكرة فوراً لمنع ظهور المسودة بعد الـ Refresh
                     localStorage.setItem("sahab_jobs_db_v1", JSON.stringify(newJobs));
                     return newJobs;
                   });
+                  try {
+                    await supabase.from('jobs').delete().eq('id', id);
+                  } catch (err) {
+                    console.error("Failed to delete job from Supabase:", err);
+                  }
                 }}
-                onDeleteAllDrafts={() => {
+                onDeleteAllDrafts={async () => {
+                  const draftIds = jobs.filter(j => j.status === "مسودة").map(j => j.id);
                   setJobs(prev => prev.filter(j => j.status !== "مسودة"));
+                  if (draftIds.length > 0) {
+                    try {
+                      await supabase.from('jobs').delete().in('id', draftIds);
+                    } catch (err) {
+                      console.error("Failed to delete drafts from Supabase:", err);
+                    }
+                  }
                 }}
                 pendingAction={dashboardPendingAction}
                 clearPendingAction={() => setDashboardPendingAction(null)}
