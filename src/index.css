@@ -46,6 +46,54 @@
 }
 
 /* Global Scrollbar Hiding Utility */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans bg-bg text-navy antialiased;
+  }
+  .dark body {
+    @apply bg-navy text-white;
+  }
+  
+  /* Enforce English numerals across the system for numeric inputs */
+  input[type="date"],
+  input[type="number"],
+  input[type="tel"] {
+    direction: ltr !important;
+    text-align: right;
+    font-family: system-ui, -apple-system, sans-serif !important;
+  }
+
+  /* Disable Edge default password reveal eye */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none !important;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl;
+  }
+  
+  .card-3d {
+    @apply transition-all duration-500 ease-out hover:-translate-y-2 hover:shadow-2xl hover:shadow-primary/20 border border-white/50;
+    transform-style: preserve-3d;
+  }
+  
+  .depth-1 {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  }
+  
+  .depth-2 {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+  }
+}
+
+/* Global Scrollbar Hiding Utility */
 .hide-scrollbar {
   -ms-overflow-style: none !important;  /* IE and Edge */
   scrollbar-width: none !important;  /* Firefox */
@@ -55,3 +103,8 @@
   width: 0 !important;
   height: 0 !important;
 }
+
+@media (min-width: 1024px) {
+  .sidebar-padding-open { padding-right: 340px !important; }
+  .sidebar-padding-closed { padding-right: 100px !important; }
+} 
