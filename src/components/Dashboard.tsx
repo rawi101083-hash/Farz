@@ -2340,9 +2340,9 @@ export const Dashboard = ({
           </div>
         </aside>{" "}
         {/* Main Content */}{" "}
-        <main className={`flex-1 ${isSidebarOpen ? 'lg:pr-[340px]' : 'lg:pr-24'} flex flex-col min-h-screen transition-all duration-300`}>
+        <main className="flex-1 flex flex-col min-h-screen transition-all duration-300">
           {(userProfile?.isLoaded && !userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
-            <div className="bg-amber-100 dark:bg-amber-900/50 border-b border-amber-200 dark:border-amber-700/50 mt-16 md:mt-0 z-10 transition-colors">
+            <div className={`bg-amber-100 dark:bg-amber-900/50 border-b border-amber-200 dark:border-amber-700/50 mt-16 md:mt-0 z-10 transition-colors ${isSidebarOpen ? 'lg:pr-[340px]' : 'lg:pr-[100px]'}`}>
               <div className="max-w-6xl mx-auto p-3 sm:px-8 flex items-center justify-between text-amber-900 dark:text-amber-100 text-sm md:text-base">
                 <span className="font-bold flex items-center gap-2 max-w-[70%] leading-relaxed">
                   <ShieldCheck size={20} className="text-orange-600 dark:text-orange-400 shrink-0" /> أهلاً بك! لتتمكن من نشر إعلاناتك الوظيفية، يرجى استكمال بيانات الكيان القانونية.
@@ -2356,7 +2356,7 @@ export const Dashboard = ({
               </div>
             </div>
           )}
-          <div className="flex-1 p-10 pt-24 lg:pt-10 w-full min-w-0 max-w-full">
+          <div className={`flex-1 p-10 pt-24 lg:pt-10 w-full min-w-0 max-w-full ${isSidebarOpen ? 'lg:pr-[340px]' : 'lg:pr-[100px]'}`}>
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
