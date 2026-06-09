@@ -2194,7 +2194,7 @@ export const Dashboard = ({
         {/* Sidebar */}{" "}
         <aside className={`${isSidebarOpen ? 'w-80 p-8' : 'w-20 p-4'} bg-navy text-white hidden lg:flex flex-col fixed h-full right-0 shadow-2xl z-20 transition-all duration-300`}>
           <div className="flex flex-col gap-6 mb-12">
-            <div className="flex items-center gap-4 px-2">
+            <div className={`flex ${isSidebarOpen ? 'items-center gap-4' : 'flex-col items-center gap-5'} px-2`}>
               <LogoIcon />{" "}
               {isSidebarOpen && (
               <span className="text-3xl font-black tracking-tighter text-white flex-1">
@@ -2204,7 +2204,7 @@ export const Dashboard = ({
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 title={isSidebarOpen ? 'تصغير القائمة' : 'توسيع القائمة'}
-                className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all shrink-0 ml-auto"
+                className={`w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all shrink-0 ${isSidebarOpen ? 'ml-auto' : ''}`}
               >
                 {isSidebarOpen ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
               </button>
@@ -2340,7 +2340,7 @@ export const Dashboard = ({
           </div>
         </aside>{" "}
         {/* Main Content */}{" "}
-        <main className={`flex-1 ${isSidebarOpen ? 'lg:pr-80' : 'lg:pr-20'} flex flex-col min-h-screen transition-all duration-300`}>
+        <main className={`flex-1 ${isSidebarOpen ? 'lg:pr-[340px]' : 'lg:pr-24'} flex flex-col min-h-screen transition-all duration-300`}>
           {(userProfile?.isLoaded && !userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
             <div className="bg-amber-100 dark:bg-amber-900/50 border-b border-amber-200 dark:border-amber-700/50 mt-16 md:mt-0 z-10 transition-colors">
               <div className="max-w-6xl mx-auto p-3 sm:px-8 flex items-center justify-between text-amber-900 dark:text-amber-100 text-sm md:text-base">
