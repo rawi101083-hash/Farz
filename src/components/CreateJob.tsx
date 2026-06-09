@@ -1508,26 +1508,11 @@ export const CreateJob = ({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-6"
+          className="flex flex-col gap-4"
         >
-          {" "}
-          <div className="p-10 bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700">
-            {" "}
-            <h2 className="text-3xl font-bold text-navy dark:text-white">
-              {" "}
-              {createJobType === "single"
-                ? "إنشاء شاغر وظيفي"
-                : createJobType === "quick_link"
-                  ? "إنشاء رابط توظيف سريع ⚡"
-                  : "إنشاء إعلان وظيفي"}{" "}
-            </h2>{" "}
-            <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">
-              أدخل تفاصيل الوظيفة لبدء استقبال المتقدمين وفرزهم تلقائياً بكفاءة عالية.
-            </p>{" "}
-          </div>{" "}
 
           {createJobType !== "quick_link" && (
-            <div className="mb-6">
+            <div className="mb-1">
               <div className="flex bg-white dark:bg-slate-800 p-1.5 gap-1.5 rounded-2xl w-full shadow-sm border border-slate-200 dark:border-slate-700">
                 <button
                   type="button"
@@ -1550,66 +1535,6 @@ export const CreateJob = ({
           <form className="space-y-6" id="createJobForm" onSubmit={handleSubmit}>
 
 
-
-            {createJobType !== "quick_link" && (
-              <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 mb-8 space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <Sparkles className="text-primary" size={20} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-navy dark:text-white">
-                        واجهة الترحيب للمتقدمين <span className="text-slate-400 font-normal text-sm">(اختياري)</span>
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">صفحة هبوط مخصصة لاستقبال المتقدمين قبل تعبئة النموذج</p>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={enableWelcomeUI}
-                      onChange={(e) => setEnableWelcomeUI(e.target.checked)}
-                    />
-                    <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary shrink-0"></div>
-                    <span className="mr-3 text-sm font-bold text-slate-700 dark:text-slate-300">تفعيل هذه الواجهة</span>
-                  </label>
-                </div>
-                {enableWelcomeUI && (
-                  <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-6">
-                    {adType === "campaign" && (
-                      <div className="space-y-3">
-                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                          عنوان الإعلان / البوابة <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          required
-                          type="text"
-                          value={campaignTitle}
-                          onChange={(e) => setCampaignTitle(e.target.value)}
-                          placeholder="مثال: وظيفة شاغرة - مبيعات 2026..."
-                          className="w-full px-6 py-4 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
-                        />
-                      </div>
-                    )}
-                    <div className="space-y-3">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                        رسالة الترحيب <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        required
-                        rows={3}
-                        value={campaignDescription}
-                        onChange={(e) => setCampaignDescription(e.target.value)}
-                        placeholder="مثال: نبذة مختصرة للترحيب..."
-                        className="w-full px-6 py-4 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium resize-none"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {createJobType === "quick_link" && (
               <div className="bg-cyan-50 dark:bg-cyan-900/20 border-2 border-cyan-100 dark:border-cyan-800/50 p-6 rounded-3xl flex flex-col md:flex-row items-center md:items-start gap-5 shadow-sm mb-4">
@@ -1826,11 +1751,67 @@ export const CreateJob = ({
                     (تنبيه: هذه البيانات أساسية لعمل محرك الفرز بدقة، حتى وإن تم تفعيل خاصية التخطي للمتقدمين)
                   </p>
                 )}
+                {createJobType !== "quick_link" && (
+                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 mb-6">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="text-primary" size={16} />
+                        <div>
+                          <h4 className="text-sm font-bold text-navy dark:text-white">
+                            واجهة الترحيب للمتقدمين (اختياري)
+                          </h4>
+                        </div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={enableWelcomeUI}
+                          onChange={(e) => setEnableWelcomeUI(e.target.checked)}
+                        />
+                        <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary shrink-0"></div>
+                        <span className="mr-2 text-xs font-bold text-slate-700 dark:text-slate-300">تفعيل</span>
+                      </label>
+                    </div>
+                    {enableWelcomeUI && (
+                      <div className="mt-4 space-y-4">
+                        {adType === "campaign" && (
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                              عنوان الإعلان / البوابة <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              required
+                              type="text"
+                              value={campaignTitle}
+                              onChange={(e) => setCampaignTitle(e.target.value)}
+                              placeholder="مثال: وظيفة شاغرة - مبيعات 2026..."
+                              className="w-full px-4 py-2.5 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-600 dark:text-white text-sm rounded-lg outline-none hover:border-primary focus:border-primary transition-colors"
+                            />
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                            رسالة الترحيب <span className="text-red-500">*</span>
+                          </label>
+                          <textarea
+                            required
+                            rows={2}
+                            value={campaignDescription}
+                            onChange={(e) => setCampaignDescription(e.target.value)}
+                            placeholder="مثال: نبذة مختصرة للترحيب..."
+                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-600 dark:text-white text-sm rounded-lg outline-none hover:border-primary focus:border-primary transition-colors resize-none"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="space-y-3">
-                  {" "}
                   <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
                     المسمى الوظيفي (Role) <span className="text-red-500">*</span>
-                  </label>{" "}
+                  </label>
                   <input
 
                     type="text"

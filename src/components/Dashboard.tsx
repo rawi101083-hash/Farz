@@ -481,12 +481,22 @@ export const Dashboard = ({
               }
             }
 
+            const parsedAnswers = (() => {
+              const val = raw.custom_answers;
+              if (!val) return [];
+              if (Array.isArray(val)) return val;
+              if (typeof val === 'string') {
+                try { return JSON.parse(val); } catch (e) { return []; }
+              }
+              return [];
+            })();
+
             return {
               id: raw.id,
               name: raw.full_name || "متقدم جديد",
               job: actualJobTitle,
               rating: raw.match_score || raw.match_percentage || 0,
-              status: (Array.isArray(raw.custom_answers) ? raw.custom_answers.find((a: any) => a.question === "مدة الانضمام / الجاهزية للعمل")?.answer : null) || raw.availability || raw.status || "غير محدد",
+              status: parsedAnswers.find((a: any) => a.question === "مدة الانضمام / الجاهزية للعمل")?.answer || raw.availability || raw.status || "غير محدد",
               expectedSalary: raw.expected_salary || "",
               askExpectedSalary: actualAskExpectedSalary,
               color: "emerald",
@@ -497,7 +507,8 @@ export const Dashboard = ({
               aiSummary: raw.ai_summary || raw.ai_justification || "قيد التحليل أو تعذر الاستخراج...",
               voiceEval: raw.voice_eval || "",
               voiceEvalUrl: raw.voice_eval || raw.voice_eval_url || "",
-              customAnswers: raw.custom_answers,
+              customAnswers: parsedAnswers,
+              city: parsedAnswers.find((a: any) => a.question === "المدينة")?.answer || "",
               decision: (raw.decision === 'evaluated' ? 'pending' : raw.decision) || latestDecisions[raw.id] || "pending",
               rejection_reason: raw.rejection_reason || "",
               hr_notes: raw.hr_notes || "",
@@ -511,6 +522,7 @@ export const Dashboard = ({
               interview_sent: raw.interview_sent || false,
               is_interview_completed: raw.is_interview_completed || false,
               has_started_interview: raw.has_started_interview || false,
+              interview_revoked: raw.interview_revoked || false,
               interview_transcript: raw.interview_transcript || "",
               interview_summary: raw.interview_summary || "",
               interview_score: raw.interview_score || 0,
@@ -1062,60 +1074,69 @@ export const Dashboard = ({
               const acceptedCount = baseStatsApps.filter(a => a.decision === "accepted").length;
 
               return (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
                   {[
                     {
                       label: "إجمالي المتقدمين",
                       value: totalCount.toString(),
                       change: `+${totalCount}`,
-                      icon: <Users size={20} className="text-teal-600 dark:text-teal-400" />,
-                      bgClass: "bg-white dark:bg-slate-800/80",
-                      iconBg: "bg-teal-100 dark:bg-teal-900/50",
-                      borderColor: "border-teal-100/50 dark:border-teal-900/30",
+                      icon: <Users size={18} className="text-emerald-600 dark:text-emerald-400" />,
+                      bgClass: "bg-gradient-to-br from-white to-emerald-50/50 dark:from-slate-800 dark:to-emerald-900/20",
+                      iconBg: "bg-gradient-to-br from-emerald-100 to-emerald-200/50 dark:from-emerald-900/60 dark:to-emerald-800/40",
+                      borderColor: "border-emerald-100/60 dark:border-emerald-800/40",
+                      shadowClass: "shadow-[0_4px_12px_rgba(16,185,129,0.15),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_6px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_12px_rgba(16,185,129,0.2),inset_0_2px_4px_rgba(255,255,255,0.05),inset_0_-2px_6px_rgba(0,0,0,0.3)]",
+                      blurClass: "bg-emerald-400/20 dark:bg-emerald-400/10",
+                      badgeClass: "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-700/30"
                     },
                     {
                       label: "قيد المراجعة",
                       value: pendingCount.toString(),
                       change: pendingCount > 0 ? "اتخاذ قرار" : "مكتمل",
-                      icon: <Clock size={20} className="text-orange-500 dark:text-orange-400" />,
-                      bgClass: "bg-white dark:bg-slate-800/80",
-                      iconBg: "bg-orange-100 dark:bg-orange-900/50",
-                      borderColor: "border-orange-100/50 dark:border-orange-900/30",
+                      icon: <Clock size={18} className="text-orange-500 dark:text-orange-400" />,
+                      bgClass: "bg-gradient-to-br from-white to-orange-50/50 dark:from-slate-800 dark:to-orange-900/20",
+                      iconBg: "bg-gradient-to-br from-orange-100 to-orange-200/50 dark:from-orange-900/60 dark:to-orange-800/40",
+                      borderColor: "border-orange-100/60 dark:border-orange-800/40",
+                      shadowClass: "shadow-[0_4px_12px_rgba(249,115,22,0.15),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_6px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_12px_rgba(249,115,22,0.2),inset_0_2px_4px_rgba(255,255,255,0.05),inset_0_-2px_6px_rgba(0,0,0,0.3)]",
+                      blurClass: "bg-orange-400/20 dark:bg-orange-400/10",
+                      badgeClass: "bg-orange-100/80 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300 border border-orange-200/50 dark:border-orange-700/30"
                     },
                     {
                       label: "تم قبولهم",
                       value: acceptedCount.toString(),
                       change: `+${acceptedCount} مرشحين`,
-                      icon: <CheckCircle size={20} className="text-indigo-500 dark:text-indigo-400" />,
-                      bgClass: "bg-white dark:bg-slate-800/80",
-                      iconBg: "bg-indigo-100 dark:bg-indigo-900/50",
-                      borderColor: "border-indigo-100/50 dark:border-indigo-900/30",
+                      icon: <CheckCircle size={18} className="text-emerald-600 dark:text-emerald-400" />,
+                      bgClass: "bg-gradient-to-br from-white to-emerald-50/50 dark:from-slate-800 dark:to-emerald-900/20",
+                      iconBg: "bg-gradient-to-br from-emerald-100 to-emerald-200/50 dark:from-emerald-900/60 dark:to-emerald-800/40",
+                      borderColor: "border-emerald-100/60 dark:border-emerald-800/40",
+                      shadowClass: "shadow-[0_4px_12px_rgba(16,185,129,0.15),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-2px_6px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_12px_rgba(16,185,129,0.2),inset_0_2px_4px_rgba(255,255,255,0.05),inset_0_-2px_6px_rgba(0,0,0,0.3)]",
+                      blurClass: "bg-emerald-400/20 dark:bg-emerald-400/10",
+                      badgeClass: "bg-emerald-100/80 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-700/30"
                     },
                   ].map((stat, idx) => (
                     <motion.div
                       key={idx}
-                      whileHover={{ y: -3, scale: 1.01 }}
-                      className={`p-5 rounded-2xl border ${stat.borderColor} shadow-sm ${stat.bgClass} flex items-center justify-between relative overflow-hidden group`}
+                      whileHover={{ y: -3, scale: 1.02 }}
+                      className={`py-3 px-4 rounded-xl border ${stat.borderColor} ${stat.shadowClass} ${stat.bgClass} flex items-center justify-between relative overflow-hidden group`}
                     >
                       {/* Decorative Background Blur */}
-                      <div className="absolute -left-6 -top-6 w-24 h-24 bg-white/40 dark:bg-white/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700" />
+                      <div className={`absolute -left-6 -top-6 w-20 h-20 ${stat.blurClass} rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700`} />
                       
-                      <div className="flex items-center gap-4 relative z-10">
-                        <div className={`w-12 h-12 ${stat.iconBg} rounded-xl flex items-center justify-center shadow-inner`}>
+                      <div className="flex items-center gap-3 relative z-10">
+                        <div className={`w-10 h-10 ${stat.iconBg} rounded-lg flex items-center justify-center shadow-inner`}>
                           {stat.icon}
                         </div>
                         <div>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mb-1">
+                          <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold mb-0.5">
                             {stat.label}
                           </p>
-                          <p className="text-2xl font-black text-slate-800 dark:text-white leading-none">
+                          <p className="text-xl font-black text-slate-800 dark:text-white leading-none drop-shadow-sm">
                             {stat.value}
                           </p>
                         </div>
                       </div>
                       
                       <div className="relative z-10">
-                        <span className={`inline-flex items-center justify-center px-2.5 py-1.5 rounded-lg text-[10px] font-bold ${stat.change.includes("+") || stat.change === "مكتمل" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400"}`}>
+                        <span className={`inline-flex items-center justify-center px-2 py-1 rounded-md text-[9px] font-bold shadow-sm ${stat.badgeClass}`}>
                           {stat.change}
                         </span>
                       </div>
@@ -1537,7 +1558,7 @@ export const Dashboard = ({
                                       <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
                                         <Clock size={13} /> جاري المقابلة
                                       </span>
-                                    ) : (row.interview_sent || row.decision === "interviewing") ? (
+                                    ) : (!row.interview_revoked && (row.interview_sent || row.decision === "interviewing")) ? (
                                       <span className="bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
                                         <Clock size={13} /> بانتظار المتقدم
                                       </span>
@@ -2199,7 +2220,7 @@ export const Dashboard = ({
               </button>
             </div>
           </div>{" "}
-          <nav className="space-y-3 flex-1 pb-6">
+          <nav className="space-y-1.5 flex-1 pb-2">
             {[
               { name: "الحساب", icon: <User size={22} /> },
               FEATURE_FLAGS.enable_fast_sorting ? { name: "الفرز السريع", icon: <Zap size={22} /> } : null,
@@ -2211,7 +2232,7 @@ export const Dashboard = ({
               <button
                 key={item.name}
                 onClick={() => setActiveTab(item.name)}
-                className={`w-full flex items-center ${isSidebarOpen ? "gap-4 px-5 py-4 justify-start" : "justify-center p-4"} rounded-2xl transition-all font-semibold ${activeTab === item.name ? "bg-mint text-employer-green shadow-xl shadow-mint/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-200 hover:bg-slate-700/50"}`}
+                className={`w-full flex items-center ${isSidebarOpen ? "gap-4 px-5 py-2.5 justify-start" : "justify-center p-3"} rounded-2xl transition-all font-semibold ${activeTab === item.name ? "bg-mint text-employer-green shadow-xl shadow-mint/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-200 hover:bg-slate-700/50"}`}
               >
                 <div className={`transition-transform duration-300 ${isSidebarOpen ? "" : "scale-110"}`}>{item.icon}</div> {isSidebarOpen && <span>{item.name}</span>}{" "}
               </button>

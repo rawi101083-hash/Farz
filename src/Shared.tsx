@@ -912,19 +912,81 @@ export const TalentPool = ({
           </div>{" "}
         </div>{" "}
       </div>{" "}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-6">
         {filteredTalents.map((talent: any) => (
           <motion.div
             key={talent.id}
             layout
-            whileHover={{ y: -5 }}
+            whileHover={{ y: -4 }}
             onClick={() => onViewDetails(talent)}
-            className="cursor-pointer bg-white dark:bg-slate-800 p-8 rounded-[32px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40 group relative overflow-hidden"
+            className="cursor-pointer bg-white dark:bg-slate-800 p-3.5 pb-2 rounded-2xl border border-slate-100 dark:border-slate-700/80 hover:border-primary/40 dark:hover:border-primary/40 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between h-full min-h-[205px]"
           >
-            <div className="flex items-start justify-between mb-6">
-              <div className="flex gap-3 items-center">
+            <div>
+              {/* Header Bar: Match Score & Action Buttons */}
+              <div className="flex items-center justify-between mb-3" onClick={(e) => e.stopPropagation()}>
+                <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-sm ${getScoreColor((talent.rating || 0).toString())}`}>
+                  {talent.rating || 0}% مطابقة
+                </div>
+                <div className="flex items-center gap-1.5 relative shrink-0">
+                  <button
+                    onClick={() => onToggleShortlist(talent.id)}
+                    className={`p-1.5 rounded-lg transition-all ${talent.is_favorite ? "bg-yellow-100 text-yellow-500 shadow-sm" : "bg-slate-50 dark:bg-slate-800/50 text-slate-300 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"}`}
+                  >
+                    <Star size={12} fill={talent.is_favorite ? "currentColor" : "none"} />
+                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setOpenDropdownId(openDropdownId === talent.id ? null : talent.id)}
+                      className="p-1.5 rounded-lg transition-all bg-slate-50 dark:bg-slate-800/50 text-slate-400 hover:text-navy dark:hover:text-white"
+                    >
+                      <MoreVertical size={12} />
+                    </button>
+                    <AnimatePresence>
+                      {openDropdownId === talent.id && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setOpenDropdownId(null)}
+                          />
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            style={{ left: 0, right: 'auto' }}
+                            className="absolute top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 py-1.5 z-50 overflow-hidden"
+                          >
+                            <button
+                              onClick={() => {
+                                if (onCrossNominate) {
+                                  onCrossNominate(talent);
+                                }
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full text-right px-4 py-2 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2"
+                            >
+                              <Briefcase size={13} className="text-primary" /> ترشيح لشاغر جديد
+                            </button>
+                            <div className="h-px bg-slate-100 dark:bg-slate-700 w-full my-1"></div>
+                            <button
+                              onClick={() => {
+                                if (window.confirm("هل أنت متأكد من الحذف؟")) setOpenDropdownId(null);
+                              }}
+                              className="w-full text-right px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
+                            >
+                              <Trash2 size={13} /> إزالة من البنك
+                            </button>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile details (avatar, name, job) */}
+              <div className="flex flex-col items-center text-center mb-3">
                 <div
-                  className={`w-14 h-14 bg-slate-100 dark:bg-slate-700 rounded-2xl flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d shrink-0 overflow-hidden ${talent.photoUrl ? "cursor-pointer group-hover:opacity-80" : "group-hover:bg-primary/10 group-hover:text-primary"} transition-colors`}
+                  className={`w-11 h-11 bg-slate-100 dark:bg-slate-700 rounded-[12px] flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d shrink-0 overflow-hidden ${talent.photoUrl ? "cursor-pointer group-hover:opacity-80" : "group-hover:bg-primary/10 group-hover:text-primary"} transition-colors`}
                   onClick={(e) => {
                     if (talent.photoUrl) {
                       e.stopPropagation();
@@ -936,136 +998,86 @@ export const TalentPool = ({
                     <img src={talent.photoUrl} alt={talent.name} className="w-full h-full object-cover" />
                   ) : (
                     talent.name ? talent.name.charAt(0) : "م"
-                  )}{" "}
-                </div>{" "}
-                <div className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap shadow-sm ${getScoreColor((talent.rating || 0).toString())}`}>
-                  {talent.rating || 0}% مطابقة{" "}
-                </div>{" "}
+                  )}
+                </div>
+                <h3 className="text-sm font-bold text-navy dark:text-white mt-2 mb-0.5 line-clamp-1 w-full px-1" title={talent.name}>
+                  {talent.name}
+                </h3>
+                <div className="mt-1 flex items-center justify-center max-w-full px-1">
+                  <span className="inline-flex items-center bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-100/80 dark:border-slate-700/50 shadow-[0_1px_2px_rgba(0,0,0,0.02),_inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] text-[9.5px] font-bold truncate" title={talent.job}>
+                    متقدم لـ: {talent.job}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 relative">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onToggleShortlist(talent.id);
-                  }}
-                  className={`p-2 rounded-xl transition-all ${talent.is_favorite ? "bg-yellow-100 text-yellow-500 shadow-lg shadow-yellow-200/50" : "bg-slate-50 dark:bg-slate-800/50 text-slate-300 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"}`}
-                >
-                  <Star size={20} fill={talent.is_favorite ? "currentColor" : "none"} />
-                </button>
-                <div className="relative">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpenDropdownId(openDropdownId === talent.id ? null : talent.id);
-                    }}
-                    className="p-2 rounded-xl transition-all bg-slate-50 dark:bg-slate-800/50 text-slate-400 hover:text-navy dark:hover:text-white"
+
+              {/* Progress bars matching the Job details */}
+              <div className="space-y-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[9px] font-bold">
+                    <span className="text-slate-500 dark:text-slate-400">تطابق المهارات</span>
+                    <span className="text-navy dark:text-white">{talent.skills_match || 0}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.skills_match >= 80 ? 'bg-green-500' : talent.skills_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.skills_match || 0}%` }}></div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[9px] font-bold">
+                    <span className="text-slate-500 dark:text-slate-400">تطابق الخبرة</span>
+                    <span className="text-navy dark:text-white">{talent.experience_match || 0}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.experience_match >= 80 ? 'bg-green-500' : talent.experience_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.experience_match || 0}%` }}></div>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[9px] font-bold">
+                    <span className="text-slate-500 dark:text-slate-400">تطابق التعليم</span>
+                    <span className="text-navy dark:text-white">{talent.education_match || 0}%</span>
+                  </div>
+                  <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.education_match >= 80 ? 'bg-green-500' : talent.education_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.education_match || 0}%` }}></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key Metadata (City Only) - Placed below progress bars */}
+              {(() => {
+                const city = talent.city || (talent.customAnswers || []).find((a: any) => a.question === "المدينة")?.answer;
+                if (!city) return null;
+                return (
+                  <div className="flex items-center justify-center mb-0">
+                    <span className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-100/60 dark:border-slate-700/40 shadow-[0_1px_2px_rgba(0,0,0,0.02)] text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+                      <MapPin size={11} className="text-primary shrink-0" />
+                      <span className="truncate max-w-[120px]">{city}</span>
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Skills / Badges section */}
+            <div className="mt-auto">
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {(talent.skills || []).slice(0, 2).map((skill: string, index: number) => (
+                  <span
+                    key={index}
+                    className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-lg text-[10px] font-bold border border-indigo-200/30 dark:border-indigo-800/30 shadow-sm truncate max-w-[85px]"
+                    title={skill}
                   >
-                    <MoreVertical size={20} />
-                  </button>
-                  <AnimatePresence>
-                    {openDropdownId === talent.id && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); }}
-                        />
-                        <motion.div
-                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          style={{ left: 0, right: 'auto' }}
-                          className="absolute top-full mt-2 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-700 py-2 z-50 overflow-hidden"
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (onCrossNominate) {
-                                onCrossNominate(talent);
-                              }
-                              setOpenDropdownId(null);
-                            }}
-                            className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
-                          >
-                            <Briefcase size={16} className="text-primary" /> ترشيح لشاغر جديد
-                          </button>
-                          <div className="h-px bg-slate-100 dark:bg-slate-700 w-full my-1"></div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (window.confirm("هل أنت متأكد من الحذف؟")) setOpenDropdownId(null);
-                            }}
-                            className="w-full text-right px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
-                          >
-                            <Trash2 size={16} /> إزالة من البنك
-                          </button>
-                        </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>{" "}
-            </div>{" "}
-            <h3 className="text-xl font-bold text-navy dark:text-white mb-1">
-              {talent.name}
-            </h3>{" "}
-            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-6">
-              الوظيفة المقدم إليها: <span className="text-navy dark:text-white">{talent.job}</span>
-            </p>{" "}
-            <div className="space-y-3 mb-6 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-600 dark:text-slate-400">تطابق المهارات</span>
-                  <span className="text-navy dark:text-white">{talent.skills_match || 0}%</span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-1000 ${talent.skills_match >= 80 ? 'bg-green-500' : talent.skills_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.skills_match || 0}%` }}></div>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-600 dark:text-slate-400">تطابق الخبرة</span>
-                  <span className="text-navy dark:text-white">{talent.experience_match || 0}%</span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-1000 ${talent.experience_match >= 80 ? 'bg-green-500' : talent.experience_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.experience_match || 0}%` }}></div>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] font-bold">
-                  <span className="text-slate-600 dark:text-slate-400">تطابق التعليم</span>
-                  <span className="text-navy dark:text-white">{talent.education_match || 0}%</span>
-                </div>
-                <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-1000 ${talent.education_match >= 80 ? 'bg-green-500' : talent.education_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.education_match || 0}%` }}></div>
-                </div>
+                    {skill}
+                  </span>
+                ))}
+                {(talent.skills || []).length > 2 && (
+                  <span className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-200/50 dark:border-slate-700/50 shadow-sm shrink-0">
+                    +{(talent.skills || []).length - 2}
+                  </span>
+                )}
               </div>
             </div>
-            <div className="flex flex-wrap gap-2 mb-8">
-              {(talent.skills || []).slice(0, 3).map((skill: string, index: number) => (
-                <span
-                  key={index}
-                  className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-200/50 dark:border-indigo-800/50 shadow-sm truncate max-w-[140px]"
-                  title={skill}
-                >
-                  {skill}{" "}
-                </span>
-              ))}
-              {(talent.skills || []).length > 3 && (
-                <span className="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200/50 dark:border-slate-700/50 shadow-sm shrink-0">
-                  +{(talent.skills || []).length - 3}
-                </span>
-              )}{" "}
-            </div>{" "}
-            <div className="flex items-center gap-2 pt-6 border-t border-slate-50 dark:border-slate-700">
-              <button
-                onClick={(e) => { e.stopPropagation(); onViewDetails(talent); }}
-                className="w-full flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90 dark:bg-primary dark:hover:bg-primary/90 py-3.5 rounded-xl font-bold text-sm transition-all active:scale-95 shadow-lg shadow-primary/20"
-              >
-                <FileText size={18} /> عرض الملف{" "}
-              </button>{" "}
-            </div>{" "}
           </motion.div>
-        ))}{" "}
+        ))}
+
         {filteredTalents.length === 0 && (
           <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-white dark:bg-slate-800 rounded-[32px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
             <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner-3d">
@@ -2822,8 +2834,7 @@ export const ActiveJobs = ({
           onClick={() => setOpenDropdownId(null)}
         />
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-6">
-        {" "}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-6">
         {jobs.map((job) => {
           const expired = isJobExpired(job);
           return (
@@ -2832,115 +2843,48 @@ export const ActiveJobs = ({
               style={{ zIndex: openDropdownId === job.id ? 20 : 1 }}
               whileHover={{ y: -3 }}
               onClick={() => job.status === "مسودة" ? onClone(job) : onManage(job)}
-              className="bg-white relative cursor-pointer dark:bg-slate-800 p-4 rounded-2xl border border-white dark:border-slate-700 shadow-md hover:shadow-lg group flex flex-col transition-all shadow-slate-200/20"
+              className="bg-white relative cursor-pointer dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 dark:hover:border-primary/40 group flex flex-col justify-between transition-all duration-300 min-h-[270px]"
             >
-              {" "}
-              <div className="flex items-start justify-between mb-3 gap-2">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className="w-10 h-10 shrink-0 bg-primary/10 text-primary rounded-xl flex items-center justify-center shadow-inner-3d"
-                  >
-                    {getJobIcon(job.title || job.campaignTitle)}
-                  </div>
-                  <div className="min-w-0">
-                    <h3
-                      className="text-base font-bold text-navy dark:text-white truncate"
-                      title={job.title || job.campaignTitle || "عنوان غير محدد"}
-                    >
-                      {job.title || job.campaignTitle || "عنوان غير محدد"}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-xs font-medium text-slate-400 dark:text-slate-500">
-                      <span className="truncate" title={job.company || "جهة غير محددة"}>
-                        {job.company || "جهة غير محددة"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${
-                      expired 
-                        ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400" 
-                        : job.status === "مسودة"
-                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                    }`}
-                  >
-                    {expired ? "منتهي/مغلق" : job.status}
-                  </span>
+              {/* Top Row: Status badge & Action menu */}
+              <div className="flex items-center justify-between mb-3 w-full" onClick={(e) => e.stopPropagation()}>
+                <span
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${
+                    expired 
+                      ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400" 
+                      : job.status === "مسودة"
+                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                        : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                  }`}
+                >
+                  {expired ? "منتهي/مغلق" : job.status}
+                </span>
+
+                <div className="flex items-center gap-1.5 shrink-0">
                   {job.job_number && (
                     <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100/80 dark:bg-slate-700/80 text-slate-500 dark:text-slate-300 border border-slate-200/50 dark:border-slate-600/50">
                       رقم: {job.job_number}
                     </span>
                   )}
-                </div>
-              </div>
-
-              {/* Scale-down original boxy subcards */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 group flex flex-col justify-center">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <div className="w-7 h-7 shrink-0 rounded-lg bg-white dark:bg-slate-700 shadow-sm border border-slate-100 dark:border-slate-600 flex items-center justify-center text-primary transition-colors duration-300">
-                      <Users size={14} strokeWidth={2.5} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 truncate">
-                        المتقدمين
-                      </p>
-                      <p className="text-sm font-black text-navy dark:text-white leading-none truncate">
-                        {job.applicants}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="p-2 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md hover:border-primary/30 dark:hover:border-primary/30 transition-all duration-300 group flex flex-col justify-center">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <div className="w-7 h-7 shrink-0 rounded-lg bg-white dark:bg-slate-700 shadow-sm border border-slate-100 dark:border-slate-600 flex items-center justify-center text-primary transition-colors duration-300">
-                      <Briefcase size={14} strokeWidth={2.5} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase mb-0.5 truncate">
-                        نوع العمل
-                      </p>
-                      <p className="text-xs font-bold text-navy dark:text-white leading-none truncate" title={job.type}>
-                        {job.type}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-3 border-t border-slate-50 dark:border-slate-700/50 mt-auto">
-                {" "}
-                <div className="flex items-center gap-3">
-                  {" "}
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium whitespace-nowrap">
-                    نُشر: {job.createdAt}
-                  </span>{" "}
-                </div>{" "}
-                <div className="flex items-center gap-2">
-                  {" "}
                   <div className="relative">
-                    {" "}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setOpenDropdownId(
-                          openDropdownId === job.id ? null : job.id,
-                        );
+                        setOpenDropdownId(openDropdownId === job.id ? null : job.id);
                       }}
-                      className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:bg-slate-800/50 transition-colors"
+                      className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                     >
-                      {" "}
-                      <MoreVertical size={18} />{" "}
-                    </button>{" "}
+                      <MoreVertical size={14} />
+                    </button>
                     {openDropdownId === job.id && (
                       <>
                         <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setOpenDropdownId(null)}
+                        />
+                        <div
                           style={{ left: 0, right: 'auto' }}
-                          className="absolute bottom-full mb-2 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-2xl rounded-2xl overflow-hidden z-20 py-2 origin-bottom-left"
+                          className="absolute top-full mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-2xl rounded-2xl overflow-hidden z-20 py-2 origin-top-left"
                         >
-                          {" "}
                           <button
                             onClick={(e) => {
                               e.preventDefault();
@@ -2948,15 +2892,11 @@ export const ActiveJobs = ({
                               copyLink(job);
                               setOpenDropdownId(null);
                             }}
-                            className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:bg-slate-800/50 transition-colors flex items-center gap-3"
+                            className="w-full text-right px-4 py-2.5 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2.5"
                           >
-                            {" "}
-                            <Share2
-                              size={16}
-                              className="text-slate-400 dark:text-slate-500"
-                            />{" "}
-                            نسخ الرابط{" "}
-                          </button>{" "}
+                            <Share2 size={14} className="text-slate-400 dark:text-slate-500" />
+                            نسخ الرابط
+                          </button>
                           {onPreview && (
                             <button
                               onClick={(e) => {
@@ -2965,16 +2905,12 @@ export const ActiveJobs = ({
                                 onPreview(job);
                                 setOpenDropdownId(null);
                               }}
-                              className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:bg-slate-800/50 transition-colors flex items-center gap-3 border-t border-slate-50"
+                              className="w-full text-right px-4 py-2.5 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50"
                             >
-                              {" "}
-                              <Eye
-                                size={16}
-                                className="text-slate-400 dark:text-slate-500"
-                              />{" "}
-                              معاينة الإعلان{" "}
+                              <Eye size={14} className="text-slate-400 dark:text-slate-500" />
+                              معاينة الإعلان
                             </button>
-                          )}{" "}
+                          )}
                           {onClone && (
                             <button
                               onClick={(e) => {
@@ -2983,16 +2919,12 @@ export const ActiveJobs = ({
                                 onClone(job);
                                 setOpenDropdownId(null);
                               }}
-                              className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:bg-slate-800/50 transition-colors flex items-center gap-3"
+                              className="w-full text-right px-4 py-2.5 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2.5"
                             >
-                              {" "}
-                              <Copy
-                                size={16}
-                                className="text-slate-400 dark:text-slate-500"
-                              />{" "}
-                              تكرار الإعلان{" "}
+                              <Copy size={14} className="text-slate-400 dark:text-slate-500" />
+                              تكرار الإعلان
                             </button>
-                          )}{" "}
+                          )}
                           {!expired && onDeactivate && (
                             <button
                               onClick={(e) => {
@@ -3001,12 +2933,12 @@ export const ActiveJobs = ({
                                 onDeactivate(job);
                                 setOpenDropdownId(null);
                               }}
-                              className="w-full text-right px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors flex items-center gap-3 border-t border-slate-50 mt-1"
+                              className="w-full text-right px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-1"
                             >
-                              {" "}
-                              <Ban size={16} /> نقل إلى غير النشطة{" "}
+                              <Ban size={14} />
+                              نقل إلى غير النشطة
                             </button>
-                          )}{" "}
+                          )}
                           {expired && onReactivate && (
                             <button
                               onClick={(e) => {
@@ -3015,35 +2947,70 @@ export const ActiveJobs = ({
                                 onReactivate(job);
                                 setOpenDropdownId(null);
                               }}
-                              className="w-full text-right px-4 py-3 text-sm font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-3 border-t border-slate-50 dark:border-slate-700 mt-1"
+                              className="w-full text-right px-4 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-1"
                             >
-                              {" "}
-                              <RotateCcw size={16} /> تنشيط الإعلان{" "}
+                              <RotateCcw size={14} />
+                              تنشيط الإعلان
                             </button>
-                          )}{" "}
+                          )}
                           {job.status === "مسودة" && onDelete && (
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                setOpenDropdownId(null);
                                 onDelete(job.id);
+                                setOpenDropdownId(null);
                               }}
-                              className="w-full text-right px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors flex items-center gap-3 border-t border-slate-50 mt-1"
+                              className="w-full text-right px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-1"
                             >
-                              <Trash2 size={16} /> حذف المسودة
+                              <Trash2 size={14} />
+                              حذف المسودة
                             </button>
                           )}
                         </div>
                       </>
-                    )}{" "}
-                  </div>{" "}
-                </div>{" "}
-              </div>{" "}
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Details (Job Icon, Title, Company Name) - Centered like Talent Bank */}
+              <div className="flex flex-col items-center text-center mb-3">
+                <div
+                  className="w-12 h-12 bg-primary/10 text-primary rounded-[14px] flex items-center justify-center font-extrabold shadow-[0_3px_8px_rgba(0,0,0,0.06),_inset_0_1.5px_2px_rgba(255,255,255,0.7)] dark:shadow-[0_3px_8px_rgba(0,0,0,0.25),_inset_0_1px_1px_rgba(255,255,255,0.15)] border border-primary/20 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary/20 shrink-0 overflow-hidden shadow-sm"
+                >
+                  {getJobIcon(job.title || job.campaignTitle)}
+                </div>
+                <h3 className="text-sm font-bold text-navy dark:text-white mt-2.5 mb-0.5 line-clamp-2 w-full px-2" title={job.title || job.campaignTitle}>
+                  {job.title || job.campaignTitle || "عنوان غير محدد"}
+                </h3>
+                <p className="text-slate-400 dark:text-slate-500 text-[10.5px] font-semibold truncate w-full px-2" title={job.company}>
+                  {job.company || "جهة غير محددة"}
+                </p>
+              </div>
+
+              {/* Boxy Subcards styled exactly like Talent Bank progress grid */}
+              <div className="grid grid-cols-2 gap-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                <div className="flex flex-col items-center justify-center text-center">
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">المتقدمين</span>
+                  <span className="text-xs font-black text-navy dark:text-white leading-none">{job.applicants}</span>
+                </div>
+                <div className="flex flex-col items-center justify-center text-center border-r border-slate-200/60 dark:border-slate-700/60 pr-2">
+                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">نوع العمل</span>
+                  <span className="text-[10px] font-bold text-navy dark:text-white leading-normal truncate max-w-[85px]" title={job.type}>{job.type}</span>
+                </div>
+              </div>
+
+              {/* Footer Date centered */}
+              <div className="flex items-center justify-center pt-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-auto">
+                <span className="text-[10.5px] text-slate-400 dark:text-slate-500 font-bold">
+                  نُشر: {job.createdAt}
+                </span>
+              </div>
             </motion.div>
           );
-        })}{" "}
+        })}
       </div>
     </>
   );
@@ -3064,6 +3031,7 @@ interface Applicant {
   aiSummary: string;
   voiceEval: string;
   customAnswers: { question: string; answer: string }[];
+  city?: string;
   decision?: "accepted" | "rejected" | "pending" | "interview" | "filtered";
   nominatedTo?: string;
   is_interview_completed?: boolean;

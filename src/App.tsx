@@ -1523,6 +1523,7 @@ export default function App() {
   });
   const [session, setSession] = useState<any>(null);
   const [user, setUser] = useState<any>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [dashboardTab, setDashboardTab] = useState(() => {
     return sessionStorage.getItem("sahab_dashboard_tab") || "الرئيسية";
   });
@@ -1619,6 +1620,7 @@ export default function App() {
           setStep("dashboard");
         }
       }
+      setIsCheckingAuth(false);
     });
 
     const {
@@ -2078,6 +2080,10 @@ export default function App() {
     setStep("createJob");
   };
 
+  if (isCheckingAuth) {
+    return <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-500" />;
+  }
+
   return (
     <div
       className={`min-h-screen transition-colors duration-500 bg-slate-100 dark:bg-slate-900 selection:bg-primary/20 selection:text-primary`}
@@ -2178,8 +2184,9 @@ export default function App() {
             {step === "dashboard" && !userProfile.isLoaded ? (
               <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
                 <div className="flex flex-col items-center">
-                  <div className="w-16 h-16 border-4 border-slate-200 dark:border-slate-800 border-t-primary rounded-full animate-spin mb-4"></div>
-                  <p className="text-slate-500 dark:text-slate-400 font-bold">جاري تحميل بيانات حسابك...</p>
+                  <div className="animate-spin [animation-duration:2s] scale-150 drop-shadow-xl">
+                    <LogoIcon />
+                  </div>
                 </div>
               </div>
             ) : step === "dashboard" && (
