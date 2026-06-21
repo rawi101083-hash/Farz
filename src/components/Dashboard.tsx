@@ -85,6 +85,7 @@ import { FEATURE_FLAGS } from "../config";
 
 import { MOCK_TEST_APPLICANTS } from "../mockData";
 import { ActiveJobs, Reports, EmptyState, TalentPool, GlobalJobSelector, SettingsPage, Job, Applicant, ImageLightbox, LogoIcon } from '../Shared';
+import { globalApplicantsCache } from "../lib/applicantsCache";
 
 const CompactJobSelector = ({
   jobs,
@@ -499,7 +500,12 @@ export const Dashboard = ({
       try {
         const jobIds = jobs.map(j => j.id);
         if (jobIds.length === 0) {
-          setApplicantsState([]);
+          // If network dropped, jobs might be momentarily empty. Fallback to cache if available.
+          if (globalApplicantsCache && globalApplicantsCache.length > 0) {
+            setApplicantsState(globalApplicantsCache);
+          } else {
+            setApplicantsState([]);
+          }
           setIsLoadingApplicants(false);
           return;
         }
@@ -589,6 +595,11 @@ export const Dashboard = ({
               ai_justification: raw.ai_summary || raw.ai_justification
             } as any;
           });
+        } else {
+          // If there's an error (e.g. ERR_QUIC_PROTOCOL_ERROR), fallback to cache
+          if (globalApplicantsCache && globalApplicantsCache.length > 0) {
+            setApplicantsState(globalApplicantsCache);
+          }
         }
 
         // Fake applicants logic has been permanently removed based on user request.

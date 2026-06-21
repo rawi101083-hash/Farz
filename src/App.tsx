@@ -1627,6 +1627,13 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log("Supabase Auth Event:", _event);
+
+      // Prevent network drops from falsely logging out the user
+      if (_event === 'SIGNED_OUT' && !navigator.onLine) {
+        console.warn("Ignored SIGNED_OUT event because the browser is offline.");
+        return;
+      }
+
       setSession(session);
       setUser(session?.user || null);
       
