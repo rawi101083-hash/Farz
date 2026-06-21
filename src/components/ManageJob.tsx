@@ -137,6 +137,8 @@ export const ManageJob = ({
   
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showWarningModal, setShowWarningModal] = useState(false);
+  const [showCustomLinkModal, setShowCustomLinkModal] = useState(false);
+  const [customLinkSource, setCustomLinkSource] = useState("");
   const [pendingTabChange, setPendingTabChange] = useState<string | null>(null);
 
   const [passedCount, setPassedCount] = useState<number | null>(null);
@@ -819,16 +821,39 @@ export const ManageJob = ({
                 <button onClick={() => copyToClipboard(applyLink)} className="w-full flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors border border-slate-200 dark:border-slate-600">
                   <Link size={16} className="text-slate-400" /> نسخ رابط التقديم المباشر
                 </button>
-                <div className="grid grid-cols-2 gap-2">
-                  <a href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 bg-[#25D366]/10 text-[#25D366] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#25D366]/20 transition-colors">
-                    <Send size={14} /> WhatsApp
-                  </a>
-                  <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1 bg-[#1DA1F2]/10 text-[#1DA1F2] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#1DA1F2]/20 transition-colors">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <button onClick={() => copyToClipboard(`${applyLink}?source=whatsapp`)} className="flex items-center justify-center gap-1 bg-[#25D366]/10 text-[#25D366] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#25D366]/20 transition-colors">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                    WhatsApp
+                  </button>
+                  <button onClick={() => copyToClipboard(`${applyLink}?source=twitter`)} className="flex items-center justify-center gap-1 bg-[#1DA1F2]/10 text-[#1DA1F2] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#1DA1F2]/20 transition-colors">
                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M23.643 4.937c-.835.37-1.732.62-2.675.733a4.67 4.67 0 0 0 2.048-2.578 9.3 9.3 0 0 1-2.958 1.13 4.66 4.66 0 0 0-7.938 4.25 13.229 13.229 0 0 1-9.602-4.868c-.4.69-.63 1.49-.63 2.342A4.66 4.66 0 0 0 3.96 9.824a4.647 4.647 0 0 1-2.11-.583v.06a4.66 4.66 0 0 0 3.737 4.568 4.692 4.692 0 0 1-2.104.08 4.661 4.661 0 0 0 4.352 3.234 9.348 9.348 0 0 1-5.786 1.995 9.5 9.5 0 0 1-1.112-.065 13.175 13.175 0 0 0 7.14 2.093c8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602a9.47 9.47 0 0 0 2.323-2.41z"/></svg>
                     X/Twitter
-                  </a>
+                  </button>
+                  <button onClick={() => copyToClipboard(`${applyLink}?source=linkedin`)} className="flex items-center justify-center gap-1 bg-[#0A66C2]/10 text-[#0A66C2] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#0A66C2]/20 transition-colors">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                    LinkedIn
+                  </button>
+                  <button onClick={() => copyToClipboard(`${applyLink}?source=telegram`)} className="flex items-center justify-center gap-1 bg-[#0088cc]/10 text-[#0088cc] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#0088cc]/20 transition-colors">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                    Telegram
+                  </button>
+                  <button onClick={() => copyToClipboard(`${applyLink}?source=tiktok`)} className="flex items-center justify-center gap-1 bg-black/5 text-black dark:bg-white/10 dark:text-white px-3 py-2 rounded-xl font-bold text-xs hover:bg-black/10 dark:hover:bg-white/20 transition-colors">
+                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.12-3.44-3.17-3.64-5.46-.23-2.42.52-4.88 2.11-6.57 1.59-1.71 3.94-2.57 6.27-2.31 0 1.34-.02 2.67.01 4.01-.81-.07-1.64.04-2.38.38-.85.39-1.54 1.09-1.87 1.96-.34.92-.3 1.96.16 2.84.45.86 1.25 1.48 2.18 1.7.94.22 1.95.05 2.76-.45.82-.5 1.38-1.28 1.57-2.22.19-.93.12-1.9-.13-2.79-.01-5.06-.02-10.12.01-15.18h.27z"/></svg>
+                    TikTok
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setCustomLinkSource("");
+                      setShowCustomLinkModal(true);
+                    }}
+                    className="flex items-center justify-center gap-1 bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 px-3 py-2 rounded-xl font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors border border-slate-200 dark:border-slate-600 border-dashed"
+                  >
+                    <Link size={12} /> إضافة رابط
+                  </button>
                 </div>
-                <button onClick={() => copyToClipboard(`${window.location.origin}/share/${job.id}`)} className="w-full flex items-center justify-center gap-2 bg-navy/5 text-navy dark:bg-white/5 dark:text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:bg-navy/10 dark:hover:bg-white/10 transition-colors border border-navy/10 dark:border-white/10 mt-4">
+
+                <button onClick={() => copyToClipboard(`${window.location.origin}/share/${job.id}`)} className="w-full flex items-center justify-center gap-2 bg-navy/5 text-navy dark:bg-white/5 dark:text-white px-4 py-2.5 rounded-xl font-bold text-xs hover:bg-navy/10 dark:hover:bg-white/10 transition-colors border border-navy/10 dark:border-white/10 mt-3">
                   <Lock size={14} className="opacity-70" /> الرابط السري للإدارة (مشاركة للقراءة)
                 </button>
               </div>
@@ -837,6 +862,61 @@ export const ManageJob = ({
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showCustomLinkModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col border border-slate-100 dark:border-slate-700"
+            >
+              <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                <h3 className="font-bold text-navy dark:text-white flex items-center gap-2">
+                  <Link size={18} className="text-primary" />
+                  إنشاء رابط مخصص
+                </h3>
+                <button onClick={() => setShowCustomLinkModal(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 font-medium">1. أدخل اسم المصدر (مثال: موقع الشركة، حملة إعلانية):</p>
+                <input
+                  type="text"
+                  value={customLinkSource}
+                  onChange={(e) => setCustomLinkSource(e.target.value)}
+                  placeholder="مثال: إعلان سناب شات"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-medium text-sm mb-4"
+                  autoFocus
+                />
+                
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 font-medium">2. الرابط المخصص الخاص بك:</p>
+                <div className="relative mb-6">
+                  <div className="w-full px-4 py-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-slate-300 rounded-xl font-mono text-xs overflow-x-auto whitespace-nowrap text-left dir-ltr">
+                    {customLinkSource.trim() ? `${applyLink}?source=${encodeURIComponent(customLinkSource.trim())}` : applyLink}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (customLinkSource.trim()) {
+                      copyToClipboard(`${applyLink}?source=${encodeURIComponent(customLinkSource.trim())}`);
+                      setShowCustomLinkModal(false);
+                    } else {
+                      alert('الرجاء إدخال اسم المصدر أولاً');
+                    }
+                  }}
+                  className={`w-full flex items-center justify-center gap-2 p-3 rounded-xl font-bold text-sm transition-colors shadow-lg ${customLinkSource.trim() ? 'bg-primary text-white hover:bg-primary/90 shadow-primary/20' : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'}`}
+                >
+                  <Copy size={16} /> نسخ الرابط المخصص
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showUnlockModal && (

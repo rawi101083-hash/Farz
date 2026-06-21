@@ -97,6 +97,7 @@ export const ApplicantForm = ({
     knockoutAnswers: {} as Record<string, string>,
   });
   const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({});
+  const [hasUrlSource, setHasUrlSource] = useState(false);
   const [linkedinError, setLinkedinError] = useState("");
   const [showLinkedinInput, setShowLinkedinInput] = useState(false);
   const [formStep, setFormStep] = useState<"details" | "audio" | "success">("details");
@@ -112,6 +113,27 @@ export const ApplicantForm = ({
   const timerRef = React.useRef<any>(null);
   const formRef = React.useRef<HTMLFormElement>(null);
   const isCampaign = job?.recordType === "campaign";
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sourceParam = urlParams.get('source');
+    if (sourceParam) {
+      setHasUrlSource(true);
+      let mappedSource = sourceParam;
+      const src = sourceParam.toLowerCase();
+      if (src.includes('linkedin')) mappedSource = 'LinkedIn';
+      else if (src.includes('twitter') || src.includes('x')) mappedSource = 'منصة X / تويتر';
+      else if (src.includes('tiktok')) mappedSource = 'تيك توك (TikTok)';
+      else if (src.includes('whatsapp')) mappedSource = 'تطبيق واتساب';
+      else if (src.includes('telegram')) mappedSource = 'تطبيق تيليجرام';
+      else if (src.includes('google')) mappedSource = 'بحث جوجل';
+      else if (src.includes('referral')) mappedSource = 'توصية من صديق';
+      else if (src.includes('ad')) mappedSource = 'إعلان ممول';
+      else if (src.includes('موقع الشركة') || src.includes('website')) mappedSource = 'موقع الشركة';
+      
+      setFormDataState(prev => ({ ...prev, source: mappedSource }));
+    }
+  }, []);
 
   useEffect(() => {
     if (!job) return;
@@ -707,6 +729,7 @@ export const ApplicantForm = ({
             cv_file_url: cv_file_url || null,
             decision: isAutoRejected ? "filtered" : "processing",
             rejection_reason: isAutoRejected ? `مرفوض آلياً (${autoRejectReason})` : null,
+            source: submitData.source || formDataState.source || null,
             custom_answers: customAnswers,
             expected_salary: submitData.expectedSalary || (formDataState as any).expectedSalary || null,
             device_fingerprint: submitData._deviceFingerprint || null,
@@ -1653,31 +1676,39 @@ export const ApplicantForm = ({
                     </div>{" "}
                   </div>
                 )}{" "}
-              <div className="space-y-3 md:col-span-1">
-                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                  كيف عرفت عن هذه الوظيفة؟
-                  <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>
-                </label>
-                <div className="relative">
-                  <select
-                    name="source"
-                    value={formDataState.source}
-                    onChange={handleInputChange}
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المصدر...</option>
-                    <option value="LinkedIn" className="bg-white text-navy dark:bg-slate-800 dark:text-white">LinkedIn</option>
-                    <option value="منصة X / تويتر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">منصة X / تويتر</option>
-                    <option value="بحث جوجل" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بحث جوجل</option>
-                    <option value="توصية من صديق" className="bg-white text-navy dark:bg-slate-800 dark:text-white">توصية من صديق</option>
-                    <option value="إعلان ممول" className="bg-white text-navy dark:bg-slate-800 dark:text-white">إعلان ممول</option>
-                    <option value="أخرى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أخرى</option>
-                  </select>
-                  <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                    <ArrowLeft size={18} className="-rotate-90" />
+              { !hasUrlSource && (
+                <div className="space-y-3 md:col-span-1">
+                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
+                    كيف عرفت عن هذه الوظيفة؟
+                    <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="source"
+                      value={formDataState.source}
+                      onChange={handleInputChange}
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                    >
+                      <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المصدر...</option>
+                      <option value="LinkedIn" className="bg-white text-navy dark:bg-slate-800 dark:text-white">LinkedIn</option>
+                      <option value="منصة X / تويتر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">منصة X / تويتر</option>
+                      <option value="تيك توك (TikTok)" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تيك توك (TikTok)</option>
+                      <option value="تطبيق واتساب" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تطبيق واتساب</option>
+                      <option value="تطبيق تيليجرام" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تطبيق تيليجرام</option>
+                      <option value="بحث جوجل" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بحث جوجل</option>
+                      <option value="توصية من صديق" className="bg-white text-navy dark:bg-slate-800 dark:text-white">توصية من صديق</option>
+                      <option value="إعلان ممول" className="bg-white text-navy dark:bg-slate-800 dark:text-white">إعلان ممول</option>
+                      <option value="أخرى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أخرى</option>
+                      {formDataState.source && !["LinkedIn", "منصة X / تويتر", "تيك توك (TikTok)", "تطبيق واتساب", "تطبيق تيليجرام", "بحث جوجل", "توصية من صديق", "إعلان ممول", "أخرى"].includes(formDataState.source) && (
+                        <option value={formDataState.source} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{formDataState.source}</option>
+                      )}
+                    </select>
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                      <ArrowLeft size={18} className="-rotate-90" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div className="space-y-3 md:col-span-2 mt-4 pt-6 border-t border-slate-100 dark:border-slate-700 text-center">
                 {!showLinkedinInput ? (

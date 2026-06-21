@@ -1627,6 +1627,13 @@ export default function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log("Supabase Auth Event:", _event);
+
+      // Prevent network drops from falsely logging out the user
+      if (_event === 'SIGNED_OUT' && !navigator.onLine) {
+        console.warn("Ignored SIGNED_OUT event because the browser is offline.");
+        return;
+      }
+
       setSession(session);
       setUser(session?.user || null);
       
@@ -1699,6 +1706,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    let handleOnline: () => void;
+
     if (user && user.id) {
       const fetchCompanyProfile = async () => {
         try {
@@ -1736,13 +1745,17 @@ export default function App() {
             if (!isProfileComplete) {
               setDashboardTab("الحساب");
             }
+          } else if (!navigator.onLine || (error && error.message.toLowerCase().includes('fetch'))) {
+            // If it's a network error or offline, do NOT set isLoaded: true. Let it spin.
+            return;
           } else {
-            // Handle new user or error cases so we don't get stuck in loading
+            // Handle new user so we don't get stuck in loading
             setUserProfile(prev => ({ ...prev, id: user.id, name: user.user_metadata?.full_name || prev.name, isLoaded: true }));
             setDashboardTab("الحساب");
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("Error fetching company profile:", err);
+          if (!navigator.onLine || (err && err.message && err.message.toLowerCase().includes('fetch'))) return;
           setUserProfile(prev => ({ ...prev, id: user.id, name: user.user_metadata?.full_name || prev.name, isLoaded: true }));
           setDashboardTab("الحساب");
         }
@@ -1800,10 +1813,22 @@ export default function App() {
           console.warn("Failed to fetch jobs from Supabase", err);
         }
       };
+      handleOnline = () => {
+        if (!navigator.onLine) return;
+        fetchCompanyProfile();
+        fetchUserJobs();
+      };
+      window.addEventListener('online', handleOnline);
       
       fetchCompanyProfile();
       fetchUserJobs();
     }
+
+    return () => {
+      if (handleOnline) {
+        window.removeEventListener('online', handleOnline);
+      }
+    };
   }, [user?.id]);
 
   useEffect(() => {
@@ -2189,7 +2214,8 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            ) : step === "dashboard" && (
+            ) : (step === "dashboard" || step === "applicantDetails") && (
+              <div className={step === "applicantDetails" ? "hidden" : "block"}>
               <Dashboard
                 activeTab={dashboardTab}
                 setActiveTab={setDashboardTab}
@@ -2255,6 +2281,7 @@ export default function App() {
                 pendingAction={dashboardPendingAction}
                 clearPendingAction={() => setDashboardPendingAction(null)}
               />
+              </div>
             )}{" "}
             {step === "updatePassword" && (
               <UpdatePasswordPage onComplete={() => setStep("dashboard")} />
@@ -2281,6 +2308,9 @@ export default function App() {
                 job={jobs.find(j => j.id === selectedApplicantForDetails?.job_id || j.title === selectedApplicantForDetails?.job)}
                 userProfile={userProfile}
                 onStatusUpdate={(id, decision, isOffer) => setDashboardPendingAction({ id, decision, isOffer })}
+                onUpdateApplicant={(id, updates) => {
+                  setSelectedApplicantForDetails(prev => prev && prev.id === id ? { ...prev, ...updates } : prev);
+                }}
               />
             )}{" "}
             {step === "createJob" && (

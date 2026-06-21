@@ -579,31 +579,31 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
                   )}
                 </div>
 
-                <div className="w-full space-y-4 z-10">
-                  <div className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm transition-transform hover:-translate-y-0.5">
-                    <div className="flex justify-between text-xs font-bold mb-2">
+                <div className="w-full space-y-3 mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50 relative z-10">
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5 px-6">
                       <span className="text-slate-600 dark:text-slate-300">تطابق المهارات</span>
                       <span className="text-navy dark:text-white">{skillsMatch}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-[80%] mx-auto bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
                       <motion.div initial={{ width: 0 }} animate={{ width: `${skillsMatch}%` }} transition={{ duration: 1, delay: 0.3 }} className={`h-full rounded-full ${getBarColor(skillsMatch)}`} />
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm transition-transform hover:-translate-y-0.5">
-                    <div className="flex justify-between text-xs font-bold mb-2">
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5 px-6">
                       <span className="text-slate-600 dark:text-slate-300">تطابق الخبرة</span>
                       <span className="text-navy dark:text-white">{expMatch}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-[80%] mx-auto bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
                       <motion.div initial={{ width: 0 }} animate={{ width: `${expMatch}%` }} transition={{ duration: 1, delay: 0.4 }} className={`h-full rounded-full ${getBarColor(expMatch)}`} />
                     </div>
                   </div>
-                  <div className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm transition-transform hover:-translate-y-0.5">
-                    <div className="flex justify-between text-xs font-bold mb-2">
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5 px-6">
                       <span className="text-slate-600 dark:text-slate-300">تطابق التعليم</span>
                       <span className="text-navy dark:text-white">{eduMatch}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-[80%] mx-auto bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
                       <motion.div initial={{ width: 0 }} animate={{ width: `${eduMatch}%` }} transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${getBarColor(eduMatch)}`} />
                     </div>
                   </div>

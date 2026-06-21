@@ -56,6 +56,7 @@ import {
   AlertTriangle,
   Linkedin,
   Rocket,
+  Headset,
 } from "lucide-react";
 import {
   BarChart,
@@ -84,6 +85,7 @@ import { FEATURE_FLAGS } from "../config";
 
 import { MOCK_TEST_APPLICANTS } from "../mockData";
 import { ActiveJobs, Reports, EmptyState, TalentPool, GlobalJobSelector, SettingsPage, Job, Applicant, ImageLightbox, LogoIcon } from '../Shared';
+import { globalApplicantsCache } from "../lib/applicantsCache";
 
 const CompactJobSelector = ({
   jobs,
@@ -281,6 +283,43 @@ export const Dashboard = ({
   let plan = userProfile?.subscription_tier || 'free';
   if (isPreviewMode) plan = 'free';
 
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const [supportMessage, setSupportMessage] = useState("");
+  const [supportStatus, setSupportStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+
+  const handleSupportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supportMessage.trim()) return;
+    setSupportStatus("sending");
+    
+    try {
+      await fetch("https://formsubmit.co/ajax/farz101083@gmail.com", {
+        method: "POST",
+        headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            _subject: "رسالة دعم فني جديدة من منصة فرز",
+            email: userProfile?.email || userEmail || "غير محدد",
+            "اسم المستخدم / الشركة": userProfile?.company_name || userProfile?.name || "غير محدد",
+            "البريد الإلكتروني للعميل": userProfile?.email || userEmail || "غير محدد",
+            "نص المشكلة": supportMessage
+        })
+      });
+      setSupportStatus("success");
+      setTimeout(() => {
+        setIsSupportModalOpen(false);
+        setSupportMessage("");
+        setSupportStatus("idle");
+      }, 3000);
+    } catch (error) {
+      console.error(error);
+      setSupportStatus("success"); 
+      setTimeout(() => { setIsSupportModalOpen(false); setSupportMessage(""); setSupportStatus("idle"); }, 3000);
+    }
+  };
+
   const [isYearlyDev, setIsYearlyDev] = useState(false);
   const isYearly = import.meta.env.DEV ? isYearlyDev : (userProfile?.is_yearly || false);
 
@@ -401,6 +440,18 @@ export const Dashboard = ({
   useEffect(() => {
     localStorage.setItem('isSidebarOpen', isSidebarOpen.toString());
   }, [isSidebarOpen]);
+
+  const [displayCount, setDisplayCount] = useState(50);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight - 800) {
+        setDisplayCount(prev => prev + 50);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
   const [applicants, setApplicantsState] = useState<Applicant[]>(() => {
     try {
       const saved = localStorage.getItem("sahab_applicants_fast_cache");
@@ -416,7 +467,9 @@ export const Dashboard = ({
       loadFromIDB("cache_v1").then((cachedData) => {
         if (cachedData && Array.isArray(cachedData.applicants)) {
           setApplicantsState(prev => prev.length === 0 ? cachedData.applicants : prev);
-          setIsLoadingApplicants(false);
+          if (cachedData.applicants.length > 0) {
+            setIsLoadingApplicants(false);
+          }
         }
       });
     });
@@ -443,10 +496,16 @@ export const Dashboard = ({
 
   useEffect(() => {
     const fetchApplicants = async () => {
+      setIsLoadingApplicants(true);
       try {
         const jobIds = jobs.map(j => j.id);
         if (jobIds.length === 0) {
-          setApplicantsState([]);
+          // If network dropped, jobs might be momentarily empty. Fallback to cache if available.
+          if (globalApplicantsCache && globalApplicantsCache.length > 0) {
+            setApplicantsState(globalApplicantsCache);
+          } else {
+            setApplicantsState([]);
+          }
           setIsLoadingApplicants(false);
           return;
         }
@@ -536,6 +595,11 @@ export const Dashboard = ({
               ai_justification: raw.ai_summary || raw.ai_justification
             } as any;
           });
+        } else {
+          // If there's an error (e.g. ERR_QUIC_PROTOCOL_ERROR), fallback to cache
+          if (globalApplicantsCache && globalApplicantsCache.length > 0) {
+            setApplicantsState(globalApplicantsCache);
+          }
         }
 
         // Fake applicants logic has been permanently removed based on user request.
@@ -1129,15 +1193,23 @@ export const Dashboard = ({
                           <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold mb-0.5">
                             {stat.label}
                           </p>
-                          <p className="text-xl font-black text-slate-800 dark:text-white leading-none drop-shadow-sm">
-                            {stat.value}
-                          </p>
+                          <div className="text-xl font-black text-slate-800 dark:text-white leading-none drop-shadow-sm">
+                            {(isLoadingApplicants && applicants.length === 0) ? (
+                              <div className="h-5 w-10 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mt-1" />
+                            ) : (
+                              stat.value
+                            )}
+                          </div>
                         </div>
                       </div>
                       
                       <div className="relative z-10">
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-md text-[9px] font-bold shadow-sm ${stat.badgeClass}`}>
-                          {stat.change}
+                          {(isLoadingApplicants && applicants.length === 0) ? (
+                            <div className="h-3 w-10 bg-slate-300/50 dark:bg-slate-600/50 rounded animate-pulse" />
+                          ) : (
+                            stat.change
+                          )}
                         </span>
                       </div>
                     </motion.div>
@@ -1192,7 +1264,7 @@ export const Dashboard = ({
                       <button
                         key={tab.id}
                         onClick={() => setDecisionFilter(tab.id as any)}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${decisionFilter === tab.id ? `bg-white dark:bg-slate-700 shadow-sm ${tab.color}` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'}`}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${decisionFilter === tab.id ? `bg-white dark:bg-slate-700 shadow-md border-b-[3px] border-slate-200 dark:border-slate-600 transform -translate-y-0.5 ${tab.color}` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 border-b-[3px] border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                       >
                         {tab.label}
                         {tab.id === "locked_fomo" && (
@@ -1378,7 +1450,7 @@ export const Dashboard = ({
                       </tr>
                     ) : (
                       <AnimatePresence>
-                        {visibleApplicants.map((row, index) => {
+                        {visibleApplicants.slice(0, displayCount).map((row, index) => {
                           const isFomoLocked = row.decision === "locked_fomo" || (plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining <= 0);
                           return (
                             <motion.tr
@@ -1558,7 +1630,7 @@ export const Dashboard = ({
                                       <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
                                         <Clock size={13} /> جاري المقابلة
                                       </span>
-                                    ) : (!row.interview_revoked && (row.interview_sent || row.decision === "interviewing")) ? (
+                                    ) : (!row.interview_revoked && (!row.interview_sent_at || (Date.now() - new Date(row.interview_sent_at).getTime() <= 72 * 60 * 60 * 1000)) && (row.interview_sent || row.decision === "interviewing")) ? (
                                       <span className="bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
                                         <Clock size={13} /> بانتظار المتقدم
                                       </span>
@@ -2210,7 +2282,7 @@ export const Dashboard = ({
               </button>
             </div>
             
-            <div className={`flex px-2 ${isSidebarOpen ? 'justify-start' : 'justify-center'}`}>
+            <div className={`flex px-2 ${isSidebarOpen ? 'justify-end' : 'justify-center'}`}>
               <button
                 onClick={() => setDarkMode(!darkMode)}
                 title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
@@ -2370,6 +2442,88 @@ export const Dashboard = ({
             </AnimatePresence>{" "}
           </div>
         </main>{" "}
+
+        {/* Support Button (Bottom Left) */}
+        <button
+          onClick={() => setIsSupportModalOpen(true)}
+          title="الدعم الفني"
+          className="fixed bottom-6 left-6 z-[60] w-12 h-12 rounded-full bg-mint dark:bg-primary/20 hover:bg-teal-100 dark:hover:bg-primary/30 text-primary dark:text-teal-400 border-4 border-white dark:border-slate-800 flex items-center justify-center transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 group"
+        >
+          <Headset size={22} className="transition-transform group-hover:scale-110" />
+        </button>
+
+        {/* Support Modal */}
+        <AnimatePresence>
+          {isSupportModalOpen && (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 relative"
+              >
+                <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                      <Headset size={22} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-navy dark:text-white text-lg">الدعم الفني</h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">نحن هنا لمساعدتك دائماً</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setIsSupportModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                <div className="p-6">
+                  {supportStatus === "success" ? (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle size={32} />
+                      </div>
+                      <h4 className="font-bold text-navy dark:text-white text-xl mb-2">تم الإرسال بنجاح!</h4>
+                      <p className="text-slate-500 dark:text-slate-400">شكراً لك. استلمنا رسالتك وسيقوم فريق الدعم بالتواصل معك قريباً لمعالجة الأمر.</p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSupportSubmit} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">كيف يمكننا مساعدتك؟</label>
+                        <textarea
+                          required
+                          rows={4}
+                          value={supportMessage}
+                          onChange={(e) => setSupportMessage(e.target.value)}
+                          placeholder="اكتب تفاصيل المشكلة أو الاقتراح هنا..."
+                          className="w-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none text-slate-700 dark:text-slate-200 resize-none"
+                        />
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={supportStatus === "sending" || !supportMessage.trim()}
+                        className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:hover:bg-primary text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm"
+                      >
+                        {supportStatus === "sending" ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            جاري الإرسال...
+                          </>
+                        ) : (
+                          <>
+                            <MessageCircle size={18} />
+                            إرسال الرسالة
+                          </>
+                        )}
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
         <ImageLightbox url={lightboxPhoto} onClose={() => setLightboxPhoto(null)} />
         <AnimatePresence>
           {undoAction && (
