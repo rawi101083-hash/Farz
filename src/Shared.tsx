@@ -1320,33 +1320,38 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
   const autoRejectedCount = relevantApplicants.filter(a => a.decision === "filtered").length;
 
   let linkdinCount = 0;
-  let baytCount = 0;
   let twitterCount = 0;
   let facebookCount = 0;
+  let tiktokCount = 0;
   let whatsappCount = 0;
   let telegramCount = 0;
-  let referralCount = 0;
-  let websiteCount = 0;
+  const customLinksMap: Record<string, number> = {};
 
   relevantApplicants.forEach(app => {
-    const src = (app.source || "").toLowerCase();
+    const originalSrc = app.source || "";
+    const src = originalSrc.toLowerCase().trim();
+    if (!src || src === "غير محدد" || src === "أخرى") return;
+
     if (src.includes("لينكد إن") || src.includes("linkedin")) linkdinCount++;
-    else if (src.includes("بيت.كوم") || src.includes("bayt")) baytCount++;
     else if (src.includes("تويتر") || src.includes("إكس") || src.includes("x.com") || src.includes("twitter")) twitterCount++;
     else if (src.includes("فيسبوك") || src.includes("facebook")) facebookCount++;
+    else if (src.includes("تيك توك") || src.includes("tiktok")) tiktokCount++;
     else if (src.includes("واتساب") || src.includes("whatsapp")) whatsappCount++;
     else if (src.includes("تيليجرام") || src.includes("telegram")) telegramCount++;
-    else if (src.includes("توصية") || src.includes("referral") || src.includes("معارف")) referralCount++;
-    else if (src.includes("موقع الشركة") || src.includes("website") || src.includes("غير محدد")) websiteCount++;
-    else websiteCount++;
+    else {
+      const name = originalSrc.trim() || "رابط مخصص";
+      customLinksMap[name] = (customLinksMap[name] || 0) + 1;
+    }
   });
+
+  // تمت إزالة الأرقام الوهمية. النظام الآن يقرأ 100% من قاعدة البيانات الحقيقية.
 
   // Removed mock data as per user request to display actual real data (even if 0)
 
-  const platformsTotal = linkdinCount + baytCount;
-  const socialTotal = twitterCount + facebookCount;
+  const platformsTotal = linkdinCount;
+  const socialTotal = twitterCount + facebookCount + tiktokCount;
   const messagingTotal = whatsappCount + telegramCount;
-  const otherTotal = referralCount + websiteCount;
+  const otherTotal = Object.values(customLinksMap).reduce((a, b) => a + b, 0);
 
   const safePercent = (part: number, total: number) => total > 0 ? Math.round((part / total) * 100) : 0;
 
@@ -1354,12 +1359,16 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
     {
       name: "منصات التوظيف",
       value: platformsTotal,
-      breakdown: [{ name: "لينكد إن", value: safePercent(linkdinCount, platformsTotal) }, { name: "بيت.كوم", value: safePercent(baytCount, platformsTotal) }]
+      breakdown: [{ name: "لينكد إن", value: safePercent(linkdinCount, platformsTotal) }]
     },
     {
       name: "شبكات التواصل",
       value: socialTotal,
-      breakdown: [{ name: "تويتر / X", value: safePercent(twitterCount, socialTotal) }, { name: "فيسبوك", value: safePercent(facebookCount, socialTotal) }]
+      breakdown: [
+        { name: "تويتر / X", value: safePercent(twitterCount, socialTotal) },
+        { name: "فيسبوك", value: safePercent(facebookCount, socialTotal) },
+        { name: "تيك توك", value: safePercent(tiktokCount, socialTotal) }
+      ]
     },
     {
       name: "تطبيقات المراسلة",
@@ -1369,7 +1378,10 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
     {
       name: "مصادر أخرى",
       value: otherTotal,
-      breakdown: [{ name: "الإحالات", value: safePercent(referralCount, otherTotal) }, { name: "موقع الشركة", value: safePercent(websiteCount, otherTotal) }]
+      breakdown: Object.entries(customLinksMap).map(([name, count]) => ({
+        name: name,
+        value: safePercent(count, otherTotal)
+      })).sort((a, b) => b.value - a.value)
     },
   ];
 
@@ -1394,6 +1406,18 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
     { name: "مطابقة متوسطة", subName: "(50% - 79%)", value: mediumQualityCount },
     { name: "مطابقة ضعيفة", subName: "(<50%)", value: lowQualityCount }
   ].filter(d => d.value > 0);
+
+  const renderHiringBackground = (props: any) => {
+    const { x, y, width, height } = props;
+    const fill = "rgba(148, 163, 184, 0.2)"; // unified grey
+    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={height / 2} ry={height / 2} filter="url(#innerTrackShadow)" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="1" />;
+  };
+
+  const renderQualityBackground = (props: any) => {
+    const { x, y, width, height } = props;
+    const fill = "rgba(148, 163, 184, 0.2)"; // unified grey
+    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={height / 2} ry={height / 2} filter="url(#innerTrackShadow)" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="1" />;
+  };
 
   // Calculate dynamic average time to hire (based on time since job creation)
   let totalDays = 0;
@@ -1443,7 +1467,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
           },
           {
             label: "السير الذاتية المفحوصة",
-            value: totalApplicants.toString(),
+            value: screenedCount.toString(),
             icon: <Users size={20} />,
             color: "text-primary dark:text-primary",
             bg: "bg-primary/10 dark:bg-primary/20",
@@ -1495,24 +1519,63 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
             <h3 className="text-lg font-bold text-navy dark:text-white">
               مصادر التوظيف
             </h3>{" "}
-            <PieChartIcon className="text-slate-300" size={20} />{" "}
+            <PieChartIcon className="text-slate-900 dark:text-white drop-shadow-[0_3px_3px_rgba(0,0,0,0.3)] dark:drop-shadow-[0_3px_3px_rgba(0,0,0,0.8)]" size={18} strokeWidth={2.5} />
           </div>{" "}
           <div className="h-[240px] w-full flex items-center justify-between">
             <div className="relative w-[55%] h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <defs>
-                    {["96, 165, 250", "139, 92, 246", "156, 163, 175", "16, 185, 129"].map((rgb, index) => (
-                      <linearGradient key={`grad-${index}`} id={`pieGrad-${index}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={`rgba(${rgb}, 1)`} />
-                        <stop offset="100%" stopColor={`rgba(${rgb}, 0.8)`} />
-                      </linearGradient>
-                    ))}
-                    {["96, 165, 250", "139, 92, 246", "156, 163, 175", "16, 185, 129"].map((rgb, index) => (
-                      <filter key={`glow-${index}`} id={`pieGlow-${index}`} x="-50%" y="-50%" width="200%" height="200%">
-                        <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor={`rgba(${rgb}, 0.5)`} />
-                      </filter>
-                    ))}
+                    <filter id="innerTrackShadow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feOffset dx="0" dy="3" />
+                      <feGaussianBlur stdDeviation="3" result="offset-blur" />
+                      <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
+                      <feFlood floodColor="black" floodOpacity="0.25" result="color" />
+                      <feComposite operator="in" in="color" in2="inverse" result="shadow" />
+                      <feComposite operator="over" in="shadow" in2="SourceGraphic" />
+                    </filter>
+                    <linearGradient id="tealGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#2dd4bf" />
+                      <stop offset="50%" stopColor="#14b8a6" />
+                      <stop offset="100%" stopColor="#0f766e" />
+                    </linearGradient>
+                    <linearGradient id="amberGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fbbf24" />
+                      <stop offset="50%" stopColor="#f59e0b" />
+                      <stop offset="100%" stopColor="#b45309" />
+                    </linearGradient>
+                    <linearGradient id="roseGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#fb7185" />
+                      <stop offset="50%" stopColor="#f43f5e" />
+                      <stop offset="100%" stopColor="#be123c" />
+                    </linearGradient>
+                    {
+                      [
+                        { top: "#93c5fd", mid: "#3b82f6", bottom: "#1d4ed8", glow: "rgba(59, 130, 246, 0.5)" }, // Blue
+                        { top: "#2dd4bf", mid: "#14b8a6", bottom: "#0f766e", glow: "rgba(20, 184, 166, 0.5)" }, // Teal
+                        { top: "#d8b4fe", mid: "#a855f7", bottom: "#7e22ce", glow: "rgba(168, 85, 247, 0.5)" }, // Purple
+                        { top: "#fcd34d", mid: "#f59e0b", bottom: "#b45309", glow: "rgba(245, 158, 11, 0.5)" }  // Orange
+                      ].map((theme, index) => (
+                        <linearGradient key={`grad-${index}`} id={`pieGrad-${index}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={theme.top} />
+                          <stop offset="50%" stopColor={theme.mid} />
+                          <stop offset="100%" stopColor={theme.bottom} />
+                        </linearGradient>
+                      ))
+                    }
+                    {
+                      [
+                        { glow: "rgba(59, 130, 246, 0.5)" },
+                        { glow: "rgba(20, 184, 166, 0.5)" },
+                        { glow: "rgba(168, 85, 247, 0.5)" },
+                        { glow: "rgba(245, 158, 11, 0.5)" }
+                      ].map((theme, index) => (
+                        <filter key={`glow-${index}`} id={`pieGlow-${index}`} x="-50%" y="-50%" width="200%" height="200%">
+                          <feDropShadow dx="0" dy="8" stdDeviation="6" floodColor={theme.glow} />
+                          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="rgba(0,0,0, 0.2)" />
+                        </filter>
+                      ))
+                    }
                   </defs>
                   <Pie
                     data={sourceOfHireData}
@@ -1540,7 +1603,9 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                       <Cell 
                         key={`cell-${index}`} 
                         fill={`url(#pieGrad-${index % 4})`} 
-                        filter={`url(#pieGlow-${index % 4})`} 
+                        filter={`url(#pieGlow-${index % 4})`}
+                        stroke="rgba(255,255,255,0.4)"
+                        strokeWidth={1.5}
                       />
                     ))}
                   </Pie>
@@ -1581,7 +1646,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
             {/* Custom Legend */}
             <div className="w-[45%] flex flex-col justify-center gap-3 pr-4 border-r border-slate-100 dark:border-slate-700">
               {sourceOfHireData.map((entry, index) => {
-                const PIE_RGBS = ["96, 165, 250", "139, 92, 246", "156, 163, 175", "16, 185, 129"];
+                const PIE_RGBS = ["59, 130, 246", "20, 184, 166", "168, 85, 247", "245, 158, 11"];
                 const total = sourceOfHireData.reduce((sum, item) => sum + item.value, 0);
                 const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
                 
@@ -1606,14 +1671,14 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
             <h3 className="text-lg font-bold text-navy dark:text-white">
               مسار توظيف المتقدمين
             </h3>{" "}
-            <BarChartIcon className="text-slate-300" size={20} />{" "}
+            <BarChartIcon className="text-slate-900 dark:text-white drop-shadow-[0_3px_3px_rgba(0,0,0,0.3)] dark:drop-shadow-[0_3px_3px_rgba(0,0,0,0.8)]" size={18} strokeWidth={2.5} />
           </div>{" "}
           <div className="h-[200px] w-full" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={hiringFunnelData}
                 layout="vertical"
-                margin={{ top: 20, right: 30, left: 160, bottom: 20 }}
+                margin={{ top: 20, right: 60, left: 160, bottom: 20 }}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" strokeOpacity={0.1} />
                 <XAxis type="number" hide />
@@ -1647,14 +1712,14 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                   radius={100}
                   barSize={32}
                   stroke="none"
-                  background={{ fill: 'rgba(148, 163, 184, 0.15)', radius: 100 }}
+                  background={renderHiringBackground}
                 >
                   {hiringFunnelData.map((entry, index) => {
-                    let fillColor = "#10b981"; // emerald-500
+                    let fillColor = "url(#tealGradient)"; // 3D Teal
                     if (entry.name === "المقابلات") {
-                      fillColor = "#f59e0b"; // amber-500
+                      fillColor = "url(#amberGradient)"; // 3D Amber
                     }
-                    return <Cell key={"cell-" + index} fill={fillColor} stroke="none" />;
+                    return <Cell key={"cell-" + index} fill={fillColor} stroke="rgba(255,255,255,0.2)" strokeWidth={1} />;
                   })}
                   <LabelList position="right" fill="#64748b" stroke="none" dataKey="value" fontSize={14} fontWeight="bold" />
                 </Bar>
@@ -1676,7 +1741,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
               تحليل مستويات كفاءة المتقدمين بناءً على نسب المطابقة.
             </p>
           </div>
-          <BarChartIcon className="text-slate-300" size={20} />
+          <BarChartIcon className="text-slate-900 dark:text-white drop-shadow-[0_3px_3px_rgba(0,0,0,0.3)] dark:drop-shadow-[0_3px_3px_rgba(0,0,0,0.8)]" size={18} strokeWidth={2.5} />
         </div>
         <div className="w-full h-64 transition-all duration-300" dir="ltr">
           {qualityIndexData.length > 0 ? (
@@ -1684,7 +1749,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
               <BarChart
                 data={qualityIndexData}
                 layout="vertical"
-                margin={{ top: 20, right: 30, left: 160, bottom: 20 }}
+                margin={{ top: 20, right: 60, left: 160, bottom: 20 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -1735,16 +1800,16 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                   radius={100}
                   barSize={32}
                   stroke="none"
-                  background={{ fill: 'rgba(148, 163, 184, 0.15)', radius: 100 }}
+                  background={renderQualityBackground}
                 >
                   {qualityIndexData.map((entry, index) => {
-                    let fillColor = "#10b981"; // emerald-500
+                    let fillColor = "url(#tealGradient)"; // 3D Teal
                     if (entry.name.includes("متوسطة")) {
-                      fillColor = "#f59e0b"; // amber-500
+                      fillColor = "url(#amberGradient)"; // 3D Amber
                     } else if (entry.name.includes("ضعيفة")) {
-                      fillColor = "#f43f5e"; // rose-500
+                      fillColor = "url(#roseGradient)"; // 3D Rose
                     }
-                    return <Cell key={"cell-" + index} fill={fillColor} stroke="none" />;
+                    return <Cell key={"cell-" + index} fill={fillColor} stroke="rgba(255,255,255,0.2)" strokeWidth={1} />;
                   })}
                   <LabelList position="right" fill="#64748b" stroke="none" dataKey="value" fontSize={14} fontWeight="bold" offset={12} />
                 </Bar>
