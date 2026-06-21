@@ -47,19 +47,15 @@ export const setGlobalApplicantsCache = (data: Applicant[], jobsStr: string) => 
   globalApplicantsCache = data;
   globalJobsCacheStr = jobsStr;
   
-  // Lightweight mapping to save space
   const lightWeightData = data.map(app => {
     const { 
       interview_transcript, 
       interview_summary, 
-      aiSummary, 
-      ai_justification,
       customAnswers, 
-      suggested_questions, 
       interview_questions,
-      attachments,
-      ...lightWeightApp 
+      ...rest 
     } = app as any;
+    const lightWeightApp = { ...rest };
     return lightWeightApp as Applicant;
   });
 

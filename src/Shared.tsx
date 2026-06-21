@@ -6,6 +6,7 @@ import {
   Filter,
   Users,
   User,
+  UserX,
   ShoppingBag,
   Database,
   Upload,
@@ -677,14 +678,14 @@ export const TalentPoolModal = ({
   );
 };
 
-const CompactSkillSelector = ({
-  skills,
+const CompactCitySelector = ({
+  cities,
   selectedFilter,
   onFilterChange,
 }: {
-  skills: string[];
+  cities: string[];
   selectedFilter: string;
-  onFilterChange: (skill: string) => void;
+  onFilterChange: (city: string) => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -700,13 +701,13 @@ const CompactSkillSelector = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filteredSkills = skills
-    .filter((s) => s.toLowerCase().includes(search.toLowerCase()))
+  const filteredCities = cities
+    .filter((c) => c.toLowerCase().includes(search.toLowerCase()))
     .slice(0, 50);
 
   return (
     <div className="relative z-[50] group" ref={ref}>
-      <Filter
+      <MapPin
         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 z-10"
         size={18}
       />
@@ -715,7 +716,7 @@ const CompactSkillSelector = ({
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className={`font-medium truncate ${selectedFilter === "all" ? "text-navy dark:text-white" : "font-bold text-primary"}`}>
-          {selectedFilter === "all" ? "المهارة: الكل" : selectedFilter}
+          {selectedFilter === "all" ? "المدينة: الكل" : selectedFilter}
         </span>
         <ChevronDown size={14} className={`transition-transform shrink-0 ${selectedFilter === "all" ? "text-slate-400" : "text-primary"} ${isOpen ? "rotate-180" : ""}`} />
       </div>
@@ -731,7 +732,7 @@ const CompactSkillSelector = ({
               <input
                 type="text"
                 autoFocus
-                placeholder="ابحث عن مهارة..."
+                placeholder="ابحث عن مدينة..."
                 className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg pr-10 pl-3 py-2 text-sm outline-none focus:border-primary transition-colors text-navy dark:text-white font-medium"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -747,19 +748,19 @@ const CompactSkillSelector = ({
                 </div>
                 <span className="text-sm font-bold">الكل</span>
               </div>
-              {filteredSkills.map(skill => (
+              {filteredCities.map(city => (
                 <div
-                  key={skill}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === skill ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
-                  onClick={() => { onFilterChange(skill); setIsOpen(false); setSearch(""); }}
+                  key={city}
+                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === city ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
+                  onClick={() => { onFilterChange(city); setIsOpen(false); setSearch(""); }}
                 >
                   <div className="w-4 shrink-0">
-                    {selectedFilter === skill && <CheckCircle size={14} className="text-primary" />}
+                    {selectedFilter === city && <CheckCircle size={14} className="text-primary" />}
                   </div>
-                  <span className="font-medium text-navy dark:text-white truncate">{skill}</span>
+                  <span className="font-medium text-navy dark:text-white truncate">{city}</span>
                 </div>
               ))}
-              {filteredSkills.length === 0 && (
+              {filteredCities.length === 0 && (
                 <div className="p-4 text-center text-sm font-medium text-slate-500">لا توجد نتائج مطابقة</div>
               )}
             </div>
@@ -789,7 +790,7 @@ export const TalentPool = ({
   externalApplicants?: Applicant[];
 }) => {
   const [jobFilter, setJobFilter] = useState("all");
-  const [skillFilter, setSkillFilter] = useState("all");
+  const [cityFilter, setCityFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [showOnlyShortlisted, setShowOnlyShortlisted] = useState(false);
@@ -816,8 +817,18 @@ export const TalentPool = ({
   }
   const baseApplicants = (externalApplicants || []).filter((t: any) => t.in_talent_pool);
 
-  const allUniqueSkills = Array.from(new Set(
-    baseApplicants.flatMap((t: any) => t.skills || [])
+  const getTalentCity = (talent: any) => {
+    if (!talent) return "";
+    return talent.city || (talent.customAnswers || []).find((a: any) => a.question === "المدينة")?.answer || "";
+  };
+
+  const jobFilteredApplicants = baseApplicants.filter((t: any) => {
+    if (!t) return false;
+    return jobFilter === "all" || (t.job && typeof t.job === 'string' && t.job.includes((jobs || []).find((j: any) => j && j.id === jobFilter)?.title || ""));
+  });
+
+  const allUniqueCities = Array.from(new Set(
+    jobFilteredApplicants.map(getTalentCity)
   )).filter(Boolean).sort();
 
   const filteredTalents = baseApplicants.filter((t: any) => {
@@ -827,12 +838,14 @@ export const TalentPool = ({
     const matchesJob =
       jobFilter === "all" ||
       (t.job && typeof t.job === 'string' && t.job.includes((jobs || []).find((j: any) => j && j.id === jobFilter)?.title || ""));
-    const matchesSkill = skillFilter === "all" || (t.skills && Array.isArray(t.skills) && t.skills.includes(skillFilter));
+      
+    const tCity = getTalentCity(t);
+    const matchesCity = cityFilter === "all" || tCity === cityFilter;
+    
     const searchLower = (searchTerm || "").toLowerCase();
     const matchesSearch = !searchTerm ||
       (t.name && typeof t.name === 'string' && t.name.toLowerCase().includes(searchLower)) ||
-      (t.job && typeof t.job === 'string' && t.job.toLowerCase().includes(searchLower)) ||
-      (t.skills && Array.isArray(t.skills) && t.skills.some((s: string) => s && typeof s === 'string' && s.toLowerCase().includes(searchLower)));
+      (t.job && typeof t.job === 'string' && t.job.toLowerCase().includes(searchLower));
 
     const matchesRating = ratingFilter === "all" ||
       (ratingFilter === "+90" && (t.rating || 0) >= 90) ||
@@ -840,7 +853,7 @@ export const TalentPool = ({
       (ratingFilter === "+70" && (t.rating || 0) >= 70) ||
       (ratingFilter === "-70" && (t.rating || 0) < 70);
 
-    return matchesJob && matchesSkill && matchesSearch && matchesRating;
+    return matchesJob && matchesCity && matchesSearch && matchesRating;
   });
   return (
     <div className="space-y-10">
@@ -880,10 +893,10 @@ export const TalentPool = ({
             />{" "}
           </div>{" "}
           <div className="flex gap-4">
-            <CompactSkillSelector
-              skills={allUniqueSkills}
-              selectedFilter={skillFilter}
-              onFilterChange={setSkillFilter}
+            <CompactCitySelector
+              cities={allUniqueCities}
+              selectedFilter={cityFilter}
+              onFilterChange={setCityFilter}
             />
             <div className="relative group">
               <Sparkles
@@ -912,15 +925,25 @@ export const TalentPool = ({
           </div>{" "}
         </div>{" "}
       </div>{" "}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-6">
-        {filteredTalents.map((talent: any) => (
-          <motion.div
-            key={talent.id}
-            layout
-            whileHover={{ y: -4 }}
-            onClick={() => onViewDetails(talent)}
-            className="cursor-pointer bg-white dark:bg-slate-800 p-3.5 pb-2 rounded-2xl border border-slate-100 dark:border-slate-700/80 hover:border-primary/40 dark:hover:border-primary/40 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between h-full min-h-[205px]"
-          >
+      <AnimatePresence mode="wait">
+        <motion.div 
+          key={searchTerm + cityFilter + ratingFilter + String(showOnlyShortlisted)}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.15 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-6"
+        >
+          {filteredTalents.map((talent: any, index: number) => (
+            <motion.div
+              key={talent.id}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.3) }}
+              whileHover={{ y: -4 }}
+              onClick={() => onViewDetails(talent)}
+              className="cursor-pointer bg-white dark:bg-slate-800 p-3.5 pb-2 rounded-2xl border border-slate-100 dark:border-slate-700/80 hover:border-primary/40 dark:hover:border-primary/40 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between h-full min-h-[205px]"
+            >
             <div>
               {/* Header Bar: Match Score & Action Buttons */}
               <div className="flex items-center justify-between mb-3" onClick={(e) => e.stopPropagation()}>
@@ -1017,8 +1040,8 @@ export const TalentPool = ({
                     <span className="text-slate-500 dark:text-slate-400">تطابق المهارات</span>
                     <span className="text-navy dark:text-white">{talent.skills_match || 0}%</span>
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.skills_match >= 80 ? 'bg-green-500' : talent.skills_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.skills_match || 0}%` }}></div>
+                  <div className={`w-full rounded-full h-1 overflow-hidden ${talent.skills_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.skills_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
+                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.skills_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.skills_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.skills_match || 0}%` }}></div>
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -1026,8 +1049,8 @@ export const TalentPool = ({
                     <span className="text-slate-500 dark:text-slate-400">تطابق الخبرة</span>
                     <span className="text-navy dark:text-white">{talent.experience_match || 0}%</span>
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.experience_match >= 80 ? 'bg-green-500' : talent.experience_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.experience_match || 0}%` }}></div>
+                  <div className={`w-full rounded-full h-1 overflow-hidden ${talent.experience_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.experience_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
+                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.experience_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.experience_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.experience_match || 0}%` }}></div>
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -1035,8 +1058,8 @@ export const TalentPool = ({
                     <span className="text-slate-500 dark:text-slate-400">تطابق التعليم</span>
                     <span className="text-navy dark:text-white">{talent.education_match || 0}%</span>
                   </div>
-                  <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
-                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.education_match >= 80 ? 'bg-green-500' : talent.education_match >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{ width: `${talent.education_match || 0}%` }}></div>
+                  <div className={`w-full rounded-full h-1 overflow-hidden ${talent.education_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.education_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
+                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.education_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.education_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.education_match || 0}%` }}></div>
                   </div>
                 </div>
               </div>
@@ -1089,7 +1112,8 @@ export const TalentPool = ({
             </p>
           </div>
         )}{" "}
-      </div>{" "}
+        </motion.div>
+      </AnimatePresence>{" "}
       <AnimatePresence>
         {selectedTalent && (
           <TalentPoolModal
@@ -1356,20 +1380,19 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
 
   const hiringFunnelData = [
     { name: "إجمالي المتقدمين", value: totalApplicants },
-    { name: "الفرز الآلي", value: screenedCount },
     { name: "المقابلات", value: interviewsStageCount },
     { name: "المقبولين", value: offersCount },
   ];
 
   // Candidate Quality Index
   const highQualityCount = relevantApplicants.filter(a => { const r = a.rating || a.match_percentage || 0; return r >= 80; }).length;
-  const mediumQualityCount = relevantApplicants.filter(a => { const r = a.rating || a.match_percentage || 0; return r >= 70 && r < 80; }).length;
-  const lowQualityCount = relevantApplicants.filter(a => { const r = a.rating || a.match_percentage || 0; return r < 70; }).length;
+  const mediumQualityCount = relevantApplicants.filter(a => { const r = a.rating || a.match_percentage || 0; return r >= 50 && r < 80; }).length;
+  const lowQualityCount = relevantApplicants.filter(a => { const r = a.rating || a.match_percentage || 0; return r < 50; }).length;
 
   const qualityIndexData = [
-    { name: "كفاءة عالية (+80%)", value: highQualityCount },
-    { name: "كفاءة متوسطة (70%-79%)", value: mediumQualityCount },
-    { name: "كفاءة ضعيفة (<70%)", value: lowQualityCount }
+    { name: "مطابقة عالية", subName: "(+80%)", value: highQualityCount },
+    { name: "مطابقة متوسطة", subName: "(50% - 79%)", value: mediumQualityCount },
+    { name: "مطابقة ضعيفة", subName: "(<50%)", value: lowQualityCount }
   ].filter(d => d.value > 0);
 
   // Calculate dynamic average time to hire (based on time since job creation)
@@ -1411,63 +1434,63 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {[
           {
-            label: "إجمالي المتقدمين",
-            value: totalApplicants.toString(),
-            icon: <Users size={18} />,
-            color: "text-primary",
-            bg: "bg-primary/10",
-            subtitle: totalApplicants > 0 ? (
-              <span className="flex items-center gap-1.5 justify-center">
-                <Sparkles size={14} className="text-primary fill-primary/20" />
-                <span>تم استبعاد {Math.round((autoRejectedCount / totalApplicants) * 100)}% آلياً.</span>
-              </span>
-            ) : undefined,
-          },
-          {
             label: "إجمالي الوظائف",
             value: totalJobs.toString(),
-            icon: <Briefcase size={18} />,
-            color: "text-indigo-600",
-            bg: "bg-indigo-50",
+            icon: <Briefcase size={20} />,
+            color: "text-emerald-600 dark:text-emerald-400",
+            bg: "bg-emerald-100 dark:bg-emerald-900/40",
+            gradientFrom: "from-emerald-500",
           },
           {
-            label: "متوسط وقت التوظيف",
-            value: `${avgTime} يوم`,
-            icon: <Clock size={18} />,
-            color: "text-orange-600",
-            bg: "bg-orange-50",
+            label: "السير الذاتية المفحوصة",
+            value: totalApplicants.toString(),
+            icon: <Users size={20} />,
+            color: "text-primary dark:text-primary",
+            bg: "bg-primary/10 dark:bg-primary/20",
+            gradientFrom: "from-primary",
+          },
+          {
+            label: "المستبعدين آلياً",
+            value: autoRejectedCount.toString(),
+            icon: <Users size={20} />,
+            color: "text-rose-600 dark:text-rose-400",
+            bg: "bg-rose-100 dark:bg-rose-900/40",
+            gradientFrom: "from-rose-500",
           },
         ].map((metric, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="bg-white dark:bg-slate-800 p-5 rounded-[24px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40 flex flex-col items-center text-center"
+            transition={{ delay: i * 0.1, duration: 0.4 }}
+            className="relative group bg-gradient-to-b from-white to-slate-50/50 dark:from-slate-800 dark:to-slate-800/80 p-5 rounded-[24px] border-2 border-white/80 dark:border-slate-700/50 shadow-[0_8px_30px_rgba(0,0,0,0.04),_0_2px_10px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_40px_rgba(0,0,0,0.08),_0_8px_20px_rgba(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.2)] hover:-translate-y-1 transition-all duration-500 flex flex-col items-center text-center overflow-hidden"
           >
+            {/* Glossy top highlight */}
+            <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white dark:via-white/10 to-transparent opacity-70"></div>
+            
+            {/* Subtle background glow on hover */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${metric.gradientFrom} to-transparent opacity-0 group-hover:opacity-[0.03] dark:group-hover:opacity-[0.05] transition-opacity duration-500`} />
+            
             <div
-              className={`w-10 h-10 ${metric.bg} ${metric.color} rounded-xl flex items-center justify-center mb-4 shadow-inner-3d`}
+              className={`relative z-10 w-12 h-12 ${metric.bg} ${metric.color} rounded-[14px] flex items-center justify-center mb-3 shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),_0_8px_16px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),_0_8px_16px_rgba(0,0,0,0.3)] ring-1 ring-black/5 dark:ring-white/10 group-hover:scale-110 transition-transform duration-500`}
             >
               {metric.icon}{" "}
             </div>{" "}
-            <p className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">
+            <p className="relative z-10 text-slate-500 dark:text-slate-400 font-bold text-[11px] uppercase tracking-wider mb-1 transition-colors group-hover:text-slate-700 dark:group-hover:text-slate-300">
               {metric.label}
             </p>{" "}
-            <h3 className="text-2xl font-black text-navy dark:text-white">
+            <h3 className="relative z-10 text-3xl font-black text-navy dark:text-white tracking-tight">
               {metric.value}
             </h3>{" "}
-            {metric.subtitle && (
-              <p className="mt-4 text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-xl">
-                {metric.subtitle}
-              </p>
-            )}
           </motion.div>
         ))}{" "}
       </div>{" "}
       {/* Middle Row: Charts */}{" "}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Source of Hire Pie Chart Card */}
-        <div className="lg:col-span-5 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
+        <div className="relative group lg:col-span-5 bg-gradient-to-br from-white via-white to-slate-100/80 dark:from-slate-800 dark:to-slate-900/80 p-7 rounded-[32px] border-[3px] border-white/90 dark:border-slate-700/50 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.08),_0_4px_10px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.12),_0_8px_20px_-4px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-500">
+          {/* Glossy top highlight */}
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white dark:via-white/10 to-transparent opacity-70 rounded-t-[28px]"></div>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-navy dark:text-white">
               مصادر التوظيف
@@ -1479,13 +1502,13 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <defs>
-                    {["96, 165, 250", "139, 92, 246", "156, 163, 175", "13, 148, 136"].map((rgb, index) => (
+                    {["96, 165, 250", "139, 92, 246", "156, 163, 175", "16, 185, 129"].map((rgb, index) => (
                       <linearGradient key={`grad-${index}`} id={`pieGrad-${index}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor={`rgba(${rgb}, 0.9)`} />
-                        <stop offset="100%" stopColor={`rgba(${rgb}, 0.4)`} />
+                        <stop offset="0%" stopColor={`rgba(${rgb}, 1)`} />
+                        <stop offset="100%" stopColor={`rgba(${rgb}, 0.8)`} />
                       </linearGradient>
                     ))}
-                    {["96, 165, 250", "139, 92, 246", "156, 163, 175", "13, 148, 136"].map((rgb, index) => (
+                    {["96, 165, 250", "139, 92, 246", "156, 163, 175", "16, 185, 129"].map((rgb, index) => (
                       <filter key={`glow-${index}`} id={`pieGlow-${index}`} x="-50%" y="-50%" width="200%" height="200%">
                         <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor={`rgba(${rgb}, 0.5)`} />
                       </filter>
@@ -1558,7 +1581,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
             {/* Custom Legend */}
             <div className="w-[45%] flex flex-col justify-center gap-3 pr-4 border-r border-slate-100 dark:border-slate-700">
               {sourceOfHireData.map((entry, index) => {
-                const PIE_RGBS = ["96, 165, 250", "139, 92, 246", "156, 163, 175", "13, 148, 136"];
+                const PIE_RGBS = ["96, 165, 250", "139, 92, 246", "156, 163, 175", "16, 185, 129"];
                 const total = sourceOfHireData.reduce((sum, item) => sum + item.value, 0);
                 const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
                 
@@ -1576,14 +1599,16 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
           </div>
         </div>{" "}
         {/* Hiring Funnel Chart Card */}
-        <div className="lg:col-span-7 bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
+        <div className="relative group lg:col-span-7 bg-gradient-to-br from-white via-white to-slate-100/80 dark:from-slate-800 dark:to-slate-900/80 p-7 rounded-[32px] border-[3px] border-white/90 dark:border-slate-700/50 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.08),_0_4px_10px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.12),_0_8px_20px_-4px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-500">
+          {/* Glossy top highlight */}
+          <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white dark:via-white/10 to-transparent opacity-70 rounded-t-[28px]"></div>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold text-navy dark:text-white">
               مسار توظيف المتقدمين
             </h3>{" "}
             <BarChartIcon className="text-slate-300" size={20} />{" "}
           </div>{" "}
-          <div className="h-[280px] w-full" dir="ltr">
+          <div className="h-[200px] w-full" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={hiringFunnelData}
@@ -1619,22 +1644,17 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                 />
                 <Bar
                   dataKey="value"
-                  radius={12}
-                  barSize={30}
+                  radius={100}
+                  barSize={32}
                   stroke="none"
-                  shape={<GlassBar />}
+                  background={{ fill: 'rgba(148, 163, 184, 0.15)', radius: 100 }}
                 >
                   {hiringFunnelData.map((entry, index) => {
-                    let fillRgba = "rgba(13, 148, 136, 0.40)"; // Green for Total and Accepted
-                    let strokeRgba = "rgba(13, 148, 136, 0.60)";
-                    if (entry.name === "الفرز الآلي") {
-                      fillRgba = "rgba(59, 130, 246, 0.40)"; // Blue for AI Screening
-                      strokeRgba = "rgba(59, 130, 246, 0.60)";
-                    } else if (entry.name === "المقابلات") {
-                      fillRgba = "rgba(249, 115, 22, 0.40)"; // Orange for Interviews
-                      strokeRgba = "rgba(249, 115, 22, 0.60)";
+                    let fillColor = "#10b981"; // emerald-500
+                    if (entry.name === "المقابلات") {
+                      fillColor = "#f59e0b"; // amber-500
                     }
-                    return <Cell key={"cell-" + index} fill={fillRgba} stroke={strokeRgba} strokeWidth={1} />;
+                    return <Cell key={"cell-" + index} fill={fillColor} stroke="none" />;
                   })}
                   <LabelList position="right" fill="#64748b" stroke="none" dataKey="value" fontSize={14} fontWeight="bold" />
                 </Bar>
@@ -1644,11 +1664,13 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
         </div>{" "}
       </div>{" "}
       {/* Bottom Row: Full Width Bar Chart for Candidate Quality Index */}
-      <div className="bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
+      <div className="relative group bg-gradient-to-br from-white via-white to-slate-100/80 dark:from-slate-800 dark:to-slate-900/80 p-7 rounded-[32px] border-[3px] border-white/90 dark:border-slate-700/50 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.08),_0_4px_10px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.12),_0_8px_20px_-4px_rgba(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-500">
+        {/* Glossy top highlight */}
+        <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white dark:via-white/10 to-transparent opacity-70 rounded-t-[28px]"></div>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-bold text-navy dark:text-white">
-              مؤشر جودة المتقدمين
+              مؤشر مطابقة المتقدمين
             </h3>
             <p className="text-slate-400 dark:text-slate-500 text-sm font-medium mt-1">
               تحليل مستويات كفاءة المتقدمين بناءً على نسب المطابقة.
@@ -1656,7 +1678,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
           </div>
           <BarChartIcon className="text-slate-300" size={20} />
         </div>
-        <div className="w-full h-80 transition-all duration-300" dir="ltr">
+        <div className="w-full h-64 transition-all duration-300" dir="ltr">
           {qualityIndexData.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -1676,9 +1698,22 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                   dataKey="name"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: "#64748b", fontSize: 14, fontWeight: "bold" }}
                   width={150}
                   tickMargin={10}
+                  tick={(props: any) => {
+                    const { x, y, payload } = props;
+                    const item = qualityIndexData.find((d) => d.name === payload.value);
+                    return (
+                      <g transform={`translate(${x},${y})`}>
+                        <text x={0} y={-4} textAnchor="end" fill="currentColor" className="text-slate-700 dark:text-slate-300 font-bold text-[14px]">
+                          {item?.name}
+                        </text>
+                        <text x={0} y={16} textAnchor="end" fill="currentColor" className="text-slate-400 dark:text-slate-500 font-medium text-[11px]" style={{ direction: 'ltr', unicodeBidi: 'bidi-override' }}>
+                          {item?.subName}
+                        </text>
+                      </g>
+                    );
+                  }}
                 />
                 <Tooltip
                   cursor={{ fill: 'transparent' }}
@@ -1697,22 +1732,19 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                 />
                 <Bar
                   dataKey="value"
-                  radius={12}
-                  barSize={30}
+                  radius={100}
+                  barSize={32}
                   stroke="none"
-                  shape={<GlassBar />}
+                  background={{ fill: 'rgba(148, 163, 184, 0.15)', radius: 100 }}
                 >
                   {qualityIndexData.map((entry, index) => {
-                    let fillRgba = "rgba(13, 148, 136, 0.40)"; // Teal/Green for high efficiency
-                    let strokeRgba = "rgba(13, 148, 136, 0.60)";
+                    let fillColor = "#10b981"; // emerald-500
                     if (entry.name.includes("متوسطة")) {
-                      fillRgba = "rgba(249, 115, 22, 0.40)"; // Orange for medium efficiency
-                      strokeRgba = "rgba(249, 115, 22, 0.60)";
+                      fillColor = "#f59e0b"; // amber-500
                     } else if (entry.name.includes("ضعيفة")) {
-                      fillRgba = "rgba(239, 68, 68, 0.40)"; // Red for low efficiency
-                      strokeRgba = "rgba(239, 68, 68, 0.60)";
+                      fillColor = "#f43f5e"; // rose-500
                     }
-                    return <Cell key={"cell-" + index} fill={fillRgba} stroke={strokeRgba} strokeWidth={1} />;
+                    return <Cell key={"cell-" + index} fill={fillColor} stroke="none" />;
                   })}
                   <LabelList position="right" fill="#64748b" stroke="none" dataKey="value" fontSize={14} fontWeight="bold" offset={12} />
                 </Bar>

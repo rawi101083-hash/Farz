@@ -1,0 +1,890 @@
+
+
+--- STEP 10897 ---
+Add a circular border to the match percentage and remove the TrendingUp arrow from the topPercentile section as requested.
+
+TARGET:
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest">
+                     <Sparkles size={14} className="text-primary" />
+                     نسبة المطابقة
+                  </div>
+                  <span className={`text-2xl font-black ${matchColorClass}`}>
+                    {displayMatch}%
+                  </span>
+                </div>
+                
+                <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1.5 mb-3 overflow-hidden shadow-inner">
+                   <motion.div initial={{ width: 0 }} animate={{ width: `${displayMatch}%` }} transition={{ duration: 1 }} className={`h-full rounded-full ${getBarColor(displayMatch)}`} />
+                </div>
+
+                {topPercentile && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      <TrendingUp size={12} className="text-primary" />
+                      أفضل من <span className="text-primary">{topPercentile}%</span> من المتقدمين
+                    </div>
+                  </div>
+                )}
+
+REPLACE:
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest">
+                     <Sparkles size={14} className="text-primary" />
+                     نسبة المطابقة
+                  </div>
+                  <span className={`text-sm font-black flex items-center justify-center w-11 h-11 rounded-full border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm ${matchColorClass}`}>
+                    {displayMatch}%
+                  </span>
+                </div>
+                
+                <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1.5 mb-3 overflow-hidden shadow-inner">
+                   <motion.div initial={{ width: 0 }} animate={{ width: `${displayMatch}%` }} transition={{ duration: 1 }} className={`h-full rounded-full ${getBarColor(displayMatch)}`} />
+                </div>
+
+                {topPercentile && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      أفضل من <span className="text-primary">{topPercentile}%</span> من المتقدمين
+                    </div>
+                  </div>
+                )}
+
+--- STEP 10906 ---
+Remove the horizontal progress bar for the match percentage and replace the static circle with an SVG circular progress bar (donut chart) that matches the percentage.
+
+TARGET:
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest">
+                     <Sparkles size={14} className="text-primary" />
+                     نسبة المطابقة
+                  </div>
+                  <span className={`text-sm font-black flex items-center justify-center w-11 h-11 rounded-full border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm ${matchColorClass}`}>
+                    {displayMatch}%
+                  </span>
+                </div>
+                
+                <div className="w-full bg-slate-200 dark:bg-slate-700/50 rounded-full h-1.5 mb-3 overflow-hidden shadow-inner">
+                   <motion.div initial={{ width: 0 }} animate={{ width: `${displayMatch}%` }} transition={{ duration: 1 }} className={`h-full rounded-full ${getBarColor(displayMatch)}`} />
+                </div>
+
+REPLACE:
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest">
+                     <Sparkles size={14} className="text-primary" />
+                     نسبة المطابقة
+                  </div>
+                  <div className="relative flex items-center justify-center w-12 h-12">
+                    <svg className="transform -rotate-90 w-12 h-12">
+                      <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3.5" fill="transparent" className="text-slate-200 dark:text-slate-700" />
+                      <motion.circle 
+                        cx="24" cy="24" r="20" 
+                        stroke="currentColor" 
+                        strokeWidth="3.5" fill="transparent" 
+                        strokeDasharray={2 * Math.PI * 20} 
+                        initial={{ strokeDashoffset: 2 * Math.PI * 20 }}
+                        animate={{ strokeDashoffset: (2 * Math.PI * 20) - ((displayMatch / 100) * (2 * Math.PI * 20)) }}
+                        transition={{ duration: 1 }}
+                        className={matchColorClass} 
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span className={`absolute text-[11px] font-black ${matchColorClass}`}>
+                      {displayMatch}%
+                    </span>
+                  </div>
+                </div>
+
+--- STEP 10915 ---
+Replace the match percentage header with a large, centered circular progress bar, remove the 'نسبة المطابقة' text, and add drop shadows for a 3D effect.
+
+TARGET:
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest">
+                     <Sparkles size={14} className="text-primary" />
+                     نسبة المطابقة
+                  </div>
+                  <div className="relative flex items-center justify-center w-12 h-12">
+                    <svg className="transform -rotate-90 w-12 h-12">
+                      <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="3.5" fill="transparent" className="text-slate-200 dark:text-slate-700" />
+                      <motion.circle 
+                        cx="24" cy="24" r="20" 
+                        stroke="currentColor" 
+                        strokeWidth="3.5" fill="transparent" 
+                        strokeDasharray={2 * Math.PI * 20} 
+                        initial={{ strokeDashoffset: 2 * Math.PI * 20 }}
+                        animate={{ strokeDashoffset: (2 * Math.PI * 20) - ((displayMatch / 100) * (2 * Math.PI * 20)) }}
+                        transition={{ duration: 1 }}
+                        className={matchColorClass} 
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span className={`absolute text-[11px] font-black ${matchColorClass}`}>
+                      {displayMatch}%
+                    </span>
+                  </div>
+                </div>
+
+                {topPercentile && (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                      أفضل من <span className="text-primary">{topPercentile}%</span> من المتقدمين
+                    </div>
+                  </div>
+                )}
+
+REPLACE:
+                <div className="flex flex-col items-center justify-center mb-8">
+                  <div className="relative flex items-center justify-center w-28 h-28 drop-shadow-lg">
+                    <svg className="transform -rotate-90 w-28 h-28">
+                      <circle cx="56" cy="56" r="46" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-slate-100 dark:text-slate-700/50" />
+                      <motion.circle 
+                        cx="56" cy="56" r="46" 
+                        stroke="currentColor" 
+                        strokeWidth="8" fill="transparent" 
+                        strokeDasharray={2 * Math.PI * 46} 
+                        initial={{ strokeDashoffset: 2 * Math.PI * 46 }}
+                        animate={{ strokeDashoffset: (2 * Math.PI * 46) - ((displayMatch / 100) * (2 * Math.PI * 46)) }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className={matchColorClass} 
+                        strokeLinecap="round"
+                        style={{ filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.2))' }}
+                      />
+                    </svg>
+                    <span className={`absolute text-3xl font-black tracking-tighter ${matchColorClass}`}>
+                      {displayMatch}%
+                    </span>
+                  </div>
+
+                  {topPercentile && (
+                    <div className="mt-5 flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 px-4 py-1.5 rounded-full shadow-sm border border-slate-200 dark:border-slate-700/50">
+                      أفضل من <span className="text-primary font-black">{topPercentile}%</span> من المتقدمين
+                    </div>
+                  )}
+                </div>
+
+--- STEP 10929 ---
+Change the tab container to use flex-wrap so the 'Notes' tab doesn't get cut off on narrow screens.
+
+TARGET:
+              <div className="flex bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-[20px] mb-8 border border-slate-100 dark:border-slate-700/50 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+
+REPLACE:
+              <div className="flex flex-wrap gap-1 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-[20px] mb-8 border border-slate-100 dark:border-slate-700/50">
+
+--- STEP 11013 ---
+Remove the hardcoded quotation marks from the evidenceText rendering blocks for Red Flags, Strengths, and Weaknesses.
+
+TARGET:
+                                      <p className="text-[11px] text-slate-500 dark:text-slate-400 italic mt-1.5 font-medium bg-white/50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50 leading-relaxed">
+                                        "{evidenceText}"
+                                      </p>
+
+REPLACE:
+                                      <p className="text-[11px] text-slate-500 dark:text-slate-400 italic mt-1.5 font-medium bg-white/50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-200/50 dark:border-slate-700/50 leading-relaxed">
+                                        {evidenceText}
+                                      </p>
+
+--- STEP 11025 ---
+Add inline-block and extra padding to the span to prevent the last Arabic letter from being clipped.
+
+TARGET:
+                          {rText && (
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 inline-block px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700 mt-2">
+                              <span className="text-primary mr-1 text-sm bg-primary/10 px-2 py-0.5 rounded-lg ml-2">الهدف من السؤال</span>
+                              {rText}
+                            </p>
+                          )}
+
+REPLACE:
+                          {rText && (
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 inline-block px-4 py-3 rounded-xl border border-slate-100 dark:border-slate-700 mt-2">
+                              <span className="text-primary inline-block whitespace-nowrap text-sm bg-primary/10 px-3 py-1 rounded-lg ml-3">الهدف من السؤال</span>
+                              <span className="leading-relaxed inline-block mt-1 sm:mt-0">{rText}</span>
+                            </p>
+                          )}
+
+--- STEP 11031 ---
+Decrease the text size of the 'الهدف من السؤال' label to text-[10px] and increase the size and clarity of the actual purpose text to text-sm and text-slate-700.
+
+TARGET:
+                          {rText && (
+                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 inline-block px-4 py-3 rounded-xl border border-slate-100 dark:border-slate-700 mt-2">
+                              <span className="text-primary inline-block whitespace-nowrap text-sm bg-primary/10 px-3 py-1 rounded-lg ml-3">الهدف من السؤال</span>
+                              <span className="leading-relaxed inline-block mt-1 sm:mt-0">{rText}</span>
+                            </p>
+                          )}
+
+REPLACE:
+                          {rText && (
+                            <p className="text-sm font-bold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/80 inline-block px-4 py-3 rounded-xl border border-slate-100 dark:border-slate-700 mt-2">
+                              <span className="text-primary inline-block whitespace-nowrap text-[10px] font-bold uppercase tracking-wider bg-primary/10 px-2.5 py-0.5 rounded ml-3 opacity-90">الهدف من السؤال</span>
+                              <span className="leading-relaxed inline-block mt-1 sm:mt-0">{rText}</span>
+                            </p>
+                          )}
+
+--- STEP 11057 ---
+Change the 'Application Requirements' box from indigo to emerald, the 'Offensive Weapons' box from blue to emerald, and the 'Internal Notes' icon from blue to emerald as requested.
+
+TARGET:
+                          <div className="bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30 p-6 rounded-[32px] mt-6">
+                            <h4 className="font-bold text-indigo-700 dark:text-indigo-400 mb-4 flex items-center gap-2">
+                              <MessageCircle size={18} /> إجابات أسئلة نموذج التقديم
+
+REPLACE:
+                          <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 p-6 rounded-[32px] mt-6">
+                            <h4 className="font-bold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-2">
+                              <MessageCircle size={18} /> إجابات أسئلة نموذج التقديمTARGET:
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                        <FileText size={20} />
+                      </div>
+
+REPLACE:
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                        <FileText size={20} />
+                      </div>TARGET:
+                  <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 p-5 rounded-[24px] mb-6">
+                    <p className="text-sm font-bold text-blue-700 dark:text-blue-400 flex items-center gap-3">
+
+REPLACE:
+                  <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 p-5 rounded-[24px] mb-6">
+                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-3">
+
+--- STEP 11066 ---
+Replace the tailwind emerald classes with the platform's 'primary' color classes for the specified sections.
+
+TARGET:
+                          <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 p-6 rounded-[32px] mt-6">
+                            <h4 className="font-bold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-2">
+                              <MessageCircle size={18} /> إجابات أسئلة نموذج التقديم
+
+REPLACE:
+                          <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/20 p-6 rounded-[32px] mt-6">
+                            <h4 className="font-bold text-primary mb-4 flex items-center gap-2">
+                              <MessageCircle size={18} /> إجابات أسئلة نموذج التقديمTARGET:
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                        <FileText size={20} />
+                      </div>
+
+REPLACE:
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                        <FileText size={20} />
+                      </div>TARGET:
+                  <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 p-5 rounded-[24px] mb-6">
+                    <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-3">
+
+REPLACE:
+                  <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/20 p-5 rounded-[24px] mb-6">
+                    <p className="text-sm font-bold text-primary flex items-center gap-3">
+
+--- STEP 11113 ---
+Modify the useEffect that parses hr_notes to also fetch the latest hr_notes directly from Supabase to prevent stale data when reopening the modal.
+
+TARGET:
+  useEffect(() => {
+    if (applicant) {
+      if (applicant.hr_notes) {
+        try {
+          const parsedNotes = JSON.parse(applicant.hr_notes);
+          setNotesList(Array.isArray(parsedNotes) ? parsedNotes : []);
+        } catch (e) {
+          setNotesList([]);
+        }
+      } else {
+        setNotesList([]);
+      }
+    }
+  }, [applicant?.id, applicant?.hr_notes]);
+
+REPLACE:
+  useEffect(() => {
+    if (applicant) {
+      if (applicant.hr_notes) {
+        try {
+          const parsedNotes = JSON.parse(applicant.hr_notes);
+          setNotesList(Array.isArray(parsedNotes) ? parsedNotes : []);
+        } catch (e) {
+          setNotesList([]);
+        }
+      } else {
+        setNotesList([]);
+      }
+
+      // Fetch fresh notes from DB to ensure no stale data on reopen
+      const fetchFreshNotes = async () => {
+        try {
+          const { data } = await supabase.from('applicants').select('hr_notes').eq('id', applicant.id).single();
+          if (data && data.hr_notes) {
+            const parsed = JSON.parse(data.hr_notes);
+            setNotesList(Array.isArray(parsed) ? parsed : []);
+          }
+        } catch (err) {
+          console.warn("Could not fetch fresh notes");
+        }
+      };
+      fetchFreshNotes();
+    }
+  }, [applicant?.id, applicant?.hr_notes]);
+
+--- STEP 11197 ---
+Add onUpdateApplicant to the props signature of ApplicantDetails so it can instantly sync changes to RAM.
+
+TARGET:
+const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, userProfile?: any }) => {
+
+REPLACE:
+const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile, onUpdateApplicant }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, userProfile?: any, onUpdateApplicant?: (id: string, updates: any) => void }) => {
+
+--- STEP 11200 ---
+1. Add a new state interviewQuestionsState. 2. Fetch it along with hr_notes. 3. Call onUpdateApplicant in handleSaveNote and handleDeleteNote. 4. Replace the safeParseArray(applicant?.interview_questions) with the new state.
+
+TARGET:
+  const [notesList, setNotesList] = useState<NoteItem[]>([]);
+  const [newNoteText, setNewNoteText] = useState("");
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [isNoteSaved, setIsNoteSaved] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+REPLACE:
+  const [notesList, setNotesList] = useState<NoteItem[]>([]);
+  const [newNoteText, setNewNoteText] = useState("");
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [isNoteSaved, setIsNoteSaved] = useState(false);
+  
+  // Added state for interview questions to load fresh from DB since fast cache excludes it
+  const [interviewQuestionsState, setInterviewQuestionsState] = useState<any[]>([]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });TARGET:
+      // Fetch fresh notes from DB to ensure no stale data on reopen
+      const fetchFreshNotes = async () => {
+        try {
+          const { data } = await supabase.from('applicants').select('hr_notes').eq('id', applicant.id).single();
+          if (data && data.hr_notes) {
+            const parsed = JSON.parse(data.hr_notes);
+            setNotesList(Array.isArray(parsed) ? parsed : []);
+          }
+        } catch (err) {
+          console.warn("Could not fetch fresh notes");
+        }
+      };
+      fetchFreshNotes();
+
+REPLACE:
+      // Fetch fresh notes and questions from DB to ensure no stale data on reopen
+      const fetchFreshData = async () => {
+        try {
+          const { data } = await supabase.from('applicants').select('hr_notes, interview_questions').eq('id', applicant.id).single();
+          if (data) {
+            if (data.hr_notes) {
+              const parsed = JSON.parse(data.hr_notes);
+              setNotesList(Array.isArray(parsed) ? parsed : []);
+            }
+            if (data.interview_questions) {
+              const parsedQ = typeof data.interview_questions === 'string' ? JSON.parse(data.interview_questions) : data.interview_questions;
+              setInterviewQuestionsState(Array.isArray(parsedQ) ? parsedQ : []);
+            }
+          }
+        } catch (err) {
+          console.warn("Could not fetch fresh data");
+        }
+      };
+      fetchFreshData();TARGET:
+    const updatedNotes = [...notesList, newNoteObj];
+    setNotesList(updatedNotes);
+    setNewNoteText("");
+
+    // Backend Sync
+
+REPLACE:
+    const updatedNotes = [...notesList, newNoteObj];
+    setNotesList(updatedNotes);
+    setNewNoteText("");
+
+    if (onUpdateApplicant) {
+      onUpdateApplicant(applicant.id, { hr_notes: JSON.stringify(updatedNotes) });
+    }
+
+    // Backend SyncTARGET:
+  const safeParseArray = (str: any) => {
+    if (!str) return [];
+    if (Array.isArray(str)) return str;
+    try {
+      const parsed = JSON.parse(str);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const regularAnswers = safeParseArray(applicant?.answers);
+  const aiCustomAnswers = safeParseArray(applicant?.customAnswers);
+  const interviewQuestions = safeParseArray(applicant?.interview_questions);
+
+REPLACE:
+  const safeParseArray = (str: any) => {
+    if (!str) return [];
+    if (Array.isArray(str)) return str;
+    try {
+      const parsed = JSON.parse(str);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const regularAnswers = safeParseArray(applicant?.answers);
+  const aiCustomAnswers = safeParseArray(applicant?.customAnswers);
+  const interviewQuestions = interviewQuestionsState;
+
+--- STEP 11221 ---
+1. Separate the window.scrollTo into its own useEffect that only depends on applicant?.id so it doesn't scroll when notes are updated. 2. Change the bg-green-500 class on the Save Note button to bg-primary.
+
+TARGET:
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    if (applicant) {
+
+REPLACE:
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [applicant?.id]);
+
+  useEffect(() => {
+    if (applicant) {TARGET:
+                          className={`px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${isNoteSaved
+                            ? "bg-green-500 text-white"
+                            : "bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                            }`}
+
+REPLACE:
+                          className={`px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${isNoteSaved
+                            ? "bg-primary text-white"
+                            : "bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                            }`}
+
+--- STEP 11242 ---
+Revert safeParseArray to its original robust implementation that parses both the outer array and any stringified JSON objects inside the array.
+
+TARGET:
+  const safeParseArray = (str: any) => {
+    if (!str) return [];
+    if (Array.isArray(str)) return str;
+    try {
+      const parsed = JSON.parse(str);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+REPLACE:
+  const safeParseArray = (val: any) => {
+    if (!val) return [];
+    if (typeof val === 'string') {
+      try { val = JSON.parse(val); } catch (e) { return []; }
+    }
+    if (!Array.isArray(val)) return [val];
+    return val.map(item => {
+      if (typeof item === 'string') {
+        try { return JSON.parse(item); } catch (e) { return item; }
+      }
+      return item;
+    });
+  };
+
+--- STEP 11344 ---
+Update the onClick handler of the Reopen Interview button to reset the interview_sent_at timestamp, and update the alert and confirm messages to reflect the new behavior.
+
+TARGET:
+                    onClick={async () => {
+                      if (!window.confirm("تنبيه: هذا المتقدم قد أجرى المقابلة مسبقاً. هل تريد تأكيد فك القفل وإعادة فتح المقابلة له؟")) return;
+                      try {
+                        await supabase
+                          .from('applicants')
+                          .update({ has_started_interview: false, is_interview_completed: false, interview_revoked: false })
+                          .eq('id', applicant.id);
+                        if (applicant) {
+                          applicant.has_started_interview = false;
+                          applicant.is_interview_completed = false;
+                          applicant.interview_revoked = false;
+                        }
+                        if (onStatusUpdate) onStatusUpdate(applicant.id, applicant.decision || 'interview', false);
+                        alert("تم فك القفل بنجاح، يمكنك الآن إعادة إرسال الرابط.");
+
+REPLACE:
+                    onClick={async () => {
+                      if (!window.confirm("تنبيه: هل أنت متأكد من فك القفل وتجديد مهلة الرابط لمدة 72 ساعة إضافية لهذا المتقدم؟")) return;
+                      try {
+                        const newTime = new Date().toISOString();
+                        await supabase
+                          .from('applicants')
+                          .update({ has_started_interview: false, is_interview_completed: false, interview_revoked: false, interview_sent_at: newTime })
+                          .eq('id', applicant.id);
+                        if (applicant) {
+                          applicant.has_started_interview = false;
+                          applicant.is_interview_completed = false;
+                          applicant.interview_revoked = false;
+                          applicant.interview_sent_at = newTime;
+                        }
+                        if (onStatusUpdate) onStatusUpdate(applicant.id, applicant.decision || 'interview', false);
+                        alert("تم فك القفل وتجديد الوقت بنجاح، يمكن للمتقدم الآن الدخول باستخدام نفس الرابط القديم.");
+
+--- STEP 11393 ---
+Move the interview controls from the header to a separate beautiful card below the header
+
+TARGET:
+            <button
+              onClick={handleSilentAccept}
+              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-900/50 dark:hover:bg-emerald-600 dark:hover:text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 hover:border-transparent"
+            >
+              <CheckCircle size={16} /> قبول
+            </button>
+            {(applicant?.decision === "interview" || applicant?.decision === "interviewing") && (
+              <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">لغة الذكاء الاصطناعي:</span>
+                  <select
+                    value={interviewLang}
+                    onChange={(e) => setInterviewLang(e.target.value as 'ar' | 'en')}
+                    className="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1 outline-none focus:border-primary"
+                  >
+                    <option value="ar">العربية</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => { setInterviewSendMethod('whatsapp'); setShowInterviewQuestionsModal(true); }}
+                    className="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white border border-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-900/50 dark:hover:bg-green-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                  >
+                    <MessageCircle size={16} /> إرسال المقابلة (واتساب)
+                  </button>
+                  <button
+                    onClick={() => { setInterviewSendMethod('email'); setShowInterviewQuestionsModal(true); }}
+                    className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-900/50 dark:hover:bg-blue-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                  >
+                    <Mail size={16} /> إرسال المقابلة (إيميل)
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm("تنبيه: هل أنت متأكد من فك القفل وتجديد مهلة الرابط لمدة 72 ساعة إضافية لهذا المتقدم؟")) return;
+                      try {
+                        const newTime = new Date().toISOString();
+                        await supabase
+                          .from('applicants')
+                          .update({ has_started_interview: false, is_interview_completed: false, interview_revoked: false, interview_sent_at: newTime })
+                          .eq('id', applicant.id);
+                        if (applicant) {
+                          applicant.has_started_interview = false;
+                          applicant.is_interview_completed = false;
+                          applicant.interview_revoked = false;
+                          applicant.interview_sent_at = newTime;
+                        }
+                        if (onStatusUpdate) onStatusUpdate(applicant.id, applicant.decision || 'interview', false);
+                        alert("تم فك القفل وتجديد الوقت بنجاح، يمكن للمتقدم الآن الدخول باستخدام نفس الرابط القديم.");
+                      } catch (err) {
+                        alert("حدث خطأ أثناء فك القفل.");
+                      }
+                    }}
+                    className="bg-yellow-50 text-yellow-600 hover:bg-yellow-600 hover:text-white border border-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-900/50 dark:hover:bg-yellow-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
+                  >
+                    <RefreshCw size={16} /> إعادة فتح رابط المقابلة
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Revoke Link Button */}
+            {((applicant?.decision === 'interview_sent' || applicant?.interview_sent || applicant?.decision === 'interviewing') && !applicant?.has_started_interview && !applicant?.interview_revoked) && (
+              <div className="flex flex-col gap-2 bg-rose-50 dark:bg-rose-900/10 p-4 rounded-xl border border-rose-100 dark:border-rose-800/30">
+                <p className="text-xs font-bold text-rose-600 dark:text-rose-400">
+                  تم إرسال رابط المقابلة مسبقاً. إذا لم يتجاوب المتقدم، يمكنك إلغاء الرابط لاسترجاع الحجز.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm("هل أنت متأكد من إلغاء رابط المقابلة لهذا المتقدم؟")) return;
+                    try {
+                      await supabase.from('applicants').update({ interview_revoked: true }).eq('id', applicant.id);
+                      if (applicant) applicant.interview_revoked = true;
+                      setPendingInterviewsCount(prev => Math.max(0, prev - 1));
+                      alert("تم إلغاء الرابط بنجاح.");
+                    } catch (err) {
+                      console.error(err);
+                    }
+                  }}
+                  className="bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 w-fit mt-1"
+                >
+                  <Ban size={16} /> إلغاء رابط المقابلة
+                </button>
+              </div>
+            )}
+            {applicant?.interview_revoked && (
+              <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold p-3 rounded-xl flex items-center gap-2 border border-slate-200 dark:border-slate-700">
+                <Ban size={16} /> تم إلغاء رابط المقابلة لهذا المتقدم.
+              </div>
+            )}
+            
+            {applicant?.decision !== "interview" && applicant?.decision !== "interviewing" && (
+
+REPLACE:
+            <button
+              onClick={handleSilentAccept}
+              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-900/50 dark:hover:bg-emerald-600 dark:hover:text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 hover:border-transparent"
+            >
+              <CheckCircle size={16} /> قبول
+            </button>
+            
+            {applicant?.decision !== "interview" && applicant?.decision !== "interviewing" && (TARGET:
+          </div>
+        </div>{" "}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {" "}
+
+REPLACE:
+          </div>
+        </div>{" "}
+        
+        {/* New Interview Control Panel */}
+        {(applicant?.decision === "interview" || applicant?.decision === "interviewing") && (
+          <div className="bg-white dark:bg-slate-800 p-5 md:p-6 rounded-[24px] shadow-sm border border-slate-200 dark:border-slate-700 mb-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative overflow-hidden">
+            {/* Decorative background element */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
+            
+            <div className="flex flex-col gap-1 w-full lg:w-1/3">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <Settings size={20} className="text-primary" /> لوحة تحكم المقابلة
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                إدارة إعدادات وروابط المقابلة الشخصية المدعومة بالذكاء الاصطناعي
+              </p>
+            </div>
+
+            <div className="flex flex-col md:flex-row flex-wrap items-center gap-4 w-full lg:w-auto justify-end">
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">لغة الذكاء الاصطناعي:</span>
+                <select
+                  value={interviewLang}
+                  onChange={(e) => setInterviewLang(e.target.value as 'ar' | 'en')}
+                  className="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1 outline-none focus:border-primary font-bold"
+                >
+                  <option value="ar">العربية</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 md:border-r border-slate-200 dark:border-slate-700 md:pr-4 md:mr-2">
+                <button
+                  onClick={() => { setInterviewSendMethod('whatsapp'); setShowInterviewQuestionsModal(true); }}
+                  className="bg-green-50 text-green-600 hover:bg-green-500 hover:text-white border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/50 dark:hover:bg-green-500 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 hover:-translate-y-0.5"
+                >
+                  <MessageCircle size={16} /> إرسال (واتساب)
+                </button>
+                <button
+                  onClick={() => { setInterviewSendMethod('email'); setShowInterviewQuestionsModal(true); }}
+                  className="bg-blue-50 text-blue-600 hover:bg-blue-500 hover:text-white border border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50 dark:hover:bg-blue-500 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 hover:-translate-y-0.5"
+                >
+                  <Mail size={16} /> إرسال (إيميل)
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 md:border-r border-slate-200 dark:border-slate-700 md:pr-4 md:mr-2">
+                <button
+                  onClick={async () => {
+                    if (!window.confirm("تنبيه: هل أنت متأكد من فك القفل وتجديد مهلة الرابط لمدة 72 ساعة إضافية لهذا المتقدم؟")) return;
+                    try {
+                      const newTime = new Date().toISOString();
+                      await supabase
+                        .from('applicants')
+                        .update({ has_started_interview: false, is_interview_completed: false, interview_revoked: false, interview_sent_at: newTime })
+                        .eq('id', applicant.id);
+                      if (applicant) {
+                        applicant.has_started_interview = false;
+                        applicant.is_interview_completed = false;
+                        applicant.interview_revoked = false;
+                        applicant.interview_sent_at = newTime;
+                      }
+                      if (onStatusUpdate) onStatusUpdate(applicant.id, applicant.decision || 'interview', false);
+                      alert("تم فك القفل وتجديد الوقت بنجاح، يمكن للمتقدم الآن الدخول باستخدام نفس الرابط القديم.");
+                    } catch (err) {
+                      alert("حدث خطأ أثناء فك القفل.");
+                    }
+                  }}
+                  className="bg-yellow-50 text-yellow-600 hover:bg-yellow-500 hover:text-white border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50 dark:hover:bg-yellow-500 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 hover:-translate-y-0.5"
+                >
+                  <RefreshCw size={16} /> إعادة فتح الرابط
+                </button>
+
+                {((applicant?.decision === 'interview_sent' || applicant?.interview_sent || applicant?.decision === 'interviewing') && !applicant?.has_started_interview && !applicant?.interview_revoked) && (
+                  <button
+                    onClick={async () => {
+                      if (!window.confirm("هل أنت متأكد من إلغاء رابط المقابلة لهذا المتقدم؟")) return;
+                      try {
+                        await supabase.from('applicants').update({ interview_revoked: true }).eq('id', applicant.id);
+                        if (applicant) applicant.interview_revoked = true;
+                        setPendingInterviewsCount(prev => Math.max(0, prev - 1));
+                        alert("تم إلغاء الرابط بنجاح.");
+                      } catch (err) {
+                        console.error(err);
+                      }
+                    }}
+                    className="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50 dark:hover:bg-rose-500 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 hover:-translate-y-0.5"
+                  >
+                    <Ban size={16} /> سحب الرابط
+                  </button>
+                )}
+                
+                {applicant?.interview_revoked && (
+                  <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold px-3 py-2 rounded-xl flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
+                    <Ban size={14} /> ملغي
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {" "}
+
+--- STEP 11415 ---
+Add Settings to the lucide-react import in ApplicantDetails.tsx
+
+TARGET:
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, TrendingUp } from "lucide-react";
+
+REPLACE:
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, TrendingUp, Settings } from "lucide-react";
+
+--- STEP 11461 ---
+Change the width of the progress bar lines to be w-3/4 and mx-auto so they are shorter than the text container.
+
+TARGET:
+                <div className="w-full space-y-3 mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق المهارات</span>
+                      <span className="text-navy dark:text-white">{skillsMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${skillsMatch}%` }} transition={{ duration: 1, delay: 0.3 }} className={`h-full rounded-full ${getBarColor(skillsMatch)}`} />
+                    </div>
+                  </div>
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق الخبرة</span>
+                      <span className="text-navy dark:text-white">{expMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${expMatch}%` }} transition={{ duration: 1, delay: 0.4 }} className={`h-full rounded-full ${getBarColor(expMatch)}`} />
+                    </div>
+                  </div>
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق التعليم</span>
+                      <span className="text-navy dark:text-white">{eduMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${eduMatch}%` }} transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${getBarColor(eduMatch)}`} />
+                    </div>
+                  </div>
+                </div>
+
+REPLACE:
+                <div className="w-full space-y-4 mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-2">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق المهارات</span>
+                      <span className="text-navy dark:text-white">{skillsMatch}%</span>
+                    </div>
+                    <div className="w-[80%] mx-auto bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${skillsMatch}%` }} transition={{ duration: 1, delay: 0.3 }} className={`h-full rounded-full ${getBarColor(skillsMatch)}`} />
+                    </div>
+                  </div>
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-2">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق الخبرة</span>
+                      <span className="text-navy dark:text-white">{expMatch}%</span>
+                    </div>
+                    <div className="w-[80%] mx-auto bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${expMatch}%` }} transition={{ duration: 1, delay: 0.4 }} className={`h-full rounded-full ${getBarColor(expMatch)}`} />
+                    </div>
+                  </div>
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-2">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق التعليم</span>
+                      <span className="text-navy dark:text-white">{eduMatch}%</span>
+                    </div>
+                    <div className="w-[80%] mx-auto bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${eduMatch}%` }} transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${getBarColor(eduMatch)}`} />
+                    </div>
+                  </div>
+                </div>
+
+--- STEP 11539 ---
+Replace the individual progress bar cards with the unified block exactly as it was before the git checkout.
+
+TARGET:
+                <div className="w-full space-y-4 z-10">
+                  <div className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm transition-transform hover:-translate-y-0.5">
+                    <div className="flex justify-between text-xs font-bold mb-2">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق المهارات</span>
+                      <span className="text-navy dark:text-white">{skillsMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${skillsMatch}%` }} transition={{ duration: 1, delay: 0.3 }} className={`h-full rounded-full ${getBarColor(skillsMatch)}`} />
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm transition-transform hover:-translate-y-0.5">
+                    <div className="flex justify-between text-xs font-bold mb-2">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق الخبرة</span>
+                      <span className="text-navy dark:text-white">{expMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${expMatch}%` }} transition={{ duration: 1, delay: 0.4 }} className={`h-full rounded-full ${getBarColor(expMatch)}`} />
+                    </div>
+                  </div>
+                  <div className="bg-white dark:bg-slate-800/80 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm transition-transform hover:-translate-y-0.5">
+                    <div className="flex justify-between text-xs font-bold mb-2">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق التعليم</span>
+                      <span className="text-navy dark:text-white">{eduMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${eduMatch}%` }} transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${getBarColor(eduMatch)}`} />
+                    </div>
+                  </div>
+                </div>
+
+REPLACE:
+                <div className="w-full space-y-3 mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق المهارات</span>
+                      <span className="text-navy dark:text-white">{skillsMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${skillsMatch}%` }} transition={{ duration: 1, delay: 0.3 }} className={`h-full rounded-full ${getBarColor(skillsMatch)}`} />
+                    </div>
+                  </div>
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق الخبرة</span>
+                      <span className="text-navy dark:text-white">{expMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${expMatch}%` }} transition={{ duration: 1, delay: 0.4 }} className={`h-full rounded-full ${getBarColor(expMatch)}`} />
+                    </div>
+                  </div>
+                  <div className="w-full">
+                    <div className="flex justify-between text-[11px] font-bold mb-1.5">
+                      <span className="text-slate-600 dark:text-slate-300">تطابق التعليم</span>
+                      <span className="text-navy dark:text-white">{eduMatch}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-1 overflow-hidden">
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${eduMatch}%` }} transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${getBarColor(eduMatch)}`} />
+                    </div>
+                  </div>
+                </div>
