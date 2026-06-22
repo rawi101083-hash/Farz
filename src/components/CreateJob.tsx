@@ -1567,7 +1567,7 @@ export const CreateJob = ({
                   <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 1 ? 'bg-gradient-to-tr from-primary to-emerald-400 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] scale-110 border-white/50' : currentStep > 1 ? 'bg-primary text-white border-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'}`}>
                     {currentStep > 1 ? <CheckCircle size={24} className="animate-in zoom-in" /> : "1"}
                   </div>
-                  <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 1 ? 'text-primary drop-shadow-sm' : currentStep > 1 ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>المعلومات الأساسية</span>
+                  <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 1 ? 'text-primary drop-shadow-sm' : currentStep > 1 ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>تفاصيل الإعلان</span>
                 </div>
 
                 <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 1) setCurrentStep(2) }}>
@@ -1581,7 +1581,7 @@ export const CreateJob = ({
                   <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 3 ? 'bg-gradient-to-tr from-primary to-emerald-400 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] scale-110 border-white/50' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'}`}>
                     3
                   </div>
-                  <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 3 ? 'text-primary drop-shadow-sm' : 'text-slate-400'}`}>الإعدادات والتاريخ</span>
+                  <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 3 ? 'text-primary drop-shadow-sm' : 'text-slate-400'}`}>إعدادات محرك الفرز</span>
                 </div>
               </div>
             </div>
@@ -1789,14 +1789,11 @@ export const CreateJob = ({
             )}
 
 
-            {createJobType !== "quick_link" && currentStep === 1 && (
-              <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-                <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} className="rotate-180"/></button>
-              </div>
-            )}
-            <div className={currentStep === 2 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
+            <div className={currentStep === 1 || currentStep === 2 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6" : "hidden"}>
             {showRoleForm && (
               <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
+                {currentStep === 1 && (
+                <>
                 {adType === "campaign" && (
                   <h3 className="text-xl font-bold text-navy dark:text-white flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
@@ -2101,6 +2098,20 @@ export const CreateJob = ({
 
                 </div>
 
+                {/* AI Assistant Button */}
+                <div className="flex justify-center mt-10 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsChatModalOpen(true)}
+                    className="group relative px-8 py-4 bg-gradient-to-r from-primary to-emerald-400 text-white rounded-2xl font-bold shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-1 transition-all overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <span className="relative flex items-center gap-3 text-lg">
+                      <Sparkles size={24} className="animate-pulse" />
+                      مستشار التوظيف الذكي
+                    </span>
+                  </button>
+                </div>
 
                 <div className="space-y-6 mt-6">
                   <div>
@@ -2483,6 +2494,16 @@ export const CreateJob = ({
                   </div>
                 </div>
                 </div>
+                {createJobType !== "quick_link" && (
+                  <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} className="rotate-180"/></button>
+                  </div>
+                )}
+                </>
+                )}
+
+                {currentStep === 2 && (
+                <>
                     <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-700/60 flex flex-col gap-6">
 
                       {/* Basic Attachments Section */}
@@ -3474,6 +3495,8 @@ export const CreateJob = ({
                     </button>{" "}
                   </div>
                 )}{" "}
+                </>
+                )}
               </div>
             )}
 
