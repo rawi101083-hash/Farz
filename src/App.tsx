@@ -872,14 +872,14 @@ const LoginPage = ({
                   </label>
                   <div className="relative">
                     <User
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary"
                       size={20}
                     />
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
                       placeholder={entityType === "company" ? "اسم الشركة أو الجهة" : "الاسم الكامل"}
                     />
                   </div>
@@ -893,14 +893,14 @@ const LoginPage = ({
               </label>
               <div className="relative">
                 <Mail
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary"
                   size={20}
                 />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
+                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
                   placeholder={entityType === "company" && mode === "register" ? "name@company.com" : "name@example.com"}
                   dir="ltr"
                 />
@@ -921,21 +921,21 @@ const LoginPage = ({
                 </div>
                 <div className="relative">
                   <Lock
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary z-10"
                     size={20}
                   />
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
                     placeholder="••••••••"
                     dir="ltr"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-primary dark:hover:text-primary/80 transition-colors z-10"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>

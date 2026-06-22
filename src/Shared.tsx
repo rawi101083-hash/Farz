@@ -780,6 +780,7 @@ export const TalentPool = ({
   talentPool,
   onCrossNominate,
   externalApplicants,
+  isLoading,
 }: {
   jobs: Job[];
   shortlistedIds: string[];
@@ -789,6 +790,7 @@ export const TalentPool = ({
   talentPool: Applicant[];
   onCrossNominate?: (applicant: Applicant) => void;
   externalApplicants?: Applicant[];
+  isLoading?: boolean;
 }) => {
   const [jobFilter, setJobFilter] = useState("all");
   const [cityFilter, setCityFilter] = useState("all");
@@ -1104,13 +1106,17 @@ export const TalentPool = ({
 
         {filteredTalents.length === 0 && (
           <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-white dark:bg-slate-800 rounded-[32px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
-            <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner-3d">
+            <div className={`w-24 h-24 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center ${isLoading ? 'animate-pulse' : 'mb-6 shadow-inner-3d'}`}>
               <Search size={40} className="text-slate-300 dark:text-slate-500" />
             </div>
-            <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">لا توجد نتائج مطابقة</h3>
-            <p className="text-slate-500 dark:text-slate-400 font-medium max-w-md">
-              لم نتمكن من العثور على أي متقدم يطابق خيارات الفلاتر الحالية. حاول تعديل أو إزالة بعض الفلاتر لرؤية المزيد من النتائج.
-            </p>
+            {!isLoading && (
+              <>
+                <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">لا توجد نتائج مطابقة</h3>
+                <p className="text-slate-500 dark:text-slate-400 font-medium max-w-md">
+                  لم نتمكن من العثور على أي متقدم يطابق خيارات الفلاتر الحالية. حاول تعديل أو إزالة بعض الفلاتر لرؤية المزيد من النتائج.
+                </p>
+              </>
+            )}
           </div>
         )}{" "}
         </motion.div>
@@ -1299,7 +1305,7 @@ const GlassBar = (props: any) => {
     </foreignObject>
   );
 };
-export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filterId: string; applicants?: any[] }) => {
+export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: { jobs: Job[]; filterId: string; applicants?: any[]; isLoading?: boolean }) => {
   const filteredJobs = filterId === "all" ? jobs : jobs.filter(j => j.id === filterId);
   const totalJobs = filteredJobs.length;
 
@@ -1504,9 +1510,15 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
             <p className="relative z-10 text-slate-500 dark:text-slate-400 font-bold text-[11px] uppercase tracking-wider mb-1 transition-colors group-hover:text-slate-700 dark:group-hover:text-slate-300">
               {metric.label}
             </p>{" "}
-            <h3 className="relative z-10 text-3xl font-black text-navy dark:text-white tracking-tight">
-              {metric.value}
-            </h3>{" "}
+            <div className="relative z-10 h-9 flex items-center justify-start">
+              {isLoading ? (
+                <div className="animate-pulse bg-slate-200 dark:bg-slate-700/80 w-16 h-8 rounded-lg mt-1 mb-1"></div>
+              ) : (
+                <h3 className="text-3xl font-black text-navy dark:text-white tracking-tight">
+                  {metric.value}
+                </h3>
+              )}
+            </div>{" "}
           </motion.div>
         ))}{" "}
       </div>{" "}
@@ -1657,7 +1669,9 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
                       <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: `rgb(${PIE_RGBS[index % 4]})`, boxShadow: `0 0 8px rgba(${PIE_RGBS[index % 4]}, 0.6)` }}></div>
                       <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{entry.name}</span>
                     </div>
-                    <span className="text-sm font-bold text-navy dark:text-white mr-4">{percent}%</span>
+                    <span className="text-sm font-bold text-navy dark:text-white mr-4">
+                      {isLoading ? <div className="animate-pulse bg-slate-200 dark:bg-slate-700 w-8 h-4 rounded inline-block"></div> : `${percent}%`}
+                    </span>
                   </div>
                 );
               })}
@@ -2874,6 +2888,7 @@ export const ActiveJobs = ({
   onPreview,
   onReactivate,
   onDelete,
+  isLoading,
 }: {
   jobs: Job[];
   onManage: (job: Job) => void;
@@ -2883,6 +2898,7 @@ export const ActiveJobs = ({
   onPreview?: (job: Job) => void;
   onReactivate?: (job: Job) => void;
   onDelete?: (id: string) => void;
+  isLoading?: boolean;
 }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
@@ -2932,18 +2948,29 @@ export const ActiveJobs = ({
           onClick={() => setOpenDropdownId(null)}
         />
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-6">
-        {jobs.map((job) => {
-          const expired = isJobExpired(job);
-          return (
-            <motion.div
-              key={job.id}
-              style={{ zIndex: openDropdownId === job.id ? 20 : 1 }}
-              whileHover={{ y: -3 }}
-              onClick={() => job.status === "مسودة" ? onClone(job) : onManage(job)}
-              className="bg-white relative cursor-pointer dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 dark:hover:border-primary/40 group flex flex-col justify-between transition-all duration-300 min-h-[270px]"
-            >
-              {/* Top Row: Status badge & Action menu */}
+      <AnimatePresence mode="wait">
+        <motion.div 
+          key={jobs.map(j => j.id).join(',')}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.15 }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-6"
+        >
+          {jobs.map((job, index) => {
+            const expired = isJobExpired(job);
+            return (
+              <motion.div
+                key={job.id}
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.3) }}
+                style={{ zIndex: openDropdownId === job.id ? 20 : 1 }}
+                whileHover={{ y: -4 }}
+                onClick={() => job.status === "مسودة" ? onClone(job) : onManage(job)}
+                className="bg-white relative cursor-pointer dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 dark:hover:border-primary/40 group flex flex-col justify-between transition-all duration-300 min-h-[270px]"
+              >
+                {/* Top Row: Status badge & Action menu */}
               <div className="flex items-center justify-between mb-3 w-full" onClick={(e) => e.stopPropagation()}>
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${
@@ -3092,7 +3119,11 @@ export const ActiveJobs = ({
               <div className="grid grid-cols-2 gap-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
                 <div className="flex flex-col items-center justify-center text-center">
                   <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">المتقدمين</span>
-                  <span className="text-xs font-black text-navy dark:text-white leading-none">{job.applicants}</span>
+                  {isLoading ? (
+                    <span className="animate-pulse bg-slate-200 dark:bg-slate-700 w-8 h-4 rounded block mx-auto"></span>
+                  ) : (
+                    <span className="text-xs font-black text-navy dark:text-white leading-none">{job.applicants}</span>
+                  )}
                 </div>
                 <div className="flex flex-col items-center justify-center text-center border-r border-slate-200/60 dark:border-slate-700/60 pr-2">
                   <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">نوع العمل</span>
@@ -3109,7 +3140,8 @@ export const ActiveJobs = ({
             </motion.div>
           );
         })}
-      </div>
+        </motion.div>
+      </AnimatePresence>
     </>
   );
 };

@@ -2024,6 +2024,7 @@ export const Dashboard = ({
               onDelete={(id) => setDraftToDelete(id)}
               cvLimitReached={cvsRemaining <= 0 && cvLimit > 0}
               plan={plan}
+              isLoading={isLoadingApplicants || !userProfile.isLoaded}
               onUpgrade={() => { setActiveTab("الحساب"); setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 50); }}
             />{" "}
           </div>
@@ -2038,6 +2039,7 @@ export const Dashboard = ({
             onViewDetails={onViewDetails}
             talentPool={talentPool}
             externalApplicants={applicants}
+            isLoading={isLoadingApplicants || !userProfile.isLoaded}
             onCrossNominate={(applicant) => {
               setCrossNominateApplicant(applicant);
               setCrossNominateJobId(jobs.find(j => j.title === applicant.job)?.id || jobs.find(j => j.status === "نشط")?.id || "");
@@ -2052,7 +2054,7 @@ export const Dashboard = ({
               selectedFilter={jobFilter}
               onFilterChange={setJobFilter}
             />{" "}
-            <Reports jobs={syncedJobs} filterId={jobFilter} applicants={applicants} />{" "}
+            <Reports jobs={syncedJobs} filterId={jobFilter} applicants={applicants} isLoading={isLoadingApplicants || !userProfile.isLoaded} />{" "}
           </div>
         );
       case "الحساب":

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
-const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, userProfile?: any }) => {
+const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile, isSharedView = false }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, userProfile?: any, isSharedView?: boolean }) => {
   const [activeTab, setActiveTab] = useState<"analysis" | "requirements" | "interview" | "notes">("analysis");
   const [isAILoading, setIsAILoading] = useState(false);
   const [isFullscreenCV, setIsFullscreenCV] = useState(false);
@@ -372,8 +372,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
             العودة للوحة التحكم{" "}
           </button>
 
-          <div className="flex items-center gap-3">
-            <button
+          {!isSharedView && (
+            <div className="flex items-center gap-3">
+              <button
               onClick={() => { if (applicant) setShowOfferModal(true); }}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all flex items-center gap-2"
             >
@@ -499,7 +500,8 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile 
             >
               <X size={16} /> رفض
             </button>
-          </div>
+            </div>
+          )}
         </div>{" "}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {" "}
