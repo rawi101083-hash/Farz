@@ -8,6 +8,7 @@ import CreateJob from './components/CreateJob';
 import { ManageJob } from './components/ManageJob';
 import { SharedManagementView } from './components/SharedManagementView';
 import { InterviewRoom } from './components/InterviewRoom';
+import SeekerProfile from './components/SeekerProfile';
 import React, { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from "react";
 
 class ErrorBoundary extends React.Component<any, any> {
@@ -227,7 +228,7 @@ const PublicJobPage = ({
   job: Job;
   selectedRoleId?: string | null;
   onSelectRole?: (roleId: string) => void;
-  onApply: () => void;
+  onApply: (mode: "fast" | "normal") => void;
   onBackToCampaign?: () => void;
 }) => {
   if (job.status === "مسودة") {
@@ -262,19 +263,29 @@ const PublicJobPage = ({
           animate={{ opacity: 1, y: 0 }}
           className="bg-white dark:bg-slate-800 rounded-[40px] shadow-2xl overflow-hidden border border-white dark:border-slate-700"
         >
-          <div className="p-10 md:p-16 bg-navy text-white relative overflow-hidden">
+          <div className="px-6 pt-5 pb-4 md:px-10 md:pt-6 md:pb-4 bg-navy text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
             <div className="relative z-10">
-              {isCampaign && selectedRoleId && onBackToCampaign && (
-                <button
-                  onClick={onBackToCampaign}
-                  className="mb-8 flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-sm font-bold bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm w-fit"
+              <div className="flex justify-between items-start w-full mb-3">
+                {isCampaign && selectedRoleId && onBackToCampaign ? (
+                  <button
+                    onClick={onBackToCampaign}
+                    className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-sm font-bold bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm w-fit"
+                  >
+                    <ArrowRight size={16} /> العودة لقائمة الوظائف
+                  </button>
+                ) : <div></div>}
+                <a
+                  href="/profile"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all shadow-sm mr-auto whitespace-nowrap"
                 >
-                  <ArrowRight size={16} /> العودة لقائمة الوظائف
-                </button>
-              )}
+                  <User size={16} className="text-teal-400" /> تسجيل دخول / إنشاء حساب
+                </a>
+              </div>
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-16 h-16 p-0 bg-white dark:bg-slate-800/10 backdrop-blur rounded-2xl flex items-center justify-center border border-white dark:border-slate-700/10 overflow-hidden shrink-0 shadow-sm">
+                <div className={`w-16 h-16 p-0 backdrop-blur rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm ${job.companyLogo ? "bg-white dark:bg-slate-800/10 border border-white dark:border-slate-700/10" : "bg-white/5 border border-white/10"}`}>
                   {job.companyLogo ? (
                     <img
                       src={job.companyLogo}
@@ -282,7 +293,7 @@ const PublicJobPage = ({
                       className="w-full h-full object-cover rounded-[inherit] drop-shadow-sm"
                     />
                   ) : (
-                    <Briefcase size={16} className="text-primary opacity-80" />
+                    <Briefcase size={28} className="text-primary/80 drop-shadow-sm" />
                   )}
                 </div>
                 <div>
@@ -416,9 +427,9 @@ const PublicJobPage = ({
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> التخصصات المطلوبة
                       </h3>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-3">
                         {(activeRole?.targetMajors || job.targetMajors || []).map((major, i) => (
-                          <span key={i} className="inline-flex items-center px-4 py-2 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-300 text-sm font-medium border border-blue-100/50 dark:border-blue-800/20 shadow-sm transition-all hover:-translate-y-0.5">
+                          <span key={i} className="bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 px-4 py-2 rounded-xl text-sm font-bold border border-teal-100 dark:border-teal-800 shadow-sm">
                             {major}
                           </span>
                         ))}
@@ -431,13 +442,10 @@ const PublicJobPage = ({
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> المهام والمسؤوليات
                       </h3>
-                      <ul className="space-y-4 list-none">
-                        {(activeRole?.responsibilities || job.responsibilities || '').split('\n').filter(r => r.trim()).map((res, i) => (
-                          <li key={i} className="flex gap-4 items-start text-slate-600 dark:text-slate-300 font-medium text-base">
-                            <div className="mt-1 shrink-0 bg-emerald-100 dark:bg-emerald-900/30 p-1 rounded-full text-emerald-600 dark:text-emerald-400">
-                              <CheckCircle size={16} strokeWidth={2.5} />
-                            </div>
-                            <span className="leading-relaxed pt-0.5">{res.trim()}</span>
+                      <ul className="space-y-3 list-disc list-inside px-2">
+                        {(activeRole?.responsibilities || job.responsibilities || '').split('\n').filter((r: string) => r.trim()).map((res: string, i: number) => (
+                          <li key={i} className="text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
+                            {res.trim()}
                           </li>
                         ))}
                       </ul>
@@ -449,8 +457,8 @@ const PublicJobPage = ({
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> المؤهلات والمتطلبات
                       </h3>
-                      <ul className="space-y-4 list-disc list-inside px-2">
-                        {(activeRole?.qualifications || job.qualifications || '').split('\n').filter(q => q.trim()).map((qual, i) => (
+                      <ul className="space-y-3 list-disc list-inside px-2">
+                        {(activeRole?.qualifications || job.qualifications || '').split('\n').filter((q: string) => q.trim()).map((qual: string, i: number) => (
                           <li key={i} className="text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
                             {qual.trim()}
                           </li>
@@ -459,53 +467,57 @@ const PublicJobPage = ({
                     </div>
                   )}
 
-                  {(activeRole?.skills?.length || job.skills?.length || activeRole?.languages?.length || job.languages?.length) ? (
+                  {((activeRole?.skills?.length ?? 0) > 0 || (job.skills?.length ?? 0) > 0) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-primary rounded-full" /> المهارات واللغات
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> المهارات
                       </h3>
-                      <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex flex-wrap gap-2 flex-1">
-                          {(activeRole?.skills || job.skills || []).map((skill: string) => (
-                            <span key={skill} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 shadow-sm">
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                        {((activeRole?.languages || job.languages || []).length > 0) && (
-                          <div className="flex flex-wrap gap-2 mr-auto">
-                            {(activeRole?.languages || job.languages || []).map((lang: string) => (
-                              <span key={lang} className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-xl text-sm font-bold border border-blue-200 dark:border-blue-800 shadow-sm">
-                                {lang}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                      <div className="flex flex-wrap gap-3">
+                        {(activeRole?.skills || job.skills || []).map((skill: string) => (
+                          <span key={skill} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 shadow-sm">
+                            {skill}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                  ) : null}
+                  )}
+
+                  {((activeRole?.languages?.length ?? 0) > 0 || (job.languages?.length ?? 0) > 0) && (
+                    <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
+                      <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> اللغات
+                      </h3>
+                      <div className="flex flex-wrap gap-3">
+                        {(activeRole?.languages || job.languages || []).map((lang: string) => (
+                          <span key={lang} className="bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 px-4 py-2 rounded-xl text-sm font-bold border border-teal-100 dark:border-teal-800 shadow-sm">
+                            {lang}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {(activeRole?.benefits || job.benefits) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> المميزات
                       </h3>
-                      <ul className="space-y-4 list-none">
-                        {(activeRole?.benefits || job.benefits || '').split('\n').filter(b => b.trim()).map((ben, i) => (
-                          <li key={i} className="flex gap-4 items-start text-slate-600 dark:text-slate-300 font-medium text-base">
-                            <div className="mt-1 shrink-0 bg-primary/10 p-1.5 rounded-full text-primary">
-                              <Sparkles size={16} strokeWidth={2.5} />
-                            </div>
-                            <span className="leading-relaxed pt-0.5">{ben.replace(/\(اختياري\)/g, '').trim()}</span>
+                      <ul className="space-y-3 list-disc list-inside px-2">
+                        {(activeRole?.benefits || job.benefits || '').split('\n').filter((b: string) => b.trim()).map((ben: string, i: number) => (
+                          <li key={i} className="text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
+                            {ben.replace(/\(اختياري\)/g, '').trim()}
                           </li>
                         ))}
                       </ul>
                     </div>
                   )}
 
-                  <div className="pt-12 pb-4">
-                    <button onClick={onApply} className="w-full max-w-md mx-auto flex bg-primary text-white py-5 rounded-2xl text-xl font-bold hover:bg-teal-600 transition-all shadow-xl shadow-primary/20 active:scale-[0.98] items-center justify-center gap-3">
-                      التقديم على هذه الوظيفة
+                  <div className="pt-12 pb-4 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-2xl mx-auto">
+                    <button onClick={() => onApply('fast')} className="w-full flex bg-primary text-white py-4 rounded-2xl text-lg font-bold hover:bg-teal-600 transition-all shadow-xl shadow-primary/20 active:scale-[0.98] items-center justify-center gap-2">
+                      <Zap size={20} className="fill-white" /> التقديم السريع
+                    </button>
+                    <button onClick={() => onApply('normal')} className="w-full flex bg-white dark:bg-slate-800 text-navy dark:text-white border-2 border-slate-200 dark:border-slate-700 py-4 rounded-2xl text-lg font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-[0.98] items-center justify-center gap-2">
+                      <FileText size={20} /> التقديم العادي
                     </button>
                   </div>
                 </div>
@@ -1517,6 +1529,7 @@ export default function App() {
     isLoaded: false,
   });
   const [step, setStep] = useState<FlowStep>(() => {
+    if (window.location.pathname.startsWith("/profile")) return "seeker-profile";
     if (window.location.pathname.startsWith("/interview/")) return "interview";
     if (window.location.pathname.startsWith("/share/")) return "share";
     return window.location.pathname.startsWith("/apply/") ? "form" : "landing";
@@ -1588,6 +1601,7 @@ export default function App() {
 
   const [showPaywallModal, setShowPaywallModal] = useState(false);
   const [previewJobState, setPreviewJobState] = useState<Job | null>(null);
+  const [applyMode, setApplyMode] = useState<"fast" | "normal">("normal");
   const [createJobType, setCreateJobType] = useState<"single" | "campaign" | "quick_link">(
     "single",
   );
@@ -1640,7 +1654,7 @@ export default function App() {
       if (_event === 'PASSWORD_RECOVERY') {
         setStep("updatePassword");
       } else if (_event === 'TOKEN_REFRESHED' || _event === 'SIGNED_IN') {
-        if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
+        if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
           const savedStep = sessionStorage.getItem('sahab_active_step');
           setStep(prevStep => {
             if (prevStep === "updatePassword") return "updatePassword";
@@ -1650,7 +1664,7 @@ export default function App() {
             return prevStep;
           });
         }
-      } else if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
+      } else if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
         const savedStep = sessionStorage.getItem('sahab_active_step');
         setStep(prevStep => {
           if (prevStep === "updatePassword") return "updatePassword";
@@ -1659,7 +1673,7 @@ export default function App() {
           }
           return prevStep;
         });
-      } else if (!session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
+      } else if (!session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
         if (_event === 'SIGNED_OUT') {
           sessionStorage.removeItem("sahab_active_step");
           sessionStorage.removeItem("sahab_dashboard_tab");
@@ -2366,7 +2380,10 @@ export default function App() {
                 selectedRoleId={applicantSelectedRoleId}
                 onSelectRole={(id) => setApplicantSelectedRoleId(id)}
                 onBackToCampaign={() => setApplicantSelectedRoleId(null)}
-                onApply={() => setStep("form")}
+                onApply={(mode) => {
+                  setApplyMode(mode);
+                  setStep("form");
+                }}
               />
             )}
             {step === "form" && selectedJob && (
@@ -2374,6 +2391,7 @@ export default function App() {
                 <JobApplication
                   job={selectedJob}
                   selectedRoleId={applicantSelectedRoleId}
+                  applyMode={applyMode}
                   onBackToJobs={() => {
                     setStep("publicJob");
                     setApplicantSelectedRoleId(null);
@@ -2387,6 +2405,9 @@ export default function App() {
             )}
             {step === "interview" && (
               <InterviewRoom applicantId={window.location.pathname.split('/')[2]} onBack={() => window.location.href = '/'} />
+            )}
+            {step === "seeker-profile" && (
+              <SeekerProfile />
             )}
             {step === "notFound" && (
               <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4" dir="rtl">

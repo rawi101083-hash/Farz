@@ -6,6 +6,7 @@ interface SearchableSelectProps {
   value: string | string[];
   onChange: (value: string | string[]) => void;
   multiple?: boolean;
+  allowCustom?: boolean;
   placeholder?: string;
   className?: string;
 }
@@ -15,6 +16,7 @@ export const MultiSearchableSelect: React.FC<SearchableSelectProps> = ({
   value,
   onChange,
   multiple = false,
+  allowCustom = false,
   placeholder = "ابحث...",
   className = ""
 }) => {
@@ -86,7 +88,7 @@ export const MultiSearchableSelect: React.FC<SearchableSelectProps> = ({
   return (
     <div ref={wrapperRef} className={`relative ${className}`}>
       <div 
-        className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer flex items-center justify-between min-h-[48px]"
+        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer flex items-center justify-between min-h-[56px] transition-all hover:border-primary focus:ring-4 focus:ring-primary/10"
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex-1 overflow-hidden pr-2">
@@ -128,7 +130,17 @@ export const MultiSearchableSelect: React.FC<SearchableSelectProps> = ({
                 );
               })
             ) : (
-              <div className="p-3 text-center text-sm text-slate-400">لا توجد نتائج</div>
+              !allowCustom && <div className="p-3 text-center text-sm text-slate-400">لا توجد نتائج</div>
+            )}
+            
+            {allowCustom && searchTerm.trim() !== "" && !options.some(opt => opt.toLowerCase() === searchTerm.trim().toLowerCase()) && (
+              <div 
+                onClick={() => handleSelect(searchTerm.trim())}
+                className="px-3 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between text-primary font-bold hover:bg-primary/10 transition-colors mt-1 border-t border-slate-100 dark:border-slate-700"
+              >
+                <span>{searchTerm.trim()}</span>
+                <Check size={16} />
+              </div>
             )}
           </div>
         </div>

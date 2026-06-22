@@ -67,12 +67,14 @@ import { countriesList } from '../data/countries';
 export const ApplicantForm = ({
   job,
   selectedRoleId,
+  applyMode,
   onBackToJobs,
   onSubmit,
   isPreview,
 }: {
   job: Job | null;
   selectedRoleId?: string | null;
+  applyMode?: "fast" | "normal";
   onBackToJobs?: () => void;
   onSubmit: () => void;
   isPreview?: boolean;
@@ -113,6 +115,43 @@ export const ApplicantForm = ({
   const timerRef = React.useRef<any>(null);
   const formRef = React.useRef<HTMLFormElement>(null);
   const isCampaign = job?.recordType === "campaign";
+  const [userProfile, setUserProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { data, error } = await supabase.from('job_seekers').select('*').eq('user_id', session.user.id).single();
+      if (data && !error) {
+        setUserProfile(data);
+        setFormDataState(prev => ({
+          ...prev,
+          fullName: data.full_name || prev.fullName,
+          phone: data.phone || prev.phone,
+          email: session.user.email || prev.email,
+          city: data.profile_data?.city || prev.city,
+          nationality: data.profile_data?.nationality || prev.nationality,
+          education: data.profile_data?.qualification?.[0] || prev.education,
+          experience: data.profile_data?.notice_period || prev.experience,
+          linkedin: data.profile_data?.linkedin_url || prev.linkedin,
+          cvUrl: data.cv_file_url || '',
+        }));
+        
+        if (data.profile_data?.portfolio_url) {
+          setPortfolioLinksState([data.profile_data.portfolio_url]);
+        }
+        if (data.cv_file_url) {
+          setIsParsed(true);
+          setResumeFileName("السيرة الذاتية المرفوعة مسبقاً");
+        }
+        if (data.profile_data?.personal_photo_url) {
+          setPhotoPreview(data.profile_data.personal_photo_url);
+        }
+      }
+    };
+    fetchProfile();
+  }, []);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -205,6 +244,23 @@ export const ApplicantForm = ({
   const shouldShowPhotoUpload = photoReq !== "hidden" && showUploadStep;
   const isRequireVoiceInterview = getVoiceInterviewFeatureEnabled() && (activeRole?.requireVoiceInterview ?? job?.requireVoiceInterview ?? false);
   const activeDirectUpload = activeRole?.directUpload ?? job?.directUpload ?? false;
+  
+  const hasCustomQuestions = customQuestions.length > 0;
+  const hasKnockoutQuestions = (activeRole?.knockoutQuestions?.length || 0) > 0 || (job?.knockoutQuestions?.length || 0) > 0;
+  
+  const coreFieldsFilled = !!(
+    formDataState.fullName && 
+    formDataState.phone && 
+    formDataState.email && 
+    formDataState.nationality && 
+    formDataState.city && 
+    formDataState.education && 
+    formDataState.experience
+  );
+
+  // One click apply is available if profile exists, all required fields are filled, CV is uploaded, and there are no extra custom or knockout questions
+  const canOneClickApply = applyMode === 'fast' && !!userProfile && !hasCustomQuestions && !hasKnockoutQuestions && coreFieldsFilled && isParsed;
+
   const handleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement> | React.DragEvent,
   ) => {
@@ -605,7 +661,7 @@ export const ApplicantForm = ({
       } catch (e) {
         console.error("Double Protection Shield Error:", e);
       }
-      let cv_file_url = "";
+      let cv_file_url = (formDataState as any).cvUrl || "";
       let applicant_db_id = "";
 
       try {
@@ -897,7 +953,19 @@ export const ApplicantForm = ({
       >
         <div className="text-center mb-12">
           {formStep === "details" && (
-            <div className="flex flex-col items-center gap-2 mb-8">
+            <div className="flex flex-col items-center gap-2 mb-8 relative">
+              {!userProfile && (
+                <div className="absolute top-0 right-0">
+                  <a
+                    href="/profile"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm"
+                  >
+                    <User size={14} /> تسجيل دخول
+                  </a>
+                </div>
+              )}
               {job?.companyLogo && (
                 <div className="w-20 h-20 p-0 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center overflow-hidden">
                   <img
@@ -996,7 +1064,59 @@ export const ApplicantForm = ({
             );
           })()}
 
-          {formStep === "details" && (
+          {applyMode === 'fast' && !userProfile && (
+            <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl mb-8 flex flex-col sm:flex-row items-center justify-between shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="bg-amber-100 text-amber-600 p-2 rounded-xl shrink-0">
+                  <AlertTriangle size={24} />
+                </div>
+                <div className="text-right">
+                  <h4 className="font-bold text-amber-900 text-base">التقديم السريع يتطلب تسجيل الدخول</h4>
+                  <p className="text-amber-800 text-sm mt-1">يرجى تسجيل الدخول وإكمال ملفك الشخصي لتتمكن من التقديم بضغطة زر.</p>
+                </div>
+              </div>
+              <a href="/profile" className="mt-4 sm:mt-0 whitespace-nowrap px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-md transition-all flex items-center gap-2">
+                <User size={16} /> تسجيل الدخول
+              </a>
+            </div>
+          )}
+
+          {applyMode === 'fast' && userProfile && !canOneClickApply && (
+            <div className="bg-orange-50 border border-orange-200 p-5 rounded-2xl mb-8 flex items-center gap-3 shadow-sm">
+                <div className="bg-orange-100 text-orange-600 p-2 rounded-xl shrink-0">
+                  <AlertTriangle size={24} />
+                </div>
+                <div className="text-right">
+                  <h4 className="font-bold text-orange-900 text-base">التقديم السريع غير متاح</h4>
+                  <p className="text-orange-800 text-sm mt-1">يُرجى إكمال التقديم يدوياً بسبب وجود متطلبات إضافية من الشركة، أو لوجود نقص في بيانات ملفك.</p>
+                </div>
+            </div>
+          )}
+
+          {canOneClickApply && (
+            <div className="bg-gradient-to-r from-teal-50 to-teal-100/50 border border-teal-200 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row items-center justify-between shadow-sm">
+              <div className="text-right w-full">
+                <h3 className="text-xl font-bold text-teal-900 mb-2 flex items-center gap-2">
+                  <Zap className="w-6 h-6 text-teal-600 fill-teal-600" />
+                  تقديم سريع بضغطة زر!
+                </h3>
+                <p className="text-teal-700/90 font-medium">تم جلب معلوماتك الشخصية وسيرتك الذاتية من ملفك الشخصي.</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  formRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                }}
+                className="mt-6 sm:mt-0 w-full sm:w-auto whitespace-nowrap px-8 py-3.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-lg shadow-teal-600/20 hover:shadow-teal-600/40 transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-5 h-5" />
+                تقديم الآن
+              </button>
+            </div>
+          )}
+
+          {showUploadStep && hasResumeOption && (
             <div className="md:col-span-2 space-y-3">
               {!isParsed && (
                 <div className="flex justify-start mb-2">

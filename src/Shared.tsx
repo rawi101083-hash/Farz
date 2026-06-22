@@ -282,6 +282,7 @@ export type FlowStep =
   | "applicantDetails"
   | "createJob"
   | "jobSuccess"
+  | "seeker-profile"
   | "publicJob"
   | "manageJob"
   | "interview"
