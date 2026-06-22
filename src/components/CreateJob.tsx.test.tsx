@@ -109,6 +109,12 @@ export const CreateJob = ({
 }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  
+  // New State variables for UI Revamp
+  const [currentStep, setCurrentStep] = useState(1);
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [activeTab, setActiveTab] = useState(0);
+
 
   const handleBackAttempt = () => {
     const hasChanges = () => {
@@ -462,8 +468,6 @@ export const CreateJob = ({
     initialData?.aiChatHistory || [{role: "assistant", content: "أهلاً بك! أنا مستشار التوظيف الذكي الخاص بمنصة فرز. يسعدني مساعدتك في صياغة الإعلان الوظيفي. أخبرني باختصار عن الشاغر الذي تبحث عنه."}]
   );
   const [chatInput, setChatInput] = useState("");
-  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
   const [chatError, setChatError] = useState<string | null>(null);
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isApplyingAi, setIsApplyingAi] = useState(false);
@@ -1427,26 +1431,13 @@ export const CreateJob = ({
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
-      <div className="max-w-[900px] mx-auto pb-32 flex flex-col gap-6 px-4">
-        
-
-      {/* Smart Assistant Modal */}
-      <AnimatePresence>
-        {isChatModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        {showAiModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsChatModalOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col h-[80vh] max-h-[700px]"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col h-[80vh]"
             >
               <div className="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
                  <div>
@@ -1455,10 +1446,11 @@ export const CreateJob = ({
                    </h3>
                    <p className="text-xs text-slate-500 mt-1">يساعدك في صياغة الإعلان و استخراج التفاصيل</p>
                  </div>
-                 <button type="button" onClick={() => setIsChatModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
-                   <X size={20} />
+                 <button onClick={() => setShowAiModal(false)} className="text-slate-400 hover:text-red-500 transition-colors">
+                   <X size={24} />
                  </button>
               </div>
+              
               <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={chatScrollRef}>
                 {chatMessages.map((msg, i) => (
                   <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-start' : 'items-end'}`} dir="ltr">
@@ -1477,6 +1469,7 @@ export const CreateJob = ({
                   </div>
                 )}
               </div>
+              
               <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700">
                 <div className="flex gap-2 mb-3">
                   <input 
@@ -1492,7 +1485,7 @@ export const CreateJob = ({
                     disabled={isChatLoading || isApplyingAi}
                     maxLength={4000}
                   />
-                  <button type="button" onClick={handleSendChatMessage} disabled={!chatInput.trim() || isChatLoading || isApplyingAi || !!chatError} className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 disabled:opacity-50 transition-opacity">
+                  <button onClick={handleSendChatMessage} disabled={!chatInput.trim() || isChatLoading || isApplyingAi || !!chatError} className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 disabled:opacity-50 transition-opacity">
                      <ArrowLeft size={18} className="rotate-180" />
                   </button>
                 </div>
@@ -1504,7 +1497,10 @@ export const CreateJob = ({
                 )}
                 <button 
                   type="button" 
-                  onClick={async () => { await handleApplyChatToForm(); setIsChatModalOpen(false); }} 
+                  onClick={() => {
+                    handleApplyChatToForm();
+                    setShowAiModal(false);
+                  }} 
                   disabled={chatMessages.length < 2 || isApplyingAi || isChatLoading}
                   className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-navy font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90 transition-opacity shadow-md"
                 >
@@ -1516,8 +1512,10 @@ export const CreateJob = ({
           </div>
         )}
       </AnimatePresence>
+      <div className="max-w-[1000px] mx-auto pb-32 flex flex-col gap-6 px-4 xl:px-8">
+        
         {/* Main Form Content */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 w-full min-w-0">
         <button
           type="button"
           onClick={(e) => { e.preventDefault(); handleBackAttempt(); }}
@@ -1535,58 +1533,72 @@ export const CreateJob = ({
         >
 
           {createJobType !== "quick_link" && (
-            <div className="mb-1">
-              <div className="flex bg-white dark:bg-slate-800 p-1.5 gap-1.5 rounded-2xl w-full shadow-sm border border-slate-200 dark:border-slate-700">
-                <button
+            <div className="mb-4">
+              {/* Top Tabs */}
+              <div className="flex flex-wrap items-center gap-3 mb-6 overflow-x-auto pb-2 custom-scrollbar">
+                <button 
                   type="button"
-                  onClick={handleSwitchToSingle}
-                  className={`flex items-center justify-center gap-2.5 flex-1 px-8 py-3.5 rounded-xl font-bold text-sm md:text-base whitespace-nowrap transition-all ${adType === "single" ? "bg-primary text-white shadow-md" : "text-slate-500 hover:text-navy dark:hover:text-white"}`}
+                  onClick={() => setActiveTab(0)}
+                  className={`px-6 py-3.5 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 whitespace-nowrap ${activeTab === 0 ? 'bg-navy dark:bg-slate-700 text-white shadow-lg shadow-navy/20 dark:shadow-none border border-transparent' : 'bg-white dark:bg-slate-800 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'}`}
                 >
-                  إعلان لشاغر واحد
+                  <Briefcase size={18} className={activeTab === 0 ? "text-primary" : "text-slate-400"} /> 
+                  الشاغر رقم 1: {roleTitle || "محاسب"}
                 </button>
-                <button
+                <button 
                   type="button"
-                  onClick={handleSwitchToMultiple}
-                  className={`flex items-center justify-center gap-2.5 flex-1 px-8 py-3.5 rounded-xl font-bold text-sm md:text-base whitespace-nowrap transition-all ${adType === "campaign" ? "bg-primary text-white shadow-md" : "text-slate-500 hover:text-navy dark:hover:text-white"}`}
+                  onClick={() => {
+                    handleSwitchToMultiple();
+                    setActiveTab(1);
+                  }}
+                  className={`px-6 py-3.5 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 whitespace-nowrap border-2 border-dashed ${activeTab === 1 ? 'border-primary text-primary bg-primary/5' : 'border-slate-200 dark:border-slate-700 text-slate-400 hover:border-slate-300 dark:hover:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
                 >
-                  إعلان لعدة شواغر (حملة توظيف)
+                  <Plus size={18} /> إضافة شاغر جديد
                 </button>
+                
+                <div className="mr-auto">
+                  <button 
+                    type="button"
+                    onClick={() => setShowAiModal(true)}
+                    className="px-5 py-3.5 rounded-2xl font-bold text-sm transition-all flex items-center gap-2 whitespace-nowrap bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20"
+                  >
+                    <Sparkles size={18} /> مستشار التوظيف الذكي ✨
+                  </button>
+                </div>
+              </div>
+
+              {/* Stepper */}
+              <div className="mb-8 bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden">
+                 <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-100 dark:bg-slate-700 -translate-y-1/2 z-0 hidden md:block"></div>
+                 <div className="absolute top-1/2 right-0 h-1 bg-primary -translate-y-1/2 z-0 transition-all duration-500 hidden md:block" style={{ width: currentStep === 1 ? '33%' : currentStep === 2 ? '66%' : '100%' }}></div>
+                 
+                 <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-2">
+                   {[
+                     { step: 1, title: 'تفاصيل الإعلان' },
+                     { step: 2, title: 'متطلبات التقديم' },
+                     { step: 3, title: 'إعدادات محرك الفرز 🔒' }
+                   ].map((s) => (
+                     <button
+                       key={s.step}
+                       type="button"
+                       onClick={() => {
+                         if (s.step < currentStep || true) { // Allow navigation for now to make it easy for user
+                           setCurrentStep(s.step);
+                         }
+                       }}
+                       className={`flex items-center gap-3 px-6 py-3 rounded-xl transition-all flex-1 md:flex-none justify-center md:justify-start w-full md:w-auto ${currentStep === s.step ? 'bg-primary text-white shadow-lg shadow-primary/30' : currentStep > s.step ? 'bg-white dark:bg-slate-800 border-2 border-primary text-primary cursor-pointer' : 'bg-white dark:bg-slate-800 text-slate-400 border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                     >
+                       <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-colors ${currentStep === s.step ? 'bg-white/20 text-white' : currentStep > s.step ? 'bg-primary text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-400'}`}>
+                         {currentStep > s.step ? <CheckCircle size={16} /> : s.step}
+                       </div>
+                       <span className="font-bold text-sm whitespace-nowrap">{s.title}</span>
+                     </button>
+                   ))}
+                 </div>
               </div>
             </div>
           )}
 
           <form className="space-y-6" id="createJobForm" onSubmit={handleSubmit}>
-            {/* --- STEPPER UI START --- */}
-            {createJobType !== "quick_link" && (
-            <div className="mb-12 w-full max-w-3xl mx-auto px-4 mt-8">
-              <div className="flex items-center justify-between relative">
-                <div className="absolute top-1/2 left-8 right-8 h-1.5 bg-slate-200 dark:bg-slate-700 z-0 rounded-full transform -translate-y-1/2 shadow-inner" />
-                <div className="absolute top-1/2 right-8 h-1.5 bg-gradient-to-l from-primary via-emerald-400 to-emerald-500 z-0 rounded-full transition-all duration-700 transform -translate-y-1/2" style={{ width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%' }} />
-                
-                <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => setCurrentStep(1)}>
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 1 ? 'bg-gradient-to-tr from-primary to-emerald-400 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] scale-110 border-white/50' : currentStep > 1 ? 'bg-primary text-white border-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'}`}>
-                    {currentStep > 1 ? <CheckCircle size={24} className="animate-in zoom-in" /> : "1"}
-                  </div>
-                  <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 1 ? 'text-primary drop-shadow-sm' : currentStep > 1 ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>المعلومات الأساسية</span>
-                </div>
-
-                <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 1) setCurrentStep(2) }}>
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 2 ? 'bg-gradient-to-tr from-primary to-emerald-400 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] scale-110 border-white/50' : currentStep > 2 ? 'bg-primary text-white border-white shadow-md' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'}`}>
-                    {currentStep > 2 ? <CheckCircle size={24} className="animate-in zoom-in" /> : "2"}
-                  </div>
-                  <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 2 ? 'text-primary drop-shadow-sm' : currentStep > 2 ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>متطلبات التقديم</span>
-                </div>
-
-                <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 2) setCurrentStep(3) }}>
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 3 ? 'bg-gradient-to-tr from-primary to-emerald-400 text-white shadow-[0_0_20px_rgba(16,185,129,0.4)] scale-110 border-white/50' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'}`}>
-                    3
-                  </div>
-                  <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 3 ? 'text-primary drop-shadow-sm' : 'text-slate-400'}`}>الإعدادات والتاريخ</span>
-                </div>
-              </div>
-            </div>
-            )}
-            {/* --- STEPPER UI END --- */}
 
 
 
@@ -1610,8 +1622,9 @@ export const CreateJob = ({
 
 
             {/* Card 1: Basic Info */}
+            {/* Card 1: Basic Info */}
             {createJobType !== "quick_link" && (
-              <div className={currentStep === 1 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
+              <div className={currentStep === 1 ? "block space-y-6 animate-in fade-in duration-500" : "hidden"}>
                 <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
                   <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3 mb-6">
                     <Briefcase className="text-primary" size={24} /> المعلومات الأساسية
@@ -1788,13 +1801,6 @@ export const CreateJob = ({
               </div>
             )}
 
-
-            {createJobType !== "quick_link" && currentStep === 1 && (
-              <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-                <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} className="rotate-180"/></button>
-              </div>
-            )}
-            <div className={currentStep === 2 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
             {showRoleForm && (
               <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
                 {adType === "campaign" && (
@@ -1812,6 +1818,7 @@ export const CreateJob = ({
                     (تنبيه: هذه البيانات أساسية لعمل محرك الفرز بدقة، حتى وإن تم تفعيل خاصية التخطي للمتقدمين)
                   </p>
                 )}
+                <div className={currentStep === 1 ? "block space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
                 {createJobType !== "quick_link" && (
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 mb-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -2483,6 +2490,15 @@ export const CreateJob = ({
                   </div>
                 </div>
                 </div>
+
+                <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <button type="button" onClick={() => {
+                    if (currentStep === 1) setCurrentStep(2);
+                  }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} className="rotate-180"/></button>
+                </div>
+                </div>
+
+                <div className={currentStep === 2 ? "block space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
                     <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-700/60 flex flex-col gap-6">
 
                       {/* Basic Attachments Section */}
@@ -3125,7 +3141,129 @@ export const CreateJob = ({
                         </AnimatePresence>
                       </div>
 
-                      <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/20 dark:to-purple-900/20 p-8 rounded-[32px] border-2 border-indigo-100 dark:border-indigo-800/30 shadow-inner mt-8 mb-8">
+                      <div className="mt-8 flex justify-between gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                        <button type="button" onClick={() => setCurrentStep(1)} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"><ArrowLeft size={18}/> السابق</button>
+                        <button type="button" onClick={() => setCurrentStep(3)} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} className="rotate-180"/></button>
+                      </div>
+                    </div>
+
+                    <div className={currentStep === 3 ? "block space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
+                      <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm mt-6 mb-6">
+                        <div className="p-8 pb-4 text-xl font-bold text-navy dark:text-white flex items-center gap-3 select-none">
+                          <Settings size={22} className="text-primary" />
+                          إعدادات التقديم الإضافية
+                        </div>
+                        <div className="px-8 pb-8 pt-2 space-y-6 border-t border-slate-100 dark:border-slate-700">
+                          <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4 md:gap-0 pb-6 border-b border-slate-100 dark:border-slate-700">
+                            <div>
+                              <h4 className="font-bold text-navy dark:text-white text-lg">الصورة الشخصية للمرشح</h4>
+                              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-lg leading-relaxed">تحديد متطلب رفع صورة شخصية للمرشح أثناء ملء نموذج التقديم.</p>
+                            </div>
+                            <div className="relative shrink-0">
+                              <select
+                                value={photoRequirement}
+                                onChange={(e) => setPhotoRequirement(e.target.value as any)}
+                                className="w-full md:w-auto pl-10 pr-6 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold appearance-none cursor-pointer"
+                              >
+                                <option value="hidden" className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا أطلب صورة (مخفي)</option>
+                                <option value="optional" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختياري</option>
+                                <option value="required" className="bg-white text-navy dark:bg-slate-800 dark:text-white">إلزامي</option>
+                              </select>
+                              <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                <ChevronDown size={18} />
+                              </div>
+                            </div>
+                          </div>
+
+                          {getVoiceInterviewFeatureEnabled() && (<>
+                            <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4 md:gap-0 mt-6 border-t border-slate-100 dark:border-slate-700 pt-6">
+                            <div>
+                              <h4 className="font-bold text-navy dark:text-white text-lg">تفعيل التقييم الصوتي الآلي</h4>
+                              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-lg leading-relaxed">عند إيقاف هذا الخيار، سيكتفي النظام بجمع بيانات المرشح وسيرته الذاتية ليتم فرزها دون إلزامه بإجراء المقابلة الصوتية الآلية.</p>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                              <input type="checkbox" className="sr-only peer" checked={isVoiceEnabled} onChange={(e) => setIsVoiceEnabled(e.target.checked)} />
+                              <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+
+                          <AnimatePresence>
+                            {isVoiceEnabled && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                animate={{ opacity: 1, height: "auto", marginTop: 24 }}
+                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="flex flex-col gap-4">
+                                  <label className="font-bold text-navy dark:text-white text-lg">قالب أسئلة المقابلة الصوتية (سؤالين كحد أقصى)</label>
+                                  <select
+                                    value={voiceInterviewTemplate}
+                                    onChange={(e) => setVoiceInterviewTemplate(e.target.value as any)}
+                                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold transition-all"
+                                  >
+                                    <option value="general" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فرز عام - للوظائف الإدارية والتقنية</option>
+                                    <option value="sales" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مواجهة الجمهور والمبيعات</option>
+                                    <option value="custom" className="bg-white text-navy dark:bg-slate-800 dark:text-white">كتابة أسئلة مخصصة</option>
+                                  </select>
+
+                                  {voiceInterviewTemplate === "custom" && (
+                                    <motion.div
+                                      initial={{ opacity: 0, y: -10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      className="mt-4 space-y-4"
+                                    >
+                                      <div className="bg-amber-50 dark:bg-amber-500/10 border-r-4 border-amber-500 p-4 rounded-l-xl">
+                                        <p className="text-sm font-bold text-amber-700 dark:text-amber-400 leading-relaxed flex items-center gap-2">
+                                          <span>⚠️</span> تنبيه: نظام الفرز يحلل نبرة الصوت والثقة ومهارات التواصل. يرجى طرح أسئلة تعتمد على المواقف السلوكية وتجنب الأسئلة المعرفية أو التقنية المعقدة لضمان دقة التحليل الآلي.
+                                        </p>
+                                      </div>
+
+                                      {[0, 1].map((index) => (
+                                        <div key={index}>
+                                          <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {index + 1}</label>
+                                          <textarea
+                                            value={voiceInterviewQuestions[index] || ""}
+                                            maxLength={150}
+                                            onChange={(e) => {
+                                              const newQuestions = [...voiceInterviewQuestions];
+                                              newQuestions[index] = e.target.value;
+                                              setVoiceInterviewQuestions(newQuestions);
+                                            }}
+                                            placeholder={`اكتب السؤال السلوكي رقم ${index + 1} هنا...`}
+                                            className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-medium h-24"
+                                          />
+                                          <div className="text-left text-xs font-medium text-slate-400 mt-1">
+                                            {(voiceInterviewQuestions[index] || "").length}/150
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </motion.div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                          </>)}
+                        </div>
+                      </div>
+                    </div>
+
+                  </>
+                )}
+
+
+                      <div className="mt-8 flex justify-between gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                        <button type="button" onClick={() => setCurrentStep(1)} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"><ArrowLeft size={18}/> السابق</button>
+                        <button type="button" onClick={() => setCurrentStep(3)} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} className="rotate-180"/></button>
+                      </div>
+                    </div>
+
+                    <div className={currentStep === 3 ? "block space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
+
+                {createJobType !== "quick_link" && (
+                  <>
+<div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/20 dark:to-purple-900/20 p-8 rounded-[32px] border-2 border-indigo-100 dark:border-indigo-800/30 shadow-inner mt-8 mb-8">
                         <div className="flex items-center gap-3 mb-4">
                           <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
                             <Zap size={20} />
@@ -3319,111 +3457,9 @@ export const CreateJob = ({
                         </AnimatePresence>
                       </div>
 
-                      <details
-                        open={isAdvancedSettingsOpen}
-                        onToggle={(e) => setIsAdvancedSettingsOpen(e.currentTarget.open)}
-                        className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm mt-6 mb-6 group cursor-pointer"
-                      >
-                        <summary className="p-8 text-xl font-bold text-navy dark:text-white flex items-center gap-3 select-none outline-none">
-                          <Settings size={22} className="text-primary" />
-                          إعدادات الفرز المتقدمة
-                          <ChevronDown size={20} className="mr-auto text-slate-400 group-open:rotate-180 transition-transform" />
-                        </summary>
+                    </div>
 
-                        <div className="px-8 pb-8 pt-2 space-y-6 cursor-default border-t border-slate-100 dark:border-slate-700">
-                          <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4 md:gap-0 pb-6 border-b border-slate-100 dark:border-slate-700">
-                            <div>
-                              <h4 className="font-bold text-navy dark:text-white text-lg">الصورة الشخصية للمرشح</h4>
-                              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-lg leading-relaxed">تحديد متطلب رفع صورة شخصية للمرشح أثناء ملء نموذج التقديم.</p>
-                            </div>
-                            <div className="relative shrink-0">
-                              <select
-                                value={photoRequirement}
-                                onChange={(e) => setPhotoRequirement(e.target.value as any)}
-                                className="w-full md:w-auto pl-10 pr-6 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold appearance-none cursor-pointer"
-                              >
-                                <option value="hidden" className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا أطلب صورة (مخفي)</option>
-                                <option value="optional" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختياري</option>
-                                <option value="required" className="bg-white text-navy dark:bg-slate-800 dark:text-white">إلزامي</option>
-                              </select>
-                              <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                <ChevronDown size={18} />
-                              </div>
-                            </div>
-                          </div>
-
-                          {getVoiceInterviewFeatureEnabled() && (<>
-                            <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4 md:gap-0 mt-6 border-t border-slate-100 dark:border-slate-700 pt-6">
-                            <div>
-                              <h4 className="font-bold text-navy dark:text-white text-lg">تفعيل التقييم الصوتي الآلي</h4>
-                              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-lg leading-relaxed">عند إيقاف هذا الخيار، سيكتفي النظام بجمع بيانات المرشح وسيرته الذاتية ليتم فرزها دون إلزامه بإجراء المقابلة الصوتية الآلية.</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                              <input type="checkbox" className="sr-only peer" checked={isVoiceEnabled} onChange={(e) => setIsVoiceEnabled(e.target.checked)} />
-                              <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
-                            </label>
-                          </div>
-
-                          <AnimatePresence>
-                            {isVoiceEnabled && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                                animate={{ opacity: 1, height: "auto", marginTop: 24 }}
-                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="flex flex-col gap-4">
-                                  <label className="font-bold text-navy dark:text-white text-lg">قالب أسئلة المقابلة الصوتية (سؤالين كحد أقصى)</label>
-                                  <select
-                                    value={voiceInterviewTemplate}
-                                    onChange={(e) => setVoiceInterviewTemplate(e.target.value as any)}
-                                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold transition-all"
-                                  >
-                                    <option value="general" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فرز عام - للوظائف الإدارية والتقنية</option>
-                                    <option value="sales" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مواجهة الجمهور والمبيعات</option>
-                                    <option value="custom" className="bg-white text-navy dark:bg-slate-800 dark:text-white">كتابة أسئلة مخصصة</option>
-                                  </select>
-
-                                  {voiceInterviewTemplate === "custom" && (
-                                    <motion.div
-                                      initial={{ opacity: 0, y: -10 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      className="mt-4 space-y-4"
-                                    >
-                                      <div className="bg-amber-50 dark:bg-amber-500/10 border-r-4 border-amber-500 p-4 rounded-l-xl">
-                                        <p className="text-sm font-bold text-amber-700 dark:text-amber-400 leading-relaxed flex items-center gap-2">
-                                          <span>⚠️</span> تنبيه: نظام الفرز يحلل نبرة الصوت والثقة ومهارات التواصل. يرجى طرح أسئلة تعتمد على المواقف السلوكية وتجنب الأسئلة المعرفية أو التقنية المعقدة لضمان دقة التحليل الآلي.
-                                        </p>
-                                      </div>
-
-                                      {[0, 1].map((index) => (
-                                        <div key={index}>
-                                          <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {index + 1}</label>
-                                          <textarea
-                                            value={voiceInterviewQuestions[index] || ""}
-                                            maxLength={150}
-                                            onChange={(e) => {
-                                              const newQuestions = [...voiceInterviewQuestions];
-                                              newQuestions[index] = e.target.value;
-                                              setVoiceInterviewQuestions(newQuestions);
-                                            }}
-                                            placeholder={`اكتب السؤال السلوكي رقم ${index + 1} هنا...`}
-                                            className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-medium h-24"
-                                          />
-                                          <div className="text-left text-xs font-medium text-slate-400 mt-1">
-                                            {(voiceInterviewQuestions[index] || "").length}/150
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </motion.div>
-                                  )}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                          </>)}
-                        </div>
-                      </details>
+                    
                   </>
                 )}
 
@@ -3479,6 +3515,7 @@ export const CreateJob = ({
 
             {/* Global Settings Block */}
             {createJobType !== "quick_link" && (
+              <div className={currentStep === 2 ? "block space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
               <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6 mb-8 mt-8">
                 <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4 md:gap-0">
                   <div>
@@ -3496,17 +3533,6 @@ export const CreateJob = ({
               </div>
             )}
 
-
-            </div>
-            
-            {createJobType !== "quick_link" && currentStep === 2 && (
-              <div className="mt-8 flex justify-between gap-3 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
-                <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"><ArrowLeft size={18}/> السابق</button>
-                <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} className="rotate-180"/></button>
-              </div>
-            )}
-
-            <div className={currentStep === 3 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
             {/* Card: Schedule */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3">
@@ -3560,15 +3586,10 @@ export const CreateJob = ({
                 </p>
               )}
 
-
-            </div>
-
-            {createJobType !== "quick_link" && currentStep === 3 && (
-              <div className="mt-8 flex justify-start gap-3 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
-                <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"><ArrowLeft size={18}/> السابق</button>
               </div>
-            )}
-            <div className="flex flex-col md:flex-row items-center justify-end gap-3 mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
+              </div>
+
+            <div className={currentStep === 3 ? "flex flex-col md:flex-row items-center justify-end gap-3 mt-8 pt-8 border-t border-slate-200 dark:border-slate-800 animate-in fade-in duration-500" : "hidden"}>
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); handleBackAttempt(); }}
