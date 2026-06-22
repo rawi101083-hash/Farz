@@ -1791,21 +1791,172 @@ export const CreateJob = ({
                           </p>
                         )}
                         {/* Main Section Heading */}
-                        <h3 className="text-xl font-bold text-navy dark:text-white mb-6">تفاصيل الاعلان</h3>
+                        {/* AI Override Fields Toggle - Moved to Step 1 */}
+                        <div className="bg-primary/5 dark:bg-primary/10 p-8 rounded-[32px] border-2 border-primary/20 shadow-inner mt-8 mb-8">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                                <Sparkles size={20} />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-bold text-primary">معايير مخصصة لمحرك الفرز</h3>
+                              </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={useAiOverride}
+                                onChange={(e) => setUseAiOverride(e.target.checked)}
+                              />
+                              <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+
+                          <AnimatePresence>
+                            {useAiOverride && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="bg-amber-50 dark:bg-amber-500/10 border-r-4 border-amber-500 p-4 rounded-xl mt-4 mb-2">
+                                  <p className="text-sm font-bold text-amber-700 dark:text-amber-400 leading-relaxed flex items-center gap-2">
+                                    <span>⚠️</span> استخدم هذه الحقول فقط إذا كان لديك شروط دقيقة أو معقدة لا ترغب أن يراها المتقدمون للوظيفة. إذا تركتها فارغة، سيعتمد النظام على الوصف العام أدناه.
+                                  </p>
+                                </div>
+                                <div className="space-y-6 border-t border-primary/20 pt-6 mt-2">
+                                  <div>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">نبذة عن الدور (للذكاء الاصطناعي)</label>
+                                    <textarea
+                                      value={aiRoleSummary}
+                                      onChange={(e) => setAiRoleSummary(e.target.value)}
+                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
+                                      rows={3}
+                                      placeholder="اكتب المعايير الدقيقة للنبذة عن الدور..."
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">المهام والمسؤوليات (للذكاء الاصطناعي)</label>
+                                    <textarea
+                                      value={aiResponsibilities}
+                                      onChange={(e) => setAiResponsibilities(e.target.value)}
+                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
+                                      rows={4}
+                                      placeholder="اكتب المهام والمسؤوليات المخصصة للفرز..."
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">المؤهلات والمتطلبات (للذكاء الاصطناعي)</label>
+                                    <textarea
+                                      value={aiQualifications}
+                                      onChange={(e) => setAiQualifications(e.target.value)}
+                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
+                                      rows={4}
+                                      placeholder="اكتب المؤهلات والمتطلبات المخصصة للفرز..."
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">التخصصات المستهدفة (للذكاء الاصطناعي)</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                      {aiTargetMajors.map((major, i) => (
+                                        <span key={i} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold flex items-center gap-1">
+                                          {major}
+                                          <button type="button" onClick={() => setAiTargetMajors(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <input
+                                      type="text"
+                                      placeholder="أضف تخصص واضغط Enter"
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          const val = e.currentTarget.value.trim();
+                                          if (val && !aiTargetMajors.includes(val)) {
+                                            setAiTargetMajors(prev => [...prev, val]);
+                                            e.currentTarget.value = "";
+                                          }
+                                        }
+                                      }}
+                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">المهارات المستهدفة (للذكاء الاصطناعي)</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                      {aiTargetSkills.map((skill, i) => (
+                                        <span key={i} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold flex items-center gap-1">
+                                          {skill}
+                                          <button type="button" onClick={() => setAiTargetSkills(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <input
+                                      type="text"
+                                      placeholder="أضف مهارة واضغط Enter"
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          const val = e.currentTarget.value.trim();
+                                          if (val && !aiTargetSkills.includes(val)) {
+                                            setAiTargetSkills(prev => [...prev, val]);
+                                            e.currentTarget.value = "";
+                                          }
+                                        }
+                                      }}
+                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">اللغات المطلوبة (للذكاء الاصطناعي)</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                      {aiLanguages.map((lang, i) => (
+                                        <span key={i} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold flex items-center gap-1">
+                                          {lang}
+                                          <button type="button" onClick={() => setAiLanguages(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <input
+                                      type="text"
+                                      placeholder="أضف لغة واضغط Enter"
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          const val = e.currentTarget.value.trim();
+                                          if (val && !aiLanguages.includes(val)) {
+                                            setAiLanguages(prev => [...prev, val]);
+                                            e.currentTarget.value = "";
+                                          }
+                                        }
+                                      }}
+                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
+                                    />
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        <h3 className="text-xl font-bold text-navy dark:text-white mb-2">تفاصيل الاعلان</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">💡 سيقوم محرك الفرز بقراءة هذا الوصف وفرز السير الذاتية بناءً عليه تلقائياً.</p>
 
                         {createJobType !== "quick_link" && (
-                          <div className="bg-slate-50 dark:bg-slate-900/30 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 mb-8 mt-2">
-                            <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4 md:gap-0">
+                          <div className="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-8 mt-2">
+                            <div className="flex items-center justify-between gap-4">
                               <div>
-                                <h4 className="font-bold text-navy dark:text-white text-lg flex items-center gap-2">
-                                  <Settings size={22} className="text-primary" />
+                                <h4 className="font-bold text-navy dark:text-white text-sm flex items-center gap-2">
+                                  <Settings size={18} className="text-primary" />
                                   تخطي صفحة الوصف (إعداد عام)
                                 </h4>
-                                <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 max-w-2xl leading-relaxed">عند تفعيل هذا الخيار، سيتم توجيه المتقدمين مباشرة إلى صفحة تعبئة البيانات ورفع السيرة الذاتية متجاهلاً صفحة الهبوط الخاصة بتفاصيل الوظيفة أو البوابة بأكملها.</p>
+                                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 max-w-2xl leading-relaxed">عند تفعيل هذا الخيار، سيتم توجيه المتقدمين مباشرة لصفحة التقديم ورفع السيرة الذاتية بدلاً من عرض تفاصيل الوظيفة.</p>
                               </div>
                               <label className="relative inline-flex items-center cursor-pointer shrink-0">
                                 <input type="checkbox" className="sr-only peer" checked={directUpload} onChange={(e) => setDirectUpload(e.target.checked)} />
-                                <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
+                                <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.3rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
                               </label>
                             </div>
                           </div>
@@ -2437,151 +2588,6 @@ export const CreateJob = ({
                               )}
                             </div>
                           </div>
-                        </div>
-                        {/* AI Override Fields Toggle - Moved to Step 1 */}
-                        <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/20 dark:to-purple-900/20 p-8 rounded-[32px] border-2 border-indigo-100 dark:border-indigo-800/30 shadow-inner mt-8 mb-8">
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-                                <Sparkles size={20} />
-                              </div>
-                              <div>
-                                <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-300">مسار الذكاء الاصطناعي المخصص</h3>
-                                <p className="text-sm text-indigo-700/70 dark:text-indigo-400/70 mt-1 font-medium">كتابة معايير دقيقة وسرية يقرأها الذكاء الاصطناعي فقط، بدلاً من الوصف العام.</p>
-                              </div>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                              <input
-                                type="checkbox"
-                                className="sr-only peer"
-                                checked={useAiOverride}
-                                onChange={(e) => setUseAiOverride(e.target.checked)}
-                              />
-                              <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                            </label>
-                          </div>
-
-                          <AnimatePresence>
-                            {useAiOverride && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{ opacity: 1, height: 'auto' }}
-                                exit={{ opacity: 0, height: 0 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="space-y-6 border-t border-indigo-200/50 dark:border-indigo-800/50 pt-6 mt-2">
-                                  <div>
-                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">نبذة عن الدور (للذكاء الاصطناعي)</label>
-                                    <textarea
-                                      value={aiRoleSummary}
-                                      onChange={(e) => setAiRoleSummary(e.target.value)}
-                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                      rows={3}
-                                      placeholder="اكتب المعايير الدقيقة للنبذة عن الدور..."
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المهام والمسؤوليات (للذكاء الاصطناعي)</label>
-                                    <textarea
-                                      value={aiResponsibilities}
-                                      onChange={(e) => setAiResponsibilities(e.target.value)}
-                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                      rows={4}
-                                      placeholder="اكتب المهام والمسؤوليات المخصصة للفرز..."
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المؤهلات والمتطلبات (للذكاء الاصطناعي)</label>
-                                    <textarea
-                                      value={aiQualifications}
-                                      onChange={(e) => setAiQualifications(e.target.value)}
-                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                      rows={4}
-                                      placeholder="اكتب المؤهلات والمتطلبات المخصصة للفرز..."
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">التخصصات المستهدفة (للذكاء الاصطناعي)</label>
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                      {aiTargetMajors.map((major, i) => (
-                                        <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
-                                          {major}
-                                          <button type="button" onClick={() => setAiTargetMajors(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
-                                        </span>
-                                      ))}
-                                    </div>
-                                    <input
-                                      type="text"
-                                      placeholder="أضف تخصص واضغط Enter"
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          const val = e.currentTarget.value.trim();
-                                          if (val && !aiTargetMajors.includes(val)) {
-                                            setAiTargetMajors(prev => [...prev, val]);
-                                            e.currentTarget.value = "";
-                                          }
-                                        }
-                                      }}
-                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المهارات المستهدفة (للذكاء الاصطناعي)</label>
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                      {aiTargetSkills.map((skill, i) => (
-                                        <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
-                                          {skill}
-                                          <button type="button" onClick={() => setAiTargetSkills(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
-                                        </span>
-                                      ))}
-                                    </div>
-                                    <input
-                                      type="text"
-                                      placeholder="أضف مهارة واضغط Enter"
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          const val = e.currentTarget.value.trim();
-                                          if (val && !aiTargetSkills.includes(val)) {
-                                            setAiTargetSkills(prev => [...prev, val]);
-                                            e.currentTarget.value = "";
-                                          }
-                                        }
-                                      }}
-                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">اللغات المطلوبة (للذكاء الاصطناعي)</label>
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                      {aiLanguages.map((lang, i) => (
-                                        <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
-                                          {lang}
-                                          <button type="button" onClick={() => setAiLanguages(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
-                                        </span>
-                                      ))}
-                                    </div>
-                                    <input
-                                      type="text"
-                                      placeholder="أضف لغة واضغط Enter"
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          const val = e.currentTarget.value.trim();
-                                          if (val && !aiLanguages.includes(val)) {
-                                            setAiLanguages(prev => [...prev, val]);
-                                            e.currentTarget.value = "";
-                                          }
-                                        }
-                                      }}
-                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                    />
-                                  </div>
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
                         </div>
 
                         {createJobType !== "quick_link" && (
