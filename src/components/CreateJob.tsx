@@ -1814,64 +1814,7 @@ export const CreateJob = ({
                 {/* Main Section Heading */}
                 <h3 className="text-xl font-bold text-navy dark:text-white mb-6">الوصف الوظيفي</h3>
 
-                {createJobType !== "quick_link" && (
-                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 mb-6">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                          <LayoutDashboard size={18} />
-                        </div>
-                        <div>
-                          <h4 className="text-sm font-bold text-navy dark:text-white">
-                            واجهة ترحيب المتقدمين
-                          </h4>
-                        </div>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer select-none">
-                        <input
-                          type="checkbox"
-                          className="sr-only peer"
-                          checked={enableWelcomeUI}
-                          onChange={(e) => setEnableWelcomeUI(e.target.checked)}
-                        />
-                        <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary shrink-0"></div>
-                        <span className="mr-2 text-xs font-bold text-slate-700 dark:text-slate-300">تفعيل</span>
-                      </label>
-                    </div>
-                    {enableWelcomeUI && (
-                      <div className="mt-4 space-y-4">
-                        {adType === "campaign" && (
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                              عنوان الإعلان / البوابة
-                            </label>
-                            <input
-                              required
-                              type="text"
-                              value={campaignTitle}
-                              onChange={(e) => setCampaignTitle(e.target.value)}
-                              placeholder="مثال: وظيفة شاغرة - مبيعات 2026..."
-                              className="w-full px-4 py-2.5 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-600 dark:text-white text-sm rounded-lg outline-none hover:border-primary focus:border-primary transition-colors"
-                            />
-                          </div>
-                        )}
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                            رسالة الترحيب <span className="text-red-500">*</span>
-                          </label>
-                          <textarea
-                            required
-                            rows={2}
-                            value={campaignDescription}
-                            onChange={(e) => setCampaignDescription(e.target.value)}
-                            placeholder="مثال: نبذة مختصرة للترحيب..."
-                            className="w-full px-4 py-2.5 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-600 dark:text-white text-sm rounded-lg outline-none hover:border-primary focus:border-primary transition-colors resize-none"
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Welcome UI removed as requested */}
 
                 <div className="space-y-3">
                   <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
@@ -2382,7 +2325,7 @@ export const CreateJob = ({
                     <label className="relative inline-flex items-center cursor-pointer select-none">
                       <input type="checkbox" className="sr-only peer" checked={isSalaryHidden} onChange={(e) => setIsSalaryHidden(e.target.checked)} />
                       <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.4rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary shrink-0"></div>
-                      <span className="mr-3 text-sm font-bold text-slate-700 dark:text-slate-300">إخفاء الراتب عن المتقدمين (يُستخدم للفرز الآلي فقط)</span>
+                      <span className="mr-3 text-sm font-bold text-slate-700 dark:text-slate-300">إخفاء الراتب عن المتقدمين</span>
                     </label>
                   </div>
                   <div className="mt-5 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-700/80">
@@ -4758,7 +4701,7 @@ const ManageJob = ({
                       <label className="relative inline-flex items-center cursor-pointer select-none">
                         <input type="checkbox" className="sr-only peer" checked={isSalaryHidden} onChange={(e) => setIsSalaryHidden(e.target.checked)} />
                         <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.4rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary shrink-0"></div>
-                        <span className="mr-3 text-sm font-bold text-slate-700 dark:text-slate-300">إخفاء الراتب عن المتقدمين (يُستخدم للفرز الآلي فقط)</span>
+                        <span className="mr-3 text-sm font-bold text-slate-700 dark:text-slate-300">إخفاء الراتب عن المتقدمين</span>
                       </label>
                     </div>
                     <div className="mt-5 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-700/80">

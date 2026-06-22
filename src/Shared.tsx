@@ -1106,7 +1106,7 @@ export const TalentPool = ({
 
         {filteredTalents.length === 0 && (
           <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-white dark:bg-slate-800 rounded-[32px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
-            <div className={`w-24 h-24 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center ${isLoading ? 'animate-pulse' : 'mb-6 shadow-inner-3d'}`}>
+            <div className={`w-24 h-24 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner-3d ${isLoading ? 'animate-pulse' : ''}`}>
               <Search size={40} className="text-slate-300 dark:text-slate-500" />
             </div>
             {!isLoading && (
