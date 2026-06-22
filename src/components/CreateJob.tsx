@@ -352,7 +352,8 @@ export const CreateJob = ({
   const [isSalaryHidden, setIsSalaryHidden] = useState(initialData?.isSalaryHidden || false);
   const [askExpectedSalary, setAskExpectedSalary] = useState<"hidden" | "open" | "ranges">(initialData?.askExpectedSalary || "hidden");
   const [expectedSalaryRanges, setExpectedSalaryRanges] = useState<string[]>(initialData?.expectedSalaryRanges || []);
-  const [salaryRangeInput, setSalaryRangeInput] = useState("");
+  const [salaryRangeMinInput, setSalaryRangeMinInput] = useState("");
+  const [salaryRangeMaxInput, setSalaryRangeMaxInput] = useState("");
   const defaultStart = new Date().toISOString().slice(0, 16);
   const defaultDays = (userProfile?.subscription_tier === 'immediate' || userProfile?.subscription_tier === 'one-time') ? 45 : 30;
   const defaultEnd = new Date(Date.now() + defaultDays * 24 * 60 * 60 * 1000)
@@ -386,7 +387,7 @@ export const CreateJob = ({
   const [hideSkillsAndLanguages, setHideSkillsAndLanguages] = useState(baseRole?.hideSkillsAndLanguages || false);
   const [newMajorInput, setNewMajorInput] = useState("");
   const [aiInstructions, setAiInstructions] = useState(baseRole?.aiInstructions || "");
-  
+
   const [useAiOverride, setUseAiOverride] = useState(!!baseRole?.aiOverrideFields || !!initialData?.aiOverrideFields || false);
   const [aiRoleSummary, setAiRoleSummary] = useState(baseRole?.aiOverrideFields?.roleSummary || initialData?.aiOverrideFields?.roleSummary || "");
   const [aiResponsibilities, setAiResponsibilities] = useState(baseRole?.aiOverrideFields?.responsibilities || initialData?.aiOverrideFields?.responsibilities || "");
@@ -458,8 +459,8 @@ export const CreateJob = ({
   const [isAddingRole, setIsAddingRole] = useState(false);
   const [roleToastMessage, setRoleToastMessage] = useState<string | null>(null);
 
-  const [chatMessages, setChatMessages] = useState<{role: "user" | "assistant", content: string}[]>(
-    initialData?.aiChatHistory || [{role: "assistant", content: "أهلاً بك! أنا مستشار التوظيف الذكي الخاص بمنصة فرز. يسعدني مساعدتك في صياغة الإعلان الوظيفي. أخبرني باختصار عن الشاغر الذي تبحث عنه."}]
+  const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant", content: string }[]>(
+    initialData?.aiChatHistory || [{ role: "assistant", content: "أهلاً بك! أنا مستشار التوظيف الذكي الخاص بمنصة فرز. يسعدني مساعدتك في صياغة الإعلان الوظيفي. أخبرني باختصار عن الشاغر الذي تبحث عنه." }]
   );
   const [chatInput, setChatInput] = useState("");
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -488,7 +489,7 @@ export const CreateJob = ({
         body: { mode: 'chat', messages: [...chatMessages, userMsg].map(m => ({ role: m.role, content: m.content })) }
       });
       if (response.error) throw new Error(response.error.message);
-      
+
       const data = response.data;
       if (data && data.reply) {
         setChatMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
@@ -498,10 +499,10 @@ export const CreateJob = ({
       let errMsg = "حدث خطأ أثناء الاتصال بالمستشار الذكي.";
       try {
         if (err.message && !err.message.includes("fetch")) {
-            errMsg = err.message;
+          errMsg = err.message;
         }
-      } catch(e) {}
-      
+      } catch (e) { }
+
       setChatError(errMsg);
     } finally {
       setIsChatLoading(false);
@@ -509,19 +510,19 @@ export const CreateJob = ({
   };
 
   const handleApplyChatToForm = async () => {
-    const messagesToExtract = chatInput.trim() 
-      ? [...chatMessages, { role: "user" as const, content: chatInput.trim() }] 
+    const messagesToExtract = chatInput.trim()
+      ? [...chatMessages, { role: "user" as const, content: chatInput.trim() }]
       : chatMessages;
-      
+
     if (messagesToExtract.length === 0) return;
-    
+
     setIsApplyingAi(true);
     try {
       const response = await supabase.functions.invoke('magic-autofill', {
         body: { mode: 'extract', messages: messagesToExtract.map(m => ({ role: m.role, content: m.content })) }
       });
       if (response.error) throw new Error(response.error.message);
-      
+
       const data = response.data;
       if (data && data.extracted) {
         const ext = data.extracted;
@@ -557,7 +558,7 @@ export const CreateJob = ({
           setCampaignDescription(ext.welcomeMessage);
           setEnableWelcomeUI(true);
         }
-        
+
         window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "تم تطبيق التفاصيل المستخرجة بنجاح!", type: "success" } }));
       }
     } catch (err: any) {
@@ -1428,230 +1429,182 @@ export const CreateJob = ({
           </div>
         )}
       </AnimatePresence>
-      <div className="max-w-[900px] mx-auto pb-32 flex flex-col gap-6 px-4">
-        
+      <div className="w-full max-w-[1400px] mx-auto pb-32 flex flex-col lg:flex-row gap-8 px-4 items-start relative">
 
-      {/* Smart Assistant Modal */}
-      <AnimatePresence>
-        {isChatModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsChatModalOpen(false)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col h-[80vh] max-h-[700px]"
+        {/* Smart Assistant Sidebar */}
+        <div className="order-2 lg:order-2 w-full lg:w-[400px] shrink-0 lg:sticky lg:top-8 lg:mt-[68px] bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col h-[500px] lg:h-[650px] z-40">
+          <div className="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-navy dark:text-white flex items-center gap-2">
+                <Sparkles className="text-primary" size={18} /> مستشار التوظيف الذكي
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">يساعدك في صياغة الإعلان و استخراج التفاصيل</p>
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={chatScrollRef}>
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-start' : 'items-end'}`} dir="ltr">
+                <div dir="rtl" className={`p-3 rounded-2xl max-w-[90%] text-sm leading-relaxed ${msg.role === 'user' ? 'bg-primary text-white rounded-tr-sm' : 'bg-slate-100 dark:bg-slate-700 text-navy dark:text-white rounded-tl-sm'}`}>
+                  {msg.content.split('\n').map((line, idx) => <React.Fragment key={idx}>{line}<br /></React.Fragment>)}
+                </div>
+              </div>
+            ))}
+            {isChatLoading && (
+              <div className="flex items-start" dir="ltr">
+                <div dir="rtl" className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-700 rounded-tl-sm flex gap-1 items-center">
+                  <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce"></div>
+                  <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "0.2s" }}></div>
+                  <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: "0.4s" }}></div>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700">
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => {
+                  setChatInput(e.target.value);
+                  if (chatError) setChatError(null);
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !chatError) handleSendChatMessage(); }}
+                placeholder="اكتب رسالتك هنا..."
+                className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary dark:text-white"
+                disabled={isChatLoading || isApplyingAi}
+                maxLength={4000}
+              />
+              <button type="button" onClick={handleSendChatMessage} disabled={!chatInput.trim() || isChatLoading || isApplyingAi || !!chatError} className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 disabled:opacity-50 transition-opacity">
+                <ArrowLeft size={18} className="rotate-180" />
+              </button>
+            </div>
+            {chatError && (
+              <div className="mb-3 px-2 flex items-start gap-1.5 text-orange-600 dark:text-orange-400">
+                <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                <p className="text-xs font-bold">{chatError}</p>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={async () => { await handleApplyChatToForm(); }}
+              disabled={chatMessages.length < 2 || isApplyingAi || isChatLoading}
+              className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-navy font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90 transition-opacity shadow-md"
             >
-              <div className="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
-                 <div>
-                   <h3 className="font-bold text-navy dark:text-white flex items-center gap-2">
-                     <Sparkles className="text-primary" size={18}/> مستشار التوظيف الذكي
-                   </h3>
-                   <p className="text-xs text-slate-500 mt-1">يساعدك في صياغة الإعلان و استخراج التفاصيل</p>
-                 </div>
-                 <button type="button" onClick={() => setIsChatModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
-                   <X size={20} />
-                 </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={chatScrollRef}>
-                {chatMessages.map((msg, i) => (
-                  <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-start' : 'items-end'}`} dir="ltr">
-                    <div dir="rtl" className={`p-3 rounded-2xl max-w-[90%] text-sm leading-relaxed ${msg.role === 'user' ? 'bg-primary text-white rounded-tr-sm' : 'bg-slate-100 dark:bg-slate-700 text-navy dark:text-white rounded-tl-sm'}`}>
-                      {msg.content.split('\n').map((line, idx) => <React.Fragment key={idx}>{line}<br/></React.Fragment>)}
-                    </div>
-                  </div>
-                ))}
-                {isChatLoading && (
-                  <div className="flex items-start" dir="ltr">
-                    <div dir="rtl" className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-700 rounded-tl-sm flex gap-1 items-center">
-                      <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce"></div>
-                      <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{animationDelay: "0.2s"}}></div>
-                      <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{animationDelay: "0.4s"}}></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700">
-                <div className="flex gap-2 mb-3">
-                  <input 
-                    type="text" 
-                    value={chatInput} 
-                    onChange={(e) => {
-                      setChatInput(e.target.value);
-                      if (chatError) setChatError(null);
-                    }} 
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !chatError) handleSendChatMessage(); }}
-                    placeholder="اكتب رسالتك هنا..." 
-                    className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary dark:text-white"
-                    disabled={isChatLoading || isApplyingAi}
-                    maxLength={4000}
-                  />
-                  <button type="button" onClick={handleSendChatMessage} disabled={!chatInput.trim() || isChatLoading || isApplyingAi || !!chatError} className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 disabled:opacity-50 transition-opacity">
-                     <ArrowLeft size={18} className="rotate-180" />
+              {isApplyingAi ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Download size={16} />}
+              تطبيق التفاصيل على النموذج
+            </button>
+          </div>
+        </div>
+        {/* Main Form Content */}
+        <div className="order-1 flex-1 min-w-0 w-full lg:max-w-[900px] bg-transparent">
+          <button
+            type="button"
+            onClick={(e) => { e.preventDefault(); handleBackAttempt(); }}
+            className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-primary font-bold mb-8 transition-colors group"
+          >
+            <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white flex items-center justify-center group-hover:border-primary transition-all">
+              <ArrowLeft size={18} className="rotate-180" />
+            </div>
+            العودة للوحة التحكم
+          </button>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-4"
+          >
+
+            {createJobType !== "quick_link" && (
+              <div className="mb-1">
+                <div className="flex bg-white dark:bg-slate-800 p-1.5 gap-1.5 rounded-2xl w-full shadow-sm border border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    onClick={handleSwitchToSingle}
+                    className={`flex items-center justify-center gap-2.5 flex-1 px-8 py-3.5 rounded-xl font-bold text-sm md:text-base whitespace-nowrap transition-all ${adType === "single" ? "bg-primary text-white shadow-md" : "text-slate-500 hover:text-navy dark:hover:text-white"}`}
+                  >
+                    إعلان لشاغر واحد
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSwitchToMultiple}
+                    className={`flex items-center justify-center gap-2.5 flex-1 px-8 py-3.5 rounded-xl font-bold text-sm md:text-base whitespace-nowrap transition-all ${adType === "campaign" ? "bg-primary text-white shadow-md" : "text-slate-500 hover:text-navy dark:hover:text-white"}`}
+                  >
+                    إعلان لعدة شواغر (حملة توظيف)
                   </button>
                 </div>
-                {chatError && (
-                  <div className="mb-3 px-2 flex items-start gap-1.5 text-orange-600 dark:text-orange-400">
-                    <AlertCircle size={14} className="mt-0.5 shrink-0" />
-                    <p className="text-xs font-bold">{chatError}</p>
-                  </div>
-                )}
-                <button 
-                  type="button" 
-                  onClick={async () => { await handleApplyChatToForm(); setIsChatModalOpen(false); }} 
-                  disabled={chatMessages.length < 2 || isApplyingAi || isChatLoading}
-                  className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-navy font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90 transition-opacity shadow-md"
-                >
-                  {isApplyingAi ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Download size={16} />}
-                  تطبيق التفاصيل على النموذج 📥
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-        {/* Main Form Content */}
-        <div className="flex-1 min-w-0">
-        <button
-          type="button"
-          onClick={(e) => { e.preventDefault(); handleBackAttempt(); }}
-          className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-primary font-bold mb-8 transition-colors group"
-        >
-          <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white flex items-center justify-center group-hover:border-primary transition-all">
-            <ArrowLeft size={18} className="rotate-180" />
-          </div>
-          العودة للوحة التحكم
-        </button>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-4"
-        >
-
-          {createJobType !== "quick_link" && (
-            <div className="mb-1">
-              <div className="flex bg-white dark:bg-slate-800 p-1.5 gap-1.5 rounded-2xl w-full shadow-sm border border-slate-200 dark:border-slate-700">
-                <button
-                  type="button"
-                  onClick={handleSwitchToSingle}
-                  className={`flex items-center justify-center gap-2.5 flex-1 px-8 py-3.5 rounded-xl font-bold text-sm md:text-base whitespace-nowrap transition-all ${adType === "single" ? "bg-primary text-white shadow-md" : "text-slate-500 hover:text-navy dark:hover:text-white"}`}
-                >
-                  إعلان لشاغر واحد
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSwitchToMultiple}
-                  className={`flex items-center justify-center gap-2.5 flex-1 px-8 py-3.5 rounded-xl font-bold text-sm md:text-base whitespace-nowrap transition-all ${adType === "campaign" ? "bg-primary text-white shadow-md" : "text-slate-500 hover:text-navy dark:hover:text-white"}`}
-                >
-                  إعلان لعدة شواغر (حملة توظيف)
-                </button>
-              </div>
-            </div>
-          )}
-
-          <form className="space-y-6" id="createJobForm" onSubmit={handleSubmit}>
-            {/* --- STEPPER UI START --- */}
-            {createJobType !== "quick_link" && (
-            <div className="mb-12 w-full max-w-3xl mx-auto px-4 mt-8">
-              <div className="flex items-center justify-between relative">
-                {/* Stepper Lines */}
-                <div className="absolute top-1/2 left-[28px] right-[28px] h-2 bg-slate-200 dark:bg-slate-700 z-0 rounded-full transform -translate-y-1/2 shadow-inner">
-                  <div className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-primary/90 to-primary z-0 rounded-full transition-all duration-700 shadow-md" style={{ width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%' }} />
-                </div>
-                
-                <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => setCurrentStep(1)}>
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 1 ? 'bg-gradient-to-b from-primary to-primary/80 text-white shadow-[0_8px_15px_-3px_rgba(0,0,0,0.2),0_4px_0_0_rgba(0,0,0,0.15)] scale-110 border-white/50' : currentStep > 1 ? 'bg-primary text-white border-white shadow-[0_4px_0_0_rgba(0,0,0,0.1)]' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
-                    {currentStep > 1 ? <CheckCircle size={24} className="animate-in zoom-in" /> : "1"}
-                  </div>
-                  <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 1 ? 'text-primary drop-shadow-sm' : currentStep > 1 ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>الوصف الوظيفي</span>
-                </div>
-
-                <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 1) setCurrentStep(2) }}>
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 2 ? 'bg-gradient-to-b from-primary to-primary/80 text-white shadow-[0_8px_15px_-3px_rgba(0,0,0,0.2),0_4px_0_0_rgba(0,0,0,0.15)] scale-110 border-white/50' : currentStep > 2 ? 'bg-primary text-white border-white shadow-[0_4px_0_0_rgba(0,0,0,0.1)]' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
-                    {currentStep > 2 ? <CheckCircle size={24} className="animate-in zoom-in" /> : "2"}
-                  </div>
-                  <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 2 ? 'text-primary drop-shadow-sm' : currentStep > 2 ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>إعدادات محرك الفرز</span>
-                </div>
-
-                <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 2) setCurrentStep(3) }}>
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 3 ? 'bg-gradient-to-b from-primary to-primary/80 text-white shadow-[0_8px_15px_-3px_rgba(0,0,0,0.2),0_4px_0_0_rgba(0,0,0,0.15)] scale-110 border-white/50' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
-                    3
-                  </div>
-                  <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 3 ? 'text-primary drop-shadow-sm' : 'text-slate-400'}`}>متطلبات التقديم</span>
-                </div>
-              </div>
-            </div>
-            )}
-            {/* --- STEPPER UI END --- */}
-
-
-
-            {createJobType === "quick_link" && (
-              <div className="bg-cyan-50 dark:bg-cyan-900/20 border-2 border-cyan-100 dark:border-cyan-800/50 p-6 rounded-3xl flex flex-col md:flex-row items-center md:items-start gap-5 shadow-sm mb-4">
-                <div className="w-12 h-12 bg-cyan-100 dark:bg-cyan-900/50 rounded-full flex items-center justify-center shrink-0 text-cyan-600 dark:text-cyan-400">
-                  <Sparkles className="animate-pulse" size={24} />
-                </div>
-                <div className="text-center md:text-right flex-1">
-                  <h3 className="font-bold text-cyan-800 dark:text-cyan-400 text-lg mb-2 flex items-center justify-center md:justify-start gap-2">
-                    💡 تنبيه هام لنظام الفرز الآلي
-                  </h3>
-                  <p className="text-cyan-700 dark:text-cyan-300 font-medium text-[13px] leading-relaxed max-w-3xl border-r-2 border-cyan-200 dark:border-cyan-800/50 pr-4">
-                    أداة الفرز السريع مصممة لإعطاء <span className="font-bold bg-cyan-100 dark:bg-cyan-900/50 px-1 rounded">(تقييم مبدئي لمدى المطابقة)</span> بناءً على القراءة السطحية للسير الذاتية وتوفير وقتك.
-                    للحصول على <strong>مطابقة وتحليل دقيق 100%</strong> للمهارات العميقة، يرجى استخدام مسار (بوابة التوظيف الشاملة).
-                  </p>
-                </div>
               </div>
             )}
 
+            <form className="space-y-6" id="createJobForm" onSubmit={handleSubmit}>
+              {/* --- STEPPER UI START --- */}
+              {createJobType !== "quick_link" && (
+                <div className="mb-12 w-full max-w-3xl mx-auto px-4 mt-8">
+                  <div className="flex items-center justify-between relative">
+                    {/* Stepper Lines */}
+                    <div className="absolute top-1/2 left-[28px] right-[28px] h-2 bg-slate-200 dark:bg-slate-700 z-0 rounded-full transform -translate-y-1/2 shadow-inner">
+                      <div className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-primary/90 to-primary z-0 rounded-full transition-all duration-700 shadow-md" style={{ width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%' }} />
+                    </div>
 
-
-            {/* Card 1: Basic Info */}
-            {createJobType !== "quick_link" && (
-              <div className={currentStep === 1 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
-                <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
-                  <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3 mb-6">
-                    <Briefcase className="text-primary" size={24} /> المعلومات الأساسية
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="flex items-center gap-6 md:col-span-2 mb-2 p-5 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                      <div
-                        className={`relative overflow-hidden w-20 h-20 p-0 rounded-2xl bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex items-center justify-center border-2 ${companyLogo ? "border-solid border-primary/20 cursor-pointer hover:border-primary/50" : "border-dashed"} transition-colors shrink-0 shadow-sm`}
-                        onClick={() => { if (companyLogo) setLightboxPhoto(companyLogo); }}
-                      >
-                        {!companyLogo && (
-                          <label className="absolute inset-0 flex items-center justify-center cursor-pointer group">
-                            <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                              if (e.target.files && e.target.files[0]) {
-                                const file = e.target.files[0];
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  const base64Url = reader.result as string;
-                                  setCompanyLogo(base64Url);
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }} />
-                            <Upload className="text-slate-400 group-hover:text-primary transition-colors" />
-                          </label>
-                        )}
-                        {companyLogo && (
-                          <img src={companyLogo} className="w-full h-full object-cover rounded-[inherit] drop-shadow-sm" alt="Company Logo" />
-                        )}
+                    <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => setCurrentStep(1)}>
+                      <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 1 ? 'bg-gradient-to-b from-primary to-primary/80 text-white shadow-[0_8px_15px_-3px_rgba(0,0,0,0.2),0_4px_0_0_rgba(0,0,0,0.15)] scale-110 border-white/50' : currentStep > 1 ? 'bg-primary text-white border-white shadow-[0_4px_0_0_rgba(0,0,0,0.1)]' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
+                        {currentStep > 1 ? <CheckCircle size={24} className="animate-in zoom-in" /> : "1"}
                       </div>
-                      <div>
-                        <h4 className="font-bold text-navy dark:text-white mb-1">شعار جهة التوظيف</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">يرفق هذا الشعار في صفحة تفاصيل الوظيفة (اختياري)</p>
+                      <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 1 ? 'text-primary drop-shadow-sm' : currentStep > 1 ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>تفاصيل الاعلان</span>
+                    </div>
 
-                        <div className="flex items-center gap-4">
-                          {companyLogo && (
-                            <label className="text-xs font-bold text-primary hover:text-primary/80 cursor-pointer transition-colors">
-                              تغيير الشعار
+                    <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 1) setCurrentStep(2) }}>
+                      <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 2 ? 'bg-gradient-to-b from-primary to-primary/80 text-white shadow-[0_8px_15px_-3px_rgba(0,0,0,0.2),0_4px_0_0_rgba(0,0,0,0.15)] scale-110 border-white/50' : currentStep > 2 ? 'bg-primary text-white border-white shadow-[0_4px_0_0_rgba(0,0,0,0.1)]' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
+                        {currentStep > 2 ? <CheckCircle size={24} className="animate-in zoom-in" /> : "2"}
+                      </div>
+                      <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 2 ? 'text-primary drop-shadow-sm' : currentStep > 2 ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>متطلبات التقديم</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 2) setCurrentStep(3) }}>
+                      <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 3 ? 'bg-gradient-to-b from-primary to-primary/80 text-white shadow-[0_8px_15px_-3px_rgba(0,0,0,0.2),0_4px_0_0_rgba(0,0,0,0.15)] scale-110 border-white/50' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
+                        3
+                      </div>
+                      <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 3 ? 'text-primary drop-shadow-sm' : 'text-slate-400'}`}>توجيهات الفرز والنشر</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {/* --- STEPPER UI END --- */}
+
+
+
+              {createJobType === "quick_link" && (
+                <div className="bg-cyan-50 dark:bg-cyan-900/20 border-2 border-cyan-100 dark:border-cyan-800/50 p-6 rounded-3xl flex flex-col md:flex-row items-center md:items-start gap-5 shadow-sm mb-4">
+                  <div className="w-12 h-12 bg-cyan-100 dark:bg-cyan-900/50 rounded-full flex items-center justify-center shrink-0 text-cyan-600 dark:text-cyan-400">
+                    <Sparkles className="animate-pulse" size={24} />
+                  </div>
+                  <div className="text-center md:text-right flex-1">
+                    <h3 className="font-bold text-cyan-800 dark:text-cyan-400 text-lg mb-2 flex items-center justify-center md:justify-start gap-2">
+                      💡 تنبيه هام لنظام الفرز الآلي
+                    </h3>
+                    <p className="text-cyan-700 dark:text-cyan-300 font-medium text-[13px] leading-relaxed max-w-3xl border-r-2 border-cyan-200 dark:border-cyan-800/50 pr-4">
+                      أداة الفرز السريع مصممة لإعطاء <span className="font-bold bg-cyan-100 dark:bg-cyan-900/50 px-1 rounded">(تقييم مبدئي لمدى المطابقة)</span> بناءً على القراءة السطحية للسير الذاتية وتوفير وقتك.
+                      للحصول على <strong>مطابقة وتحليل دقيق 100%</strong> للمهارات العميقة، يرجى استخدام مسار (بوابة التوظيف الشاملة).
+                    </p>
+                  </div>
+                </div>
+              )}
+
+
+
+              {/* Card 1: Basic Info */}
+              {createJobType !== "quick_link" && (
+                <div className={currentStep === 1 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
+                  <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
+                    <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3 mb-6">
+                      <Briefcase className="text-primary" size={24} /> المعلومات الأساسية
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="flex items-center gap-6 md:col-span-2 mb-2 p-5 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                        <div
+                          className={`relative overflow-hidden w-20 h-20 p-0 rounded-2xl bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex items-center justify-center border-2 ${companyLogo ? "border-solid border-primary/20 cursor-pointer hover:border-primary/50" : "border-dashed"} transition-colors shrink-0 shadow-sm`}
+                          onClick={() => { if (companyLogo) setLightboxPhoto(companyLogo); }}
+                        >
+                          {!companyLogo && (
+                            <label className="absolute inset-0 flex items-center justify-center cursor-pointer group">
                               <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                                 if (e.target.files && e.target.files[0]) {
                                   const file = e.target.files[0];
@@ -1659,1934 +1612,1998 @@ export const CreateJob = ({
                                   reader.onloadend = () => {
                                     const base64Url = reader.result as string;
                                     setCompanyLogo(base64Url);
-                                    localStorage.setItem("savedCompanyLogo", base64Url);
                                   };
                                   reader.readAsDataURL(file);
                                 }
                               }} />
+                              <Upload className="text-slate-400 group-hover:text-primary transition-colors" />
                             </label>
                           )}
                           {companyLogo && (
-                            <button type="button" onClick={() => { setCompanyLogo(null); localStorage.removeItem("last_used_logo"); localStorage.removeItem("savedCompanyLogo"); }} className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors">إزالة الشعار</button>
+                            <img src={companyLogo} className="w-full h-full object-cover rounded-[inherit] drop-shadow-sm" alt="Company Logo" />
                           )}
                         </div>
-                      </div>
-                    </div>
-                    {" "}
-                    <div className="space-y-3">
-                      {" "}
-                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                        اسم الشركة / الفرع <span className="text-red-500">*</span>
-                      </label>{" "}
-                      <input
-                        required
-                        type="text"
-                        value={company}
-                        onChange={(e) => {
-                          setCompany(e.target.value);
-                        }}
-                        placeholder="مثال: شركة الحلول الذكية..."
-                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
-                      />{" "}
-                    </div>{" "}
-                  </div>
-                </div>
-                {adType === "campaign" && roles.length > 0 && (
-                  <div className="mt-8 space-y-4">
-                    <div className="flex items-center justify-between font-bold text-navy dark:text-white">
-                      <h3>الشواغر المطلوبة ({roles.length}):</h3>
-                      <AnimatePresence>
-                        {roleToastMessage && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg"
-                          >
-                            <CheckCircle size={16} />
-                            {roleToastMessage}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                      {roles.map((r) => (
-                        <div
-                          key={r.id}
-                          className="group relative bg-white dark:bg-slate-800 p-5 rounded-[24px] border border-slate-200 dark:border-slate-700 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between gap-4 overflow-hidden"
-                        >
-                          <div className="absolute top-0 right-0 w-2 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
-                          <div className="pr-3 flex-1 flex flex-col">
-                            <h4 className="text-lg font-bold text-navy dark:text-white group-hover:text-primary transition-colors truncate">
-                              {r.title}
-                            </h4>
-                            {r.description && (
-                              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">
-                                {r.description}
-                              </p>
+                        <div>
+                          <h4 className="font-bold text-navy dark:text-white mb-1">شعار جهة التوظيف</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">يرفق هذا الشعار في صفحة تفاصيل الوظيفة (اختياري)</p>
+
+                          <div className="flex items-center gap-4">
+                            {companyLogo && (
+                              <label className="text-xs font-bold text-primary hover:text-primary/80 cursor-pointer transition-colors">
+                                تغيير الشعار
+                                <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    const file = e.target.files[0];
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      const base64Url = reader.result as string;
+                                      setCompanyLogo(base64Url);
+                                      localStorage.setItem("savedCompanyLogo", base64Url);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }} />
+                              </label>
                             )}
-                            <div className="flex flex-wrap gap-2.5 pt-4 mt-auto">
-                              {r.location && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.location}</span>}
-                              {r.type && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.type}</span>}
-                              {r.salaryMin && <span className="text-[11px] flex items-center gap-1.5 font-medium bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/30 px-2.5 py-1 rounded-lg"><CreditCard size={14} className="ml-1.5" /> {r.salaryMin} {r.salaryMax && `- ${r.salaryMax}`} ريال</span>}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 pr-3 pt-3 mt-2 border-t border-slate-100 dark:border-slate-700/50 justify-end">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleEditRole(r as any);
-                              }}
-                              className="bg-white text-primary border border-primary/20 hover:bg-primary/5 dark:bg-slate-800 dark:text-primary px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
-                              title="تعديل الشاغر"
-                            >
-                              <Pencil size={14} className="ml-1" /> تعديل
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setRoleToDelete(r.id)}
-                              className="bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
-                              title="حذف الشاغر"
-                            >
-                              <Trash2 size={14} className="ml-1" /> حذف
-                            </button>
+                            {companyLogo && (
+                              <button type="button" onClick={() => { setCompanyLogo(null); localStorage.removeItem("last_used_logo"); localStorage.removeItem("savedCompanyLogo"); }} className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors">إزالة الشعار</button>
+                            )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    {!showRoleForm && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAddingRole(true);
-                          setIsAdvancedSettingsOpen(true);
-                          setEditingRoleId(null);
-                          setType("دوام كامل");
-                          setLocation("");
-                          setExperience("لا يشترط خبرة");
-                          setQualification("ثانوي");
-                          setSalaryMin("");
-                          setSalaryMax("");
-                          setRoleTitle("");
-                          setRoleDesc("");
-                          setRoleSummary("");
-                          setResponsibilities("");
-                          setQualifications("");
-                          setBenefits("");
-                          setAiInstructions("");
-                          setSelectedSkills([]);
-                          setCustomQuestions([]);
-                          setRequiredAttachments(["سيرة ذاتية PDF"]);
-                          setCustomAttachments([]);
-                        }}
-                        className="mt-6 border-2 border-dashed border-primary/30 text-primary hover:bg-primary hover:text-white font-bold py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 w-full shadow-sm"
-                      >
-                        <Plus size={20} /> إضافة دور وظيفي جديد
-                      </button>
-                    )}
-                  </div>
-                )}{" "}
-              </div>
-            )}
-
-
-            <div className={currentStep === 1 || currentStep === 3 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6" : "hidden"}>
-            {showRoleForm && (
-              <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
-                {currentStep === 1 && (
-                <>
-                {adType === "campaign" && (
-                  <h3 className="text-xl font-bold text-navy dark:text-white flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                      <Users className="text-primary" size={24} /> تفاصيل الأدوار والمتطلبات
-                    </div>
-                    <span className="text-xs md:text-sm bg-primary/10 text-primary px-3 py-1.5 rounded-full font-bold">
-                      الشاغر رقم {editingRoleId ? roles.findIndex(r => r.id === editingRoleId) + 1 : roles.length + 1}
-                    </span>
-                  </h3>
-                )}
-                {adType === "campaign" && (
-                  <p className="text-sm font-medium text-gray-500 mb-6 px-1">
-                    (تنبيه: هذه البيانات أساسية لعمل محرك الفرز بدقة، حتى وإن تم تفعيل خاصية التخطي للمتقدمين)
-                  </p>
-                )}
-                {/* Main Section Heading */}
-                <h3 className="text-xl font-bold text-navy dark:text-white mb-6">الوصف الوظيفي</h3>
-
-                {/* Welcome UI removed as requested */}
-
-                <div className="space-y-3">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                    المسمى الوظيفي (Role) <span className="text-red-500">*</span>
-                  </label>
-                  <input
-
-                    type="text"
-                    value={roleTitle}
-                    onChange={(e) => setRoleTitle(e.target.value)}
-                    placeholder="مثال: مندوب مبيعات"
-                    className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium"
-                  />{" "}
-                </div>{" "}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                      نوع العمل <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <SearchableSelect
-                        options={["دوام كامل", "دوام جزئي", "عن بعد", "تدريب"].filter((c) => !types.includes(c))}
-                        value={""}
-                        onChange={(val) => {
-                          if (val && !types.includes(val)) {
-                            setTypes([...types, val]);
-                            setType(val); // fallback for older clients if needed
-                            if (val === "عن بعد" && !locations.includes("لا يشترط / كافة المدن")) {
-                              setLocations([...locations, "لا يشترط / كافة المدن"]);
-                            }
-                          }
-                        }}
-                        placeholder="اختر نوع العمل..."
-                      />
-                      {types.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                          <AnimatePresence>
-                            {types.map((t) => (
-                              <motion.span
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.8, opacity: 0 }}
-                                key={t}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
-                              >
-                                {t}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const newTypes = types.filter((l) => l !== t);
-                                    setTypes(newTypes.length > 0 ? newTypes : ["دوام كامل"]);
-                                    if (newTypes.length > 0) setType(newTypes[0]); else setType("دوام كامل");
-                                  }}
-                                  className="hover:text-red-500 transition-colors p-0.5"
-                                >
-                                  <X size={14} />
-                                </button>
-                              </motion.span>
-                            ))}
-                          </AnimatePresence>
-                        </div>
-                      )}
+                      </div>
+                      {" "}
+                      <div className="space-y-3">
+                        {" "}
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                          اسم الشركة / الفرع <span className="text-red-500">*</span>
+                        </label>{" "}
+                        <input
+                          required
+                          type="text"
+                          value={company}
+                          onChange={(e) => {
+                            setCompany(e.target.value);
+                          }}
+                          placeholder="مثال: شركة الحلول الذكية..."
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                        />{" "}
+                      </div>{" "}
                     </div>
                   </div>
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                      مقر العمل / المدن <span className="text-red-500">*</span>
-                    </label>
-                    <SearchableSelect
-                      options={SAUDI_CITIES.filter((c) => !locations.includes(c))}
-                      value={""}
-                      onChange={(val) => {
-                        if (val && !locations.includes(val)) {
-                          setLocations([...locations, val]);
-                          setLocation(val);
-                        }
-                      }}
-                      placeholder="اختر المدن..."
-                    />
-                    {locations.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                  {adType === "campaign" && roles.length > 0 && (
+                    <div className="mt-8 space-y-4">
+                      <div className="flex items-center justify-between font-bold text-navy dark:text-white">
+                        <h3>الشواغر المطلوبة ({roles.length}):</h3>
                         <AnimatePresence>
-                          {locations.map((loc) => (
-                            <motion.span
-                              initial={{ scale: 0.8, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0.8, opacity: 0 }}
-                              key={loc}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
+                          {roleToastMessage && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg"
                             >
-                              {loc}
+                              <CheckCircle size={16} />
+                              {roleToastMessage}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {roles.map((r) => (
+                          <div
+                            key={r.id}
+                            className="group relative bg-white dark:bg-slate-800 p-5 rounded-[24px] border border-slate-200 dark:border-slate-700 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between gap-4 overflow-hidden"
+                          >
+                            <div className="absolute top-0 right-0 w-2 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
+                            <div className="pr-3 flex-1 flex flex-col">
+                              <h4 className="text-lg font-bold text-navy dark:text-white group-hover:text-primary transition-colors truncate">
+                                {r.title}
+                              </h4>
+                              {r.description && (
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">
+                                  {r.description}
+                                </p>
+                              )}
+                              <div className="flex flex-wrap gap-2.5 pt-4 mt-auto">
+                                {r.location && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.location}</span>}
+                                {r.type && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.type}</span>}
+                                {r.salaryMin && <span className="text-[11px] flex items-center gap-1.5 font-medium bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/30 px-2.5 py-1 rounded-lg"><CreditCard size={14} className="ml-1.5" /> {r.salaryMin} {r.salaryMax && `- ${r.salaryMax}`} ريال</span>}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pr-3 pt-3 mt-2 border-t border-slate-100 dark:border-slate-700/50 justify-end">
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const newLocs = locations.filter((l) => l !== loc);
-                                  setLocations(newLocs);
-                                  if (newLocs.length > 0) setLocation(newLocs[0]); else setLocation("");
+                                  handleEditRole(r as any);
                                 }}
-                                className="hover:text-red-500 transition-colors p-0.5"
+                                className="bg-white text-primary border border-primary/20 hover:bg-primary/5 dark:bg-slate-800 dark:text-primary px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
+                                title="تعديل الشاغر"
                               >
-                                <X size={14} />
+                                <Pencil size={14} className="ml-1" /> تعديل
                               </button>
-                            </motion.span>
-                          ))}
-                        </AnimatePresence>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                      سنوات الخبرة المطلوبة <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={experience}
-                        onChange={(e) => setExperience(e.target.value)}
-                        className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none font-medium"
-                      >
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط خبرة</option>
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">1-3 سنوات</option>
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">3-5 سنوات</option>
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                      الحد الأدنى للمؤهل <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={qualification}
-                        onChange={(e) => setQualification(e.target.value)}
-                        className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none font-medium"
-                      >
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط مؤهل</option>
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوي</option>
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 space-y-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">التخصصات المستهدفة <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span>
-                      <span className="relative group inline-flex items-center ml-1">
-                        <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                        <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                          اترك هذا الحقل فارغاً إذا كانت الوظيفة تقبل جميع التخصصات لتوسيع نطاق المتقدمين في نظام الفرز الآلي.
-                          <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                        </div>
-                      </span>
-                    </label>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={newMajorInput}
-                      onChange={(e) => setNewMajorInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          if (newMajorInput.trim() && !targetMajors.includes(newMajorInput.trim())) {
-                            setTargetMajors([...targetMajors, newMajorInput.trim()]);
-                            setNewMajorInput("");
-                          }
-                        }
-                      }}
-                      onPaste={(e) => {
-                        e.preventDefault();
-                        const paste = e.clipboardData.getData("text");
-                        if (paste) {
-                          const newMajors = paste
-                            .split(/[,\n؛،]/)
-                            .map(m => m.trim())
-                            .filter(m => m.length > 0 && !targetMajors.includes(m));
-                          if (newMajors.length > 0) {
-                            setTargetMajors(prev => [...prev, ...newMajors]);
-                          }
-                        }
-                      }}
-                      placeholder="مثال: هندسة برمجيات، تسويق..."
-                      className="flex-1 px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (newMajorInput.trim() && !targetMajors.includes(newMajorInput.trim())) {
-                          setTargetMajors([...targetMajors, newMajorInput.trim()]);
-                          setNewMajorInput("");
-                        }
-                      }}
-                      className="px-6 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-2xl transition-all font-bold flex items-center justify-center"
-                    >
-                      <Plus size={20} />
-                    </button>
-                  </div>
-                  {targetMajors.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <AnimatePresence>
-                        {targetMajors.map((major) => (
-                          <motion.span
-                            layout
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.8, opacity: 0 }}
-                            key={major}
-                            className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
-                          >
-                            {major}
-                            <button
-                              type="button"
-                              onClick={() => setTargetMajors(targetMajors.filter((m) => m !== major))}
-                              className="hover:text-red-500 transition-colors p-0.5"
-                            >
-                              <X size={14} />
-                            </button>
-                          </motion.span>
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  )}
-
-                </div>
-
-                {/* AI Assistant Button */}
-                <div className="flex justify-center mt-10 mb-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsChatModalOpen(true)}
-                    className="group relative px-8 py-4 bg-gradient-to-r from-primary to-emerald-400 text-white rounded-2xl font-bold shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 hover:-translate-y-1 transition-all overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <span className="relative flex items-center gap-3 text-lg">
-                      <Sparkles size={24} className="animate-pulse" />
-                      مستشار التوظيف الذكي
-                    </span>
-                  </button>
-                </div>
-
-                <div className="space-y-6 mt-6">
-                  <div>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                          نبذة عن الدور
-                          <span className="relative group inline-flex items-center ml-1">
-                            <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                            <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                              ترك هذا الحقل فارغاً سيجعل محرك نظام الفرز يعتمد على المعايير القياسية للمسمى الوظيفي. لتقييم أدق، أضف نبذة مختصرة.
-                              <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                            </div>
-                          </span>
-                        </label>
-                      </div>
-                      <textarea
-                        rows={3}
-                        value={roleSummary}
-                        onChange={(e) => setRoleSummary(e.target.value)}
-                        placeholder="مثال: نبحث عن موظف طموح لإدارة علاقات العملاء في فرعنا الرئيسي..."
-                        className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium resize-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all leading-relaxed"
-                      />
-
-                    </div>
-                  </div>
-
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                        المهام والمسؤوليات
-                        <span className="relative group inline-flex items-center ml-1">
-                          <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                          <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                            يفضل إضافتها في شكل نقاط للوظائف الإدارية أو المتخصصة لرفع دقة مطابقة نظام الفرز الآلي.
-                            <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                          </div>
-                        </span>
-                      </label>
-                    </div>
-                    <textarea onPaste={(e) => handleTextAreaPaste(e, setResponsibilities, responsibilities)}
-                      rows={4}
-                      value={responsibilities}
-                      onChange={(e) => setResponsibilities(e.target.value)}
-                      placeholder="مثال: - تحقيق أهداف المبيعات الشهرية. - إعداد تقارير الأداء..."
-                      className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium resize-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all leading-relaxed"
-                    />
-
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                        المؤهلات والمتطلبات
-                        <span className="relative group inline-flex items-center ml-1">
-                          <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                          <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                            أضف المؤهلات الأساسية المطلوبة ليتم أخذها بعين الاعتبار في نظام الفرز الآلي.
-                            <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                          </div>
-                        </span>
-                      </label>
-                    </div>
-                    <textarea
-
-                      rows={4}
-                      value={qualifications}
-                      onChange={(e) => setQualifications(e.target.value)}
-                      placeholder="مثال: خبرة لا تقل عن 3 سنوات في مبيعات التجزئة، إجادة استخدام أنظمة CRM..."
-                      className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium resize-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all leading-relaxed"
-                    />
-                  </div>
-
-                {createJobType !== "quick_link" && (
-                  <>
-                    <div className="space-y-4 pt-8 border-t border-slate-200 dark:border-slate-700/60 mt-8">
-                      {" "}
-                      <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                          المهارات المستهدفة
-                          <span className="relative group inline-flex items-center ml-1">
-                            <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
-                            <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
-                              تحديد المهارات التقنية الدقيقة يجعل نظام الفرز الآلي أكثر صرامة ودقة.
-                              <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
-                            </div>
-                          </span>
-                        </label>
-                      </div>{" "}
-                      <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl">
-                        {" "}
-                        {selectedSkills.length === 0 && (
-                          <span className="text-sm text-slate-400 dark:text-slate-500 py-2">
-                            لا توجد مهارات.
-                          </span>
-                        )}{" "}
-                        <AnimatePresence>
-                          {" "}
-                          {selectedSkills.map((skill) => (
-                            <motion.button
-                              layout
-                              initial={{ scale: 0.8, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
-                              exit={{ scale: 0.8, opacity: 0 }}
-                              key={skill}
-                              type="button"
-                              onClick={() => toggleSkill(skill)}
-                              className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
-                            >
-                              {" "}
-                              {skill} <X size={14} />{" "}
-                            </motion.button>
-                          ))}{" "}
-                        </AnimatePresence>{" "}
-                      </div>{" "}
-                      {getSuggestions().length > 0 && (
-                        <div className="space-y-3 p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                          {" "}
-                          <p className="text-xs font-bold text-primary mr-1 flex items-center gap-2">
-                            {" "}
-                            <Sparkles size={14} /> اقتراحات ذكية:{" "}
-                          </p>{" "}
-                          <div className="flex flex-wrap gap-2">
-                            {" "}
-                            {getSuggestions().map((suggestion) => (
                               <button
-                                key={suggestion}
                                 type="button"
-                                onClick={() => toggleSkill(suggestion)}
-                                className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl text-sm font-bold hover:border-primary hover:text-primary transition-all shadow-sm"
+                                onClick={() => setRoleToDelete(r.id)}
+                                className="bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
+                                title="حذف الشاغر"
                               >
-                                {" "}
-                                + {suggestion}{" "}
+                                <Trash2 size={14} className="ml-1" /> حذف
                               </button>
-                            ))}{" "}
-                          </div>{" "}
-                        </div>
-                      )}{" "}
-                      <div className="relative">
-                        {" "}
-                        <input
-                          type="text"
-                          value={customSkill}
-                          onChange={(e) => setCustomSkill(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              addCustomSkill(e);
-                            }
-                          }}
-                          onPaste={(e) => {
-                            e.preventDefault();
-                            const paste = e.clipboardData.getData("text");
-                            if (paste) {
-                              const newSkills = paste
-                                .split(/[,\n،]/)
-                                .map(s => s.trim())
-                                .filter(s => s.length > 0 && !selectedSkills.includes(s));
-                              if (newSkills.length > 0) {
-                                setSelectedSkills(prev => [...prev, ...newSkills]);
-                              }
-                            }
-                          }}
-                          placeholder="أضف مهارة..."
-                          className="w-full pr-6 pl-14 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium"
-                        />{" "}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {!showRoleForm && (
                         <button
                           type="button"
-                          onClick={addCustomSkill}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-primary transition-all"
+                          onClick={() => {
+                            setIsAddingRole(true);
+                            setIsAdvancedSettingsOpen(true);
+                            setEditingRoleId(null);
+                            setType("دوام كامل");
+                            setLocation("");
+                            setExperience("لا يشترط خبرة");
+                            setQualification("ثانوي");
+                            setSalaryMin("");
+                            setSalaryMax("");
+                            setRoleTitle("");
+                            setRoleDesc("");
+                            setRoleSummary("");
+                            setResponsibilities("");
+                            setQualifications("");
+                            setBenefits("");
+                            setAiInstructions("");
+                            setSelectedSkills([]);
+                            setCustomQuestions([]);
+                            setRequiredAttachments(["سيرة ذاتية PDF"]);
+                            setCustomAttachments([]);
+                          }}
+                          className="mt-6 border-2 border-dashed border-primary/30 text-primary hover:bg-primary hover:text-white font-bold py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 w-full shadow-sm"
                         >
-                          <Plus size={20} />
-                        </button>{" "}
-                      </div>{" "}
-                    </div>{" "}
+                          <Plus size={20} /> إضافة دور وظيفي جديد
+                        </button>
+                      )}
+                    </div>
+                  )}{" "}
+                </div>
+              )}
 
-                    <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-700/60 flex flex-col gap-6">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                            اللغات المطلوبة <span className="text-slate-400 font-normal ml-1">(اختياري)</span>
-                          </label>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {selectedLanguages.map((lang) => (
-                            <span key={lang} className="bg-primary text-white px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm">
-                              {lang}
-                              <button type="button" onClick={() => setSelectedLanguages(selectedLanguages.filter(l => l !== lang))}>
-                                <X size={12} />
-                              </button>
+
+              <div className={currentStep === 1 || currentStep === 2 || currentStep === 3 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6" : "hidden"}>
+                {showRoleForm && (
+                  <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
+                    {currentStep === 1 && (
+                      <>
+                        {adType === "campaign" && (
+                          <h3 className="text-xl font-bold text-navy dark:text-white flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                              <Users className="text-primary" size={24} /> تفاصيل الأدوار والمتطلبات
+                            </div>
+                            <span className="text-xs md:text-sm bg-primary/10 text-primary px-3 py-1.5 rounded-full font-bold">
+                              الشاغر رقم {editingRoleId ? roles.findIndex(r => r.id === editingRoleId) + 1 : roles.length + 1}
                             </span>
-                          ))}
-                        </div>
-                        <div className="relative">
-                          <select
-                            value=""
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              if (val && !selectedLanguages.includes(val)) {
-                                setSelectedLanguages([...selectedLanguages, val]);
-                              }
-                            }}
-                            className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium appearance-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
-                          >
-                            <option value="" disabled className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر لغة لإضافتها...</option>
-                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="العربية">العربية</option>
-                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الإنجليزية">الإنجليزية</option>
-                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الفرنسية">الفرنسية</option>
-                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الإسبانية">الإسبانية</option>
-                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الهندية">الهندية</option>
-                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الأوردو">الأوردو</option>
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                      {/* Custom Attachments Section */}{" "}
-                  </>
-                )}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                        المميزات <span className="text-slate-400 font-normal text-xs ml-1">(اختياري)</span>
-                      </label>
-                    </div>
-                    <textarea onPaste={(e) => handleTextAreaPaste(e, setBenefits, benefits)}
-                      rows={3}
-                      value={benefits}
-                      onChange={(e) => setBenefits(e.target.value)}
-                      placeholder="مثال: تأمين طبي فئة A، عمولات مبيعات تصل إلى 10%، سيارة..."
-                      className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium resize-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all leading-relaxed"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-6 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-                <div className="mt-6 space-y-3">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1 block">
-                    ميزانية الوظيفة / الراتب <span className="text-slate-400 dark:text-slate-500 text-xs font-normal mr-1">(اختياري)</span>
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                    <div className="space-y-3">
-                      <span className="text-xs text-slate-500 font-bold block">الحد الأدنى</span>
-                      <input
-                        required={false}
-                        type="number"
-                        value={salaryMin}
-                        onChange={(e) => setSalaryMin(e.target.value)}
-                        placeholder="مثال: 5000"
-                        className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
-                      />
-                    </div>
+                          </h3>
+                        )}
+                        {adType === "campaign" && (
+                          <p className="text-sm font-medium text-gray-500 mb-6 px-1">
+                            (تنبيه: هذه البيانات أساسية لعمل محرك الفرز بدقة، حتى وإن تم تفعيل خاصية التخطي للمتقدمين)
+                          </p>
+                        )}
+                        {/* Main Section Heading */}
+                        <h3 className="text-xl font-bold text-navy dark:text-white mb-6">تفاصيل الاعلان</h3>
 
-                    <div className="space-y-3">
-                      <span className="text-xs text-slate-500 font-bold block">الحد الأعلى</span>
-                      <input
-                        type="number"
-                        value={salaryMax}
-                        onChange={(e) => setSalaryMax(e.target.value)}
-                        placeholder="مثال: 8000"
-                        className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
-                      />
-                    </div>
-                  </div>
-                  <div className="relative mt-2 flex items-center">
-                    <label className="relative inline-flex items-center cursor-pointer select-none">
-                      <input type="checkbox" className="sr-only peer" checked={isSalaryHidden} onChange={(e) => setIsSalaryHidden(e.target.checked)} />
-                      <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.4rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary shrink-0"></div>
-                      <span className="mr-3 text-sm font-bold text-slate-700 dark:text-slate-300">إخفاء الراتب عن المتقدمين</span>
-                    </label>
-                  </div>
-                  <div className="mt-5 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-700/80">
-                    <div className="flex items-center justify-between flex-wrap gap-4">
-                      <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                        <Settings size={18} className="text-slate-400" />
-                        <span className="text-sm font-bold">سؤال المتقدم عن الراتب المتوقع</span>
-                      </div>
-                      <div className="relative min-w-[220px]">
-                        <select
-                          value={askExpectedSalary}
-                          onChange={(e) => setAskExpectedSalary(e.target.value as any)}
-                          className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all font-bold appearance-none cursor-pointer text-slate-700 dark:text-slate-300"
-                        >
-                          <option value="hidden">عدم السؤال</option>
-                          <option value="open">سؤال مفتوح</option>
-                          <option value="ranges">خيارات محددة</option>
-                        </select>
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                          <ChevronDown size={16} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {askExpectedSalary === "ranges" && (
-                      <div className="mt-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">نطاقات الراتب (اضغط Enter للإضافة)</label>
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          <AnimatePresence>
-                            {expectedSalaryRanges.map((range, idx) => (
-                              <motion.span
-                                initial={{ opacity: 0, scale: 0.8 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.8 }}
-                                key={idx}
-                                className="bg-primary/10 text-primary px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2"
-                              >
-                                {range}
-                                <button
-                                  type="button"
-                                  onClick={() => setExpectedSalaryRanges(prev => prev.filter((_, i) => i !== idx))}
-                                  className="hover:text-red-500 transition-colors"
-                                >
-                                  <X size={14} />
-                                </button>
-                              </motion.span>
-                            ))}
-                          </AnimatePresence>
-                          {expectedSalaryRanges.length === 0 && (
-                            <span className="text-sm text-slate-400 font-medium py-1.5">لم يتم إضافة أي نطاقات بعد...</span>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={salaryRangeInput}
-                            onChange={(e) => setSalaryRangeInput(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                if (salaryRangeInput.trim() && !expectedSalaryRanges.includes(salaryRangeInput.trim())) {
-                                  setExpectedSalaryRanges(prev => [...prev, salaryRangeInput.trim()]);
-                                  setSalaryRangeInput('');
-                                }
-                              }
-                            }}
-                            placeholder="مثال: 4000 - 6000 ريال"
-                            className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:border-primary outline-none text-sm transition-all"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (salaryRangeInput.trim() && !expectedSalaryRanges.includes(salaryRangeInput.trim())) {
-                                setExpectedSalaryRanges(prev => [...prev, salaryRangeInput.trim()]);
-                                setSalaryRangeInput('');
-                              }
-                            }}
-                            className="px-4 bg-primary text-white font-bold rounded-xl text-sm hover:bg-primary/90 transition-colors whitespace-nowrap"
-                          >
-                            إضافة
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                </div>
-                {createJobType !== "quick_link" && (
-                  <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-                    <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} className="rotate-180"/></button>
-                  </div>
-                )}
-                </>
-                )}
-
-                {currentStep === 3 && (
-                <>
-                    <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-700/60 flex flex-col gap-6">
-
-                      {/* Basic Attachments Section */}
-                      <div>
-                        <label className="text-sm font-bold text-navy dark:text-white mb-4 block flex items-center gap-2">
-                          المرفقات الأساسية المطلوبة
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {" "}
-                          {[
-                            { id: "سيرة ذاتية PDF", title: "ملف السيرة الذاتية", subtitle: "(يُقبل ملفات PDF و DOCX فقط)" },
-                            { id: "رابط معرض أعمال/Portfolio", title: "رابط معرض أعمال/Portfolio" }
-                          ].map((opt) => (
-                            <div key={opt.id} className="relative">
-                              <label
-                                className={`flex flex-col items-center justify-center text-center gap-1 ${opt.id === "رابط معرض أعمال/Portfolio" && requiredAttachments.includes(opt.id) ? "pt-4 pb-12" : "p-4"} h-full rounded-2xl border cursor-pointer transition-all ${requiredAttachments.includes(opt.id) ? "bg-primary/5 border-primary text-primary" : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-navy dark:text-white dark:bg-slate-800/50 dark:hover:bg-slate-700 dark:border-slate-700"}`}
-                              >
-                                {" "}
-                                <input
-                                  type="checkbox"
-                                  className="hidden"
-                                  checked={requiredAttachments.includes(opt.id)}
-                                  onChange={() => toggleAttachment(opt.id)}
-                                />{" "}
-                                <span className="font-bold text-sm">{opt.title}</span>{" "}
-                                {opt.subtitle && <span className="text-[10px] sm:text-xs text-slate-400 font-medium">{opt.subtitle}</span>}
+                        {createJobType !== "quick_link" && (
+                          <div className="bg-slate-50 dark:bg-slate-900/30 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 mb-8 mt-2">
+                            <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4 md:gap-0">
+                              <div>
+                                <h4 className="font-bold text-navy dark:text-white text-lg flex items-center gap-2">
+                                  <Settings size={22} className="text-primary" />
+                                  تخطي صفحة الوصف (إعداد عام)
+                                </h4>
+                                <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 max-w-2xl leading-relaxed">عند تفعيل هذا الخيار، سيتم توجيه المتقدمين مباشرة إلى صفحة تعبئة البيانات ورفع السيرة الذاتية متجاهلاً صفحة الهبوط الخاصة بتفاصيل الوظيفة أو البوابة بأكملها.</p>
+                              </div>
+                              <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" className="sr-only peer" checked={directUpload} onChange={(e) => setDirectUpload(e.target.checked)} />
+                                <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
                               </label>
-                              {opt.id === "رابط معرض أعمال/Portfolio" && requiredAttachments.includes(opt.id) && (
-                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%]">
-                                  <select
-                                    value={portfolioRequirement}
-                                    onChange={(e) => {
-                                      e.stopPropagation();
-                                      setPortfolioRequirement(e.target.value as "required" | "optional");
-                                    }}
-                                    className="w-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg py-1 px-2 text-navy dark:text-white outline-none cursor-pointer"
-                                  >
-                                    <option value="optional" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختياري</option>
-                                    <option value="required" className="bg-white text-navy dark:bg-slate-800 dark:text-white">إلزامي</option>
-                                  </select>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Welcome UI removed as requested */}
+
+                        <div className="space-y-3">
+                          <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                            المسمى الوظيفي (Role) <span className="text-red-500">*</span>
+                          </label>
+                          <input
+
+                            type="text"
+                            value={roleTitle}
+                            onChange={(e) => setRoleTitle(e.target.value)}
+                            placeholder="مثال: مندوب مبيعات"
+                            className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium"
+                          />{" "}
+                        </div>{" "}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+                          <div className="space-y-3">
+                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                              نوع العمل <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <SearchableSelect
+                                options={["دوام كامل", "دوام جزئي", "عن بعد", "تدريب"].filter((c) => !types.includes(c))}
+                                value={""}
+                                onChange={(val) => {
+                                  if (val && !types.includes(val)) {
+                                    setTypes([...types, val]);
+                                    setType(val); // fallback for older clients if needed
+                                    if (val === "عن بعد" && !locations.includes("لا يشترط / كافة المدن")) {
+                                      setLocations([...locations, "لا يشترط / كافة المدن"]);
+                                    }
+                                  }
+                                }}
+                                placeholder="اختر نوع العمل..."
+                              />
+                              {types.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                                  <AnimatePresence>
+                                    {types.map((t) => (
+                                      <motion.span
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0.8, opacity: 0 }}
+                                        key={t}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
+                                      >
+                                        {t}
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newTypes = types.filter((l) => l !== t);
+                                            setTypes(newTypes.length > 0 ? newTypes : ["دوام كامل"]);
+                                            if (newTypes.length > 0) setType(newTypes[0]); else setType("دوام كامل");
+                                          }}
+                                          className="hover:text-red-500 transition-colors p-0.5"
+                                        >
+                                          <X size={14} />
+                                        </button>
+                                      </motion.span>
+                                    ))}
+                                  </AnimatePresence>
                                 </div>
                               )}
                             </div>
-                          ))}{" "}
-                        </div>{" "}
-                      </div>{" "}
-                      </div>
-
-
-                {createJobType !== "quick_link" && (
-                  <>
-                      <div>
-                        <div className="border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-800/30 overflow-hidden">
-                          <button
-                            type="button"
-                            onClick={() => setIsAttachmentsExpanded(!isAttachmentsExpanded)}
-                            className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-transparent transition-all group outline-none"
-                          >
-                            <span className="font-bold text-navy dark:text-white flex items-center gap-2">
-                              المرفقات المخصصة - اختياري
-                            </span>
-                            <ChevronDown
-                              className={`text-slate-400 group-hover:text-primary transition-transform duration-300 ${isAttachmentsExpanded ? 'rotate-180' : ''}`}
-                              size={20}
+                          </div>
+                          <div className="space-y-3">
+                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                              مقر العمل / المدن <span className="text-red-500">*</span>
+                            </label>
+                            <SearchableSelect
+                              options={SAUDI_CITIES.filter((c) => !locations.includes(c))}
+                              value={""}
+                              onChange={(val) => {
+                                if (val && !locations.includes(val)) {
+                                  setLocations([...locations, val]);
+                                  setLocation(val);
+                                }
+                              }}
+                              placeholder="اختر المدن..."
                             />
-                          </button>
-                          <AnimatePresence>
-                            {isAttachmentsExpanded && (
-                              <motion.div
-                                initial={{ height: 0, opacity: 0 }}
-                                animate={{ height: "auto", opacity: 1 }}
-                                exit={{ height: 0, opacity: 0 }}
-                                transition={{ duration: 0.3, ease: "easeInOut" }}
-                                className="border-t border-slate-200 dark:border-slate-700"
+                            {locations.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                                <AnimatePresence>
+                                  {locations.map((loc) => (
+                                    <motion.span
+                                      initial={{ scale: 0.8, opacity: 0 }}
+                                      animate={{ scale: 1, opacity: 1 }}
+                                      exit={{ scale: 0.8, opacity: 0 }}
+                                      key={loc}
+                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
+                                    >
+                                      {loc}
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newLocs = locations.filter((l) => l !== loc);
+                                          setLocations(newLocs);
+                                          if (newLocs.length > 0) setLocation(newLocs[0]); else setLocation("");
+                                        }}
+                                        className="hover:text-red-500 transition-colors p-0.5"
+                                      >
+                                        <X size={14} />
+                                      </button>
+                                    </motion.span>
+                                  ))}
+                                </AnimatePresence>
+                              </div>
+                            )}
+                          </div>
+                          <div className="space-y-3">
+                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                              سنوات الخبرة المطلوبة <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={experience}
+                                onChange={(e) => setExperience(e.target.value)}
+                                className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none font-medium"
                               >
-                                <div className="p-6 flex flex-col gap-4 bg-white dark:bg-slate-800/50">
-                                  <div className="flex items-center justify-between">
+                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط خبرة</option>
+                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">1-3 سنوات</option>
+                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">3-5 سنوات</option>
+                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                              الحد الأدنى للمؤهل <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={qualification}
+                                onChange={(e) => setQualification(e.target.value)}
+                                className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none font-medium"
+                              >
+                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط مؤهل</option>
+                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوي</option>
+                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
+                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
+                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-6 space-y-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">التخصصات المستهدفة <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span>
+                              <span className="relative group inline-flex items-center ml-1">
+                                <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                                <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                                  اترك هذا الحقل فارغاً إذا كانت الوظيفة تقبل جميع التخصصات لتوسيع نطاق المتقدمين في نظام الفرز الآلي.
+                                  <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                                </div>
+                              </span>
+                            </label>
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={newMajorInput}
+                              onChange={(e) => setNewMajorInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  if (newMajorInput.trim() && !targetMajors.includes(newMajorInput.trim())) {
+                                    setTargetMajors([...targetMajors, newMajorInput.trim()]);
+                                    setNewMajorInput("");
+                                  }
+                                }
+                              }}
+                              onPaste={(e) => {
+                                e.preventDefault();
+                                const paste = e.clipboardData.getData("text");
+                                if (paste) {
+                                  const newMajors = paste
+                                    .split(/[,\n؛،]/)
+                                    .map(m => m.trim())
+                                    .filter(m => m.length > 0 && !targetMajors.includes(m));
+                                  if (newMajors.length > 0) {
+                                    setTargetMajors(prev => [...prev, ...newMajors]);
+                                  }
+                                }
+                              }}
+                              placeholder="مثال: هندسة برمجيات، تسويق..."
+                              className="flex-1 px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (newMajorInput.trim() && !targetMajors.includes(newMajorInput.trim())) {
+                                  setTargetMajors([...targetMajors, newMajorInput.trim()]);
+                                  setNewMajorInput("");
+                                }
+                              }}
+                              className="px-6 bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-2xl transition-all font-bold flex items-center justify-center"
+                            >
+                              <Plus size={20} />
+                            </button>
+                          </div>
+                          {targetMajors.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              <AnimatePresence>
+                                {targetMajors.map((major) => (
+                                  <motion.span
+                                    layout
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.8, opacity: 0 }}
+                                    key={major}
+                                    className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
+                                  >
+                                    {major}
+                                    <button
+                                      type="button"
+                                      onClick={() => setTargetMajors(targetMajors.filter((m) => m !== major))}
+                                      className="hover:text-red-500 transition-colors p-0.5"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </motion.span>
+                                ))}
+                              </AnimatePresence>
+                            </div>
+                          )}
+
+                        </div>
+
+                        {/* AI Assistant Button Removed */}
+
+                        <div className="space-y-6 mt-6">
+                          <div>
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                                  نبذة عن الدور
+                                  <span className="relative group inline-flex items-center ml-1">
+                                    <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                                    <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                                      ترك هذا الحقل فارغاً سيجعل محرك نظام الفرز يعتمد على المعايير القياسية للمسمى الوظيفي. لتقييم أدق، أضف نبذة مختصرة.
+                                      <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                                    </div>
+                                  </span>
+                                </label>
+                              </div>
+                              <textarea
+                                rows={3}
+                                value={roleSummary}
+                                onChange={(e) => setRoleSummary(e.target.value)}
+                                placeholder="مثال: نبحث عن موظف طموح لإدارة علاقات العملاء في فرعنا الرئيسي..."
+                                className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium resize-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all leading-relaxed"
+                              />
+
+                            </div>
+                          </div>
+
+
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                                المهام والمسؤوليات
+                                <span className="relative group inline-flex items-center ml-1">
+                                  <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                                  <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                                    يفضل إضافتها في شكل نقاط للوظائف الإدارية أو المتخصصة لرفع دقة مطابقة نظام الفرز الآلي.
+                                    <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                                  </div>
+                                </span>
+                              </label>
+                            </div>
+                            <textarea onPaste={(e) => handleTextAreaPaste(e, setResponsibilities, responsibilities)}
+                              rows={4}
+                              value={responsibilities}
+                              onChange={(e) => setResponsibilities(e.target.value)}
+                              placeholder="مثال: - تحقيق أهداف المبيعات الشهرية. - إعداد تقارير الأداء..."
+                              className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium resize-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all leading-relaxed"
+                            />
+
+                          </div>
+
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                                المؤهلات والمتطلبات
+                                <span className="relative group inline-flex items-center ml-1">
+                                  <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                                  <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                                    أضف المؤهلات الأساسية المطلوبة ليتم أخذها بعين الاعتبار في نظام الفرز الآلي.
+                                    <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                                  </div>
+                                </span>
+                              </label>
+                            </div>
+                            <textarea
+
+                              rows={4}
+                              value={qualifications}
+                              onChange={(e) => setQualifications(e.target.value)}
+                              placeholder="مثال: خبرة لا تقل عن 3 سنوات في مبيعات التجزئة، إجادة استخدام أنظمة CRM..."
+                              className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium resize-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all leading-relaxed"
+                            />
+                          </div>
+
+                          {createJobType !== "quick_link" && (
+                            <>
+                              <div className="space-y-4 pt-8 border-t border-slate-200 dark:border-slate-700/60 mt-8">
+                                {" "}
+                                <div className="flex items-center justify-between mb-2">
+                                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
+                                    المهارات المستهدفة
+                                    <span className="relative group inline-flex items-center ml-1">
+                                      <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
+                                      <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
+                                        تحديد المهارات التقنية الدقيقة يجعل نظام الفرز الآلي أكثر صرامة ودقة.
+                                        <div className="absolute right-2 top-full w-2.5 h-2.5 bg-slate-800 dark:bg-slate-700 rotate-45 -mt-1.5"></div>
+                                      </div>
+                                    </span>
+                                  </label>
+                                </div>{" "}
+                                <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl">
+                                  {" "}
+                                  {selectedSkills.length === 0 && (
+                                    <span className="text-sm text-slate-400 dark:text-slate-500 py-2">
+                                      لا توجد مهارات.
+                                    </span>
+                                  )}{" "}
+                                  <AnimatePresence>
                                     {" "}
-                                    <label className="text-sm font-bold text-navy dark:text-white mr-1">
-                                      إضافة مرفقات مخصصة جديدة
-                                    </label>{" "}
-                                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                                      أضف مرفقات إضافية غير المذكورة أعلاه (اختياري)
-                                    </span>{" "}
-                                  </div>{" "}
-                                  {customAttachments.length > 0 && (
-                                    <div className="space-y-3 mb-2">
+                                    {selectedSkills.map((skill) => (
+                                      <motion.button
+                                        layout
+                                        initial={{ scale: 0.8, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        exit={{ scale: 0.8, opacity: 0 }}
+                                        key={skill}
+                                        type="button"
+                                        onClick={() => toggleSkill(skill)}
+                                        className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-all"
+                                      >
+                                        {" "}
+                                        {skill} <X size={14} />{" "}
+                                      </motion.button>
+                                    ))}{" "}
+                                  </AnimatePresence>{" "}
+                                </div>{" "}
+                                {getSuggestions().length > 0 && (
+                                  <div className="space-y-3 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                                    {" "}
+                                    <p className="text-xs font-bold text-primary mr-1 flex items-center gap-2">
                                       {" "}
-                                      {customAttachments.map((att, idx) => (
-                                        <div
-                                          key={idx}
-                                          className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl gap-4"
+                                      <Sparkles size={14} /> اقتراحات ذكية:{" "}
+                                    </p>{" "}
+                                    <div className="flex flex-wrap gap-2">
+                                      {" "}
+                                      {getSuggestions().map((suggestion) => (
+                                        <button
+                                          key={suggestion}
+                                          type="button"
+                                          onClick={() => toggleSkill(suggestion)}
+                                          className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl text-sm font-bold hover:border-primary hover:text-primary transition-all shadow-sm"
                                         >
                                           {" "}
-                                          <div className="flex flex-col">
-                                            {" "}
-                                            <span className="font-bold text-navy dark:text-white text-sm">
-                                              {att.attachment_name}
-                                            </span>{" "}
-                                            <span className="text-xs text-primary font-medium">
-                                              النوع:{" "}
-                                              {att.attachment_type === "file" ? "ملف PDF" : att.attachment_type === "mixed_file" ? "مستند أو صورة (PDF/JPG)"
-                                                : att.attachment_type === "link"
-                                                  ? "رابط Link"
-                                                  : att.attachment_type === "image"
-                                                    ? "صورة (Image - JPG/PNG)"
-                                                    : att.attachment_type === "video"
-                                                      ? "فيديو قصير (Video - MP4)"
-                                                      : "مستندات أخرى (Word / Excel)"}
-                                            </span>{" "}
-                                            <span className="text-slate-300">•</span>
-                                            <span className={att.required ? "text-red-500 text-xs font-medium" : "text-slate-400 text-xs font-medium"}>
-                                              {att.required ? "إلزامي" : "اختياري"}
-                                            </span>
-                                          </div>{" "}
+                                          + {suggestion}{" "}
+                                        </button>
+                                      ))}{" "}
+                                    </div>{" "}
+                                  </div>
+                                )}{" "}
+                                <div className="relative">
+                                  {" "}
+                                  <input
+                                    type="text"
+                                    value={customSkill}
+                                    onChange={(e) => setCustomSkill(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        addCustomSkill(e);
+                                      }
+                                    }}
+                                    onPaste={(e) => {
+                                      e.preventDefault();
+                                      const paste = e.clipboardData.getData("text");
+                                      if (paste) {
+                                        const newSkills = paste
+                                          .split(/[,\n،]/)
+                                          .map(s => s.trim())
+                                          .filter(s => s.length > 0 && !selectedSkills.includes(s));
+                                        if (newSkills.length > 0) {
+                                          setSelectedSkills(prev => [...prev, ...newSkills]);
+                                        }
+                                      }
+                                    }}
+                                    placeholder="أضف مهارة..."
+                                    className="w-full pr-6 pl-14 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium"
+                                  />{" "}
+                                  <button
+                                    type="button"
+                                    onClick={addCustomSkill}
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-primary transition-all"
+                                  >
+                                    <Plus size={20} />
+                                  </button>{" "}
+                                </div>{" "}
+                              </div>{" "}
+
+                              <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-700/60 flex flex-col gap-6">
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                                      اللغات المطلوبة <span className="text-slate-400 font-normal ml-1">(اختياري)</span>
+                                    </label>
+                                  </div>
+                                  <div className="flex flex-wrap gap-2 mb-2">
+                                    {selectedLanguages.map((lang) => (
+                                      <span key={lang} className="bg-primary text-white px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm">
+                                        {lang}
+                                        <button type="button" onClick={() => setSelectedLanguages(selectedLanguages.filter(l => l !== lang))}>
+                                          <X size={12} />
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                  <div className="relative">
+                                    <select
+                                      value=""
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        if (val && !selectedLanguages.includes(val)) {
+                                          setSelectedLanguages([...selectedLanguages, val]);
+                                        }
+                                      }}
+                                      className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium appearance-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer"
+                                    >
+                                      <option value="" disabled className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر لغة لإضافتها...</option>
+                                      <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="العربية">العربية</option>
+                                      <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الإنجليزية">الإنجليزية</option>
+                                      <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الفرنسية">الفرنسية</option>
+                                      <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الإسبانية">الإسبانية</option>
+                                      <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الهندية">الهندية</option>
+                                      <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الأوردو">الأوردو</option>
+                                    </select>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Custom Attachments Section */}{" "}
+                            </>
+                          )}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                                المميزات <span className="text-slate-400 font-normal text-xs ml-1">(اختياري)</span>
+                              </label>
+                            </div>
+                            <textarea onPaste={(e) => handleTextAreaPaste(e, setBenefits, benefits)}
+                              rows={3}
+                              value={benefits}
+                              onChange={(e) => setBenefits(e.target.value)}
+                              placeholder="مثال: تأمين طبي فئة A، عمولات مبيعات تصل إلى 10%، سيارة..."
+                              className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium resize-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all leading-relaxed"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-6 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                          <div className="mt-6 space-y-3">
+                            <label className="text-sm font-bold text-navy dark:text-white mr-1 block">
+                              ميزانية الوظيفة / الراتب <span className="text-slate-400 dark:text-slate-500 text-xs font-normal mr-1">(اختياري)</span>
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                              <div className="space-y-3">
+                                <span className="text-xs text-slate-500 font-bold block">الحد الأدنى</span>
+                                <input
+                                  required={false}
+                                  type="number"
+                                  value={salaryMin}
+                                  onChange={(e) => setSalaryMin(e.target.value)}
+                                  placeholder="مثال: 5000"
+                                  className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                                />
+                              </div>
+
+                              <div className="space-y-3">
+                                <span className="text-xs text-slate-500 font-bold block">الحد الأعلى</span>
+                                <input
+                                  type="number"
+                                  value={salaryMax}
+                                  onChange={(e) => setSalaryMax(e.target.value)}
+                                  placeholder="مثال: 8000"
+                                  className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                                />
+                              </div>
+                            </div>
+                            <div className="relative mt-2 flex items-center">
+                              <label className="relative inline-flex items-center cursor-pointer select-none">
+                                <input type="checkbox" className="sr-only peer" checked={isSalaryHidden} onChange={(e) => setIsSalaryHidden(e.target.checked)} />
+                                <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.4rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary shrink-0"></div>
+                                <span className="mr-3 text-sm font-bold text-slate-700 dark:text-slate-300">إخفاء الراتب عن المتقدمين</span>
+                              </label>
+                            </div>
+                            <div className="mt-5 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-700/80">
+                              <div className="flex items-center justify-between flex-wrap gap-4">
+                                <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
+                                  <Settings size={18} className="text-slate-400" />
+                                  <span className="text-sm font-bold">سؤال المتقدم عن الراتب المتوقع</span>
+                                </div>
+                                <div className="relative min-w-[220px]">
+                                  <select
+                                    value={askExpectedSalary}
+                                    onChange={(e) => setAskExpectedSalary(e.target.value as any)}
+                                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all font-bold appearance-none cursor-pointer text-slate-700 dark:text-slate-300"
+                                  >
+                                    <option value="hidden">عدم السؤال</option>
+                                    <option value="open">سؤال مفتوح</option>
+                                    <option value="ranges">خيارات محددة</option>
+                                  </select>
+                                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                    <ChevronDown size={16} />
+                                  </div>
+                                </div>
+                              </div>
+
+                              {askExpectedSalary === "ranges" && (
+                                <div className="mt-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">نطاقات الراتب (اضغط Enter للإضافة)</label>
+                                  <div className="flex flex-wrap gap-2 mb-3">
+                                    <AnimatePresence>
+                                      {expectedSalaryRanges.map((range, idx) => (
+                                        <motion.span
+                                          initial={{ opacity: 0, scale: 0.8 }}
+                                          animate={{ opacity: 1, scale: 1 }}
+                                          exit={{ opacity: 0, scale: 0.8 }}
+                                          key={idx}
+                                          className="bg-primary/10 text-primary px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2"
+                                        >
+                                          {range}
                                           <button
                                             type="button"
-                                            onClick={() => removeCustomAttachment(idx)}
-                                            className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0"
+                                            onClick={() => setExpectedSalaryRanges(prev => prev.filter((_, i) => i !== idx))}
+                                            className="hover:text-red-500 transition-colors"
                                           >
-                                            {" "}
-                                            <Trash2 size={14} />{" "}
-                                          </button>{" "}
-                                        </div>
-                                      ))}{" "}
-                                    </div>
-                                  )}{" "}
-                                  <div className="flex flex-wrap gap-2 mb-4">
-                                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 self-center ml-2">إضافات سريعة:</span>
-                                    <button type="button" onClick={() => { setNewAttachmentName("الصورة الشخصية"); setNewAttachmentType("image"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14}/> الصورة الشخصية</button>
-                                    <button type="button" onClick={() => { setNewAttachmentName("رخصة القيادة"); setNewAttachmentType("mixed_file"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14}/> رخصة القيادة</button>
-                                    <button type="button" onClick={() => { setNewAttachmentName("صورة الهوية"); setNewAttachmentType("mixed_file"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14}/> صورة الهوية</button>
+                                            <X size={14} />
+                                          </button>
+                                        </motion.span>
+                                      ))}
+                                    </AnimatePresence>
+                                    {expectedSalaryRanges.length === 0 && (
+                                      <span className="text-sm text-slate-400 font-medium py-1.5">لم يتم إضافة أي نطاقات بعد...</span>
+                                    )}
                                   </div>
-                                  <div className="flex flex-col md:flex-row items-center gap-4 w-full">
-                                    {" "}
-                                    <div className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 rounded-2xl shrink-0 h-[58px]">
-                                      <input
-                                        type="checkbox"
-                                        id="attRequired"
-                                        checked={newAttachmentRequired}
-                                        onChange={(e) => setNewAttachmentRequired(e.target.checked)}
-                                        className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
-                                      />
-                                      <label htmlFor="attRequired" className="text-sm font-bold text-navy dark:text-white cursor-pointer whitespace-nowrap">
-                                        إرفاق إلزامي
-                                      </label>
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="number"
+                                      value={salaryRangeMinInput}
+                                      onChange={(e) => setSalaryRangeMinInput(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          let rangeStr = "";
+                                          const min = salaryRangeMinInput.trim();
+                                          const max = salaryRangeMaxInput.trim();
+                                          if (min && max) rangeStr = `${min} - ${max}`;
+                                          else if (min) rangeStr = `${min}`;
+                                          else if (max) rangeStr = `حتى ${max}`;
+
+                                          if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
+                                            setExpectedSalaryRanges(prev => [...prev, rangeStr]);
+                                            setSalaryRangeMinInput('');
+                                            setSalaryRangeMaxInput('');
+                                          }
+                                        }
+                                      }}
+                                      placeholder="الحد الأدنى (مثال: 4000)"
+                                      className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:border-primary outline-none text-sm transition-all"
+                                    />
+                                    <input
+                                      type="number"
+                                      value={salaryRangeMaxInput}
+                                      onChange={(e) => setSalaryRangeMaxInput(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                          e.preventDefault();
+                                          let rangeStr = "";
+                                          const min = salaryRangeMinInput.trim();
+                                          const max = salaryRangeMaxInput.trim();
+                                          if (min && max) rangeStr = `${min} - ${max}`;
+                                          else if (min) rangeStr = `${min}`;
+                                          else if (max) rangeStr = `حتى ${max}`;
+
+                                          if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
+                                            setExpectedSalaryRanges(prev => [...prev, rangeStr]);
+                                            setSalaryRangeMinInput('');
+                                            setSalaryRangeMaxInput('');
+                                          }
+                                        }
+                                      }}
+                                      placeholder="الحد الأعلى (مثال: 6000)"
+                                      className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:border-primary outline-none text-sm transition-all"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        let rangeStr = "";
+                                        const min = salaryRangeMinInput.trim();
+                                        const max = salaryRangeMaxInput.trim();
+                                        if (min && max) rangeStr = `${min} - ${max}`;
+                                        else if (min) rangeStr = `${min}`;
+                                        else if (max) rangeStr = `حتى ${max}`;
+
+                                        if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
+                                          setExpectedSalaryRanges(prev => [...prev, rangeStr]);
+                                          setSalaryRangeMinInput('');
+                                          setSalaryRangeMaxInput('');
+                                        }
+                                      }}
+                                      className="px-4 bg-primary text-white font-bold rounded-xl text-sm hover:bg-primary/90 transition-colors whitespace-nowrap"
+                                    >
+                                      إضافة
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {/* AI Override Fields Toggle - Moved to Step 1 */}
+                        <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/20 dark:to-purple-900/20 p-8 rounded-[32px] border-2 border-indigo-100 dark:border-indigo-800/30 shadow-inner mt-8 mb-8">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                                <Sparkles size={20} />
+                              </div>
+                              <div>
+                                <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-300">مسار الذكاء الاصطناعي المخصص</h3>
+                                <p className="text-sm text-indigo-700/70 dark:text-indigo-400/70 mt-1 font-medium">كتابة معايير دقيقة وسرية يقرأها الذكاء الاصطناعي فقط، بدلاً من الوصف العام.</p>
+                              </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={useAiOverride}
+                                onChange={(e) => setUseAiOverride(e.target.checked)}
+                              />
+                              <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
+                            </label>
+                          </div>
+
+                          <AnimatePresence>
+                            {useAiOverride && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="space-y-6 border-t border-indigo-200/50 dark:border-indigo-800/50 pt-6 mt-2">
+                                  <div>
+                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">نبذة عن الدور (للذكاء الاصطناعي)</label>
+                                    <textarea
+                                      value={aiRoleSummary}
+                                      onChange={(e) => setAiRoleSummary(e.target.value)}
+                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
+                                      rows={3}
+                                      placeholder="اكتب المعايير الدقيقة للنبذة عن الدور..."
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المهام والمسؤوليات (للذكاء الاصطناعي)</label>
+                                    <textarea
+                                      value={aiResponsibilities}
+                                      onChange={(e) => setAiResponsibilities(e.target.value)}
+                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
+                                      rows={4}
+                                      placeholder="اكتب المهام والمسؤوليات المخصصة للفرز..."
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المؤهلات والمتطلبات (للذكاء الاصطناعي)</label>
+                                    <textarea
+                                      value={aiQualifications}
+                                      onChange={(e) => setAiQualifications(e.target.value)}
+                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
+                                      rows={4}
+                                      placeholder="اكتب المؤهلات والمتطلبات المخصصة للفرز..."
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">التخصصات المستهدفة (للذكاء الاصطناعي)</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                      {aiTargetMajors.map((major, i) => (
+                                        <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
+                                          {major}
+                                          <button type="button" onClick={() => setAiTargetMajors(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
+                                        </span>
+                                      ))}
                                     </div>
                                     <input
                                       type="text"
-                                      value={newAttachmentName}
-                                      onChange={(e) => setNewAttachmentName(e.target.value)}
+                                      placeholder="أضف تخصص واضغط Enter"
                                       onKeyDown={(e) => {
                                         if (e.key === "Enter") {
                                           e.preventDefault();
-                                          addCustomAttachment();
+                                          const val = e.currentTarget.value.trim();
+                                          if (val && !aiTargetMajors.includes(val)) {
+                                            setAiTargetMajors(prev => [...prev, val]);
+                                            e.currentTarget.value = "";
+                                          }
                                         }
                                       }}
-                                      placeholder="اسم المرفق (مثال: رخصة)..."
-                                      className="flex-1 w-full h-14 px-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none"
-                                    />{" "}
-                                    <div className="flex-1 relative w-full">
-                                      {" "}
-                                      <select
-                                        value={newAttachmentType}
-                                        onChange={(e) =>
-                                          setNewAttachmentType(e.target.value as "file" | "link" | "image" | "video" | "document" | "mixed_file" | "")
+                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المهارات المستهدفة (للذكاء الاصطناعي)</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                      {aiTargetSkills.map((skill, i) => (
+                                        <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
+                                          {skill}
+                                          <button type="button" onClick={() => setAiTargetSkills(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <input
+                                      type="text"
+                                      placeholder="أضف مهارة واضغط Enter"
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          const val = e.currentTarget.value.trim();
+                                          if (val && !aiTargetSkills.includes(val)) {
+                                            setAiTargetSkills(prev => [...prev, val]);
+                                            e.currentTarget.value = "";
+                                          }
                                         }
-                                        className="w-full h-14 px-6 pl-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none appearance-none font-medium cursor-pointer text-sm md:text-base"
-                                      >
-                                        {" "}
-                                        <option value="" disabled className="bg-white text-slate-400 dark:bg-slate-800 hidden">
-                                          (حدد الصيغة المطلوبة)
-                                        </option>
-                                        <option value="file" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ملف PDF</option>
-                                        <option value="mixed_file" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مستند أو صورة (PDF / JPG / PNG)</option>{" "}
-                                        <option value="link" className="bg-white text-navy dark:bg-slate-800 dark:text-white">رابط Link</option>{" "}
-                                        <option value="image" className="bg-white text-navy dark:bg-slate-800 dark:text-white">صورة (Image - JPG/PNG)</option>{" "}
-                                        <option value="video" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فيديو قصير (Video - MP4)</option>{" "}
-                                        <option value="document" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مستندات أخرى (Word / Excel)</option>{" "}
-                                      </select>{" "}
-                                      <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                                        <ChevronDown size={20} />
-                                      </div>
-                                    </div>{" "}
-                                    <button
-                                      type="button"
-                                      onClick={addCustomAttachment}
-                                      className="flex-1 w-full h-14 bg-primary/10 text-primary hover:bg-primary hover:text-white px-6 rounded-2xl font-bold flex items-center gap-2 justify-center transition-all border-2 border-primary/20 hover:border-primary whitespace-nowrap shadow-sm"
-                                    >
-                                      {" "}
-                                      <Plus size={20} strokeWidth={2.5} /> إضافة المرفق{" "}
-                                    </button>{" "}
-                                  </div>{" "}
+                                      }}
+                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">اللغات المطلوبة (للذكاء الاصطناعي)</label>
+                                    <div className="flex flex-wrap gap-2 mb-2">
+                                      {aiLanguages.map((lang, i) => (
+                                        <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
+                                          {lang}
+                                          <button type="button" onClick={() => setAiLanguages(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
+                                        </span>
+                                      ))}
+                                    </div>
+                                    <input
+                                      type="text"
+                                      placeholder="أضف لغة واضغط Enter"
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          const val = e.currentTarget.value.trim();
+                                          if (val && !aiLanguages.includes(val)) {
+                                            setAiLanguages(prev => [...prev, val]);
+                                            e.currentTarget.value = "";
+                                          }
+                                        }
+                                      }}
+                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
+                                    />
+                                  </div>
                                 </div>
                               </motion.div>
                             )}
                           </AnimatePresence>
                         </div>
-                      </div>
 
+                        {createJobType !== "quick_link" && (
+                          <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                            <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} /></button>
+                          </div>
+                        )}
+                      </>
+                    )}
 
-                      {/* Knockout Questions Accordion */}
-                      <div className="border-2 border-red-100 dark:border-red-900/30 rounded-2xl bg-red-50/50 dark:bg-red-900/10 overflow-hidden mb-6">
-                        <button
-                          type="button"
-                          onClick={() => setIsKnockoutExpanded(!isKnockoutExpanded)}
-                          className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-transparent transition-all group outline-none"
-                        >
-                          <span className="font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
-                            <Ban size={18} /> أسئلة الاستبعاد التلقائي (اختياري)
-                          </span>
-                          <ChevronDown
-                            className={`text-slate-400 group-hover:text-red-500 transition-transform duration-300 ${isKnockoutExpanded ? 'rotate-180' : ''}`}
-                            size={20}
-                          />
-                        </button>
-                        <AnimatePresence>
-                          {isKnockoutExpanded && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3, ease: "easeInOut" }}
-                              className="border-t border-red-100 dark:border-red-900/30"
-                            >
-                              <div className="p-6 space-y-4 bg-white dark:bg-slate-800/50">
-                                <div>
-                                  <p className="text-xs text-slate-400 mb-4 leading-relaxed font-medium">
-                                    (استخدم هذا القسم للاستبعاد الفوري للمتقدمين غير المطابقين للشروط الحتمية. يمكنك تركه فارغاً لتقييم جميع المتقدمين عبر نظام الفرز الآلي).
-                                  </p>
-                                  <label className="text-sm font-bold text-navy dark:text-white mr-1 block">
-                                    إضافة سؤال استبعاد
-                                  </label>
-                                </div>
-                                <div className="space-y-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                                  {!["nationality", "city", "education", "experience"].includes(newKqType) && (
+                    {currentStep === 2 && (
+                      <>
+                        <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-700/60 flex flex-col gap-6">
+
+                          {/* Basic Attachments Section */}
+                          <div>
+                            <label className="text-sm font-bold text-navy dark:text-white mb-4 block flex items-center gap-2">
+                              المرفقات الأساسية المطلوبة
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {" "}
+                              {[
+                                { id: "سيرة ذاتية PDF", title: "ملف السيرة الذاتية", subtitle: "(يُقبل ملفات PDF و DOCX فقط)" },
+                                { id: "رابط معرض أعمال/Portfolio", title: "رابط معرض أعمال/Portfolio" }
+                              ].map((opt) => (
+                                <div key={opt.id} className="relative">
+                                  <label
+                                    className={`flex flex-col items-center justify-center text-center gap-1 ${opt.id === "رابط معرض أعمال/Portfolio" && requiredAttachments.includes(opt.id) ? "pt-4 pb-12" : "p-4"} h-full rounded-2xl border cursor-pointer transition-all ${requiredAttachments.includes(opt.id) ? "bg-primary/5 border-primary text-primary" : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-navy dark:text-white dark:bg-slate-800/50 dark:hover:bg-slate-700 dark:border-slate-700"}`}
+                                  >
+                                    {" "}
                                     <input
-                                      type="text"
-                                      value={newKqText}
-                                      onChange={(e) => setNewKqText(e.target.value)}
-                                      placeholder="نص السؤال (مثال: هل أنت سعودي الجنسية؟)"
-                                      className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:border-red-400 transition-all font-medium text-sm"
-                                    />
+                                      type="checkbox"
+                                      className="hidden"
+                                      checked={requiredAttachments.includes(opt.id)}
+                                      onChange={() => toggleAttachment(opt.id)}
+                                    />{" "}
+                                    <span className="font-bold text-sm">{opt.title}</span>{" "}
+                                    {opt.subtitle && <span className="text-[10px] sm:text-xs text-slate-400 font-medium">{opt.subtitle}</span>}
+                                  </label>
+                                  {opt.id === "رابط معرض أعمال/Portfolio" && requiredAttachments.includes(opt.id) && (
+                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%]">
+                                      <select
+                                        value={portfolioRequirement}
+                                        onChange={(e) => {
+                                          e.stopPropagation();
+                                          setPortfolioRequirement(e.target.value as "required" | "optional");
+                                        }}
+                                        className="w-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg py-1 px-2 text-navy dark:text-white outline-none cursor-pointer"
+                                      >
+                                        <option value="optional" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختياري</option>
+                                        <option value="required" className="bg-white text-navy dark:bg-slate-800 dark:text-white">إلزامي</option>
+                                      </select>
+                                    </div>
                                   )}
-                                  <div className={`grid ${["nationality", "city", "education", "experience"].includes(newKqType) ? "grid-cols-1 md:grid-cols-3" : "grid-cols-2"} gap-4`}>
-                                    <select
-                                      value={newKqType}
-                                      onChange={(e) => {
-                                        const val = e.target.value as "yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience";
-                                        setNewKqType(val);
-                                        if (val === "yes_no") {
-                                          setNewKqRequiredAnswer("نعم");
-                                        } else if (val === "nationality") {
-                                          setNewKqRequiredAnswer("");
-                                        } else if (val === "city") {
-                                          setNewKqRequiredAnswer("");
-                                        } else if (val === "education" || val === "experience") {
-                                          setNewKqRequiredAnswer("");
-                                        } else if (val === "availability") {
-                                          setNewKqRequiredAnswer("");
-                                        } else {
-                                          setNewKqRequiredAnswer(newKqOptions[0] || "");
-                                        }
-                                      }}
-                                      className="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none font-medium text-sm appearance-none"
+                                </div>
+                              ))}{" "}
+                            </div>{" "}
+                          </div>{" "}
+                        </div>
+
+
+                        {createJobType !== "quick_link" && (
+                          <>
+                            <div>
+                              <div className="border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-800/30 overflow-hidden">
+                                <button
+                                  type="button"
+                                  onClick={() => setIsAttachmentsExpanded(!isAttachmentsExpanded)}
+                                  className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-transparent transition-all group outline-none"
+                                >
+                                  <span className="font-bold text-navy dark:text-white flex items-center gap-2">
+                                    المرفقات المخصصة - اختياري
+                                  </span>
+                                  <ChevronDown
+                                    className={`text-slate-400 group-hover:text-primary transition-transform duration-300 ${isAttachmentsExpanded ? 'rotate-180' : ''}`}
+                                    size={20}
+                                  />
+                                </button>
+                                <AnimatePresence>
+                                  {isAttachmentsExpanded && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                                      className="border-t border-slate-200 dark:border-slate-700"
                                     >
-                                      <option value="yes_no" className="bg-white text-navy dark:bg-slate-800 dark:text-white">نعم / لا</option>
-                                      <option value="options" className="bg-white text-navy dark:bg-slate-800 dark:text-white">خيارات متعددة</option>
-                                      <option value="age_condition" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شرط العمر</option>
-                                      <option value="nationality" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الجنسيات المقبولة</option>
-                                      <option value="city" className="bg-white text-navy dark:bg-slate-800 dark:text-white">المدن المقبولة</option>
-                                      <option value="education" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى للمؤهل</option>
-                                      <option value="experience" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى لسنوات الخبرة</option>
-                                      <option value="availability" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأقصى لمدة الانضمام</option>
-                                    </select>
-
-                                    {newKqType === "age_condition" ? (
-                                      <div className="flex items-center gap-4">
-                                        <input
-                                          type="number"
-                                          placeholder="الحد الأدنى (مطلوب)"
-                                          value={newKqMinAge}
-                                          onChange={(e) => setNewKqMinAge(e.target.value ? Number(e.target.value) : "")}
-                                          className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm"
-                                        />
-                                        <input
-                                          type="number"
-                                          placeholder="الحد الأعلى (اختياري)"
-                                          value={newKqMaxAge}
-                                          onChange={(e) => setNewKqMaxAge(e.target.value ? Number(e.target.value) : "")}
-                                          className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm"
-                                        />
-                                      </div>
-                                    ) : newKqType === "nationality" ? (
-                                      <div className="md:col-span-2">
-                                        <MultiSearchableSelect
-                                          options={countriesList}
-                                          value={newKqRequiredAnswer}
-                                          onChange={(val) => setNewKqRequiredAnswer(val as string)}
-                                          multiple={true}
-                                          placeholder="اختر الجنسيات المقبولة..."
-                                        />
-                                      </div>
-                                    ) : newKqType === "city" ? (
-                                      <div className="md:col-span-2">
-                                        <MultiSearchableSelect
-                                          options={SAUDI_CITIES}
-                                          value={newKqRequiredAnswer}
-                                          onChange={(val) => setNewKqRequiredAnswer(val as string)}
-                                          multiple={true}
-                                          placeholder="اختر المدن المقبولة..."
-                                        />
-                                      </div>
-                                    ) : newKqType === "education" ? (
-                                      <select
-                                        value={newKqRequiredAnswer}
-                                        onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
-                                        className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
-                                      >
-                                        <option value="" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر الحد الأدنى للمؤهل...</option>
-                                        <option value="ثانوي" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوي</option>
-                                        <option value="دبلوم" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
-                                        <option value="بكالوريوس" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
-                                        <option value="ماجستير" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
-                                        <option value="دكتوراه" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دكتوراه</option>
-                                      </select>
-                                    ) : newKqType === "experience" ? (
-                                      <select
-                                        value={newKqRequiredAnswer}
-                                        onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
-                                        className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
-                                      >
-                                        <option value="" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر الحد الأدنى للخبرة...</option>
-                                        <option value="0" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: أقل من سنة</option>
-                                        <option value="1" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: سنة</option>
-                                        <option value="2" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: سنتين</option>
-                                        <option value="3" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 3 سنوات</option>
-                                        <option value="4" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 4 سنوات</option>
-                                        <option value="5" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 5 سنوات</option>
-                                        <option value="10" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 10 سنوات</option>
-                                      </select>
-                                    ) : newKqType === "availability" ? (
-                                      <select
-                                        value={newKqRequiredAnswer}
-                                        onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
-                                        className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
-                                      >
-                                        <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر أقصى مدة مقبولة...</option>
-                                        <option value="فوري" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فوري (مقبول المتاح فوراً فقط)</option>
-                                        <option value="أسبوع" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوع (مقبول المتاح فوراً أو خلال أسبوع)</option>
-                                        <option value="أسبوعين" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوعين (كحد أقصى)</option>
-                                        <option value="شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شهر (كحد أقصى)</option>
-                                        <option value="أكثر من شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أكثر من شهر (قبول الجميع)</option>
-                                      </select>
-                                    ) : newKqType === "yes_no" ? (
-                                      <select
-                                        value={newKqRequiredAnswer}
-                                        onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
-                                        className="px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
-                                      >
-                                        <option value="نعم" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الإجابة المطلوبة للقَبول: نعم</option>
-                                        <option value="لا" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الإجابة المطلوبة للقَبول: لا</option>
-                                      </select>
-                                    ) : (
-                                      <select
-                                        value={newKqRequiredAnswer}
-                                        onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
-                                        className="px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
-                                      >
-                                        <option value="" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر الإجابة المطلوبة للقبول...</option>
-                                        {newKqOptions.map((opt, i) => (
-                                          <option key={i} value={opt} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{opt}</option>
-                                        ))}
-                                      </select>
-                                    )}
-                                  </div>
-
-                                  {newKqType === "options" && (
-                                    <div className="space-y-3">
-                                      <div className="flex gap-2">
-                                        <input
-                                          type="text"
-                                          value={newKqOptionInput}
-                                          onChange={(e) => setNewKqOptionInput(e.target.value)}
-                                          placeholder="أضف خياراً..."
-                                          className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none text-sm"
-                                          onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                              e.preventDefault();
-                                              if (newKqOptionInput.trim() && !newKqOptions.includes(newKqOptionInput.trim())) {
-                                                const up = [...newKqOptions, newKqOptionInput.trim()];
-                                                setNewKqOptions(up);
-                                                if (!newKqRequiredAnswer) setNewKqRequiredAnswer(up[0] || "");
-                                                setNewKqOptionInput("");
+                                      <div className="p-6 flex flex-col gap-4 bg-white dark:bg-slate-800/50">
+                                        <div className="flex items-center justify-between">
+                                          {" "}
+                                          <label className="text-sm font-bold text-navy dark:text-white mr-1">
+                                            إضافة مرفقات مخصصة جديدة
+                                          </label>{" "}
+                                          <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                                            أضف مرفقات إضافية غير المذكورة أعلاه (اختياري)
+                                          </span>{" "}
+                                        </div>{" "}
+                                        {customAttachments.length > 0 && (
+                                          <div className="space-y-3 mb-2">
+                                            {" "}
+                                            {customAttachments.map((att, idx) => (
+                                              <div
+                                                key={idx}
+                                                className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl gap-4"
+                                              >
+                                                {" "}
+                                                <div className="flex flex-col">
+                                                  {" "}
+                                                  <span className="font-bold text-navy dark:text-white text-sm">
+                                                    {att.attachment_name}
+                                                  </span>{" "}
+                                                  <span className="text-xs text-primary font-medium">
+                                                    النوع:{" "}
+                                                    {att.attachment_type === "file" ? "ملف PDF" : att.attachment_type === "mixed_file" ? "مستند أو صورة (PDF/JPG)"
+                                                      : att.attachment_type === "link"
+                                                        ? "رابط Link"
+                                                        : att.attachment_type === "image"
+                                                          ? "صورة (Image - JPG/PNG)"
+                                                          : att.attachment_type === "video"
+                                                            ? "فيديو قصير (Video - MP4)"
+                                                            : "مستندات أخرى (Word / Excel)"}
+                                                  </span>{" "}
+                                                  <span className="text-slate-300">•</span>
+                                                  <span className={att.required ? "text-red-500 text-xs font-medium" : "text-slate-400 text-xs font-medium"}>
+                                                    {att.required ? "إلزامي" : "اختياري"}
+                                                  </span>
+                                                </div>{" "}
+                                                <button
+                                                  type="button"
+                                                  onClick={() => removeCustomAttachment(idx)}
+                                                  className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0"
+                                                >
+                                                  {" "}
+                                                  <Trash2 size={14} />{" "}
+                                                </button>{" "}
+                                              </div>
+                                            ))}{" "}
+                                          </div>
+                                        )}{" "}
+                                        <div className="flex flex-wrap gap-2 mb-4">
+                                          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 self-center ml-2">إضافات سريعة:</span>
+                                          <button type="button" onClick={() => { setNewAttachmentName("الصورة الشخصية"); setNewAttachmentType("image"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> الصورة الشخصية</button>
+                                          <button type="button" onClick={() => { setNewAttachmentName("رخصة القيادة"); setNewAttachmentType("mixed_file"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رخصة القيادة</button>
+                                          <button type="button" onClick={() => { setNewAttachmentName("صورة الهوية"); setNewAttachmentType("mixed_file"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> صورة الهوية</button>
+                                        </div>
+                                        <div className="flex flex-col md:flex-row items-center gap-4 w-full">
+                                          {" "}
+                                          <div className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 rounded-2xl shrink-0 h-[58px]">
+                                            <input
+                                              type="checkbox"
+                                              id="attRequired"
+                                              checked={newAttachmentRequired}
+                                              onChange={(e) => setNewAttachmentRequired(e.target.checked)}
+                                              className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
+                                            />
+                                            <label htmlFor="attRequired" className="text-sm font-bold text-navy dark:text-white cursor-pointer whitespace-nowrap">
+                                              إرفاق إلزامي
+                                            </label>
+                                          </div>
+                                          <input
+                                            type="text"
+                                            value={newAttachmentName}
+                                            onChange={(e) => setNewAttachmentName(e.target.value)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                addCustomAttachment();
                                               }
-                                            }
-                                          }}
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            if (newKqOptionInput.trim() && !newKqOptions.includes(newKqOptionInput.trim())) {
-                                              const up = [...newKqOptions, newKqOptionInput.trim()];
-                                              setNewKqOptions(up);
-                                              if (!newKqRequiredAnswer) setNewKqRequiredAnswer(up[0] || "");
-                                              setNewKqOptionInput("");
-                                            }
-                                          }}
-                                          className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-white px-4 rounded-xl font-bold transition-all"
-                                        >
-                                          إضافة
-                                        </button>
+                                            }}
+                                            placeholder="اسم المرفق (مثال: رخصة)..."
+                                            className="flex-1 w-full h-14 px-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none"
+                                          />{" "}
+                                          <div className="flex-1 relative w-full">
+                                            {" "}
+                                            <select
+                                              value={newAttachmentType}
+                                              onChange={(e) =>
+                                                setNewAttachmentType(e.target.value as "file" | "link" | "image" | "video" | "document" | "mixed_file" | "")
+                                              }
+                                              className="w-full h-14 px-6 pl-12 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none appearance-none font-medium cursor-pointer text-sm md:text-base"
+                                            >
+                                              {" "}
+                                              <option value="" disabled className="bg-white text-slate-400 dark:bg-slate-800 hidden">
+                                                (حدد الصيغة المطلوبة)
+                                              </option>
+                                              <option value="file" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ملف PDF</option>
+                                              <option value="mixed_file" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مستند أو صورة (PDF / JPG / PNG)</option>{" "}
+                                              <option value="link" className="bg-white text-navy dark:bg-slate-800 dark:text-white">رابط Link</option>{" "}
+                                              <option value="image" className="bg-white text-navy dark:bg-slate-800 dark:text-white">صورة (Image - JPG/PNG)</option>{" "}
+                                              <option value="video" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فيديو قصير (Video - MP4)</option>{" "}
+                                              <option value="document" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مستندات أخرى (Word / Excel)</option>{" "}
+                                            </select>{" "}
+                                            <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                                              <ChevronDown size={20} />
+                                            </div>
+                                          </div>{" "}
+                                          <button
+                                            type="button"
+                                            onClick={addCustomAttachment}
+                                            className="flex-1 w-full h-14 bg-primary/10 text-primary hover:bg-primary hover:text-white px-6 rounded-2xl font-bold flex items-center gap-2 justify-center transition-all border-2 border-primary/20 hover:border-primary whitespace-nowrap shadow-sm"
+                                          >
+                                            {" "}
+                                            <Plus size={20} strokeWidth={2.5} /> إضافة المرفق{" "}
+                                          </button>{" "}
+                                        </div>{" "}
                                       </div>
-                                      {newKqOptions.length > 0 && (
-                                        <div className="flex flex-wrap gap-2">
-                                          {newKqOptions.map((opt, i) => (
-                                            <div key={i} className="flex items-center gap-1 bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full text-xs font-bold dark:text-white">
-                                              <span>{opt}</span>
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            </div>
+
+
+                            {/* Knockout Questions Accordion */}
+                            <div className="border-2 border-red-100 dark:border-red-900/30 rounded-2xl bg-red-50/50 dark:bg-red-900/10 overflow-hidden mb-6">
+                              <button
+                                type="button"
+                                onClick={() => setIsKnockoutExpanded(!isKnockoutExpanded)}
+                                className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-transparent transition-all group outline-none"
+                              >
+                                <span className="font-bold text-red-600 dark:text-red-400 flex items-center gap-2">
+                                  <Ban size={18} /> أسئلة الاستبعاد التلقائي (اختياري)
+                                </span>
+                                <ChevronDown
+                                  className={`text-slate-400 group-hover:text-red-500 transition-transform duration-300 ${isKnockoutExpanded ? 'rotate-180' : ''}`}
+                                  size={20}
+                                />
+                              </button>
+                              <AnimatePresence>
+                                {isKnockoutExpanded && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                    className="border-t border-red-100 dark:border-red-900/30"
+                                  >
+                                    <div className="p-6 space-y-4 bg-white dark:bg-slate-800/50">
+                                      <div>
+                                        <p className="text-xs text-slate-400 mb-4 leading-relaxed font-medium">
+                                          (استخدم هذا القسم للاستبعاد الفوري للمتقدمين غير المطابقين للشروط الحتمية. يمكنك تركه فارغاً لتقييم جميع المتقدمين عبر نظام الفرز الآلي).
+                                        </p>
+                                        <label className="text-sm font-bold text-navy dark:text-white mr-1 block">
+                                          إضافة سؤال استبعاد
+                                        </label>
+                                      </div>
+                                      <div className="space-y-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                        {!["nationality", "city", "education", "experience"].includes(newKqType) && (
+                                          <input
+                                            type="text"
+                                            value={newKqText}
+                                            onChange={(e) => setNewKqText(e.target.value)}
+                                            placeholder="نص السؤال (مثال: هل أنت سعودي الجنسية؟)"
+                                            className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:border-red-400 transition-all font-medium text-sm"
+                                          />
+                                        )}
+                                        <div className={`grid ${["nationality", "city", "education", "experience"].includes(newKqType) ? "grid-cols-1 md:grid-cols-3" : "grid-cols-2"} gap-4`}>
+                                          <select
+                                            value={newKqType}
+                                            onChange={(e) => {
+                                              const val = e.target.value as "yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience";
+                                              setNewKqType(val);
+                                              if (val === "yes_no") {
+                                                setNewKqRequiredAnswer("نعم");
+                                              } else if (val === "nationality") {
+                                                setNewKqRequiredAnswer("");
+                                              } else if (val === "city") {
+                                                setNewKqRequiredAnswer("");
+                                              } else if (val === "education" || val === "experience") {
+                                                setNewKqRequiredAnswer("");
+                                              } else if (val === "availability") {
+                                                setNewKqRequiredAnswer("");
+                                              } else {
+                                                setNewKqRequiredAnswer(newKqOptions[0] || "");
+                                              }
+                                            }}
+                                            className="px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none font-medium text-sm appearance-none"
+                                          >
+                                            <option value="yes_no" className="bg-white text-navy dark:bg-slate-800 dark:text-white">نعم / لا</option>
+                                            <option value="options" className="bg-white text-navy dark:bg-slate-800 dark:text-white">خيارات متعددة</option>
+                                            <option value="age_condition" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شرط العمر</option>
+                                            <option value="nationality" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الجنسيات المقبولة</option>
+                                            <option value="city" className="bg-white text-navy dark:bg-slate-800 dark:text-white">المدن المقبولة</option>
+                                            <option value="education" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى للمؤهل</option>
+                                            <option value="experience" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى لسنوات الخبرة</option>
+                                            <option value="availability" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأقصى لمدة الانضمام</option>
+                                          </select>
+
+                                          {newKqType === "age_condition" ? (
+                                            <div className="flex items-center gap-4">
+                                              <input
+                                                type="number"
+                                                placeholder="الحد الأدنى (مطلوب)"
+                                                value={newKqMinAge}
+                                                onChange={(e) => setNewKqMinAge(e.target.value ? Number(e.target.value) : "")}
+                                                className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm"
+                                              />
+                                              <input
+                                                type="number"
+                                                placeholder="الحد الأعلى (اختياري)"
+                                                value={newKqMaxAge}
+                                                onChange={(e) => setNewKqMaxAge(e.target.value ? Number(e.target.value) : "")}
+                                                className="w-full px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm"
+                                              />
+                                            </div>
+                                          ) : newKqType === "nationality" ? (
+                                            <div className="md:col-span-2">
+                                              <MultiSearchableSelect
+                                                options={countriesList}
+                                                value={newKqRequiredAnswer}
+                                                onChange={(val) => setNewKqRequiredAnswer(val as string)}
+                                                multiple={true}
+                                                placeholder="اختر الجنسيات المقبولة..."
+                                              />
+                                            </div>
+                                          ) : newKqType === "city" ? (
+                                            <div className="md:col-span-2">
+                                              <MultiSearchableSelect
+                                                options={SAUDI_CITIES}
+                                                value={newKqRequiredAnswer}
+                                                onChange={(val) => setNewKqRequiredAnswer(val as string)}
+                                                multiple={true}
+                                                placeholder="اختر المدن المقبولة..."
+                                              />
+                                            </div>
+                                          ) : newKqType === "education" ? (
+                                            <select
+                                              value={newKqRequiredAnswer}
+                                              onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
+                                              className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
+                                            >
+                                              <option value="" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر الحد الأدنى للمؤهل...</option>
+                                              <option value="ثانوي" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوي</option>
+                                              <option value="دبلوم" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
+                                              <option value="بكالوريوس" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
+                                              <option value="ماجستير" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
+                                              <option value="دكتوراه" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دكتوراه</option>
+                                            </select>
+                                          ) : newKqType === "experience" ? (
+                                            <select
+                                              value={newKqRequiredAnswer}
+                                              onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
+                                              className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
+                                            >
+                                              <option value="" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر الحد الأدنى للخبرة...</option>
+                                              <option value="0" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: أقل من سنة</option>
+                                              <option value="1" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: سنة</option>
+                                              <option value="2" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: سنتين</option>
+                                              <option value="3" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 3 سنوات</option>
+                                              <option value="4" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 4 سنوات</option>
+                                              <option value="5" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 5 سنوات</option>
+                                              <option value="10" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى: 10 سنوات</option>
+                                            </select>
+                                          ) : newKqType === "availability" ? (
+                                            <select
+                                              value={newKqRequiredAnswer}
+                                              onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
+                                              className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
+                                            >
+                                              <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر أقصى مدة مقبولة...</option>
+                                              <option value="فوري" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فوري (مقبول المتاح فوراً فقط)</option>
+                                              <option value="أسبوع" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوع (مقبول المتاح فوراً أو خلال أسبوع)</option>
+                                              <option value="أسبوعين" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوعين (كحد أقصى)</option>
+                                              <option value="شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شهر (كحد أقصى)</option>
+                                              <option value="أكثر من شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أكثر من شهر (قبول الجميع)</option>
+                                            </select>
+                                          ) : newKqType === "yes_no" ? (
+                                            <select
+                                              value={newKqRequiredAnswer}
+                                              onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
+                                              className="px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
+                                            >
+                                              <option value="نعم" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الإجابة المطلوبة للقَبول: نعم</option>
+                                              <option value="لا" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الإجابة المطلوبة للقَبول: لا</option>
+                                            </select>
+                                          ) : (
+                                            <select
+                                              value={newKqRequiredAnswer}
+                                              onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
+                                              className="px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
+                                            >
+                                              <option value="" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر الإجابة المطلوبة للقبول...</option>
+                                              {newKqOptions.map((opt, i) => (
+                                                <option key={i} value={opt} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{opt}</option>
+                                              ))}
+                                            </select>
+                                          )}
+                                        </div>
+
+                                        {newKqType === "options" && (
+                                          <div className="space-y-3">
+                                            <div className="flex gap-2">
+                                              <input
+                                                type="text"
+                                                value={newKqOptionInput}
+                                                onChange={(e) => setNewKqOptionInput(e.target.value)}
+                                                placeholder="أضف خياراً..."
+                                                className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none text-sm"
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    if (newKqOptionInput.trim() && !newKqOptions.includes(newKqOptionInput.trim())) {
+                                                      const up = [...newKqOptions, newKqOptionInput.trim()];
+                                                      setNewKqOptions(up);
+                                                      if (!newKqRequiredAnswer) setNewKqRequiredAnswer(up[0] || "");
+                                                      setNewKqOptionInput("");
+                                                    }
+                                                  }
+                                                }}
+                                              />
                                               <button
                                                 type="button"
                                                 onClick={() => {
-                                                  const up = newKqOptions.filter((_, idx) => idx !== i);
-                                                  setNewKqOptions(up);
-                                                  if (newKqRequiredAnswer === opt) setNewKqRequiredAnswer(up[0] || "");
+                                                  if (newKqOptionInput.trim() && !newKqOptions.includes(newKqOptionInput.trim())) {
+                                                    const up = [...newKqOptions, newKqOptionInput.trim()];
+                                                    setNewKqOptions(up);
+                                                    if (!newKqRequiredAnswer) setNewKqRequiredAnswer(up[0] || "");
+                                                    setNewKqOptionInput("");
+                                                  }
                                                 }}
-                                                className="text-red-500 hover:text-red-700"
+                                                className="bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-white px-4 rounded-xl font-bold transition-all"
                                               >
-                                                <X size={14} />
+                                                إضافة
+                                              </button>
+                                            </div>
+                                            {newKqOptions.length > 0 && (
+                                              <div className="flex flex-wrap gap-2">
+                                                {newKqOptions.map((opt, i) => (
+                                                  <div key={i} className="flex items-center gap-1 bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full text-xs font-bold dark:text-white">
+                                                    <span>{opt}</span>
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        const up = newKqOptions.filter((_, idx) => idx !== i);
+                                                        setNewKqOptions(up);
+                                                        if (newKqRequiredAnswer === opt) setNewKqRequiredAnswer(up[0] || "");
+                                                      }}
+                                                      className="text-red-500 hover:text-red-700"
+                                                    >
+                                                      <X size={14} />
+                                                    </button>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            if (!newKqText.trim() || !newKqRequiredAnswer.trim()) {
+                                              alert("يرجى إدخال نص السؤال وتحديد الإجابة المطلوبة للقبول!");
+                                              return;
+                                            }
+                                            if (newKqType === "options" && newKqOptions.length < 2) {
+                                              window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "يرجى إضافة خيارين على الأقل!", type: "warning" } }));
+                                              return;
+                                            }
+                                            setKnockoutQuestions([...knockoutQuestions, {
+                                              text: newKqText.trim(),
+                                              type: newKqType,
+                                              options: newKqType === "options" ? newKqOptions : undefined,
+                                              requiredAnswer: newKqType === "age_condition" ? "" : newKqRequiredAnswer,
+                                              minAge: newKqType === "age_condition" ? Number(newKqMinAge) : undefined,
+                                              maxAge: newKqType === "age_condition" && newKqMaxAge !== "" ? Number(newKqMaxAge) : undefined
+                                            }]);
+                                            setNewKqText("");
+                                            setNewKqOptions([]);
+                                            setNewKqOptionInput("");
+                                            setNewKqMinAge("");
+                                            setNewKqMaxAge("");
+                                          }}
+                                          className="w-full py-3 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 rounded-xl font-bold text-sm transition-all"
+                                        >
+                                          إضافة سؤال استبعاد
+                                        </button>
+                                      </div>
+
+                                      {knockoutQuestions.length > 0 && (
+                                        <div className="space-y-3 mt-6">
+                                          {knockoutQuestions.map((q, idx) => (
+                                            <div key={idx} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 rounded-xl">
+                                              <div>
+                                                <p className="font-bold text-navy dark:text-white text-sm mb-1">{q.text}</p>
+                                                <p className="text-xs text-red-600 dark:text-red-400 font-bold border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded inline-block">{q.type === "age_condition" ? `العمر المطلوب: من ${q.minAge}${q.maxAge ? ` إلى ${q.maxAge}` : " فأكثر"}` : `الإجابة المطلوبة للقبول: ${q.requiredAnswer}`}</p>
+                                              </div>
+                                              <button
+                                                type="button"
+                                                onClick={() => setKnockoutQuestions(knockoutQuestions.filter((_, i) => i !== idx))}
+                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                              >
+                                                <Trash2 size={16} />
                                               </button>
                                             </div>
                                           ))}
                                         </div>
                                       )}
                                     </div>
-                                  )}
-
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (!newKqText.trim() || !newKqRequiredAnswer.trim()) {
-                                        alert("يرجى إدخال نص السؤال وتحديد الإجابة المطلوبة للقبول!");
-                                        return;
-                                      }
-                                      if (newKqType === "options" && newKqOptions.length < 2) {
-                                        window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "يرجى إضافة خيارين على الأقل!", type: "warning" } }));
-                                        return;
-                                      }
-                                      setKnockoutQuestions([...knockoutQuestions, {
-                                        text: newKqText.trim(),
-                                        type: newKqType,
-                                        options: newKqType === "options" ? newKqOptions : undefined,
-                                        requiredAnswer: newKqType === "age_condition" ? "" : newKqRequiredAnswer,
-                                        minAge: newKqType === "age_condition" ? Number(newKqMinAge) : undefined,
-                                        maxAge: newKqType === "age_condition" && newKqMaxAge !== "" ? Number(newKqMaxAge) : undefined
-                                      }]);
-                                      setNewKqText("");
-                                      setNewKqOptions([]);
-                                      setNewKqOptionInput("");
-                                      setNewKqMinAge("");
-                                      setNewKqMaxAge("");
-                                    }}
-                                    className="w-full py-3 bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800/50 rounded-xl font-bold text-sm transition-all"
-                                  >
-                                    إضافة سؤال استبعاد
-                                  </button>
-                                </div>
-
-                                {knockoutQuestions.length > 0 && (
-                                  <div className="space-y-3 mt-6">
-                                    {knockoutQuestions.map((q, idx) => (
-                                      <div key={idx} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 rounded-xl">
-                                        <div>
-                                          <p className="font-bold text-navy dark:text-white text-sm mb-1">{q.text}</p>
-                                          <p className="text-xs text-red-600 dark:text-red-400 font-bold border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded inline-block">{q.type === "age_condition" ? `العمر المطلوب: من ${q.minAge}${q.maxAge ? ` إلى ${q.maxAge}` : " فأكثر"}` : `الإجابة المطلوبة للقبول: ${q.requiredAnswer}`}</p>
-                                        </div>
-                                        <button
-                                          type="button"
-                                          onClick={() => setKnockoutQuestions(knockoutQuestions.filter((_, i) => i !== idx))}
-                                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                                        >
-                                          <Trash2 size={16} />
-                                        </button>
-                                      </div>
-                                    ))}
-                                  </div>
+                                  </motion.div>
                                 )}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
+                              </AnimatePresence>
+                            </div>
 
-                      {/* Questions Accordion */}
-                      <div className="border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-800/30 overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => setIsQuestionsExpanded(!isQuestionsExpanded)}
-                          className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-transparent transition-all group outline-none"
-                        >
-                          <span className="font-bold text-navy dark:text-white flex items-center gap-2">
-                            الأسئلة الإضافية - اختياري
-                          </span>
-                          <ChevronDown
-                            className={`text-slate-400 group-hover:text-primary transition-transform duration-300 ${isQuestionsExpanded ? 'rotate-180' : ''}`}
-                            size={20}
-                          />
-                        </button>
-                        <AnimatePresence>
-                          {isQuestionsExpanded && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3, ease: "easeInOut" }}
-                              className="border-t border-slate-200 dark:border-slate-700"
-                            >
-                              <div className="p-6 space-y-4 bg-white dark:bg-slate-800/50">
+                            {/* Questions Accordion */}
+                            <div className="border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-800/30 overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => setIsQuestionsExpanded(!isQuestionsExpanded)}
+                                className="w-full flex items-center justify-between p-4 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-700 border-b border-transparent transition-all group outline-none"
+                              >
+                                <span className="font-bold text-navy dark:text-white flex items-center gap-2">
+                                  الأسئلة الإضافية - اختياري
+                                </span>
+                                <ChevronDown
+                                  className={`text-slate-400 group-hover:text-primary transition-transform duration-300 ${isQuestionsExpanded ? 'rotate-180' : ''}`}
+                                  size={20}
+                                />
+                              </button>
+                              <AnimatePresence>
+                                {isQuestionsExpanded && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                                    className="border-t border-slate-200 dark:border-slate-700"
+                                  >
+                                    <div className="p-6 space-y-4 bg-white dark:bg-slate-800/50">
 
-                                <div className="space-y-4">
-                                  {" "}
-                                  <label className="text-sm font-bold text-navy dark:text-white mr-1">
-                                    الأسئلة الإضافية (خاصة بهذا الدور)
-                                  </label>{" "}
-                                  {customQuestions.map((q, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="flex flex-col md:flex-row p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl gap-4"
-                                    >
-                                      {" "}
-                                      <div className="space-y-1 flex-1">
+                                      <div className="space-y-4">
                                         {" "}
-                                        <p className="font-bold text-navy dark:text-white text-sm">
-                                          {q.text}
-                                        </p>{" "}
-                                        <p className="text-xs text-primary font-medium flex items-center gap-1.5">
-                                          نوع الإجابة: {q.type}
-                                          <span className="text-slate-300">•</span>
-                                          <span className={q.required ? "text-red-500" : "text-slate-400"}>
-                                            {q.required ? "إلزامي" : "اختياري"}
-                                          </span>
-                                        </p>{" "}
-                                      </div>{" "}
-                                      <button
-                                        type="button"
-                                        onClick={() => removeCustomQuestion(idx)}
-                                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0"
-                                      >
-                                        <Trash2 size={14} />
-                                      </button>{" "}
-                                    </div>
-                                  ))}{" "}
-                                  <div className="flex flex-col md:flex-row gap-4 items-center">
-                                    {" "}
-                                    <div className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 rounded-2xl shrink-0 h-[58px]">
-                                      <input
-                                        type="checkbox"
-                                        id="qRequired"
-                                        checked={newQuestionRequired}
-                                        onChange={(e) => setNewQuestionRequired(e.target.checked)}
-                                        className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
-                                      />
-                                      <label htmlFor="qRequired" className="text-sm font-bold text-navy dark:text-white cursor-pointer whitespace-nowrap">
-                                        إجابة إلزامية
-                                      </label>
-                                    </div>
-                                    <input
-                                      type="text"
-                                      value={newQuestionText}
-                                      onChange={(e) => setNewQuestionText(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          addCustomQuestion();
-                                        }
-                                      }}
-                                      placeholder="اكتب سؤالك هنا..."
-                                      className="flex-1 px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none"
-                                    />{" "}
-                                    <div className="relative min-w-[150px]">
-                                      {" "}
-                                      <select
-                                        value={newQuestionType}
-                                        onChange={(e) => {
-                                          setNewQuestionType(e.target.value);
-                                          if (e.target.value !== "خيارات متعددة")
-                                            setNewQuestionOptions([]);
-                                        }}
-                                        className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none appearance-none font-medium"
-                                      >
-                                        {" "}
-                                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">نص قصير</option> <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">نص طويل</option>{" "}
-                                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">خيارات متعددة</option>{" "}
-                                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">نعم / لا</option>{" "}
-                                      </select>{" "}
-                                    </div>{" "}
-                                    <button
-                                      type="button"
-                                      onClick={addCustomQuestion}
-                                      className="bg-navy text-white px-6 py-4 rounded-2xl font-bold flex items-center justify-center"
-                                    >
-                                      <Plus size={18} />
-                                    </button>{" "}
-                                  </div>{" "}
-                                  {newQuestionType === "خيارات متعددة" && (
-                                    <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 space-y-3">
-                                      {" "}
-                                      <div className="flex flex-wrap gap-2 mb-2">
-                                        {" "}
-                                        {newQuestionOptions.map((opt) => (
-                                          <span
-                                            key={opt}
-                                            className="bg-primary/10 text-primary px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2"
+                                        <label className="text-sm font-bold text-navy dark:text-white mr-1">
+                                          الأسئلة الإضافية (خاصة بهذا الدور)
+                                        </label>{" "}
+                                        {customQuestions.map((q, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="flex flex-col md:flex-row p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl gap-4"
                                           >
-                                            {opt}{" "}
+                                            {" "}
+                                            <div className="space-y-1 flex-1">
+                                              {" "}
+                                              <p className="font-bold text-navy dark:text-white text-sm">
+                                                {q.text}
+                                              </p>{" "}
+                                              <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                                                نوع الإجابة: {q.type}
+                                                <span className="text-slate-300">•</span>
+                                                <span className={q.required ? "text-red-500" : "text-slate-400"}>
+                                                  {q.required ? "إلزامي" : "اختياري"}
+                                                </span>
+                                              </p>{" "}
+                                            </div>{" "}
                                             <button
                                               type="button"
-                                              onClick={() => removeQuestionOption(opt)}
+                                              onClick={() => removeCustomQuestion(idx)}
+                                              className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0"
                                             >
-                                              <Trash2 size={12} />
-                                            </button>
-                                          </span>
+                                              <Trash2 size={14} />
+                                            </button>{" "}
+                                          </div>
                                         ))}{" "}
-                                      </div>{" "}
-                                      <div className="relative max-w-sm">
-                                        {" "}
-                                        <input
-                                          type="text"
-                                          value={newOptionInput}
-                                          onChange={(e) => setNewOptionInput(e.target.value)}
-                                          onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                              e.preventDefault();
-                                              addQuestionOption(e);
-                                            }
-                                          }}
-                                          placeholder="اضف خيار واضغط Enter"
-                                          className="w-full pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border rounded-xl"
-                                        />{" "}
+                                        <div className="flex flex-col md:flex-row gap-4 items-center">
+                                          {" "}
+                                          <div className="flex items-center gap-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-4 rounded-2xl shrink-0 h-[58px]">
+                                            <input
+                                              type="checkbox"
+                                              id="qRequired"
+                                              checked={newQuestionRequired}
+                                              onChange={(e) => setNewQuestionRequired(e.target.checked)}
+                                              className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
+                                            />
+                                            <label htmlFor="qRequired" className="text-sm font-bold text-navy dark:text-white cursor-pointer whitespace-nowrap">
+                                              إجابة إلزامية
+                                            </label>
+                                          </div>
+                                          <input
+                                            type="text"
+                                            value={newQuestionText}
+                                            onChange={(e) => setNewQuestionText(e.target.value)}
+                                            onKeyDown={(e) => {
+                                              if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                addCustomQuestion();
+                                              }
+                                            }}
+                                            placeholder="اكتب سؤالك هنا..."
+                                            className="flex-1 px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none"
+                                          />{" "}
+                                          <div className="relative min-w-[150px]">
+                                            {" "}
+                                            <select
+                                              value={newQuestionType}
+                                              onChange={(e) => {
+                                                setNewQuestionType(e.target.value);
+                                                if (e.target.value !== "خيارات متعددة")
+                                                  setNewQuestionOptions([]);
+                                              }}
+                                              className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none appearance-none font-medium"
+                                            >
+                                              {" "}
+                                              <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">نص قصير</option> <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">نص طويل</option>{" "}
+                                              <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">خيارات متعددة</option>{" "}
+                                              <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">نعم / لا</option>{" "}
+                                            </select>{" "}
+                                          </div>{" "}
+                                          <button
+                                            type="button"
+                                            onClick={addCustomQuestion}
+                                            className="bg-navy text-white px-6 py-4 rounded-2xl font-bold flex items-center justify-center"
+                                          >
+                                            <Plus size={18} />
+                                          </button>{" "}
+                                        </div>{" "}
+                                        {newQuestionType === "خيارات متعددة" && (
+                                          <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800 space-y-3">
+                                            {" "}
+                                            <div className="flex flex-wrap gap-2 mb-2">
+                                              {" "}
+                                              {newQuestionOptions.map((opt) => (
+                                                <span
+                                                  key={opt}
+                                                  className="bg-primary/10 text-primary px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2"
+                                                >
+                                                  {opt}{" "}
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => removeQuestionOption(opt)}
+                                                  >
+                                                    <Trash2 size={12} />
+                                                  </button>
+                                                </span>
+                                              ))}{" "}
+                                            </div>{" "}
+                                            <div className="relative max-w-sm">
+                                              {" "}
+                                              <input
+                                                type="text"
+                                                value={newOptionInput}
+                                                onChange={(e) => setNewOptionInput(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    addQuestionOption(e);
+                                                  }
+                                                }}
+                                                placeholder="اضف خيار واضغط Enter"
+                                                className="w-full pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border rounded-xl"
+                                              />{" "}
+                                            </div>{" "}
+                                          </div>
+                                        )}{" "}
                                       </div>{" "}
                                     </div>
-                                  )}{" "}
-                                </div>{" "}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-
-                      <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/20 dark:to-purple-900/20 p-8 rounded-[32px] border-2 border-indigo-100 dark:border-indigo-800/30 shadow-inner mt-8 mb-8">
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-                            <Zap size={20} />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-2 group relative cursor-help w-max">
-                              توجيهات إضافية لمحرك الفرز
-                              <div className="w-[18px] h-[18px] rounded-full bg-[#1d4ed8] dark:bg-indigo-400 text-white flex items-center justify-center text-[12px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
-                                i
-                              </div>
-                              <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-indigo-900/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
-                                نظام الفرز يقوم بتحليل السير الذاتية ومطابقتها تلقائياً. استخدم هذا الحقل للتركيز على مهارة نادرة أو شروط خاصة جداً خارج الوصف المعتاد.
-                              </div>
-                            </h3>
-                          </div>
-                        </div>
-                        <textarea
-                          required={false}
-                          rows={3}
-                          value={aiInstructions}
-                          onChange={(e) => setAiInstructions(e.target.value)}
-                          placeholder="(اكتب توجيهاتك الدقيقة لمحرك الفرز هنا...)"
-                          className="w-full px-6 py-5 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100/50 dark:border-indigo-800/30 text-navy dark:text-white dark:placeholder-slate-500 rounded-2xl outline-none font-medium resize-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 transition-all placeholder:text-[13px] leading-relaxed relative z-10"
-                        />
-                        <div className="mt-3 flex flex-wrap gap-2 relative z-10">
-                          {[
-                            { label: "+ إعطاء أولوية للخبرة المحلية", text: "ركز بشكل أكبر على الخبرة العملية داخل السوق المحلي." },
-                            { label: "+ التركيز على الاستقرار الوظيفي", text: "أعطِ أولوية للمتقدمين الذين أظهروا استقراراً في وظائفهم السابقة وتجنب التنقل السريع." },
-                            { label: "+ تفضيل الشهادات المهنية", text: "أعطِ وزناً أعلى للشهادات المهنية المعتمدة مقارنة بالشهادات الأكاديمية البحتة." },
-                          ].map((suggestion, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => {
-                                setAiInstructions(prev => {
-                                  const textToAdd = suggestion.text;
-                                  return prev ? `${prev}\n${textToAdd}` : textToAdd;
-                                });
-                              }}
-                              className="text-[11px] px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors border border-indigo-100 dark:border-indigo-800/50"
-                            >
-                              {suggestion.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* AI Override Fields Toggle */}
-                      <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/20 dark:to-purple-900/20 p-8 rounded-[32px] border-2 border-indigo-100 dark:border-indigo-800/30 shadow-inner mt-8 mb-8">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
-                              <Sparkles size={20} />
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
-                            <div>
-                              <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-300">مسار الذكاء الاصطناعي المخصص</h3>
-                              <p className="text-sm text-indigo-700/70 dark:text-indigo-400/70 mt-1 font-medium">كتابة معايير دقيقة وسرية يقرأها الذكاء الاصطناعي فقط، بدلاً من الوصف العام.</p>
-                            </div>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                            <input 
-                              type="checkbox" 
-                              className="sr-only peer" 
-                              checked={useAiOverride}
-                              onChange={(e) => setUseAiOverride(e.target.checked)}
-                            />
-                            <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                          </label>
-                        </div>
-                        
-                        <AnimatePresence>
-                          {useAiOverride && (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: 'auto' }}
-                              exit={{ opacity: 0, height: 0 }}
-                              className="overflow-hidden"
-                            >
-                              <div className="space-y-6 border-t border-indigo-200/50 dark:border-indigo-800/50 pt-6 mt-2">
-                                <div>
-                                  <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">نبذة عن الدور (للذكاء الاصطناعي)</label>
-                                  <textarea
-                                    value={aiRoleSummary}
-                                    onChange={(e) => setAiRoleSummary(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                    rows={3}
-                                    placeholder="اكتب المعايير الدقيقة للنبذة عن الدور..."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المهام والمسؤوليات (للذكاء الاصطناعي)</label>
-                                  <textarea
-                                    value={aiResponsibilities}
-                                    onChange={(e) => setAiResponsibilities(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                    rows={4}
-                                    placeholder="اكتب المهام والمسؤوليات المخصصة للفرز..."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المؤهلات والمتطلبات (للذكاء الاصطناعي)</label>
-                                  <textarea
-                                    value={aiQualifications}
-                                    onChange={(e) => setAiQualifications(e.target.value)}
-                                    className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                    rows={4}
-                                    placeholder="اكتب المؤهلات والمتطلبات المخصصة للفرز..."
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">التخصصات المستهدفة (للذكاء الاصطناعي)</label>
-                                  <div className="flex flex-wrap gap-2 mb-2">
-                                    {aiTargetMajors.map((major, i) => (
-                                      <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
-                                        {major}
-                                        <button type="button" onClick={() => setAiTargetMajors(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
-                                      </span>
-                                    ))}
-                                  </div>
-                                  <input
-                                    type="text"
-                                    placeholder="أضف تخصص واضغط Enter"
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        const val = e.currentTarget.value.trim();
-                                        if (val && !aiTargetMajors.includes(val)) {
-                                          setAiTargetMajors(prev => [...prev, val]);
-                                          e.currentTarget.value = "";
-                                        }
-                                      }
-                                    }}
-                                    className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المهارات المستهدفة (للذكاء الاصطناعي)</label>
-                                  <div className="flex flex-wrap gap-2 mb-2">
-                                    {aiTargetSkills.map((skill, i) => (
-                                      <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
-                                        {skill}
-                                        <button type="button" onClick={() => setAiTargetSkills(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
-                                      </span>
-                                    ))}
-                                  </div>
-                                  <input
-                                    type="text"
-                                    placeholder="أضف مهارة واضغط Enter"
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        const val = e.currentTarget.value.trim();
-                                        if (val && !aiTargetSkills.includes(val)) {
-                                          setAiTargetSkills(prev => [...prev, val]);
-                                          e.currentTarget.value = "";
-                                        }
-                                      }
-                                    }}
-                                    className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">اللغات المطلوبة (للذكاء الاصطناعي)</label>
-                                  <div className="flex flex-wrap gap-2 mb-2">
-                                    {aiLanguages.map((lang, i) => (
-                                      <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
-                                        {lang}
-                                        <button type="button" onClick={() => setAiLanguages(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
-                                      </span>
-                                    ))}
-                                  </div>
-                                  <input
-                                    type="text"
-                                    placeholder="أضف لغة واضغط Enter"
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        const val = e.currentTarget.value.trim();
-                                        if (val && !aiLanguages.includes(val)) {
-                                          setAiLanguages(prev => [...prev, val]);
-                                          e.currentTarget.value = "";
-                                        }
-                                      }
-                                    }}
-                                    className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                                  />
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-
-                      <details
-                        open={isAdvancedSettingsOpen}
-                        onToggle={(e) => setIsAdvancedSettingsOpen(e.currentTarget.open)}
-                        className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm mt-6 mb-6 group cursor-pointer"
-                      >
-                        <summary className="p-8 text-xl font-bold text-navy dark:text-white flex items-center gap-3 select-none outline-none">
-                          <Settings size={22} className="text-primary" />
-                          إعدادات الفرز المتقدمة
-                          <ChevronDown size={20} className="mr-auto text-slate-400 group-open:rotate-180 transition-transform" />
-                        </summary>
-
-                        <div className="px-8 pb-8 pt-2 space-y-6 cursor-default border-t border-slate-100 dark:border-slate-700">
-                          {getVoiceInterviewFeatureEnabled() && (<>
-                            <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4 md:gap-0 pb-6">
-                            <div>
-                              <h4 className="font-bold text-navy dark:text-white text-lg">تفعيل التقييم الصوتي الآلي</h4>
-                              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-lg leading-relaxed">عند إيقاف هذا الخيار، سيكتفي النظام بجمع بيانات المرشح وسيرته الذاتية ليتم فرزها دون إلزامه بإجراء المقابلة الصوتية الآلية.</p>
-                            </div>
-                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                              <input type="checkbox" className="sr-only peer" checked={isVoiceEnabled} onChange={(e) => setIsVoiceEnabled(e.target.checked)} />
-                              <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
-                            </label>
-                          </div>
-
-                          <AnimatePresence>
-                            {isVoiceEnabled && (
-                              <motion.div
-                                initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                                animate={{ opacity: 1, height: "auto", marginTop: 24 }}
-                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                                className="overflow-hidden"
-                              >
-                                <div className="flex flex-col gap-4">
-                                  <label className="font-bold text-navy dark:text-white text-lg">قالب أسئلة المقابلة الصوتية (سؤالين كحد أقصى)</label>
-                                  <select
-                                    value={voiceInterviewTemplate}
-                                    onChange={(e) => setVoiceInterviewTemplate(e.target.value as any)}
-                                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold transition-all"
-                                  >
-                                    <option value="general" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فرز عام - للوظائف الإدارية والتقنية</option>
-                                    <option value="sales" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مواجهة الجمهور والمبيعات</option>
-                                    <option value="custom" className="bg-white text-navy dark:bg-slate-800 dark:text-white">كتابة أسئلة مخصصة</option>
-                                  </select>
-
-                                  {voiceInterviewTemplate === "custom" && (
-                                    <motion.div
-                                      initial={{ opacity: 0, y: -10 }}
-                                      animate={{ opacity: 1, y: 0 }}
-                                      className="mt-4 space-y-4"
-                                    >
-                                      <div className="bg-amber-50 dark:bg-amber-500/10 border-r-4 border-amber-500 p-4 rounded-l-xl">
-                                        <p className="text-sm font-bold text-amber-700 dark:text-amber-400 leading-relaxed flex items-center gap-2">
-                                          <span>⚠️</span> تنبيه: نظام الفرز يحلل نبرة الصوت والثقة ومهارات التواصل. يرجى طرح أسئلة تعتمد على المواقف السلوكية وتجنب الأسئلة المعرفية أو التقنية المعقدة لضمان دقة التحليل الآلي.
-                                        </p>
-                                      </div>
-
-                                      {[0, 1].map((index) => (
-                                        <div key={index}>
-                                          <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {index + 1}</label>
-                                          <textarea
-                                            value={voiceInterviewQuestions[index] || ""}
-                                            maxLength={150}
-                                            onChange={(e) => {
-                                              const newQuestions = [...voiceInterviewQuestions];
-                                              newQuestions[index] = e.target.value;
-                                              setVoiceInterviewQuestions(newQuestions);
-                                            }}
-                                            placeholder={`اكتب السؤال السلوكي رقم ${index + 1} هنا...`}
-                                            className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-medium h-24"
-                                          />
-                                          <div className="text-left text-xs font-medium text-slate-400 mt-1">
-                                            {(voiceInterviewQuestions[index] || "").length}/150
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </motion.div>
-                                  )}
-                                </div>
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                          </>)}
-                        </div>
-                      </details>
-                  </>
-                )}
-
-                {adType === "campaign" && (
-                  <div className="pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-end items-center gap-3">
-                    {/* Toast message moved to the top of the roles list */}
-                    {roles.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsAddingRole(false);
-                          setEditingRoleId(null);
-                          setRoleTitle("");
-                          setRoleDesc("");
-                          setRoleSummary("");
-                          setResponsibilities("");
-                          setQualifications("");
-                          setBenefits("");
-                          setAiInstructions("");
-                          setSelectedSkills([]);
-                          setCustomQuestions([]);
-                          setRequiredAttachments(["سيرة ذاتية PDF"]);
-                          setCustomAttachments([]);
-                          setKnockoutQuestions([]);
-                          setIsVoiceEnabled(true);
-                          setPhotoRequirement("hidden");
-                        }}
-                        className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-8 py-4 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-2 transition-all shrink-0"
-                      >
-                        <X size={20} /> إلغاء
-                      </button>
+                          </>
+                        )}
+                      </>
                     )}
-                    <button
-                      type="button"
-                      onClick={handleSaveRole}
-                      className="bg-mint dark:bg-[#065f46] text-employer-green dark:text-[#a7f3d0] px-8 py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl flex items-center gap-2 transition-all shrink-0"
-                    >
-                      {" "}
-                      {editingRoleId ? (
-                        <>
-                          <Pencil size={20} /> حفظ التعديلات{" "}
-                        </>
-                      ) : (
-                        <>
-                          <Plus size={20} /> إضافة الدور{" "}
-                        </>
-                      )}
-                    </button>{" "}
-                  </div>
-                )}{" "}
-                </>
-                )}
-              </div>
-            )}
 
-            {/* Global Settings Block */}
-            {createJobType !== "quick_link" && currentStep === 3 && (
-              <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6 mb-8 mt-8">
-                <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4 md:gap-0">
-                  <div>
-                    <h4 className="font-bold text-navy dark:text-white text-lg flex items-center gap-2">
-                      <Settings size={22} className="text-primary" />
-                      تخطي صفحة الوصف (إعداد عام)
-                    </h4>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 max-w-2xl leading-relaxed">عند تفعيل هذا الخيار، سيتم توجيه المتقدمين مباشرة إلى صفحة تعبئة البيانات ورفع السيرة الذاتية متجاهلاً صفحة الهبوط الخاصة بتفاصيل الوظيفة أو البوابة بأكملها.</p>
+                    {currentStep === 3 && (
+                      <>
+                        {createJobType !== "quick_link" && (
+                          <>
+                            <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/20 dark:to-purple-900/20 p-8 rounded-[32px] border-2 border-indigo-100 dark:border-indigo-800/30 shadow-inner mt-8 mb-8">
+                              <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                                  <Zap size={20} />
+                                </div>
+                                <div>
+                                  <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-2 group relative cursor-help w-max">
+                                    توجيهات إضافية لمحرك الفرز
+                                    <div className="w-[18px] h-[18px] rounded-full bg-[#1d4ed8] dark:bg-indigo-400 text-white flex items-center justify-center text-[12px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
+                                      i
+                                    </div>
+                                    <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-indigo-900/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
+                                      نظام الفرز يقوم بتحليل السير الذاتية ومطابقتها تلقائياً. استخدم هذا الحقل للتركيز على مهارة نادرة أو شروط خاصة جداً خارج الوصف المعتاد.
+                                    </div>
+                                  </h3>
+                                </div>
+                              </div>
+                              <textarea
+                                required={false}
+                                rows={3}
+                                value={aiInstructions}
+                                onChange={(e) => setAiInstructions(e.target.value)}
+                                placeholder="(اكتب توجيهاتك الدقيقة لمحرك الفرز هنا...)"
+                                className="w-full px-6 py-5 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100/50 dark:border-indigo-800/30 text-navy dark:text-white dark:placeholder-slate-500 rounded-2xl outline-none font-medium resize-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 transition-all placeholder:text-[13px] leading-relaxed relative z-10"
+                              />
+                              <div className="mt-3 flex flex-wrap gap-2 relative z-10">
+                                {[
+                                  { label: "+ إعطاء أولوية للخبرة المحلية", text: "ركز بشكل أكبر على الخبرة العملية داخل السوق المحلي." },
+                                  { label: "+ التركيز على الاستقرار الوظيفي", text: "أعطِ أولوية للمتقدمين الذين أظهروا استقراراً في وظائفهم السابقة وتجنب التنقل السريع." },
+                                  { label: "+ تفضيل الشهادات المهنية", text: "أعطِ وزناً أعلى للشهادات المهنية المعتمدة مقارنة بالشهادات الأكاديمية البحتة." },
+                                ].map((suggestion, idx) => (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                      setAiInstructions(prev => {
+                                        const textToAdd = suggestion.text;
+                                        return prev ? `${prev}\n${textToAdd}` : textToAdd;
+                                      });
+                                    }}
+                                    className="text-[11px] px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors border border-indigo-100 dark:border-indigo-800/50"
+                                  >
+                                    {suggestion.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+
+
+                            <details
+                              open={isAdvancedSettingsOpen}
+                              onToggle={(e) => setIsAdvancedSettingsOpen(e.currentTarget.open)}
+                              className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm mt-6 mb-6 group cursor-pointer"
+                            >
+                              <summary className="p-8 text-xl font-bold text-navy dark:text-white flex items-center gap-3 select-none outline-none">
+                                <Settings size={22} className="text-primary" />
+                                إعدادات الفرز المتقدمة
+                                <ChevronDown size={20} className="mr-auto text-slate-400 group-open:rotate-180 transition-transform" />
+                              </summary>
+
+                              <div className="px-8 pb-8 pt-2 space-y-6 cursor-default border-t border-slate-100 dark:border-slate-700">
+                                {getVoiceInterviewFeatureEnabled() && (<>
+                                  <div className="flex items-start md:items-center justify-between flex-col md:flex-row gap-4 md:gap-0 pb-6">
+                                    <div>
+                                      <h4 className="font-bold text-navy dark:text-white text-lg">تفعيل التقييم الصوتي الآلي</h4>
+                                      <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-lg leading-relaxed">عند إيقاف هذا الخيار، سيكتفي النظام بجمع بيانات المرشح وسيرته الذاتية ليتم فرزها دون إلزامه بإجراء المقابلة الصوتية الآلية.</p>
+                                    </div>
+                                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                      <input type="checkbox" className="sr-only peer" checked={isVoiceEnabled} onChange={(e) => setIsVoiceEnabled(e.target.checked)} />
+                                      <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
+                                    </label>
+                                  </div>
+
+                                  <AnimatePresence>
+                                    {isVoiceEnabled && (
+                                      <motion.div
+                                        initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        animate={{ opacity: 1, height: "auto", marginTop: 24 }}
+                                        exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                        className="overflow-hidden"
+                                      >
+                                        <div className="flex flex-col gap-4">
+                                          <label className="font-bold text-navy dark:text-white text-lg">قالب أسئلة المقابلة الصوتية (سؤالين كحد أقصى)</label>
+                                          <select
+                                            value={voiceInterviewTemplate}
+                                            onChange={(e) => setVoiceInterviewTemplate(e.target.value as any)}
+                                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-bold transition-all"
+                                          >
+                                            <option value="general" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فرز عام - للوظائف الإدارية والتقنية</option>
+                                            <option value="sales" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مواجهة الجمهور والمبيعات</option>
+                                            <option value="custom" className="bg-white text-navy dark:bg-slate-800 dark:text-white">كتابة أسئلة مخصصة</option>
+                                          </select>
+
+                                          {voiceInterviewTemplate === "custom" && (
+                                            <motion.div
+                                              initial={{ opacity: 0, y: -10 }}
+                                              animate={{ opacity: 1, y: 0 }}
+                                              className="mt-4 space-y-4"
+                                            >
+                                              <div className="bg-amber-50 dark:bg-amber-500/10 border-r-4 border-amber-500 p-4 rounded-l-xl">
+                                                <p className="text-sm font-bold text-amber-700 dark:text-amber-400 leading-relaxed flex items-center gap-2">
+                                                  <span>⚠️</span> تنبيه: نظام الفرز يحلل نبرة الصوت والثقة ومهارات التواصل. يرجى طرح أسئلة تعتمد على المواقف السلوكية وتجنب الأسئلة المعرفية أو التقنية المعقدة لضمان دقة التحليل الآلي.
+                                                </p>
+                                              </div>
+
+                                              {[0, 1].map((index) => (
+                                                <div key={index}>
+                                                  <label className="block text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {index + 1}</label>
+                                                  <textarea
+                                                    value={voiceInterviewQuestions[index] || ""}
+                                                    maxLength={150}
+                                                    onChange={(e) => {
+                                                      const newQuestions = [...voiceInterviewQuestions];
+                                                      newQuestions[index] = e.target.value;
+                                                      setVoiceInterviewQuestions(newQuestions);
+                                                    }}
+                                                    placeholder={`اكتب السؤال السلوكي رقم ${index + 1} هنا...`}
+                                                    className="w-full px-5 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none font-medium h-24"
+                                                  />
+                                                  <div className="text-left text-xs font-medium text-slate-400 mt-1">
+                                                    {(voiceInterviewQuestions[index] || "").length}/150
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </motion.div>
+                                          )}
+                                        </div>
+                                      </motion.div>
+                                    )}
+                                  </AnimatePresence>
+                                </>)}
+                              </div>
+                            </details>
+                          </>
+                        )}
+
+                        {adType === "campaign" && (
+                          <div className="pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-end items-center gap-3">
+                            {/* Toast message moved to the top of the roles list */}
+                            {roles.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAddingRole(false);
+                                  setEditingRoleId(null);
+                                  setRoleTitle("");
+                                  setRoleDesc("");
+                                  setRoleSummary("");
+                                  setResponsibilities("");
+                                  setQualifications("");
+                                  setBenefits("");
+                                  setAiInstructions("");
+                                  setSelectedSkills([]);
+                                  setCustomQuestions([]);
+                                  setRequiredAttachments(["سيرة ذاتية PDF"]);
+                                  setCustomAttachments([]);
+                                  setKnockoutQuestions([]);
+                                  setIsVoiceEnabled(true);
+                                  setPhotoRequirement("hidden");
+                                }}
+                                className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-8 py-4 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-2 transition-all shrink-0"
+                              >
+                                <X size={20} /> إلغاء
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={handleSaveRole}
+                              className="bg-mint dark:bg-[#065f46] text-employer-green dark:text-[#a7f3d0] px-8 py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl flex items-center gap-2 transition-all shrink-0"
+                            >
+                              {" "}
+                              {editingRoleId ? (
+                                <>
+                                  <Pencil size={20} /> حفظ التعديلات{" "}
+                                </>
+                              ) : (
+                                <>
+                                  <Plus size={20} /> إضافة الدور{" "}
+                                </>
+                              )}
+                            </button>{" "}
+                          </div>
+                        )}{" "}
+                      </>
+                    )}
                   </div>
+                )}
+
+
+
+
+              </div>
+
+              {createJobType !== "quick_link" && currentStep === 2 && (
+                <div className="mt-8 flex justify-between gap-3 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
+                  <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">السابق <ArrowLeft size={18} className="rotate-180" /></button>
+                  <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"><ArrowLeft size={18} /> التالي</button>
+                </div>
+              )}
+
+              <div className={currentStep === 3 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
+                {/* Card: Schedule */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3">
+                    <Calendar className="text-primary" size={24} /> التواريخ والجدولة
+                  </h3>
                   <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                    <input type="checkbox" className="sr-only peer" checked={directUpload} onChange={(e) => setDirectUpload(e.target.checked)} />
+                    <span className="ml-3 font-bold text-navy dark:text-white ml-3">إعلان مستمر (مفتوح دائماً)</span>
+                    <input type="checkbox" className="sr-only peer" checked={isOpenEnded} onChange={(e) => setIsOpenEnded(e.target.checked)} />
                     <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
                   </label>
                 </div>
-              </div>
-            )}
 
-
-            </div>
-            
-            {createJobType !== "quick_link" && currentStep === 3 && (
-              <div className="mt-8 flex justify-start gap-3 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
-                <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"><ArrowLeft size={18}/> السابق</button>
-              </div>
-            )}
-
-            <div className={currentStep === 2 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
-            {/* Card: Schedule */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3">
-                  <Calendar className="text-primary" size={24} /> التواريخ والجدولة
-                </h3>
-                <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                  <span className="ml-3 font-bold text-navy dark:text-white ml-3">إعلان مستمر (مفتوح دائماً)</span>
-                  <input type="checkbox" className="sr-only peer" checked={isOpenEnded} onChange={(e) => setIsOpenEnded(e.target.checked)} />
-                  <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
-                </label>
-              </div>
-
-              <div className={`grid grid-cols-1 ${isOpenEnded ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-8`}>
-                <div className="space-y-3">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1">
-                    تاريخ ووقت بدء التقديم
-                  </label>
-                  <input
-                    required
-                    lang="en"
-                    style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
-                    type="datetime-local"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium text-left"
-                    dir="ltr"
-                  />
-                </div>
-                {!isOpenEnded && (
+                <div className={`grid grid-cols-1 ${isOpenEnded ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-8`}>
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-navy dark:text-white mr-1">
-                      تاريخ ووقت انتهاء التقديم
+                      تاريخ ووقت بدء التقديم
                     </label>
                     <input
                       required
                       lang="en"
                       style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                       type="datetime-local"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium text-left"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium text-left"
                       dir="ltr"
                     />
                   </div>
+                  {!isOpenEnded && (
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1">
+                        تاريخ ووقت انتهاء التقديم
+                      </label>
+                      <input
+                        required
+                        lang="en"
+                        style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                        type="datetime-local"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium text-left"
+                        dir="ltr"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {isOpenEnded && (
+                  <p className="text-sm text-slate-500 font-medium bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+                    (سيبقى هذا الإعلان متاحاً للمتقدمين حتى تقوم بإغلاقه يدوياً من لوحة التحكم)
+                  </p>
+                )}
+
+
+              </div>
+
+              {createJobType !== "quick_link" && currentStep === 3 && (
+                <div className="mt-8 flex justify-start gap-3 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
+                  <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">السابق <ArrowLeft size={18} className="rotate-180" /></button>
+                </div>
+              )}
+              <div className="flex flex-col md:flex-row items-center justify-end gap-3 mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); handleBackAttempt(); }}
+                  className="w-full md:w-auto bg-slate-100 dark:bg-slate-800/80 border-2 border-transparent dark:border-slate-600 text-slate-600 dark:text-slate-300 px-8 py-4 rounded-xl text-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
+                >
+                  إلغاء والعودة
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsLivePreview(true);
+                  }}
+                  className="w-full md:w-auto px-8 bg-white dark:bg-slate-800 border-2 border-primary text-primary py-4 rounded-xl text-lg font-bold hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
+                >
+                  <Eye size={20} /> معاينة الإعلان حياً
+                </button>
+
+                {adType === "single" && (
+                  <>
+                    {initialData?.status === "نشط" ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.dispatchEvent(new CustomEvent("showToast", { detail: "تم إيقاف النشر والتحويل لمسودة" }));
+                            setTimeout(() => {
+                              // Saving with a new status "مسودة"
+                              onSubmit({ ...baseJobData, status: "مسودة" } as any, initialData.id);
+                            }, 1000);
+                          }}
+                          className="w-full md:w-auto bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 px-6 py-4 rounded-xl text-lg font-bold hover:bg-red-100 dark:hover:bg-red-500/20 transition-all items-center"
+                        >
+                          إيقاف النشر (تحويل لمسودة)
+                        </button>
+                        <button
+                          type="submit"
+                          className="w-full md:w-auto bg-primary text-white px-8 py-4 rounded-2xl text-lg font-bold hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                        >
+                          حفظ التعديلات
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleSaveAsDraft();
+                          }}
+                          className="w-full md:w-auto bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 px-6 py-4 rounded-xl text-lg font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all items-center"
+                        >
+                          حفظ المسودة
+                        </button>
+                        <button
+                          type="submit"
+                          className="w-full md:w-auto bg-primary text-white px-8 py-4 rounded-2xl text-lg font-bold hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
+                        >
+                          إنشاء الإعلان الوظيفي
+                        </button>
+                      </>
+                    )}
+                  </>
+                )}
+
+                {adType !== "single" && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleSaveAsDraft();
+                      }}
+                      className="w-full md:w-auto bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 px-6 py-4 rounded-xl text-lg font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all items-center"
+                    >
+                      حفظ المسودة
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-full md:w-auto px-10 bg-primary text-white py-4 rounded-xl text-lg font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                    >
+                      إنشاء الإعلان الوظيفي
+                    </button>
+                  </>
                 )}
               </div>
-
-              {isOpenEnded && (
-                <p className="text-sm text-slate-500 font-medium bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
-                  (سيبقى هذا الإعلان متاحاً للمتقدمين حتى تقوم بإغلاقه يدوياً من لوحة التحكم)
-                </p>
-              )}
-
-
-            </div>
-
-            {createJobType !== "quick_link" && currentStep === 2 && (
-              <div className="mt-8 flex justify-between gap-3 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
-                <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"><ArrowLeft size={18}/> السابق</button>
-                <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} className="rotate-180"/></button>
-              </div>
-            )}
-            <div className="flex flex-col md:flex-row items-center justify-end gap-3 mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={(e) => { e.preventDefault(); handleBackAttempt(); }}
-                className="w-full md:w-auto bg-slate-100 dark:bg-slate-800/80 border-2 border-transparent dark:border-slate-600 text-slate-600 dark:text-slate-300 px-8 py-4 rounded-xl text-lg font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2"
-              >
-                إلغاء والعودة
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsLivePreview(true);
-                }}
-                className="w-full md:w-auto px-8 bg-white dark:bg-slate-800 border-2 border-primary text-primary py-4 rounded-xl text-lg font-bold hover:bg-primary/5 transition-all flex items-center justify-center gap-2"
-              >
-                <Eye size={20} /> معاينة الإعلان حياً
-              </button>
-
-              {adType === "single" && (
-                <>
-                  {initialData?.status === "نشط" ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          window.dispatchEvent(new CustomEvent("showToast", { detail: "تم إيقاف النشر والتحويل لمسودة" }));
-                          setTimeout(() => {
-                            // Saving with a new status "مسودة"
-                            onSubmit({ ...baseJobData, status: "مسودة" } as any, initialData.id);
-                          }, 1000);
-                        }}
-                        className="w-full md:w-auto bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 px-6 py-4 rounded-xl text-lg font-bold hover:bg-red-100 dark:hover:bg-red-500/20 transition-all items-center"
-                      >
-                        إيقاف النشر (تحويل لمسودة)
-                      </button>
-                      <button
-                        type="submit"
-                        className="w-full md:w-auto bg-primary text-white px-8 py-4 rounded-2xl text-lg font-bold hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
-                      >
-                        حفظ التعديلات
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleSaveAsDraft();
-                        }}
-                        className="w-full md:w-auto bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 px-6 py-4 rounded-xl text-lg font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all items-center"
-                      >
-                        حفظ المسودة
-                      </button>
-                      <button
-                        type="submit"
-                        className="w-full md:w-auto bg-primary text-white px-8 py-4 rounded-2xl text-lg font-bold hover:bg-primary/90 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
-                      >
-                        إنشاء الإعلان الوظيفي
-                      </button>
-                    </>
-                  )}
-                </>
-              )}
-
-              {adType !== "single" && (
-                <>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleSaveAsDraft();
-                    }}
-                    className="w-full md:w-auto bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 px-6 py-4 rounded-xl text-lg font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all items-center"
-                  >
-                    حفظ المسودة
-                  </button>
-                  <button
-                    type="submit"
-                    className="w-full md:w-auto px-10 bg-primary text-white py-4 rounded-xl text-lg font-bold hover:shadow-lg hover:-translate-y-0.5 transition-all"
-                  >
-                    إنشاء الإعلان الوظيفي
-                  </button>
-                </>
-              )}
-            </div>
-          </form>{" "}
-        </motion.div>{" "}
-      </div>{" "}
+            </form>{" "}
+          </motion.div>{" "}
+        </div>{" "}
       </div>{" "}
       {isLivePreview && (
         <PreviewModal
@@ -4218,7 +4235,8 @@ const ManageJob = ({
   const [isSalaryHidden, setIsSalaryHidden] = useState(job.isSalaryHidden || false);
   const [askExpectedSalary, setAskExpectedSalary] = useState<"hidden" | "open" | "ranges">(job.askExpectedSalary || "hidden");
   const [expectedSalaryRanges, setExpectedSalaryRanges] = useState<string[]>(job.expectedSalaryRanges || []);
-  const [salaryRangeInput, setSalaryRangeInput] = useState("");
+  const [salaryRangeMinInput, setSalaryRangeMinInput] = useState("");
+  const [salaryRangeMaxInput, setSalaryRangeMaxInput] = useState("");
   const [type, setType] = useState(job.type || "دوام كامل");
   const [description, setDescription] = useState(job.description || job.campaignDescription || "");
   const [status, setStatus] = useState(job.status || "نشط");
@@ -4506,9 +4524,9 @@ const ManageJob = ({
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer" 
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
                           checked={useAiOverride}
                           onChange={(e) => setUseAiOverride(e.target.checked)}
                           disabled={isLocked}
@@ -4516,7 +4534,7 @@ const ManageJob = ({
                         <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
                       </label>
                     </div>
-                    
+
                     <AnimatePresence>
                       {useAiOverride && (
                         <motion.div
@@ -4690,7 +4708,7 @@ const ManageJob = ({
                 </div>
 
                 <div className={activeTab !== "settings" ? "hidden" : "space-y-6"}>
-            <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
+                  <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
                     <label className="text-sm font-bold text-navy dark:text-white mr-2 block">نطاق الراتب المتوقع (ريال) <span className="text-slate-400 font-normal ml-1">(اختياري)</span></label>
                     <div className="flex items-center gap-4">
                       <input type="number" value={salaryMin} onChange={(e) => setSalaryMin(e.target.value)} placeholder="من..." className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
@@ -4756,28 +4774,68 @@ const ManageJob = ({
                           </div>
                           <div className="flex gap-2">
                             <input
-                              type="text"
-                              value={salaryRangeInput}
-                              onChange={(e) => setSalaryRangeInput(e.target.value)}
+                              type="number"
+                              value={salaryRangeMinInput}
+                              onChange={(e) => setSalaryRangeMinInput(e.target.value)}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
-                                  if (salaryRangeInput.trim() && !expectedSalaryRanges.includes(salaryRangeInput.trim())) {
-                                    setExpectedSalaryRanges(prev => [...prev, salaryRangeInput.trim()]);
-                                    setSalaryRangeInput('');
+                                  let rangeStr = "";
+                                  const min = salaryRangeMinInput.trim();
+                                  const max = salaryRangeMaxInput.trim();
+                                  if (min && max) rangeStr = `${min} - ${max}`;
+                                  else if (min) rangeStr = `${min}`;
+                                  else if (max) rangeStr = `حتى ${max}`;
+
+                                  if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
+                                    setExpectedSalaryRanges(prev => [...prev, rangeStr]);
+                                    setSalaryRangeMinInput('');
+                                    setSalaryRangeMaxInput('');
                                   }
                                 }
                               }}
-                              placeholder="مثال: 4000 - 6000 ريال"
+                              placeholder="الحد الأدنى (مثال: 4000)"
+                              className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:border-primary outline-none text-sm transition-all"
+                            />
+                            <input
+                              type="number"
+                              value={salaryRangeMaxInput}
+                              onChange={(e) => setSalaryRangeMaxInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  let rangeStr = "";
+                                  const min = salaryRangeMinInput.trim();
+                                  const max = salaryRangeMaxInput.trim();
+                                  if (min && max) rangeStr = `${min} - ${max}`;
+                                  else if (min) rangeStr = `${min}`;
+                                  else if (max) rangeStr = `حتى ${max}`;
+
+                                  if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
+                                    setExpectedSalaryRanges(prev => [...prev, rangeStr]);
+                                    setSalaryRangeMinInput('');
+                                    setSalaryRangeMaxInput('');
+                                  }
+                                }
+                              }}
+                              placeholder="الحد الأعلى (مثال: 6000)"
                               className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:border-primary outline-none text-sm transition-all"
                             />
                             <button
                               type="button"
                               onClick={(e) => {
                                 e.preventDefault();
-                                if (salaryRangeInput.trim() && !expectedSalaryRanges.includes(salaryRangeInput.trim())) {
-                                  setExpectedSalaryRanges(prev => [...prev, salaryRangeInput.trim()]);
-                                  setSalaryRangeInput('');
+                                let rangeStr = "";
+                                const min = salaryRangeMinInput.trim();
+                                const max = salaryRangeMaxInput.trim();
+                                if (min && max) rangeStr = `${min} - ${max}`;
+                                else if (min) rangeStr = `${min}`;
+                                else if (max) rangeStr = `حتى ${max}`;
+
+                                if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
+                                  setExpectedSalaryRanges(prev => [...prev, rangeStr]);
+                                  setSalaryRangeMinInput('');
+                                  setSalaryRangeMaxInput('');
                                 }
                               }}
                               className="px-4 bg-primary text-white font-bold rounded-xl text-sm hover:bg-primary/90 transition-colors whitespace-nowrap"
