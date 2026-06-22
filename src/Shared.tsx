@@ -1331,7 +1331,7 @@ export const Reports = ({ jobs, filterId, applicants = [] }: { jobs: Job[]; filt
   relevantApplicants.forEach(app => {
     const originalSrc = app.source || "";
     const src = originalSrc.toLowerCase().trim();
-    if (!src || src === "غير محدد" || src === "أخرى") return;
+    if (!src || src === "غير محدد") return;
 
     if (src.includes("لينكد إن") || src.includes("linkedin")) linkdinCount++;
     else if (src.includes("تويتر") || src.includes("إكس") || src.includes("x.com") || src.includes("twitter")) twitterCount++;
