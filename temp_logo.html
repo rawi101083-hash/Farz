@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: transparent; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; width: 400px; height: 400px; }
+    .scale-up { transform: scale(5); transform-origin: center; }
+  </style>
+</head>
+<body>
+  <div class="scale-up logo-icon w-10 h-10 rounded-[12px] bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center relative shadow-[inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-4px_8px_rgba(0,0,0,0.3)] shrink-0">
+    <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-[12px]"></div>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="relative z-10 drop-shadow-sm ml-0.5 mt-0.5">
+      <path d="M10 6H6V18H10" stroke="#064E3B" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter" />
+      <circle cx="14" cy="12" r="3" fill="url(#copperGrd)" />
+      <defs>
+        <radialGradient id="copperGrd" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(14 12) rotate(90) scale(3)">
+          <stop stop-color="#FCD34D" />
+          <stop offset="1" stop-color="#92400E" />
+        </radialGradient>
+      </defs>
+    </svg>
+  </div>
+</body>
+</html>

@@ -117,4 +117,9 @@
 @media (min-width: 1024px) {
   .sidebar-padding-open { padding-right: 340px !important; }
   .sidebar-padding-closed { padding-right: 100px !important; }
-} 
+}
+
+/* Globally disable the 'not-allowed' cursor (forbidden emoji) */
+.cursor-not-allowed, :disabled {
+  cursor: default !important;
+}

@@ -726,6 +726,10 @@ const LoginPage = ({
   const [isError, setIsError] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  
+  const [authStep, setAuthStep] = useState<"initial" | "otp" | "new_password">("initial");
+  const [otpType, setOtpType] = useState<"signup" | "recovery" | null>(null);
+  const [otp, setOtp] = useState("");
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -735,11 +739,20 @@ const LoginPage = ({
     setIsError(false);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin,
-      });
+      const { data: userExists } = await supabase.rpc('check_user_exists', { lookup_email: email });
+      
+      if (userExists === false) {
+        setIsError(true);
+        setMessage("عذراً، هذا الحساب غير مسجل لدينا.");
+        setIsLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
       if (error) throw error;
-      setMessage("تم إرسال رابط إعادة تعيين كلمة المرور بنجاح! يرجى مراجعة بريدك الإلكتروني.");
+      setAuthStep("otp");
+      setOtpType("recovery");
+      setMessage("تم إرسال رمز التحقق المكون من 6 أرقام لبريدك الإلكتروني.");
       setIsError(false);
     } catch (err: any) {
       console.error("Reset password error:", err);
@@ -774,12 +787,30 @@ const LoginPage = ({
             }
           }
         });
-        if (error) throw error;
-        setMessage("تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.");
-        setMode("login");
-        setPassword("");
+        
+        if (error) {
+          if (error.message.includes("User already registered")) {
+            // Trick: User already exists. Verify their password instead of rejecting!
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+            if (signInError) {
+              throw new Error("البريد الإلكتروني مسجل مسبقاً، وكلمة المرور غير صحيحة. يرجى إدخال كلمة المرور الصحيحة للربط الدخول.");
+            }
+            // Password is correct! Let them in.
+            await supabase.auth.updateUser({ data: { entity_type: entityType, name } });
+            onLogin();
+            return;
+          }
+          throw error;
+        }
+        
+        setAuthStep("otp");
+        setOtpType("signup");
+        setMessage("تم إرسال رمز التحقق المكون من 6 أرقام لبريدك الإلكتروني.");
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -805,6 +836,59 @@ const LoginPage = ({
       }
       
       setMessage(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otp) return;
+    setIsLoading(true);
+    setMessage("");
+    setIsError(false);
+    
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: otpType as "signup" | "recovery",
+      });
+      if (error) throw error;
+      
+      if (otpType === "signup") {
+        onLogin();
+      } else if (otpType === "recovery") {
+        setAuthStep("new_password");
+        setMessage("تم التحقق بنجاح! أدخل كلمة المرور الجديدة.");
+        setPassword(""); // Clear it so they can enter the new one
+      }
+    } catch (err: any) {
+      console.error("OTP verification error:", err);
+      setIsError(true);
+      setMessage("الكود غير صحيح أو منتهي الصلاحية.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password) return;
+    setIsLoading(true);
+    setMessage("");
+    setIsError(false);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      
+      setMessage("تم تغيير كلمة المرور بنجاح!");
+      onLogin();
+    } catch (err: any) {
+      console.error("Update password error:", err);
+      setIsError(true);
+      setMessage(err.message || "حدث خطأ أثناء تغيير كلمة المرور.");
     } finally {
       setIsLoading(false);
     }
@@ -849,16 +933,58 @@ const LoginPage = ({
         >
           <div className="mb-10 text-center md:text-right">
             <h2 className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight mb-2">
-              {isForgotPassword ? "استعادة كلمة المرور" : mode === "register" ? "إنشاء حساب جديد" : "تسجيل الدخول"}
+              {authStep === "otp" ? "التحقق من البريد الإلكتروني" : authStep === "new_password" ? "تعيين كلمة المرور الجديدة" : isForgotPassword ? "استعادة كلمة المرور" : mode === "register" ? "إنشاء حساب جديد" : "تسجيل الدخول"}
             </h2>
-            {isForgotPassword && (
+            {authStep === "initial" && isForgotPassword && (
               <p className="text-slate-500 font-medium mt-2">
-                أدخل بريدك الإلكتروني وسنرسل لك رابطاً لإعادة تعيين كلمة المرور.
+                أدخل بريدك الإلكتروني وسنرسل لك رمزاً من 6 أرقام لإعادة تعيين كلمة المرور.
+              </p>
+            )}
+            {authStep === "otp" && (
+              <p className="text-slate-500 font-medium mt-2">
+                أدخل كود التحقق المكون من 6 أرقام المرسل إلى <strong className="text-slate-800 dark:text-white" dir="ltr">{email}</strong>
               </p>
             )}
           </div>
 
-          <form onSubmit={isForgotPassword ? handleResetPassword : handleAuth} className="space-y-5">
+          <form onSubmit={authStep === "otp" ? handleVerifyOtp : authStep === "new_password" ? handleUpdatePassword : isForgotPassword ? handleResetPassword : handleAuth} className="space-y-5">
+            {authStep === "otp" ? (
+              <div>
+                <input
+                  type="text"
+                  className="focus:ring-teal-700 focus:border-teal-700 block w-full sm:text-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl py-4 border text-center tracking-[1em] text-slate-800 dark:text-white font-bold transition-all shadow-sm"
+                  placeholder="123456"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                />
+              </div>
+            ) : authStep === "new_password" ? (
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  كلمة المرور الجديدة
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary z-10" size={20} />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
+                    placeholder="••••••••"
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-primary dark:hover:text-primary/80 transition-colors z-10"
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
             {!isForgotPassword && mode === "register" && (
               <>
                 <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-xl mb-6 border border-slate-200/50 dark:border-slate-800">
@@ -954,6 +1080,8 @@ const LoginPage = ({
                 </div>
               </div>
             )}
+            </>
+            )}
 
             {message && (
               <div className={`p-4 rounded-xl text-sm font-bold ${isError ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
@@ -963,17 +1091,25 @@ const LoginPage = ({
 
             <button
               type="submit"
-              disabled={isLoading || !email || (!isForgotPassword && !password) || (!isForgotPassword && mode === "register" && !name)}
+              disabled={isLoading || (authStep === "otp" && otp.length !== 6) || (authStep === "new_password" && !password) || (authStep === "initial" && (!email || (!isForgotPassword && !password) || (!isForgotPassword && mode === "register" && !name)))}
               className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold text-white bg-[#10857b] hover:bg-teal-700 transition-all shadow-sm disabled:opacity-70 disabled:cursor-default"
             >
               {isLoading ? (
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : authStep === "otp" ? (
+                "التحقق من الكود"
+              ) : authStep === "new_password" ? (
+                "تغيير كلمة المرور"
+              ) : isForgotPassword ? (
+                "إرسال رمز التحقق"
+              ) : mode === "register" ? (
+                "إنشاء حساب"
               ) : (
-                isForgotPassword ? "إرسال رابط الاستعادة" : mode === "register" ? "إنشاء حساب" : "تسجيل الدخول"
+                "تسجيل الدخول"
               )}
             </button>
             
-            {!isForgotPassword && (
+            {!isForgotPassword && authStep === "initial" && (
               <div className="mt-6 text-center">
                 {mode === "login" ? (
                   <div className="text-sm font-bold text-slate-600 dark:text-slate-400">
@@ -987,10 +1123,10 @@ const LoginPage = ({
               </div>
             )}
 
-            {isForgotPassword && (
+            {(isForgotPassword || authStep !== "initial") && (
               <button
                 type="button"
-                onClick={() => { setIsForgotPassword(false); setMessage(""); setIsError(false); }}
+                onClick={() => { setIsForgotPassword(false); setAuthStep("initial"); setOtpType(null); setOtp(""); setMessage(""); setIsError(false); }}
                 className="w-full py-4 px-6 rounded-xl font-bold text-slate-600 dark:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all"
               >
                 العودة لتسجيل الدخول
@@ -1371,6 +1507,8 @@ const UpdatePasswordPage = ({ onComplete }: { onComplete: () => void }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1412,33 +1550,45 @@ const UpdatePasswordPage = ({ onComplete }: { onComplete: () => void }) => {
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">كلمة المرور الجديدة</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input 
-                type="password" 
+                type={showPassword ? "text" : "password"} 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-4 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm text-left"
                 dir="ltr"
                 required
                 minLength={6}
                 placeholder="••••••••"
               />
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
           </div>
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">تأكيد كلمة المرور</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
               <input 
-                type="password" 
+                type={showConfirmPassword ? "text" : "password"} 
                 value={confirmPassword} 
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-4 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm text-left"
                 dir="ltr"
                 required
                 minLength={6}
                 placeholder="••••••••"
               />
+              <button 
+                type="button" 
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
           </div>
           
@@ -1453,7 +1603,7 @@ const UpdatePasswordPage = ({ onComplete }: { onComplete: () => void }) => {
             disabled={isLoading || !password || !confirmPassword}
             className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold text-white bg-primary hover:bg-primary-dark transition-all shadow-xl shadow-primary/30 disabled:opacity-70 disabled:cursor-default"
           >
-            {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : "حفظ كلمة المرور"}
+            {isLoading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : "تحديث كلمة المرور"}
           </button>
         </form>
       </div>
@@ -1547,6 +1697,37 @@ export default function App() {
     fields_locked: false,
     isLoaded: false,
   });
+
+  const verifyCompanySession = async (currentSession: any, isInitial: boolean = false) => {
+    if (!currentSession) return;
+    
+    setSession(currentSession);
+    setUser(currentSession.user || null);
+    
+    if (isInitial) {
+      if (!window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
+        const savedStep = sessionStorage.getItem('sahab_active_step');
+        if (savedStep && savedStep !== "landing" && savedStep !== "login" && savedStep !== "registerCompany") {
+          setStep(savedStep as FlowStep);
+        } else {
+          setStep("dashboard");
+        }
+      }
+      setIsCheckingAuth(false);
+    } else {
+      if (!window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
+        const savedStep = sessionStorage.getItem('sahab_active_step');
+        setStep(prevStep => {
+          if (prevStep === "updatePassword") return "updatePassword";
+          if (["landing", "login", "registerCompany"].includes(prevStep)) {
+            return (savedStep as FlowStep) || "dashboard";
+          }
+          return prevStep;
+        });
+      }
+    }
+  };
+
   const [step, setStep] = useState<FlowStep>(() => {
     if (window.location.pathname.startsWith("/profile")) return "seeker-profile";
     if (window.location.pathname.startsWith("/interview/")) return "interview";
@@ -1645,7 +1826,7 @@ export default function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user || null);
-      if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
+      if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
         const savedStep = sessionStorage.getItem('sahab_active_step');
         if (savedStep && savedStep !== "landing" && savedStep !== "login" && savedStep !== "registerCompany") {
           setStep(savedStep as FlowStep);
@@ -1783,7 +1964,13 @@ export default function App() {
             return;
           } else {
             // Handle new user so we don't get stuck in loading
-            setUserProfile(prev => ({ ...prev, id: user.id, name: user.user_metadata?.full_name || prev.name, isLoaded: true }));
+            setUserProfile(prev => ({ 
+              ...prev, 
+              id: user.id, 
+              name: user.user_metadata?.full_name || prev.name, 
+              entityType: user.user_metadata?.entity_type || prev.entityType,
+              isLoaded: true 
+            }));
             setDashboardTab("الحساب");
           }
         } catch (err: any) {

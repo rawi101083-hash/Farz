@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { User, Mail, Phone, MapPin, Upload, Briefcase, GraduationCap, CheckCircle, LogOut, ArrowRight, Shield, ArrowUpCircle, ChevronDown } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Upload, Briefcase, GraduationCap, CheckCircle, LogOut, ArrowRight, Shield, ArrowUpCircle, ChevronDown, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { SAUDI_CITIES } from '../Shared';
 import { countriesList } from '../data/countries';
@@ -42,8 +42,13 @@ export default function SeekerProfile() {
   const [session, setSession] = useState<any>(null);
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState<'login' | 'otp' | 'profile'>('login');
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const [isResent, setIsResent] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [step, setStep] = useState<'login' | 'otp' | 'profile' | 'new_password'>('login');
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'reset'>('login');
+  const [otpType, setOtpType] = useState<'signup' | 'recovery'>('signup');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   
@@ -69,21 +74,24 @@ export default function SeekerProfile() {
     video_url: ''
   });
 
+  const verifySeekerSession = async (currentSession: any) => {
+    if (!currentSession) return;
+    
+    setSession(currentSession);
+    setStep('profile');
+    fetchProfile(currentSession.user.id);
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setSession(session);
-        setStep('profile');
-        fetchProfile(session.user.id);
+        verifySeekerSession(session);
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        setSession(session);
-        setStep('profile');
-        setMessage({ type: '', text: '' });
-        fetchProfile(session.user.id);
+        verifySeekerSession(session);
       } else {
         setSession(null);
         setStep('login');
@@ -93,26 +101,135 @@ export default function SeekerProfile() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleSendOtp = async () => {
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendTimer > 0) {
+      timer = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [resendTimer]);
+
+  const handleAuth = async () => {
     if (!email) return;
     setIsLoading(true);
     setMessage({ type: '', text: '' });
     
     try {
-      const { error } = await supabase.auth.signInWithOtp({ 
+      if (authMode === 'reset') {
+        const { data: userExists } = await supabase.rpc('check_user_exists', { lookup_email: email });
+        
+        if (userExists === false) {
+          setMessage({ type: 'error', text: 'عذراً، هذا الحساب غير مسجل لدينا.' });
+          setIsLoading(false);
+          return;
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        if (error) throw error;
+        setOtpType('recovery');
+        setStep('otp');
+        setMessage({ type: 'success', text: 'تم إرسال رمز استعادة كلمة المرور المكون من 6 أرقام لبريدك الإلكتروني.' });
+      } else if (authMode === 'login') {
+        if (!password) {
+          setMessage({ type: 'error', text: 'يرجى إدخال كلمة المرور' });
+          setIsLoading(false);
+          return;
+        }
+        const { data, error } = await supabase.auth.signInWithPassword({ 
+          email,
+          password
+        });
+        if (error) throw error;
+        // onAuthStateChange will handle redirection
+      } else if (authMode === 'register') {
+        if (!password) {
+          setMessage({ type: 'error', text: 'يرجى إدخال كلمة المرور' });
+          setIsLoading(false);
+          return;
+        }
+        const { error } = await supabase.auth.signUp({ 
+          email,
+          password,
+          options: { 
+            data: {
+              entity_type: 'seeker'
+            },
+            emailRedirectTo: `${window.location.origin}/profile`
+          }
+        });
+        
+        if (error) {
+          if (error.message.includes("User already registered")) {
+            // Trick: User already exists. Verify their password instead of rejecting!
+            const { error: signInError } = await supabase.auth.signInWithPassword({ 
+              email,
+              password
+            });
+            if (signInError) {
+              throw new Error("البريد الإلكتروني مسجل مسبقاً، وكلمة المرور غير صحيحة. يرجى إدخال كلمة المرور الصحيحة لتسجيل الدخول.");
+            }
+            // Password is correct!
+            await supabase.auth.updateUser({ data: { entity_type: 'seeker' } });
+            // onAuthStateChange will handle redirection automatically
+            return;
+          }
+          throw error;
+        }
+        
+        setStep('otp');
+        if (resendTimer === 0) {
+          setResendTimer(60);
+        }
+      }
+    } catch (err: any) {
+      console.error("Auth error:", err);
+      let errorMsg = "حدث خطأ أثناء المصادقة. يرجى المحاولة مرة أخرى.";
+      if (err.message === "Invalid login credentials") {
+        errorMsg = "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
+      } else if (err.message.includes("User already registered")) {
+        errorMsg = "عذراً، هذا الحساب مسجل مسبقاً! يرجى إدخال كلمة المرور الصحيحة لتسجيل الدخول.";
+      } else if (err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("too many requests")) {
+        errorMsg = "تم تجاوز الحد المسموح. يرجى المحاولة بعد قليل.";
+      } else if (err.message === "Failed to fetch") {
+        errorMsg = "تعذر الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت.";
+      } else if (err.message.includes("Password should be")) {
+        errorMsg = "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.";
+      }
+      setMessage({ type: 'error', text: errorMsg });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const handleResendOtp = async () => {
+    if (!email) return;
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resend({ 
+        type: 'signup',
         email,
         options: { 
-          shouldCreateUser: true,
           emailRedirectTo: `${window.location.origin}/profile`
         }
       });
       
       if (error) throw error;
       
-      setStep('otp');
-      setMessage({ type: 'success', text: 'تم إرسال كود الدخول إلى بريدك الإلكتروني' });
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'حدث خطأ أثناء إرسال الكود' });
+      setIsResent(true);
+      setResendTimer(60);
+      setTimeout(() => setIsResent(false), 3000);
+    } catch (err: any) {
+      console.error("Resend error:", err);
+      let errorMsg = "حدث خطأ أثناء إعادة إرسال الكود. يرجى المحاولة مرة أخرى.";
+      if (err.message.toLowerCase().includes("rate limit") || err.message.toLowerCase().includes("too many requests")) {
+        errorMsg = "تم تجاوز الحد المسموح للإرسال. يرجى المحاولة بعد قليل.";
+      }
+      setMessage({ type: 'error', text: errorMsg });
     } finally {
       setIsLoading(false);
     }
@@ -127,18 +244,51 @@ export default function SeekerProfile() {
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token: otp,
-        type: 'email',
+        type: otpType,
       });
       
       if (error) throw error;
       
+      if (otpType === 'recovery') {
+        setStep('new_password');
+        setMessage({ type: 'success', text: 'تم التحقق بنجاح! أدخل كلمة المرور الجديدة.' });
+        setPassword('');
+      } else {
+        if (data.session) {
+          setSession(data.session);
+          setStep('profile');
+          fetchProfile(data.session.user.id);
+        }
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: 'الكود غير صحيح أو منتهي الصلاحية' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!password || password.length < 6) {
+      setMessage({ type: 'error', text: 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.' });
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      
+      setMessage({ type: 'success', text: 'تم تحديث كلمة المرور بنجاح! جاري الدخول...' });
+      
+      const { data } = await supabase.auth.getSession();
       if (data.session) {
         setSession(data.session);
         setStep('profile');
         fetchProfile(data.session.user.id);
+      } else {
+        setStep('login');
       }
-    } catch (error: any) {
-      setMessage({ type: 'error', text: 'الكود غير صحيح أو منتهي الصلاحية' });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'حدث خطأ أثناء تحديث كلمة المرور' });
     } finally {
       setIsLoading(false);
     }
@@ -353,12 +503,14 @@ export default function SeekerProfile() {
             <div className="flex-1 flex flex-col pt-12 md:pt-16">
               <div className="text-center mb-10">
                 <h2 className="text-2xl font-bold text-slate-800 mb-2">
-                  {authMode === 'login' ? 'تسجيل الدخول' : 'إنشاء حساب جديد'}
+                  {authMode === 'login' ? 'تسجيل الدخول' : authMode === 'register' ? 'إنشاء حساب جديد' : 'استعادة كلمة المرور'}
                 </h2>
                 <p className="text-slate-500 font-medium text-sm">
                   {authMode === 'login' 
                     ? 'مرحباً بك مجدداً في بوابة المتقدمين' 
-                    : 'أدخل بريدك الإلكتروني للبدء وتوثيق حسابك'}
+                    : authMode === 'register' 
+                      ? 'أدخل بريدك الإلكتروني للبدء وتوثيق حسابك' 
+                      : 'أدخل بريدك الإلكتروني لتلقي رمز استعادة كلمة المرور'}
                 </p>
               </div>
 
@@ -384,6 +536,44 @@ export default function SeekerProfile() {
                   </div>
                 </div>
 
+                {authMode !== 'reset' && (
+                  <div>
+                    <div className="flex justify-between items-center mb-2 mr-1">
+                      <label htmlFor="password" className="block text-sm font-bold text-slate-700">
+                        كلمة المرور
+                      </label>
+                      {authMode === 'login' && (
+                        <button 
+                          type="button" 
+                          onClick={() => { setAuthMode('reset'); setMessage({ type: '', text: '' }); }}
+                          className="text-xs font-bold text-teal-700 hover:text-teal-900"
+                        >
+                          نسيت كلمة المرور؟
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        className="block w-full pr-12 pl-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:ring-2 focus:ring-teal-800/20 focus:border-teal-800 transition-all outline-none text-left"
+                        dir="ltr"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-700 transition-colors"
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {message.text && (
                   <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`p-4 rounded-xl text-sm font-bold flex items-start gap-2 ${message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
                     {message.text}
@@ -391,14 +581,14 @@ export default function SeekerProfile() {
                 )}
 
                 <button
-                  onClick={handleSendOtp}
-                  disabled={isLoading || !email}
+                  onClick={handleAuth}
+                  disabled={isLoading || !email || (authMode !== 'reset' && !password)}
                   className="w-full flex items-center justify-center py-3.5 px-4 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-bold text-base shadow-lg shadow-teal-700/20 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   ) : (
-                    authMode === 'login' ? 'تسجيل الدخول' : 'إنشاء الحساب'
+                    authMode === 'login' ? 'تسجيل الدخول' : authMode === 'register' ? 'إنشاء الحساب' : 'إرسال رمز الاستعادة'
                   )}
                 </button>
               </div>
@@ -406,10 +596,10 @@ export default function SeekerProfile() {
 
             <div className="mt-8 pt-6 border-t border-slate-100 flex items-center justify-center gap-2">
               <span className="text-slate-500 text-sm font-medium">
-                {authMode === 'login' ? 'ليس لديك حساب؟' : 'لديك حساب بالفعل؟'}
+                {authMode === 'login' ? 'ليس لديك حساب؟' : authMode === 'register' ? 'لديك حساب بالفعل؟' : 'تذكرت كلمة المرور؟'}
               </span>
               <button
-                onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setMessage({ type: '', text: '' }); }}
                 className="text-teal-700 font-bold text-sm hover:text-teal-900 transition-colors"
               >
                 {authMode === 'login' ? 'إنشاء حساب جديد' : 'تسجيل الدخول'}
@@ -448,8 +638,8 @@ export default function SeekerProfile() {
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
               />
 
-              {message.text && (
-                <div className={`p-3 rounded-md text-sm ${message.type === 'error' ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'}`}>
+              {message.text && message.type === 'error' && (
+                <div className="p-3 rounded-md text-sm bg-red-50 text-red-800">
                   {message.text}
                 </div>
               )}
@@ -460,6 +650,64 @@ export default function SeekerProfile() {
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-700 hover:bg-teal-800 focus:outline-none disabled:opacity-50 transition-colors"
               >
                 {isLoading ? 'جاري التحقق...' : 'تأكيد الدخول'}
+              </button>
+
+              <div className="mt-6 text-center text-sm">
+                <span className="text-gray-600 font-medium">لم يصلك الكود؟ </span>
+                <button
+                  onClick={handleResendOtp}
+                  disabled={isLoading || isResent || resendTimer > 0}
+                  className={`font-bold transition-colors disabled:opacity-50 ${isResent ? 'text-green-600' : resendTimer > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-teal-700 hover:text-teal-900'}`}
+                >
+                  {isResent ? 'تم الإرسال ✓' : resendTimer > 0 ? `إعادة إرسال (${resendTimer})` : 'إعادة إرسال'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (step === 'new_password') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 dir-rtl" dir="rtl">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
+            <h2 className="text-2xl font-bold text-center mb-6">إعداد كلمة مرور جديدة</h2>
+            
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">كلمة المرور الجديدة</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="block w-full pr-10 pl-3 py-3 border border-gray-300 rounded-md shadow-sm focus:ring-teal-700 focus:border-teal-700 sm:text-sm text-left"
+                    dir="ltr"
+                    placeholder="••••••••"
+                  />
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-400 hover:text-gray-500">
+                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {message.text && (
+                <div className={`p-3 rounded-md text-sm ${message.type === 'error' ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'}`}>
+                  {message.text}
+                </div>
+              )}
+
+              <button
+                onClick={handleUpdatePassword}
+                disabled={isLoading || password.length < 6}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-700 hover:bg-teal-800 focus:outline-none disabled:opacity-50 transition-colors"
+              >
+                {isLoading ? 'جاري التحديث...' : 'حفظ كلمة المرور والدخول'}
               </button>
             </div>
           </div>
@@ -500,6 +748,11 @@ export default function SeekerProfile() {
                 المعلومات الشخصية
               </h3>
               <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">البريد الإلكتروني</label>
+                  <input type="email" disabled className="mt-2 block w-full px-6 py-4 bg-slate-100 border border-slate-200 rounded-2xl text-slate-500 font-medium sm:text-base cursor-not-allowed"
+                    value={session?.user?.email || ''} dir="ltr" />
+                </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">الاسم الثلاثي</label>
                   <input type="text" className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"

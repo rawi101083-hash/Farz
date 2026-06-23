@@ -1307,7 +1307,7 @@ const GlassBar = (props: any) => {
 };
 export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: { jobs: Job[]; filterId: string; applicants?: any[]; isLoading?: boolean }) => {
   const filteredJobs = filterId === "all" ? jobs : jobs.filter(j => j.id === filterId);
-  const totalJobs = filteredJobs.length;
+  const totalJobs = filteredJobs.filter(j => j.status !== "مسودة").length;
 
   const relevantApplicants = filterId === "all"
     ? applicants
@@ -2214,7 +2214,7 @@ export const SettingsPage = ({
             className={`flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 dark:bg-slate-900/50`}
           >
             {" "}
-            {["الملف الشخصي", "بيانات المنشأة", "باقات فرز", "المحفظة", "المظهر"].map((tab) => (
+            {["الملف الشخصي", "بيانات المنشأة / المستقل", "باقات فرز", "المحفظة", "المظهر"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -2288,7 +2288,7 @@ export const SettingsPage = ({
               </div>
             )}
 
-            {activeTab === "بيانات المنشأة" && (
+            {activeTab === "بيانات المنشأة / المستقل" && (
 
               <div className="max-w-2xl space-y-8">
                 {" "}
