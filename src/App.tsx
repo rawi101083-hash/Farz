@@ -41,7 +41,7 @@ class ErrorBoundary extends React.Component<any, any> {
 }
 import { supabase } from "./lib/supabaseClient";
 import { motion, AnimatePresence } from "motion/react";
-import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target, Moon, Sun , Eye, EyeOff, Building2, User, Mic } from 'lucide-react';
+import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, ArrowUp, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target, Moon, Sun , Eye, EyeOff, Building2, User, Mic } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import skillsDictionaryRaw from "./skillsDictionary.json";
 ;
@@ -639,15 +639,21 @@ const Navbar = ({
                 <a
                   key={link.id}
                   href={`#${link.id}`}
-                  className={`px-4 py-2 rounded-lg transition-all ${activeSection === link.id ? "text-primary bg-primary/5 font-bold" : "hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-primary"}`}
+                  className={`px-4 py-2 rounded-xl transition-all border-b-2 border-transparent hover:-translate-y-0.5 hover:shadow-md ${activeSection === link.id ? "text-primary bg-primary/5 font-bold border-primary/20" : "hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-primary hover:border-slate-200 dark:hover:border-slate-700"}`}
                 >
                   {" "}
                   {link.label}{" "}
                 </a>
               ))}{" "}
               <button
+                onClick={() => window.location.href = '/profile'}
+                className="text-sm font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-800 transition-all px-4 py-2 rounded-xl flex items-center shadow-sm border border-slate-200 dark:border-slate-700 border-b-2 hover:-translate-y-0.5 hover:shadow-md active:scale-95 ml-2"
+              >
+                الملف المهني
+              </button>
+              <button
                 onClick={onOpenBookingModal}
-                className="text-sm font-bold text-primary bg-primary/10 hover:bg-primary hover:text-white transition-all px-4 py-2 rounded-xl hidden sm:flex items-center ml-2 shadow-sm"
+                className="text-sm font-bold text-primary bg-primary/10 hover:bg-primary hover:text-white transition-all px-4 py-2 rounded-xl hidden sm:flex items-center ml-2 border-b-2 border-primary/20 hover:border-teal-700 shadow-[0_4px_10px_rgba(13,148,136,0.1)] hover:shadow-[0_6px_15px_rgba(13,148,136,0.2)] hover:-translate-y-0.5 active:scale-95"
               >
                 احجز اجتماع
               </button>
@@ -662,12 +668,12 @@ const Navbar = ({
             </span>
           )}{" "}
         </div>{" "}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative">
           {" "}
           {currentStep === "landing" && (
             <button
               onClick={() => setStep("login")}
-              className="text-[15px] font-medium text-slate-800 dark:text-slate-200 hover:text-primary dark:hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors px-4 py-2 rounded-xl"
+              className="text-[15px] font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:text-primary dark:hover:text-primary transition-all px-5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 border-b-2 hover:-translate-y-0.5 hover:shadow-md active:scale-95"
             >
               {" "}
               تسجيل الدخول{" "}
@@ -684,12 +690,18 @@ const Navbar = ({
           ) : (
             <button
               onClick={() => setStep("registerCompany")}
-              className={`bg-primary text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:shadow-lg hover:shadow-primary/30 transition-all shadow-md active:scale-95`}
+              className="bg-gradient-to-b from-[#10857b] to-teal-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-[0_4px_12px_rgba(13,148,136,0.2)] hover:shadow-[0_6px_20px_rgba(13,148,136,0.3)] hover:-translate-y-1 active:scale-95 border-b-[3px] border-teal-900"
             >
               {" "}
               إنشاء حساب{" "}
             </button>
           )}{" "}
+          {currentStep === "landing" && (
+            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 hidden lg:flex items-center justify-center gap-1.5 opacity-90 pointer-events-none w-max">
+              <span className="text-[11px] font-bold text-primary">للشركات</span>
+              <ArrowUp size={12} strokeWidth={2.5} className="text-primary/60 -mt-0.5" />
+            </div>
+          )}
         </div>{" "}
       </div>{" "}
     </nav>
@@ -1021,63 +1033,70 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
           style={{ animationDelay: "1s" }}
         />{" "}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          className="inline-flex items-center gap-2 bg-white dark:bg-slate-800/80 backdrop-blur-sm border border-white dark:border-slate-700 px-6 py-2.5 rounded-full text-sm font-bold text-primary mb-10 shadow-xl shadow-primary/5"
+          animate={{ y: [0, -8, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="inline-flex items-center gap-2 bg-white dark:bg-slate-800/90 backdrop-blur-md border border-slate-100 dark:border-slate-700 px-6 py-2.5 rounded-full text-sm font-bold text-primary mb-10 shadow-[0_8px_20px_rgba(13,148,136,0.15)] shadow-primary/10 border-b-4 border-b-primary/10"
         >
           {" "}
           <Target size={16} /> ارتقِ بعمليات الموارد البشرية{" "}
         </motion.div>{" "}
-        <h1 className="text-4xl md:text-5xl lg:text-[64px] font-semibold mt-6 mb-8 lg:mb-10 leading-snug lg:leading-[1.4] text-navy dark:text-white tracking-tight text-center">
-          {" "}
-          فلتر آلاف المتقدمين في ثوانٍ، <br />{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-teal-600 relative font-bold inline-block mt-2">
-            {" "}
-            واتخذ قرار التوظيف بثقة تامة{" "}
+        <h1 className="text-4xl md:text-5xl lg:text-[64px] font-semibold mt-6 mb-8 lg:mb-10 leading-snug lg:leading-[1.4] text-navy dark:text-white tracking-tight text-center relative z-10">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-teal-600 font-bold drop-shadow-sm hover:scale-105 inline-block transition-transform cursor-default">فرز</span>.. الجيل الجديد لـ{" "}
+          <span className="relative inline-block mt-2">
+            أتمتة الموارد البشرية
             <svg
-              className="absolute -bottom-4 left-0 w-full h-4 text-primary/20"
+              className="absolute -bottom-4 -left-[5%] w-[110%] h-6 text-primary/40"
               viewBox="0 0 100 10"
               preserveAspectRatio="none"
             >
-              {" "}
-              <path
-                d="M0 5 Q 25 0, 50 5 T 100 5"
+              <motion.path
+                initial={{ pathLength: 0, opacity: 0 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{ duration: 1.2, delay: 0.3, ease: "easeOut" }}
+                d="M0 5 Q 25 -2, 50 5 T 100 5"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth="4"
-              />{" "}
-            </svg>{" "}
-          </span>{" "}
-        </h1>{" "}
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+        </h1>
         <p className="text-xl md:text-2xl text-slate-500 dark:text-slate-400 mb-14 max-w-3xl mx-auto leading-relaxed font-medium text-center">
-          {" "}
-          تجاوز تعقيدات الفرز اليدوي وانتقل إلى التوظيف الذكي. <span className="font-bold text-primary">فرز</span> أكثر من مجرد أداة لتحليل السير الذاتية؛ نحن نمنحك نظاماً متكاملاً يحلل بيانات المتقدمين بذكاء، ويضعهم في لوحة تحكم احترافية تسهل عليك إدارة رحلة كل مرشح حتى لحظة التوظيف.{" "}
+          نظام ATS متكامل يقود رحلة توظيفك بالكامل؛ يجذب الكفاءات بتقديم سريع، ويحلل السير الذاتية بعمق، ويجري المقابلات آلياً ليمنحك أفضل المرشحين
         </p>{" "}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
           {" "}
-          <button
+          <motion.button
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
             onClick={onStart}
-            className="w-full sm:w-auto bg-[#10857b] text-white px-14 py-5 rounded-[24px] text-xl font-bold hover:shadow-md hover:bg-teal-700 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 group"
+            className="w-full sm:w-auto bg-gradient-to-b from-[#10857b] to-teal-700 text-white px-14 py-5 rounded-[24px] text-xl font-bold shadow-[0_8px_30px_rgba(13,148,136,0.3)] hover:shadow-[0_10px_40px_rgba(13,148,136,0.4)] transition-all hover:-translate-y-1.5 active:scale-95 flex items-center justify-center gap-3 group border-b-4 border-teal-900"
           >
             {" "}
             ابدأ مجاناً الآن{" "}
             <ArrowLeft
               size={22}
-              className="group-hover:-translate-x-1 transition-transform"
+              className="group-hover:-translate-x-2 transition-transform"
             />{" "}
-          </button>{" "}
-          <button
+          </motion.button>{" "}
+          <motion.button
+            initial={{ scale: 0.5, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
             onClick={() => setShowVideoModal(true)}
-            className="w-full sm:w-auto bg-white dark:bg-slate-800/50 backdrop-blur-md text-navy dark:text-white border-2 border-white dark:border-slate-700 px-10 py-5 rounded-[24px] text-xl font-bold hover:bg-white dark:bg-slate-800 transition-all shadow-xl shadow-slate-200/20 active:scale-95 inline-flex items-center justify-center gap-3 group"
+            className="w-full sm:w-auto bg-white dark:bg-slate-800/50 backdrop-blur-md text-navy dark:text-white border-2 border-slate-100 dark:border-slate-700 px-10 py-5 rounded-[24px] text-xl font-bold hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all shadow-xl shadow-slate-200/20 active:scale-95 inline-flex items-center justify-center gap-3 group"
           >
             {" "}
-            <Play
-              size={22}
-              className="text-primary fill-primary group-hover:scale-110 transition-transform"
-            />{" "}
+            <div className="bg-primary/10 p-2 rounded-full group-hover:scale-110 transition-transform">
+              <Play
+                size={18}
+                className="text-primary fill-primary"
+              />{" "}
+            </div>
             شاهد كيف نعمل{" "}
-          </button>{" "}
+          </motion.button>{" "}
         </div>{" "}
         {/* Trust Section */}{" "}
         <div className="mt-32 pt-16 border-t border-slate-100 dark:border-slate-700">
@@ -1179,9 +1198,11 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
           {" "}
           {[
             {
-              title: "محرك استخراج البيانات (Data Parsing)",
-              desc: "تحويل السير الذاتية المعقدة بمختلف صيغها إلى بيانات منظمة وجداول جاهزة للتحليل في ثوانٍ.",
-              icon: <FileText className="text-primary fill-primary/20" size={32} />,
+              title: "قاعدة بيانات حية (ATS)",
+              desc: "الوصول إلى آلاف الكفاءات المحدثة باستمرار والجاهزة للانضمام لفريقك، مع إدارة متكاملة لخط سير المرشحين.",
+              icon: (
+                <Database className="text-primary fill-primary/20" size={32} />
+              ),
               color: "bg-primary/10",
             },
             {
@@ -1191,11 +1212,9 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
               color: "bg-primary/10",
             },
             {
-              title: "قاعدة بيانات حية (ATS)",
-              desc: "الوصول إلى آلاف الكفاءات المحدثة باستمرار والجاهزة للانضمام لفريقك، مع إدارة متكاملة لخط سير المرشحين.",
-              icon: (
-                <Database className="text-primary fill-primary/20" size={32} />
-              ),
+              title: "تجربة تقديم سلسة تمنع تسرب المرشحين",
+              desc: "مسار تقديم ذكي ومختصر يرفع معدلات اكتمال الطلبات، ليضمن لك عدم خسارة أي موهبة متميزة.",
+              icon: <FileText className="text-primary fill-primary/20" size={32} />,
               color: "bg-primary/10",
             },
           ].map((feature, idx) => (
@@ -1255,7 +1274,7 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                 <Briefcase size={32} />
               </div>
               <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">القضاء على الهدر</h3>
-              <p className="text-slate-500 dark:text-slate-400 font-medium">وفر ميزانيتك المهدرة في الفرز اليدوي</p>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">وفر وقتك المهدر في الفرز اليدوي</p>
             </div>
           </div>
         </div>{" "}
