@@ -697,9 +697,9 @@ const Navbar = ({
             </button>
           )}{" "}
           {currentStep === "landing" && (
-            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 hidden lg:flex items-center justify-center gap-1.5 opacity-90 pointer-events-none w-max">
-              <span className="text-[11px] font-bold text-primary">للشركات</span>
-              <ArrowUp size={12} strokeWidth={2.5} className="text-primary/60 -mt-0.5" />
+            <div className="absolute -bottom-10 right-24 hidden lg:flex items-center justify-center gap-1.5 opacity-90 pointer-events-none w-max -rotate-12">
+              <span className="text-sm font-bold text-primary">للشركات</span>
+              <ArrowUp size={16} strokeWidth={2} className="text-primary/70" />
             </div>
           )}
         </div>{" "}
