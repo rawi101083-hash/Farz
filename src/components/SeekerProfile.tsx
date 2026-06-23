@@ -101,7 +101,10 @@ export default function SeekerProfile() {
     try {
       const { error } = await supabase.auth.signInWithOtp({ 
         email,
-        options: { shouldCreateUser: true }
+        options: { 
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/profile`
+        }
       });
       
       if (error) throw error;
@@ -320,7 +323,7 @@ export default function SeekerProfile() {
                 <LogoIcon />
               </div>
               <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-3 leading-relaxed">
-                أنشئ ملفك المهني الموحد مرة واحدة، واختصر طريقك نحو أفضل الفرص الوظيفية.
+                أنشئ ملفك المهني الموحد مرة واحدة، واختصر طريقك نحو أفضل الفرص الوظيفية
               </h2>
             </div>
             
