@@ -1946,9 +1946,9 @@ export default function App() {
               taxNumber: data.tax_number || prev.taxNumber,
               city: data.city || prev.city,
               companyLogo: data.company_logo || prev.companyLogo,
-              subscription_tier: "free", // SIMULATED EXPIRED
-              subscription_end_date: "2024-01-01", // SIMULATED EXPIRED
-              subscription_is_yearly: localStorage.getItem('subscription_is_yearly') === 'true',
+              subscription_tier: data.subscription_plan || "free",
+              subscription_end_date: data.subscription_end_date || null,
+              subscription_is_yearly: data.subscription_is_yearly || false,
               cvs_processed_count: data.cvs_processed_count || 0,
               fields_locked: data.fields_locked || false,
               cv_limit: data.cv_limit || 0,

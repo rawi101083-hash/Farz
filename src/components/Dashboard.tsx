@@ -279,9 +279,7 @@ export const Dashboard = ({
   const isInitialJobLoad = useRef(true);
   // Compute Limits
   const activeCount = jobs.filter(j => j.status === 'نشط').length;
-  const isPreviewMode = Date.now() < 1777221464725;
   let plan = userProfile?.subscription_tier || 'free';
-  if (isPreviewMode) plan = 'free';
 
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
@@ -359,7 +357,6 @@ export const Dashboard = ({
   }
   const cvsUsed = userProfile?.cvs_processed_count || 0;
   let cvsRemaining = Math.max(0, cvLimit - cvsUsed);
-  if (isPreviewMode) cvsRemaining = 0;
   const cvPercent = cvLimit > 0 ? (cvsRemaining / cvLimit) * 100 : 100;
   let cvColor = 'bg-primary';
   if (cvPercent < 20) cvColor = 'bg-red-500';
@@ -367,7 +364,6 @@ export const Dashboard = ({
 
   const interviewsUsed = userProfile?.used_interviews || 0;
   let interviewsRemaining = Math.max(0, interviewsLimit - interviewsUsed);
-  if (isPreviewMode) interviewsRemaining = 0;
   const interviewPercent = interviewsLimit > 0 ? (interviewsRemaining / interviewsLimit) * 100 : 100;
   let interviewColor = 'bg-primary';
   if (interviewPercent < 20) interviewColor = 'bg-red-500';
@@ -439,14 +435,13 @@ export const Dashboard = ({
     setShowWelcomeModal(false);
   };
   const smartSortRef = useRef<HTMLDivElement>(null);
-  const [subTab, setSubTabState] = useState<"active" | "inactive" | "drafts">(() => {
-    return (localStorage.getItem("dashboardSubTab") as "active" | "inactive" | "drafts") || "active";
+  const [subTab, setSubTab] = useState<"active" | "inactive" | "drafts">("active");
 
-  });
-  const setSubTab = (tab: "active" | "inactive" | "drafts") => {
-    setSubTabState(tab);
-    localStorage.setItem("dashboardSubTab", tab);
-  };
+  useEffect(() => {
+    if (activeTab === "إدارة الوظائف") {
+      setSubTab("active");
+    }
+  }, [activeTab]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     const saved = localStorage.getItem('isSidebarOpen');
     return saved !== null ? saved === 'true' : true;
@@ -607,7 +602,10 @@ export const Dashboard = ({
               red_flags: raw.red_flags,
               interview_questions: raw.interview_questions,
               attachments: raw.attachments,
-              ai_justification: raw.ai_summary || raw.ai_justification
+              ai_justification: raw.ai_summary || raw.ai_justification,
+              job_id: raw.job_id,
+              raw_cv_file_url: raw.cv_file_url,
+              raw_job_context: raw.job_context
             } as any;
           });
 
@@ -653,6 +651,55 @@ export const Dashboard = ({
       supabase.removeChannel(channel);
     };
   }, [jobs, talentPool]);
+
+  // Auto-Processor for pending applicants with rating 0 when cv limits are available
+  const processingIdsRef = useRef<Set<string>>(new Set());
+  
+  useEffect(() => {
+    if (cvsRemaining <= 0 || applicantsState.length === 0) return;
+
+    const pendingApplicants = applicantsState.filter(a => 
+      a.rating === 0 && 
+      a.decision === 'pending' && 
+      a.raw_cv_file_url && // ensure we have a file
+      !processingIdsRef.current.has(a.id)
+    );
+
+    if (pendingApplicants.length === 0) return;
+
+    const applicantsToProcess = pendingApplicants.slice(0, cvsRemaining);
+
+    const processApplicants = async () => {
+      for (const app of applicantsToProcess) {
+        // Mark as processing to avoid duplicate calls
+        processingIdsRef.current.add(app.id);
+        
+        try {
+          await fetch("https://farz-cv-processo-1.onrender.com/api/v1/extract-cv", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              applicant_id: app.id,
+              job_id: app.job_id || "",
+              cv_file_url: app.raw_cv_file_url,
+              device_fingerprint: btoa(navigator.userAgent + window.screen.width + window.screen.height),
+              job_context: app.raw_job_context || {}
+            })
+          });
+          // Note: we don't need to update state manually, the backend will update Supabase
+          // and the realtime subscription will fetch the updated data.
+        } catch (error) {
+          console.error(`Failed to trigger AI for applicant ${app.id}:`, error);
+          // Allow retrying later if it failed completely
+          processingIdsRef.current.delete(app.id);
+        }
+      }
+    };
+
+    processApplicants();
+  }, [applicantsState, cvsRemaining]);
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedApplicantIds, setSelectedApplicantIds] = useState<string[]>([]);
@@ -1372,7 +1419,7 @@ export const Dashboard = ({
                 </div>{" "}
               </div>
               {(() => {
-                const lockedCount = visibleApplicants.filter((row, index) => row.decision === "locked_fomo" || (plan === 'free' && ((row.decision === "pending" && (!row.rating || row.rating === 0)) || (isPreviewMode && index > 0)) && cvsRemaining <= 0)).length;
+                const lockedCount = visibleApplicants.filter((row) => row.decision === "locked_fomo" || (plan === 'free' && row.decision === "pending" && (!row.rating || row.rating === 0) && cvsRemaining <= 0)).length;
                 if (lockedCount > 0) {
                   return (
                     <div className="mb-6 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 p-4 sm:p-5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
@@ -1505,7 +1552,7 @@ export const Dashboard = ({
                       <AnimatePresence>
                         {visibleApplicants.slice(0, displayCount).map((originalRow, index) => {
                           const row = originalRow;
-                          const isFomoLocked = row.decision === "locked_fomo" || (plan === 'free' && ((row.decision === "pending" && (!row.rating || row.rating === 0)) || (isPreviewMode && index > 0)) && cvsRemaining <= 0);
+                          const isFomoLocked = row.decision === "locked_fomo" || (plan === 'free' && row.decision === "pending" && (!row.rating || row.rating === 0) && cvsRemaining <= 0);
                           const isEvaluating = row.decision === "pending" && row.rating === 0;
                           return (
                             <motion.tr
@@ -1838,7 +1885,7 @@ export const Dashboard = ({
                             </motion.tr>
                           );
                         })}
-                        {visibleApplicants.some((row, index) => plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining <= 0) && (
+                        {visibleApplicants.some((row) => plan === 'free' && row.status === "قيد الانتظار" && cvsRemaining <= 0) && (
                           <tr>
                             <td colSpan={100} className="p-0">
                               <div className="absolute left-0 w-full flex justify-center z-10 -translate-y-full pb-8 pointer-events-auto">

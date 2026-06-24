@@ -394,6 +394,7 @@ export default function SeekerProfile() {
       setStep('login');
       setEmail('');
       setOtp('');
+      setMessage({ type: '', text: '' });
     }
   };
 
