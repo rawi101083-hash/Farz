@@ -836,15 +836,15 @@ export const TalentPool = ({
 
   const filteredTalents = baseApplicants.filter((t: any) => {
     if (!t) return false;
-    
+
     if (showOnlyShortlisted && !t.is_favorite) return false;
     const matchesJob =
       jobFilter === "all" ||
       (t.job && typeof t.job === 'string' && t.job.includes((jobs || []).find((j: any) => j && j.id === jobFilter)?.title || ""));
-      
+
     const tCity = getTalentCity(t);
     const matchesCity = cityFilter === "all" || tCity === cityFilter;
-    
+
     const searchLower = (searchTerm || "").toLowerCase();
     const matchesSearch = !searchTerm ||
       (t.name && typeof t.name === 'string' && t.name.toLowerCase().includes(searchLower)) ||
@@ -929,7 +929,7 @@ export const TalentPool = ({
         </div>{" "}
       </div>{" "}
       <AnimatePresence mode="wait">
-        <motion.div 
+        <motion.div
           key={searchTerm + cityFilter + ratingFilter + String(showOnlyShortlisted)}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -947,178 +947,178 @@ export const TalentPool = ({
               onClick={() => onViewDetails(talent)}
               className="cursor-pointer bg-white dark:bg-slate-800 p-3.5 pb-2 rounded-2xl border border-slate-100 dark:border-slate-700/80 hover:border-primary/40 dark:hover:border-primary/40 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between h-full min-h-[205px]"
             >
-            <div>
-              {/* Header Bar: Match Score & Action Buttons */}
-              <div className="flex items-center justify-between mb-3" onClick={(e) => e.stopPropagation()}>
-                <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-sm ${getScoreColor((talent.rating || 0).toString())}`}>
-                  {talent.rating || 0}% مطابقة
-                </div>
-                <div className="flex items-center gap-1.5 relative shrink-0">
-                  <button
-                    onClick={() => onToggleShortlist(talent.id)}
-                    className={`p-1.5 rounded-lg transition-all ${talent.is_favorite ? "bg-yellow-100 text-yellow-500 shadow-sm" : "bg-slate-50 dark:bg-slate-800/50 text-slate-300 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"}`}
-                  >
-                    <Star size={12} fill={talent.is_favorite ? "currentColor" : "none"} />
-                  </button>
-                  <div className="relative">
+              <div>
+                {/* Header Bar: Match Score & Action Buttons */}
+                <div className="flex items-center justify-between mb-3" onClick={(e) => e.stopPropagation()}>
+                  <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-sm ${getScoreColor((talent.rating || 0).toString())}`}>
+                    {talent.rating || 0}% مطابقة
+                  </div>
+                  <div className="flex items-center gap-1.5 relative shrink-0">
                     <button
-                      onClick={() => setOpenDropdownId(openDropdownId === talent.id ? null : talent.id)}
-                      className="p-1.5 rounded-lg transition-all bg-slate-50 dark:bg-slate-800/50 text-slate-400 hover:text-navy dark:hover:text-white"
+                      onClick={() => onToggleShortlist(talent.id)}
+                      className={`p-1.5 rounded-lg transition-all ${talent.is_favorite ? "bg-yellow-100 text-yellow-500 shadow-sm" : "bg-slate-50 dark:bg-slate-800/50 text-slate-300 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"}`}
                     >
-                      <MoreVertical size={12} />
+                      <Star size={12} fill={talent.is_favorite ? "currentColor" : "none"} />
                     </button>
-                    <AnimatePresence>
-                      {openDropdownId === talent.id && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => setOpenDropdownId(null)}
-                          />
-                          <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            style={{ left: 0, right: 'auto' }}
-                            className="absolute top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 py-1.5 z-50 overflow-hidden"
-                          >
-                            <button
-                              onClick={() => {
-                                if (onCrossNominate) {
-                                  onCrossNominate(talent);
-                                }
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full text-right px-4 py-2 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2"
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenDropdownId(openDropdownId === talent.id ? null : talent.id)}
+                        className="p-1.5 rounded-lg transition-all bg-slate-50 dark:bg-slate-800/50 text-slate-400 hover:text-navy dark:hover:text-white"
+                      >
+                        <MoreVertical size={12} />
+                      </button>
+                      <AnimatePresence>
+                        {openDropdownId === talent.id && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-40"
+                              onClick={() => setOpenDropdownId(null)}
+                            />
+                            <motion.div
+                              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              style={{ left: 0, right: 'auto' }}
+                              className="absolute top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 py-1.5 z-50 overflow-hidden"
                             >
-                              <Briefcase size={13} className="text-primary" /> ترشيح لشاغر جديد
-                            </button>
-                            <div className="h-px bg-slate-100 dark:bg-slate-700 w-full my-1"></div>
-                            <button
-                              onClick={() => {
-                                if (window.confirm("هل أنت متأكد من الحذف؟")) setOpenDropdownId(null);
-                              }}
-                              className="w-full text-right px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
-                            >
-                              <Trash2 size={13} /> إزالة من البنك
-                            </button>
-                          </motion.div>
-                        </>
-                      )}
-                    </AnimatePresence>
+                              <button
+                                onClick={() => {
+                                  if (onCrossNominate) {
+                                    onCrossNominate(talent);
+                                  }
+                                  setOpenDropdownId(null);
+                                }}
+                                className="w-full text-right px-4 py-2 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2"
+                              >
+                                <Briefcase size={13} className="text-primary" /> ترشيح لشاغر جديد
+                              </button>
+                              <div className="h-px bg-slate-100 dark:bg-slate-700 w-full my-1"></div>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm("هل أنت متأكد من الحذف؟")) setOpenDropdownId(null);
+                                }}
+                                className="w-full text-right px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
+                              >
+                                <Trash2 size={13} /> إزالة من البنك
+                              </button>
+                            </motion.div>
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Profile details (avatar, name, job) */}
-              <div className="flex flex-col items-center text-center mb-3">
-                <div
-                  className={`w-11 h-11 bg-slate-100 dark:bg-slate-700 rounded-[12px] flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d shrink-0 overflow-hidden ${talent.photoUrl ? "cursor-pointer group-hover:opacity-80" : "group-hover:bg-primary/10 group-hover:text-primary"} transition-colors`}
-                  onClick={(e) => {
-                    if (talent.photoUrl) {
-                      e.stopPropagation();
-                      setLightboxPhoto(talent.photoUrl);
-                    }
-                  }}
-                >
-                  {talent.photoUrl ? (
-                    <img src={talent.photoUrl} alt={talent.name} className="w-full h-full object-cover" />
-                  ) : (
-                    talent.name ? talent.name.charAt(0) : "م"
-                  )}
-                </div>
-                <h3 className="text-sm font-bold text-navy dark:text-white mt-2 mb-0.5 line-clamp-1 w-full px-1" title={talent.name}>
-                  {talent.name}
-                </h3>
-                <div className="mt-1 flex items-center justify-center max-w-full px-1">
-                  <span className="inline-flex items-center bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-100/80 dark:border-slate-700/50 shadow-[0_1px_2px_rgba(0,0,0,0.02),_inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] text-[9.5px] font-bold truncate" title={talent.job}>
-                    متقدم لـ: {talent.job}
-                  </span>
-                </div>
-              </div>
-
-              {/* Progress bars matching the Job details */}
-              <div className="space-y-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[9px] font-bold">
-                    <span className="text-slate-500 dark:text-slate-400">تطابق المهارات</span>
-                    <span className="text-navy dark:text-white">{talent.skills_match || 0}%</span>
+                {/* Profile details (avatar, name, job) */}
+                <div className="flex flex-col items-center text-center mb-3">
+                  <div
+                    className={`w-11 h-11 bg-slate-100 dark:bg-slate-700 rounded-[12px] flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d shrink-0 overflow-hidden ${talent.photoUrl ? "cursor-pointer group-hover:opacity-80" : "group-hover:bg-primary/10 group-hover:text-primary"} transition-colors`}
+                    onClick={(e) => {
+                      if (talent.photoUrl) {
+                        e.stopPropagation();
+                        setLightboxPhoto(talent.photoUrl);
+                      }
+                    }}
+                  >
+                    {talent.photoUrl ? (
+                      <img src={talent.photoUrl} alt={talent.name} className="w-full h-full object-cover" />
+                    ) : (
+                      talent.name ? talent.name.charAt(0) : "م"
+                    )}
                   </div>
-                  <div className={`w-full rounded-full h-1 overflow-hidden ${talent.skills_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.skills_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
-                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.skills_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.skills_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.skills_match || 0}%` }}></div>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[9px] font-bold">
-                    <span className="text-slate-500 dark:text-slate-400">تطابق الخبرة</span>
-                    <span className="text-navy dark:text-white">{talent.experience_match || 0}%</span>
-                  </div>
-                  <div className={`w-full rounded-full h-1 overflow-hidden ${talent.experience_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.experience_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
-                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.experience_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.experience_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.experience_match || 0}%` }}></div>
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex justify-between text-[9px] font-bold">
-                    <span className="text-slate-500 dark:text-slate-400">تطابق التعليم</span>
-                    <span className="text-navy dark:text-white">{talent.education_match || 0}%</span>
-                  </div>
-                  <div className={`w-full rounded-full h-1 overflow-hidden ${talent.education_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.education_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
-                    <div className={`h-full rounded-full transition-all duration-1000 ${talent.education_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.education_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.education_match || 0}%` }}></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Key Metadata (City Only) - Placed below progress bars */}
-              {(() => {
-                const city = talent.city || (talent.customAnswers || []).find((a: any) => a.question === "المدينة")?.answer;
-                if (!city) return null;
-                return (
-                  <div className="flex items-center justify-center mb-0">
-                    <span className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-100/60 dark:border-slate-700/40 shadow-[0_1px_2px_rgba(0,0,0,0.02)] text-[10px] text-slate-500 dark:text-slate-400 font-bold">
-                      <MapPin size={11} className="text-primary shrink-0" />
-                      <span className="truncate max-w-[120px]">{city}</span>
+                  <h3 className="text-sm font-bold text-navy dark:text-white mt-2 mb-0.5 line-clamp-1 w-full px-1" title={talent.name}>
+                    {talent.name}
+                  </h3>
+                  <div className="mt-1 flex items-center justify-center max-w-full px-1">
+                    <span className="inline-flex items-center bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-100/80 dark:border-slate-700/50 shadow-[0_1px_2px_rgba(0,0,0,0.02),_inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] text-[9.5px] font-bold truncate" title={talent.job}>
+                      متقدم لـ: {talent.job}
                     </span>
                   </div>
-                );
-              })()}
-            </div>
+                </div>
 
-            {/* Skills / Badges section */}
-            <div className="mt-auto">
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {(talent.skills || []).slice(0, 2).map((skill: string, index: number) => (
-                  <span
-                    key={index}
-                    className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-lg text-[10px] font-bold border border-indigo-200/30 dark:border-indigo-800/30 shadow-sm truncate max-w-[85px]"
-                    title={skill}
-                  >
-                    {skill}
-                  </span>
-                ))}
-                {(talent.skills || []).length > 2 && (
-                  <span className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-200/50 dark:border-slate-700/50 shadow-sm shrink-0">
-                    +{(talent.skills || []).length - 2}
-                  </span>
-                )}
+                {/* Progress bars matching the Job details */}
+                <div className="space-y-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[9px] font-bold">
+                      <span className="text-slate-500 dark:text-slate-400">تطابق المهارات</span>
+                      <span className="text-navy dark:text-white">{talent.skills_match || 0}%</span>
+                    </div>
+                    <div className={`w-full rounded-full h-1 overflow-hidden ${talent.skills_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.skills_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
+                      <div className={`h-full rounded-full transition-all duration-1000 ${talent.skills_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.skills_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.skills_match || 0}%` }}></div>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[9px] font-bold">
+                      <span className="text-slate-500 dark:text-slate-400">تطابق الخبرة</span>
+                      <span className="text-navy dark:text-white">{talent.experience_match || 0}%</span>
+                    </div>
+                    <div className={`w-full rounded-full h-1 overflow-hidden ${talent.experience_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.experience_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
+                      <div className={`h-full rounded-full transition-all duration-1000 ${talent.experience_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.experience_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.experience_match || 0}%` }}></div>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[9px] font-bold">
+                      <span className="text-slate-500 dark:text-slate-400">تطابق التعليم</span>
+                      <span className="text-navy dark:text-white">{talent.education_match || 0}%</span>
+                    </div>
+                    <div className={`w-full rounded-full h-1 overflow-hidden ${talent.education_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.education_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
+                      <div className={`h-full rounded-full transition-all duration-1000 ${talent.education_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.education_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.education_match || 0}%` }}></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key Metadata (City Only) - Placed below progress bars */}
+                {(() => {
+                  const city = talent.city || (talent.customAnswers || []).find((a: any) => a.question === "المدينة")?.answer;
+                  if (!city) return null;
+                  return (
+                    <div className="flex items-center justify-center mb-0">
+                      <span className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-100/60 dark:border-slate-700/40 shadow-[0_1px_2px_rgba(0,0,0,0.02)] text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+                        <MapPin size={11} className="text-primary shrink-0" />
+                        <span className="truncate max-w-[120px]">{city}</span>
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
-            </div>
-          </motion.div>
-        ))}
 
-        {filteredTalents.length === 0 && (
-          <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-white dark:bg-slate-800 rounded-[32px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
-            <div className={`w-24 h-24 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner-3d ${isLoading ? 'animate-pulse' : ''}`}>
-              <Search size={40} className="text-slate-300 dark:text-slate-500" />
+              {/* Skills / Badges section */}
+              <div className="mt-auto">
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {(talent.skills || []).slice(0, 2).map((skill: string, index: number) => (
+                    <span
+                      key={index}
+                      className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-lg text-[10px] font-bold border border-indigo-200/30 dark:border-indigo-800/30 shadow-sm truncate max-w-[85px]"
+                      title={skill}
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                  {(talent.skills || []).length > 2 && (
+                    <span className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-200/50 dark:border-slate-700/50 shadow-sm shrink-0">
+                      +{(talent.skills || []).length - 2}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          ))}
+
+          {filteredTalents.length === 0 && (
+            <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-white dark:bg-slate-800 rounded-[32px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
+              <div className={`w-24 h-24 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner-3d ${isLoading ? 'animate-pulse' : ''}`}>
+                <Search size={40} className="text-slate-300 dark:text-slate-500" />
+              </div>
+              {!isLoading && (
+                <>
+                  <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">لا توجد نتائج مطابقة</h3>
+                  <p className="text-slate-500 dark:text-slate-400 font-medium max-w-md">
+                    لم نتمكن من العثور على أي متقدم يطابق خيارات الفلاتر الحالية. حاول تعديل أو إزالة بعض الفلاتر لرؤية المزيد من النتائج.
+                  </p>
+                </>
+              )}
             </div>
-            {!isLoading && (
-              <>
-                <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">لا توجد نتائج مطابقة</h3>
-                <p className="text-slate-500 dark:text-slate-400 font-medium max-w-md">
-                  لم نتمكن من العثور على أي متقدم يطابق خيارات الفلاتر الحالية. حاول تعديل أو إزالة بعض الفلاتر لرؤية المزيد من النتائج.
-                </p>
-              </>
-            )}
-          </div>
-        )}{" "}
+          )}{" "}
         </motion.div>
       </AnimatePresence>{" "}
       <AnimatePresence>
@@ -1213,8 +1213,8 @@ export const GlobalJobSelector = ({
               onClick={() => setIsOpen(!isOpen)}
             >
               <span className={`font-bold text-sm truncate max-w-[200px] ${selectedFilter === "all" ? "text-navy dark:text-white" : "text-primary"}`}>
-                {selectedFilter === "all" 
-                  ? "المسمى: الكل" 
+                {selectedFilter === "all"
+                  ? "المسمى: الكل"
                   : `${selectedJob?.title || "كل الوظائف"}${selectedJob?.job_number ? ` (${selectedJob.job_number})` : ""}`}
               </span>
               <ChevronDown size={16} className={`transition-transform ${selectedFilter === "all" ? "text-slate-400" : "text-primary"} ${isOpen ? "rotate-180" : ""}`} />
@@ -1498,10 +1498,10 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
           >
             {/* Glossy top highlight */}
             <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white dark:via-white/10 to-transparent opacity-70"></div>
-            
+
             {/* Subtle background glow on hover */}
             <div className={`absolute inset-0 bg-gradient-to-br ${metric.gradientFrom} to-transparent opacity-0 group-hover:opacity-[0.03] dark:group-hover:opacity-[0.05] transition-opacity duration-500`} />
-            
+
             <div
               className={`relative z-10 w-12 h-12 ${metric.bg} ${metric.color} rounded-[14px] flex items-center justify-center mb-3 shadow-[inset_0_2px_4px_rgba(255,255,255,0.8),_0_8px_16px_rgba(0,0,0,0.06)] dark:shadow-[inset_0_2px_4px_rgba(255,255,255,0.1),_0_8px_16px_rgba(0,0,0,0.3)] ring-1 ring-black/5 dark:ring-white/10 group-hover:scale-110 transition-transform duration-500`}
             >
@@ -1613,9 +1613,9 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
                     }}
                   >
                     {sourceOfHireData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={`url(#pieGrad-${index % 4})`} 
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={`url(#pieGrad-${index % 4})`}
                         filter={`url(#pieGlow-${index % 4})`}
                         stroke="rgba(255,255,255,0.4)"
                         strokeWidth={1.5}
@@ -1655,14 +1655,14 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
                 <PieChartIcon size={24} className="text-slate-400 dark:text-slate-500" />
               </div>
             </div>
-            
+
             {/* Custom Legend */}
             <div className="w-[45%] flex flex-col justify-center gap-3 pr-4 border-r border-slate-100 dark:border-slate-700">
               {sourceOfHireData.map((entry, index) => {
                 const PIE_RGBS = ["59, 130, 246", "20, 184, 166", "168, 85, 247", "245, 158, 11"];
                 const total = sourceOfHireData.reduce((sum, item) => sum + item.value, 0);
                 const percent = total > 0 ? Math.round((entry.value / total) * 100) : 0;
-                
+
                 return (
                   <div key={index} className="flex flex-col">
                     <div className="flex items-center gap-2">
@@ -1885,6 +1885,14 @@ export const SettingsPage = ({
   }, []);
 
   useEffect(() => {
+    const handleDirectCheckout = () => {
+      handleSubscribe('business');
+    };
+    window.addEventListener('initiatePaymentForBusiness', handleDirectCheckout);
+    return () => window.removeEventListener('initiatePaymentForBusiness', handleDirectCheckout);
+  }, []);
+
+  useEffect(() => {
     const newErrors: Record<string, string> = {};
     if (!isLocked) {
       if (userProfile.entityType === 'company') {
@@ -1927,9 +1935,9 @@ export const SettingsPage = ({
         const { supabase: sb } = await import('./lib/supabaseClient');
         const { data: { session } } = await sb.auth.getSession();
         if (!session?.user?.id) return;
-        
+
         let { data: wallet } = await sb.from('wallets').select('*').eq('user_id', session.user.id).single();
-        
+
         if (!wallet) {
           const { data: newWallet } = await sb.from('wallets').insert([{ user_id: session.user.id }]).select().single();
           wallet = newWallet;
@@ -1941,7 +1949,7 @@ export const SettingsPage = ({
             .select('*')
             .eq('wallet_id', wallet.id)
             .order('created_at', { ascending: false });
-          
+
           if (txs) setWalletTransactions(txs);
         }
       } catch (err) {
@@ -2003,7 +2011,7 @@ export const SettingsPage = ({
             payload.fields_locked = true;
           }
         }
-        
+
         // Allow saving tax number even after lock, if it wasn't provided initially
         payload.tax_number = userProfile.taxNumber?.trim() || null;
 
@@ -2189,8 +2197,8 @@ export const SettingsPage = ({
                   onClick={executeSave}
                   disabled={!lockConfirmed || isSaving}
                   className={`flex-1 py-3 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${lockConfirmed && !isSaving
-                      ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/30 active:scale-95'
-                      : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-500/30 active:scale-95'
+                    : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'
                     }`}
                 >
                   {isSaving ? (
@@ -2221,7 +2229,7 @@ export const SettingsPage = ({
                 className={`px-10 py-6 font-bold text-sm transition-all relative ${activeTab === tab ? "text-primary" : "text-slate-400 dark:text-slate-500 hover:text-navy dark:text-white"}`}
               >
                 {" "}
-                {tab}{" "}
+                {tab === "بيانات المنشأة / المستقل" ? (userProfile?.entityType === "company" ? "بيانات المنشأة" : "بيانات العمل") : tab}{" "}
                 {activeTab === tab && (
                   <motion.div
                     layoutId="activeTab"
@@ -2360,7 +2368,7 @@ export const SettingsPage = ({
                           />
                         </>
                       )}
-                  </div>
+                    </div>
                   )}
 
                   <div className="space-y-2 group">
@@ -2444,7 +2452,7 @@ export const SettingsPage = ({
                   <div className="bg-white dark:bg-slate-800 rounded-[32px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 relative overflow-hidden h-[240px] w-full flex flex-col justify-between transition-all duration-500 group mb-8">
                     <div className="absolute -left-10 -top-10 w-40 h-40 bg-[#0D9488]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#0D9488]/10 transition-colors duration-500"></div>
                     <div className="absolute right-6 top-8 opacity-[0.03] dark:opacity-5 text-navy dark:text-white"><CreditCard size={120} /></div>
-                    
+
                     <div className="relative z-10 flex justify-between items-start">
                       <div>
                         <p className="text-slate-400 dark:text-slate-500 font-bold text-sm tracking-wide mb-2">الرصيد المتاح</p>
@@ -2470,12 +2478,12 @@ export const SettingsPage = ({
                   </div>
 
                   {/* Toggle Button for History */}
-                  <button 
-                    onClick={() => setShowWalletHistory(!showWalletHistory)} 
+                  <button
+                    onClick={() => setShowWalletHistory(!showWalletHistory)}
                     className="text-navy dark:text-white font-bold hover:text-[#0D9488] transition-colors flex items-center gap-2 mb-6"
                   >
-                     {showWalletHistory ? <ChevronDown className="rotate-180 transition-transform" size={18} /> : <Clock size={18} />}
-                     {showWalletHistory ? 'إخفاء سجل العمليات' : 'عرض سجل العمليات'}
+                    {showWalletHistory ? <ChevronDown className="rotate-180 transition-transform" size={18} /> : <Clock size={18} />}
+                    {showWalletHistory ? 'إخفاء سجل العمليات' : 'عرض سجل العمليات'}
                   </button>
 
                   {/* Transaction History - Elegant List */}
@@ -2488,7 +2496,7 @@ export const SettingsPage = ({
                           </h4>
                         </div>
                       </div>
-                      
+
                       <div className="flex-1 space-y-4 max-h-[400px] overflow-y-auto pr-2 -mr-2">
                         {isLoadingWallet ? (
                           <div className="flex justify-center p-8"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>
@@ -2501,35 +2509,36 @@ export const SettingsPage = ({
                           const dateObj = new Date(tx.created_at);
                           const dateStr = dateObj.toLocaleDateString('ar-SA') + '، ' + dateObj.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
                           const statusStr = tx.status === 'success' ? 'ناجح' : tx.status === 'pending' ? 'معلق' : tx.status === 'failed' ? 'مرفوض' : tx.status;
-                          
+
                           let title = tx.transaction_type === 'deposit' ? 'إيداع رصيد المحفظة' : tx.transaction_type === 'subscription_fee' ? 'اشتراك باقة' : tx.transaction_type === 'addon_fee' ? 'شراء إضافة' : tx.transaction_type;
                           if (!title) title = isDeposit ? 'إيداع' : 'خصم';
 
                           return (
-                          <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 group cursor-default">
-                            <div className="flex items-center gap-4">
-                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm shrink-0 ${isDeposit ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}>
-                                {isDeposit ? <ArrowDownLeft size={24} /> : <ArrowUpRight size={24} />}
-                              </div>
-                              <div>
-                                <p className="font-bold text-navy dark:text-white group-hover:text-[#0D9488] transition-colors text-sm sm:text-base">{title}</p>
-                                <div className="flex items-center gap-2 mt-1">
-                                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">{tx.description || 'عملية مالية'}</p>
-                                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 hidden sm:block"></span>
-                                  <p className="text-[10px] sm:text-xs text-slate-400 hidden sm:flex items-center gap-1"><Clock size={10} /> {dateStr}</p>
+                            <div key={tx.id} className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 group cursor-default">
+                              <div className="flex items-center gap-4">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm shrink-0 ${isDeposit ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}>
+                                  {isDeposit ? <ArrowDownLeft size={24} /> : <ArrowUpRight size={24} />}
+                                </div>
+                                <div>
+                                  <p className="font-bold text-navy dark:text-white group-hover:text-[#0D9488] transition-colors text-sm sm:text-base">{title}</p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <p className="text-[10px] sm:text-xs font-medium text-slate-500 dark:text-slate-400">{tx.description || 'عملية مالية'}</p>
+                                    <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 hidden sm:block"></span>
+                                    <p className="text-[10px] sm:text-xs text-slate-400 hidden sm:flex items-center gap-1"><Clock size={10} /> {dateStr}</p>
+                                  </div>
                                 </div>
                               </div>
+                              <div className="text-left shrink-0">
+                                <p className={`font-black text-sm sm:text-base ${isDeposit ? 'text-[#0D9488]' : 'text-navy dark:text-white'}`} dir="ltr">
+                                  {amountStr} <span className="text-[10px] font-bold text-slate-400">ر.س</span>
+                                </p>
+                                <span className={`inline-flex items-center gap-1 mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isDeposit ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
+                                  <CheckCircle size={8} /> {statusStr}
+                                </span>
+                              </div>
                             </div>
-                            <div className="text-left shrink-0">
-                              <p className={`font-black text-sm sm:text-base ${isDeposit ? 'text-[#0D9488]' : 'text-navy dark:text-white'}`} dir="ltr">
-                                {amountStr} <span className="text-[10px] font-bold text-slate-400">ر.س</span>
-                              </p>
-                              <span className={`inline-flex items-center gap-1 mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isDeposit ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
-                                <CheckCircle size={8} /> {statusStr}
-                              </span>
-                            </div>
-                          </div>
-                        )})}
+                          )
+                        })}
                       </div>
                     </div>
                   )}
@@ -2571,7 +2580,7 @@ export const SettingsPage = ({
                         className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${isYearly ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
                       >
                         دفع سنوي
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isYearly ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600'}`}>وفر قيمة شهرين</span>
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isYearly ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600'}`}>16%</span>
                       </button>
                     </div>
                   )}
@@ -2612,7 +2621,7 @@ export const SettingsPage = ({
                           </div>
 
                           <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
-                            {isYearly ? 'احصل على شهرين مجاناً' : 'بدون التزام (ألغِ في أي وقت)'}
+                            {isYearly ? 'توفير 16%' : 'بدون التزام (ألغِ في أي وقت)'}
                           </div>
 
                           <ul className={`${highlightedTier === 'startup' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
@@ -2654,7 +2663,7 @@ export const SettingsPage = ({
                           </div>
 
                           <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
-                            {isYearly ? 'احصل على شهرين مجاناً' : 'الخيار الأكثر طلباً'}
+                            {isYearly ? 'توفير 16%' : 'الخيار الأكثر طلباً'}
                           </div>
 
                           <ul className={`${highlightedTier === 'business' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
@@ -2691,15 +2700,15 @@ export const SettingsPage = ({
                           <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">قدرات لا محدودة للمؤسسات الكبرى والتوظيف المكثف.</p>
 
                           <div className="flex flex-col items-center mb-5 mt-1">
-                            <span className="text-4xl font-bold text-gray-900 dark:text-white">{enterprisePrice}</span>
-                            <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
+                            <span className="text-4xl font-bold text-gray-900 dark:text-white blur-md opacity-30 select-none">{enterprisePrice}</span>
+                            <span className="text-xs text-gray-500 mt-1 blur-sm opacity-30 select-none">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
                           </div>
 
-                          <div className={`bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm ${!isYearly && 'opacity-0 select-none'}`}>
+                          <div className={`bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm blur-sm opacity-40 select-none pointer-events-none ${!isYearly && 'opacity-0 select-none'}`}>
                             احصل على شهرين مجاناً
                           </div>
 
-                          <ul className={`${highlightedTier === 'enterprise' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
+                          <ul className={`${highlightedTier === 'enterprise' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1 blur-sm opacity-40 select-none pointer-events-none`}>
                             {enterpriseFeatures.map((feature: string, idx: number) => (
                               <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'enterprise' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
                                 <CheckCircle size={highlightedTier === 'enterprise' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'enterprise' ? 2.5 : 2} />
@@ -2718,9 +2727,9 @@ export const SettingsPage = ({
                               {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
                             </button>
                           ) : (
-                            <button onClick={() => handleSubscribe('enterprise')} className={`relative w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 overflow-hidden ${highlightedTier === 'enterprise' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
+                            <button onClick={() => window.dispatchEvent(new Event('openBookingModal'))} className={`relative w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 overflow-hidden ${highlightedTier === 'enterprise' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
                               {highlightedTier === 'enterprise' && <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />}
-                              <span className="relative z-10">اختيار الباقة</span>
+                              <span className="relative z-10">احجز موعد</span>
                             </button>
                           )}
                         </div>
@@ -2949,7 +2958,7 @@ export const ActiveJobs = ({
         />
       )}
       <AnimatePresence mode="wait">
-        <motion.div 
+        <motion.div
           key={jobs.map(j => j.id).join(',')}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -2971,175 +2980,174 @@ export const ActiveJobs = ({
                 className="bg-white relative cursor-pointer dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 dark:hover:border-primary/40 group flex flex-col justify-between transition-all duration-300 min-h-[270px]"
               >
                 {/* Top Row: Status badge & Action menu */}
-              <div className="flex items-center justify-between mb-3 w-full" onClick={(e) => e.stopPropagation()}>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${
-                    expired 
-                      ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400" 
-                      : job.status === "مسودة"
-                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                        : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                  }`}
-                >
-                  {expired ? "منتهي/مغلق" : job.status}
-                </span>
+                <div className="flex items-center justify-between mb-3 w-full" onClick={(e) => e.stopPropagation()}>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${expired
+                        ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                        : job.status === "مسودة"
+                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                          : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                      }`}
+                  >
+                    {expired ? "منتهي/مغلق" : job.status}
+                  </span>
 
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {job.job_number && (
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100/80 dark:bg-slate-700/80 text-slate-500 dark:text-slate-300 border border-slate-200/50 dark:border-slate-600/50">
-                      رقم: {job.job_number}
-                    </span>
-                  )}
-                  <div className="relative">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpenDropdownId(openDropdownId === job.id ? null : job.id);
-                      }}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                    >
-                      <MoreVertical size={14} />
-                    </button>
-                    {openDropdownId === job.id && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-10"
-                          onClick={() => setOpenDropdownId(null)}
-                        />
-                        <div
-                          style={{ left: 0, right: 'auto' }}
-                          className="absolute top-full mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-2xl rounded-2xl overflow-hidden z-20 py-2 origin-top-left"
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              copyLink(job);
-                              setOpenDropdownId(null);
-                            }}
-                            className="w-full text-right px-4 py-2.5 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2.5"
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {job.job_number && (
+                      <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100/80 dark:bg-slate-700/80 text-slate-500 dark:text-slate-300 border border-slate-200/50 dark:border-slate-600/50">
+                        رقم: {job.job_number}
+                      </span>
+                    )}
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenDropdownId(openDropdownId === job.id ? null : job.id);
+                        }}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                      >
+                        <MoreVertical size={14} />
+                      </button>
+                      {openDropdownId === job.id && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setOpenDropdownId(null)}
+                          />
+                          <div
+                            style={{ left: 0, right: 'auto' }}
+                            className="absolute top-full mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-2xl rounded-2xl overflow-hidden z-20 py-2 origin-top-left"
                           >
-                            <Share2 size={14} className="text-slate-400 dark:text-slate-500" />
-                            نسخ الرابط
-                          </button>
-                          {onPreview && (
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                onPreview(job);
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full text-right px-4 py-2.5 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50"
-                            >
-                              <Eye size={14} className="text-slate-400 dark:text-slate-500" />
-                              معاينة الإعلان
-                            </button>
-                          )}
-                          {onClone && (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onClone(job);
+                                copyLink(job);
                                 setOpenDropdownId(null);
                               }}
                               className="w-full text-right px-4 py-2.5 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2.5"
                             >
-                              <Copy size={14} className="text-slate-400 dark:text-slate-500" />
-                              تكرار الإعلان
+                              <Share2 size={14} className="text-slate-400 dark:text-slate-500" />
+                              نسخ الرابط
                             </button>
-                          )}
-                          {!expired && onDeactivate && (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onDeactivate(job);
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full text-right px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-1"
-                            >
-                              <Ban size={14} />
-                              نقل إلى غير النشطة
-                            </button>
-                          )}
-                          {expired && onReactivate && (
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onReactivate(job);
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full text-right px-4 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-1"
-                            >
-                              <RotateCcw size={14} />
-                              تنشيط الإعلان
-                            </button>
-                          )}
-                          {job.status === "مسودة" && onDelete && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onDelete(job.id);
-                                setOpenDropdownId(null);
-                              }}
-                              className="w-full text-right px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-1"
-                            >
-                              <Trash2 size={14} />
-                              حذف المسودة
-                            </button>
-                          )}
-                        </div>
-                      </>
-                    )}
+                            {onPreview && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onPreview(job);
+                                  setOpenDropdownId(null);
+                                }}
+                                className="w-full text-right px-4 py-2.5 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50"
+                              >
+                                <Eye size={14} className="text-slate-400 dark:text-slate-500" />
+                                معاينة الإعلان
+                              </button>
+                            )}
+                            {onClone && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onClone(job);
+                                  setOpenDropdownId(null);
+                                }}
+                                className="w-full text-right px-4 py-2.5 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2.5"
+                              >
+                                <Copy size={14} className="text-slate-400 dark:text-slate-500" />
+                                تكرار الإعلان
+                              </button>
+                            )}
+                            {!expired && onDeactivate && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onDeactivate(job);
+                                  setOpenDropdownId(null);
+                                }}
+                                className="w-full text-right px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-1"
+                              >
+                                <Ban size={14} />
+                                نقل إلى غير النشطة
+                              </button>
+                            )}
+                            {expired && onReactivate && (
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onReactivate(job);
+                                  setOpenDropdownId(null);
+                                }}
+                                className="w-full text-right px-4 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-1"
+                              >
+                                <RotateCcw size={14} />
+                                تنشيط الإعلان
+                              </button>
+                            )}
+                            {job.status === "مسودة" && onDelete && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onDelete(job.id);
+                                  setOpenDropdownId(null);
+                                }}
+                                className="w-full text-right px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-1"
+                              >
+                                <Trash2 size={14} />
+                                حذف المسودة
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Profile Details (Job Icon, Title, Company Name) - Centered like Talent Bank */}
-              <div className="flex flex-col items-center text-center mb-3">
-                <div
-                  className="w-12 h-12 bg-primary/10 text-primary rounded-[14px] flex items-center justify-center font-extrabold shadow-[0_3px_8px_rgba(0,0,0,0.06),_inset_0_1.5px_2px_rgba(255,255,255,0.7)] dark:shadow-[0_3px_8px_rgba(0,0,0,0.25),_inset_0_1px_1px_rgba(255,255,255,0.15)] border border-primary/20 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary/20 shrink-0 overflow-hidden shadow-sm"
-                >
-                  {getJobIcon(job.title || job.campaignTitle)}
+                {/* Profile Details (Job Icon, Title, Company Name) - Centered like Talent Bank */}
+                <div className="flex flex-col items-center text-center mb-3">
+                  <div
+                    className="w-12 h-12 bg-primary/10 text-primary rounded-[14px] flex items-center justify-center font-extrabold shadow-[0_3px_8px_rgba(0,0,0,0.06),_inset_0_1.5px_2px_rgba(255,255,255,0.7)] dark:shadow-[0_3px_8px_rgba(0,0,0,0.25),_inset_0_1px_1px_rgba(255,255,255,0.15)] border border-primary/20 transition-all duration-300 group-hover:scale-105 group-hover:bg-primary/20 shrink-0 overflow-hidden shadow-sm"
+                  >
+                    {getJobIcon(job.title || job.campaignTitle)}
+                  </div>
+                  <h3 className="text-sm font-bold text-navy dark:text-white mt-2.5 mb-0.5 line-clamp-2 w-full px-2" title={job.title || job.campaignTitle}>
+                    {job.title || job.campaignTitle || "عنوان غير محدد"}
+                  </h3>
+                  <p className="text-slate-400 dark:text-slate-500 text-[10.5px] font-semibold truncate w-full px-2" title={job.company}>
+                    {job.company || "جهة غير محددة"}
+                  </p>
                 </div>
-                <h3 className="text-sm font-bold text-navy dark:text-white mt-2.5 mb-0.5 line-clamp-2 w-full px-2" title={job.title || job.campaignTitle}>
-                  {job.title || job.campaignTitle || "عنوان غير محدد"}
-                </h3>
-                <p className="text-slate-400 dark:text-slate-500 text-[10.5px] font-semibold truncate w-full px-2" title={job.company}>
-                  {job.company || "جهة غير محددة"}
-                </p>
-              </div>
 
-              {/* Boxy Subcards styled exactly like Talent Bank progress grid */}
-              <div className="grid grid-cols-2 gap-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                <div className="flex flex-col items-center justify-center text-center">
-                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">المتقدمين</span>
-                  {isLoading ? (
-                    <span className="animate-pulse bg-slate-200 dark:bg-slate-700 w-8 h-4 rounded block mx-auto"></span>
-                  ) : (
-                    <span className="text-xs font-black text-navy dark:text-white leading-none">{job.applicants}</span>
-                  )}
+                {/* Boxy Subcards styled exactly like Talent Bank progress grid */}
+                <div className="grid grid-cols-2 gap-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">المتقدمين</span>
+                    {isLoading ? (
+                      <span className="animate-pulse bg-slate-200 dark:bg-slate-700 w-8 h-4 rounded block mx-auto"></span>
+                    ) : (
+                      <span className="text-xs font-black text-navy dark:text-white leading-none">{job.applicants}</span>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center justify-center text-center border-r border-slate-200/60 dark:border-slate-700/60 pr-2">
+                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">نوع العمل</span>
+                    <span className="text-[10px] font-bold text-navy dark:text-white leading-normal truncate max-w-[85px]" title={job.type}>{job.type}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-center justify-center text-center border-r border-slate-200/60 dark:border-slate-700/60 pr-2">
-                  <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">نوع العمل</span>
-                  <span className="text-[10px] font-bold text-navy dark:text-white leading-normal truncate max-w-[85px]" title={job.type}>{job.type}</span>
-                </div>
-              </div>
 
-              {/* Footer Date centered */}
-              <div className="flex items-center justify-center pt-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-auto">
-                <span className="text-[10.5px] text-slate-400 dark:text-slate-500 font-bold">
-                  نُشر: {job.createdAt}
-                </span>
-              </div>
-            </motion.div>
-          );
-        })}
+                {/* Footer Date centered */}
+                <div className="flex items-center justify-center pt-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-auto">
+                  <span className="text-[10.5px] text-slate-400 dark:text-slate-500 font-bold">
+                    نُشر: {job.createdAt}
+                  </span>
+                </div>
+              </motion.div>
+            );
+          })}
         </motion.div>
       </AnimatePresence>
     </>

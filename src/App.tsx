@@ -1780,6 +1780,12 @@ export default function App() {
     window.addEventListener("showToast", handler);
     return () => window.removeEventListener("showToast", handler);
   }, []);
+
+  useEffect(() => {
+    const handler = () => setShowBookingModal(true);
+    window.addEventListener("openBookingModal", handler);
+    return () => window.removeEventListener("openBookingModal", handler);
+  }, []);
   const [selectedJob, setSelectedJob] = useState<Job | null>(() => {
     const saved = sessionStorage.getItem("sahab_selected_job");
     try {
@@ -1940,8 +1946,8 @@ export default function App() {
               taxNumber: data.tax_number || prev.taxNumber,
               city: data.city || prev.city,
               companyLogo: data.company_logo || prev.companyLogo,
-              subscription_tier: data.subscription_plan || "free",
-              subscription_end_date: data.subscription_end_date || prev.subscription_end_date,
+              subscription_tier: "free", // SIMULATED EXPIRED
+              subscription_end_date: "2024-01-01", // SIMULATED EXPIRED
               subscription_is_yearly: localStorage.getItem('subscription_is_yearly') === 'true',
               cvs_processed_count: data.cvs_processed_count || 0,
               fields_locked: data.fields_locked || false,
@@ -2295,7 +2301,7 @@ export default function App() {
     initialJobData: Job | null = null,
   ) => {
     // Check Subscription Limits
-    const activeCount = jobs.filter(j => j.status === 'نشط' || j.status === 'مسودة').length;
+    const activeCount = jobs.filter(j => j.status === 'نشط').length;
     let limit = userProfile?.jobs_limit || 0;
     if (!limit) {
       if (userProfile?.subscription_tier === 'free') limit = 1;

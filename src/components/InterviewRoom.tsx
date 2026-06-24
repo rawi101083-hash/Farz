@@ -130,7 +130,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
 
       const { data: hasCredit, error: rpcError } = await supabase.rpc('deduct_interview_credit', { p_company_id: jobData.company_id });
       if (rpcError || !hasCredit) {
-        throw new Error("عذراً، نفد رصيد المقابلات المتاح للشركة. يرجى إبلاغ مسؤول التوظيف لترقية الباقة أو شراء رصيد إضافي.");
+        throw new Error("عذراً، هذا الرابط غير متاح.");
       }
 
       // --- Prepare Interview Questions to Send to Vapi ---

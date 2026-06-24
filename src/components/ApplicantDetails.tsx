@@ -210,7 +210,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
     else if (plan === 'enterprise') interviewsLimit = 1500;
   }
   const interviewsUsed = userProfile?.used_interviews || 0;
-  const interviewsRemaining = Math.max(0, interviewsLimit - interviewsUsed);
+  const interviewsRemaining = 0; // TEMPORARY Math.max(0, interviewsLimit - interviewsUsed);
   const overbooked = pendingInterviewsCount >= interviewsRemaining && interviewsRemaining > 0;
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -401,19 +401,40 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button
-                    onClick={() => { setInterviewSendMethod('whatsapp'); setShowInterviewQuestionsModal(true); }}
+                    onClick={() => { 
+                      if (interviewsRemaining === 0) {
+                        setToastMessage("رصيد المقابلات صفر، لا يمكنك إرسال رابط أو إعادة فتح الرابط.");
+                        setTimeout(() => setToastMessage(null), 3000);
+                        return;
+                      }
+                      setInterviewSendMethod('whatsapp'); 
+                      setShowInterviewQuestionsModal(true); 
+                    }}
                     className="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white border border-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-900/50 dark:hover:bg-green-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
                   >
                     <MessageCircle size={16} /> إرسال المقابلة (واتساب)
                   </button>
                   <button
-                    onClick={() => { setInterviewSendMethod('email'); setShowInterviewQuestionsModal(true); }}
+                    onClick={() => { 
+                      if (interviewsRemaining === 0) {
+                        setToastMessage("رصيد المقابلات صفر، لا يمكنك إرسال رابط أو إعادة فتح الرابط.");
+                        setTimeout(() => setToastMessage(null), 3000);
+                        return;
+                      }
+                      setInterviewSendMethod('email'); 
+                      setShowInterviewQuestionsModal(true); 
+                    }}
                     className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-900/50 dark:hover:bg-blue-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
                   >
                     <Mail size={16} /> إرسال المقابلة (إيميل)
                   </button>
                   <button
                     onClick={async () => {
+                      if (interviewsRemaining === 0) {
+                        setToastMessage("رصيد المقابلات صفر، لا يمكنك إرسال رابط أو إعادة فتح الرابط.");
+                        setTimeout(() => setToastMessage(null), 3000);
+                        return;
+                      }
                       if (!window.confirm("تنبيه: هذا المتقدم قد أجرى المقابلة مسبقاً. هل تريد تأكيد فك القفل وإعادة فتح المقابلة له؟")) return;
                       try {
                         await supabase
@@ -1230,13 +1251,17 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
       <AnimatePresence>
         {toastMessage && (
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-navy text-white px-6 py-3 rounded-xl shadow-2xl z-[100] flex items-center gap-3 font-bold"
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-6 left-1/2 -translate-x-1/2 bg-navy text-white px-6 py-4 border border-slate-700/50 rounded-2xl shadow-2xl z-[100] flex items-center gap-3 font-bold"
           >
-            <CheckCircle size={20} className="text-primary" />
-            {toastMessage}
+            {toastMessage.includes("صفر") ? (
+              <Ban size={20} className="text-red-400" />
+            ) : (
+              <CheckCircle size={20} className="text-primary" />
+            )}
+            <span className={toastMessage.includes("صفر") ? "text-red-100" : ""}>{toastMessage}</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1266,6 +1291,14 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
               </h3>
               
               {/* Overbooking Warning */}
+              {interviewsRemaining === 0 && (
+                <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 p-4 rounded-xl flex gap-3 text-red-800 dark:text-red-300">
+                  <Ban size={20} className="shrink-0 mt-0.5 text-red-500" />
+                  <p className="text-sm font-bold leading-relaxed">
+                    تنبيه: رصيد المقابلات المتاح لديك (صفر). يمكنك إرسال الروابط، لكنها لن تعمل مع المتقدمين ولن يتمكنوا من بدء المقابلة حتى تقوم بترقية الباقة أو شحن الرصيد.
+                  </p>
+                </div>
+              )}
               {overbooked && (
                 <div className="mb-6 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 p-4 rounded-xl flex gap-3 text-orange-800 dark:text-orange-300">
                   <AlertTriangle size={20} className="shrink-0 mt-0.5 text-orange-500" />

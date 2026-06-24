@@ -158,8 +158,8 @@ const CompactJobSelector = ({
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="font-bold text-sm text-navy dark:text-white truncate">
-          {selectedFilter === "all" 
-            ? "تصفية حسب الوظيفة: الكل" 
+          {selectedFilter === "all"
+            ? "تصفية حسب الوظيفة: الكل"
             : `${selectedJob?.title || "كل الوظائف"}${selectedJob?.job_number ? ` (${selectedJob.job_number})` : ""}`}
         </span>
         <ChevronDown size={14} className={`text-slate-400 transition-transform shrink-0 ${isOpen ? "rotate-180" : ""}`} />
@@ -278,7 +278,7 @@ export const Dashboard = ({
 
   const isInitialJobLoad = useRef(true);
   // Compute Limits
-  const activeCount = jobs.filter(j => j.status === 'نشط' || j.status === 'مسودة').length;
+  const activeCount = jobs.filter(j => j.status === 'نشط').length;
   const isPreviewMode = Date.now() < 1777221464725;
   let plan = userProfile?.subscription_tier || 'free';
   if (isPreviewMode) plan = 'free';
@@ -291,20 +291,20 @@ export const Dashboard = ({
     e.preventDefault();
     if (!supportMessage.trim()) return;
     setSupportStatus("sending");
-    
+
     try {
       await fetch("https://formsubmit.co/ajax/farz101083@gmail.com", {
         method: "POST",
-        headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
         body: JSON.stringify({
-            _subject: "رسالة دعم فني جديدة من منصة فرز",
-            email: userProfile?.email || userEmail || "غير محدد",
-            "اسم المستخدم / الشركة": userProfile?.company_name || userProfile?.name || "غير محدد",
-            "البريد الإلكتروني للعميل": userProfile?.email || userEmail || "غير محدد",
-            "نص المشكلة": supportMessage
+          _subject: "رسالة دعم فني جديدة من منصة فرز",
+          email: userProfile?.email || userEmail || "غير محدد",
+          "اسم المستخدم / الشركة": userProfile?.company_name || userProfile?.name || "غير محدد",
+          "البريد الإلكتروني للعميل": userProfile?.email || userEmail || "غير محدد",
+          "نص المشكلة": supportMessage
         })
       });
       setSupportStatus("success");
@@ -315,7 +315,7 @@ export const Dashboard = ({
       }, 3000);
     } catch (error) {
       console.error(error);
-      setSupportStatus("success"); 
+      setSupportStatus("success");
       setTimeout(() => { setIsSupportModalOpen(false); setSupportMessage(""); setSupportStatus("idle"); }, 3000);
     }
   };
@@ -327,26 +327,35 @@ export const Dashboard = ({
   let cvLimit = userProfile?.cv_limit ?? 0;
   let interviewsLimit = userProfile?.interviews_limit ?? 0;
 
-  if (!jobLimit) {
-    if (plan === 'free') jobLimit = 1;
-    else if (plan === 'one-time') jobLimit = 1;
-    else if (plan === 'startup' || plan === 'growth') jobLimit = 3;
-    else if (plan === 'business') jobLimit = 10;
-    else if (plan === 'enterprise') jobLimit = 100;
-  }
-  if (!cvLimit) {
-    if (plan === 'free') cvLimit = 50;
-    else if (plan === 'one-time') cvLimit = 500;
-    else if (plan === 'startup' || plan === 'growth') cvLimit = isYearly ? 12000 : 1000;
-    else if (plan === 'business') cvLimit = isYearly ? 60000 : 5000;
-    else if (plan === 'enterprise') cvLimit = isYearly ? 180000 : 15000;
-  }
-  if (!interviewsLimit) {
-    if (plan === 'free') interviewsLimit = 1;
-    else if (plan === 'one-time') interviewsLimit = 0;
-    else if (plan === 'startup' || plan === 'growth') interviewsLimit = 100;
-    else if (plan === 'business') interviewsLimit = 500;
-    else if (plan === 'enterprise') interviewsLimit = 1500;
+  const hasSubscribedBefore = !!(userProfile as any)?.subscription_end_date;
+
+  // Force override to 0 if they are on a free plan but have subscribed before (expired)
+  if (plan === 'free' && hasSubscribedBefore) {
+    jobLimit = 0;
+    cvLimit = 0;
+    interviewsLimit = 0;
+  } else {
+    if (!jobLimit) {
+      if (plan === 'free') jobLimit = 1;
+      else if (plan === 'one-time') jobLimit = 1;
+      else if (plan === 'startup' || plan === 'growth') jobLimit = 3;
+      else if (plan === 'business') jobLimit = 10;
+      else if (plan === 'enterprise') jobLimit = 100;
+    }
+    if (!cvLimit) {
+      if (plan === 'free') cvLimit = 50;
+      else if (plan === 'one-time') cvLimit = 500;
+      else if (plan === 'startup' || plan === 'growth') cvLimit = isYearly ? 12000 : 1000;
+      else if (plan === 'business') cvLimit = isYearly ? 60000 : 5000;
+      else if (plan === 'enterprise') cvLimit = isYearly ? 180000 : 15000;
+    }
+    if (!interviewsLimit) {
+      if (plan === 'free') interviewsLimit = 1;
+      else if (plan === 'one-time') interviewsLimit = 0;
+      else if (plan === 'startup' || plan === 'growth') interviewsLimit = 100;
+      else if (plan === 'business') interviewsLimit = 500;
+      else if (plan === 'enterprise') interviewsLimit = 1500;
+    }
   }
   const cvsUsed = userProfile?.cvs_processed_count || 0;
   let cvsRemaining = Math.max(0, cvLimit - cvsUsed);
@@ -376,7 +385,7 @@ export const Dashboard = ({
   useEffect(() => {
     try {
       window.localStorage.setItem("sahab_dashboard_jobFilter", jobFilter);
-    } catch {}
+    } catch { }
   }, [jobFilter]);
   const [decisionFilter, setDecisionFilter] = useState<"pending" | "interview" | "accepted" | "rejected" | "filtered" | "locked_fomo">(() => {
     try {
@@ -389,12 +398,18 @@ export const Dashboard = ({
   useEffect(() => {
     try {
       sessionStorage.setItem("sahab_decision_filter", decisionFilter);
-    } catch {}
+    } catch { }
   }, [decisionFilter]);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [crossNominateApplicant, setCrossNominateApplicant] = useState<Applicant | null>(null);
   const [crossNominateJobId, setCrossNominateJobId] = useState<string>("");
-  const [addonsBoughtThisMonth, setAddonsBoughtThisMonth] = useState(0);
+  const [addonsBoughtThisMonth, setAddonsBoughtThisMonth] = useState(() => {
+    try {
+      return parseInt(window.localStorage.getItem("addons_bought_this_month") || "0");
+    } catch {
+      return 0;
+    }
+  });
   const [showSoftUpgradeModal, setShowSoftUpgradeModal] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState<boolean>(false);
   const [isSmartSortOpen, setIsSmartSortOpen] = useState(false);
@@ -456,12 +471,12 @@ export const Dashboard = ({
     try {
       const saved = localStorage.getItem("sahab_applicants_fast_cache");
       if (saved) return JSON.parse(saved);
-    } catch(e) {}
+    } catch (e) { }
     return [];
   });
   const [isLoadingApplicants, setIsLoadingApplicants] = useState<boolean>(true);
 
-    // Load from IndexedDB instantly on mount
+  // Load from IndexedDB instantly on mount
   useEffect(() => {
     import('../lib/applicantsCache').then(({ loadFromIDB }) => {
       loadFromIDB("cache_v1").then((cachedData) => {
@@ -521,12 +536,12 @@ export const Dashboard = ({
         const latestDecisions = window.localStorage ? JSON.parse(window.localStorage.getItem("sahab_decisions") || "{}") : {};
 
         if (!error && data) {
-          const filteredData = data.filter((raw: any) => 
-            raw.decision !== 'CORRUPT_FILE_DO_NOT_SHOW' && 
-            raw.decision !== 'processing' && 
+          const filteredData = data.filter((raw: any) =>
+            raw.decision !== 'CORRUPT_FILE_DO_NOT_SHOW' &&
+            raw.decision !== 'processing' &&
             raw.decision !== 'failed'
           );
-          
+
           mappedList = filteredData.map((raw: any) => {
             let actualJobTitle = "طلب غير محدد";
             const matchedJob = jobs.find(j => j.id === raw.job_id);
@@ -595,26 +610,23 @@ export const Dashboard = ({
               ai_justification: raw.ai_summary || raw.ai_justification
             } as any;
           });
+
+          const currentJobsStr = JSON.stringify(jobIds);
+          setApplicantsState(prev => {
+            const next = JSON.stringify(prev) !== JSON.stringify(mappedList) ? mappedList : prev;
+
+            import('../lib/applicantsCache').then(({ setGlobalApplicantsCache }) => {
+              setGlobalApplicantsCache(next, currentJobsStr);
+            });
+
+            return next;
+          });
         } else {
           // If there's an error (e.g. ERR_QUIC_PROTOCOL_ERROR), fallback to cache
           if (globalApplicantsCache && globalApplicantsCache.length > 0) {
             setApplicantsState(globalApplicantsCache);
           }
         }
-
-        // Fake applicants logic has been permanently removed based on user request.
-
-
-        const currentJobsStr = JSON.stringify(jobIds);
-        setApplicantsState(prev => {
-          const next = JSON.stringify(prev) !== JSON.stringify(mappedList) ? mappedList : prev;
-          
-          import('../lib/applicantsCache').then(({ setGlobalApplicantsCache }) => {
-            setGlobalApplicantsCache(next, currentJobsStr);
-          });
-          
-          return next;
-        });
       } catch (err) {
         console.error("Error fetching applicants:", err);
       } finally {
@@ -623,7 +635,7 @@ export const Dashboard = ({
     };
 
     fetchApplicants();
-    
+
     // Supabase Realtime Subscription for instant updates
     let debounceTimer: NodeJS.Timeout;
     const channel = supabase
@@ -740,27 +752,27 @@ export const Dashboard = ({
 
   let visibleApplicants = applicants.filter(a => {
     const d = a.decision || "pending";
-    const statusMatch = decisionFilter === "interview" 
-      ? (d === "interview" || d === "interview_sent" || d === "interviewing") 
+    const statusMatch = decisionFilter === "interview"
+      ? (d === "interview" || d === "interview_sent" || d === "interviewing")
       : d === decisionFilter;
     const jobMatch = jobFilter === "all" || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "");
     const favMatch = !showFavoritesOnly || a.is_favorite === true;
 
     const searchLower = (applicantSearchQuery || "").toLowerCase().trim();
-    
+
     // Normalize phone numbers to handle 05x, 966x, +966x formats for precise matching
     const searchDigits = searchLower.replace(/\D/g, "");
-    const searchPhoneNormalized = searchDigits.startsWith("966") 
-      ? searchDigits.substring(3) 
+    const searchPhoneNormalized = searchDigits.startsWith("966")
+      ? searchDigits.substring(3)
       : (searchDigits.startsWith("0") ? searchDigits.substring(1) : searchDigits);
 
     const appDigits = (a.phone || "").replace(/\D/g, "");
-    const appPhoneNormalized = appDigits.startsWith("966") 
-      ? appDigits.substring(3) 
+    const appPhoneNormalized = appDigits.startsWith("966")
+      ? appDigits.substring(3)
       : (appDigits.startsWith("0") ? appDigits.substring(1) : appDigits);
 
-    const phoneMatch = searchPhoneNormalized && appPhoneNormalized 
-      ? appPhoneNormalized.includes(searchPhoneNormalized) 
+    const phoneMatch = searchPhoneNormalized && appPhoneNormalized
+      ? appPhoneNormalized.includes(searchPhoneNormalized)
       : false;
 
     const matchedJob = jobs.find(j => j.title && (a.job || "").includes(j.title));
@@ -915,7 +927,7 @@ export const Dashboard = ({
     setToastMessage("تم نقل المرشح لبنك الكفاءات بنجاح!");
     setTimeout(() => setToastMessage(null), 3000);
     setOpenDropdownId(null);
-    
+
     // Backend sync
     if (!applicant.id.startsWith("mock-")) {
       try {
@@ -932,7 +944,7 @@ export const Dashboard = ({
     setToastMessage("تمت الإزالة من بنك الكفاءات.");
     setTimeout(() => setToastMessage(null), 3000);
     setOpenDropdownId(null);
-    
+
     // Backend sync
     if (!id.startsWith("mock-")) {
       try {
@@ -963,9 +975,9 @@ export const Dashboard = ({
     };
 
     setApplicants(prev => {
-      const updatedOriginals = prev.map(a => 
-        a.id === crossNominateApplicant.id 
-          ? { ...a, nominatedTo: targetJob.title } 
+      const updatedOriginals = prev.map(a =>
+        a.id === crossNominateApplicant.id
+          ? { ...a, nominatedTo: targetJob.title }
           : a
       );
       return [...updatedOriginals, clonedApplicant];
@@ -1099,7 +1111,7 @@ export const Dashboard = ({
                       return;
                     }
                     if (activeCount >= jobLimit) {
-                      setToastMessage(`وصلت للحد الأقصى للوظائف المسموحة في باقتك (${jobLimit} وظائف)`);
+                      setToastMessage(`وصلت للحد الأقصى للوظائف المسموحة (${jobLimit}). يرجى إغلاق إحدى الوظائف النشطة لتتمكن من إنشاء إعلان جديد.`);
                       setTimeout(() => setToastMessage(null), 3000);
                       return;
                     }
@@ -1184,7 +1196,7 @@ export const Dashboard = ({
                     >
                       {/* Decorative Background Blur */}
                       <div className={`absolute -left-6 -top-6 w-20 h-20 ${stat.blurClass} rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700`} />
-                      
+
                       <div className="flex items-center gap-3 relative z-10">
                         <div className={`w-10 h-10 ${stat.iconBg} rounded-lg flex items-center justify-center shadow-inner`}>
                           {stat.icon}
@@ -1202,7 +1214,7 @@ export const Dashboard = ({
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="relative z-10">
                         <span className={`inline-flex items-center justify-center px-2 py-1 rounded-md text-[9px] font-bold shadow-sm ${stat.badgeClass}`}>
                           {(isLoadingApplicants && applicants.length === 0) ? (
@@ -1258,8 +1270,7 @@ export const Dashboard = ({
                       { id: "interview", label: "المقابلات", color: "text-yellow-600 dark:text-yellow-400" },
                       { id: "accepted", label: "المقبولين", color: "text-green-600 dark:text-green-400" },
                       { id: "rejected", label: "المرفوضين", color: "text-red-600 dark:text-red-400" },
-                      { id: "filtered", label: "تمت تصفيتهم", color: "text-slate-500 dark:text-slate-400" },
-                      { id: "locked_fomo", label: "مقفل (سير إضافية)", color: "text-purple-600 dark:text-purple-400" }
+                      { id: "filtered", label: "تمت تصفيتهم", color: "text-slate-500 dark:text-slate-400" }
                     ].map(tab => (
                       <button
                         key={tab.id}
@@ -1267,9 +1278,6 @@ export const Dashboard = ({
                         className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${decisionFilter === tab.id ? `bg-white dark:bg-slate-700 shadow-md border-b-[3px] border-slate-200 dark:border-slate-600 transform -translate-y-0.5 ${tab.color}` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 border-b-[3px] border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                       >
                         {tab.label}
-                        {tab.id === "locked_fomo" && (
-                          <Lock size={12} className="inline ml-1 mb-0.5" />
-                        )}
                       </button>
                     ))}
                   </div>{" "}
@@ -1278,12 +1286,12 @@ export const Dashboard = ({
 
 
 
-          <button
-            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-            className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 border hover:-translate-y-0.5 hover:shadow-md ${showFavoritesOnly ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'}`}
-          >
-            <Star size={16} fill={showFavoritesOnly ? "currentColor" : "none"} className={showFavoritesOnly ? "text-yellow-500" : "text-slate-400"} /> عرض المفضلين
-          </button>
+                  <button
+                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                    className={`px-4 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 border hover:-translate-y-0.5 hover:shadow-md ${showFavoritesOnly ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'}`}
+                  >
+                    <Star size={16} fill={showFavoritesOnly ? "currentColor" : "none"} className={showFavoritesOnly ? "text-yellow-500" : "text-slate-400"} /> عرض المفضلين
+                  </button>
                   <div className="relative">
                     <Search
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"
@@ -1362,7 +1370,52 @@ export const Dashboard = ({
                     </AnimatePresence>
                   </div>{" "}
                 </div>{" "}
-              </div>{" "}
+              </div>
+              {(() => {
+                const lockedCount = visibleApplicants.filter((row, index) => row.decision === "locked_fomo" || (plan === 'free' && ((row.decision === "pending" && (!row.rating || row.rating === 0)) || (isPreviewMode && index > 0)) && cvsRemaining <= 0)).length;
+                if (lockedCount > 0) {
+                  return (
+                    <div className="mb-6 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 p-4 sm:p-5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm">
+                      <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center shadow-sm text-primary shrink-0 border border-primary/20">
+                          <Lock size={22} />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-navy dark:text-white text-lg">لقد انتهى رصيدك من السير الذاتية</h4>
+                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            لديك ({lockedCount}) سيرة ذاتية جديدة بانتظار الفرز. إما أن ترقي باقتك، أو الحصول على رصيد 500 سيرة ذاتية إضافية لعرض المتقدمين الجدد.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 w-full md:w-auto mt-2 md:mt-0">
+                        <button
+                          onClick={() => {
+                            const currentCount = addonsBoughtThisMonth;
+                            const newCount = currentCount + 1;
+                            setAddonsBoughtThisMonth(newCount);
+                            window.localStorage.setItem("addons_bought_this_month", newCount.toString());
+
+                            const dismissedKey = `dismissed_upsell_${plan}_${(userProfile as any)?.subscription_end_date || 'none'}`;
+                            const hasDismissed = window.localStorage.getItem(dismissedKey) === "true";
+
+                            if (currentCount >= 2 && plan === 'startup' && !hasDismissed) {
+                              setShowSoftUpgradeModal(true);
+                            } else {
+                              alert("سيتم توجيهك لبوابة الدفع لشراء 500 سيرة بـ 149 ريال...");
+                            }
+                          }}
+                          className="relative overflow-hidden group flex-1 md:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-primary to-teal-500 text-white px-8 py-3.5 rounded-xl text-sm font-bold transition-all shadow-lg hover:shadow-teal-500/30 hover:-translate-y-0.5 border border-teal-400/20"
+                        >
+                          <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out"></div>
+                          <Lock size={16} className="relative z-10 group-hover:scale-110 transition-transform" />
+                          <span className="relative z-10 tracking-wide">فك القفل 149 ريال</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               <div className="overflow-x-auto overflow-y-hidden min-h-[60vh] hide-scrollbar">
                 <table className="w-full text-right">
                   <thead className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-200 text-xs uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
@@ -1389,7 +1442,7 @@ export const Dashboard = ({
                       )}
                       <th className="px-2 pr-14 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">اسم المتقدم</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الوظيفة المقدم إليها</th>
-<th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">التقييم الآلي</th>
+                      <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">التقييم الآلي</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الجاهزية</th>
                       <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">معلومات التواصل</th>
                       {decisionFilter === "interview" && (
@@ -1450,8 +1503,10 @@ export const Dashboard = ({
                       </tr>
                     ) : (
                       <AnimatePresence>
-                        {visibleApplicants.slice(0, displayCount).map((row, index) => {
-                          const isFomoLocked = row.decision === "locked_fomo" || (plan === 'free' && (row.status === "قيد الانتظار" || (isPreviewMode && index > 0)) && cvsRemaining <= 0);
+                        {visibleApplicants.slice(0, displayCount).map((originalRow, index) => {
+                          const row = originalRow;
+                          const isFomoLocked = row.decision === "locked_fomo" || (plan === 'free' && ((row.decision === "pending" && (!row.rating || row.rating === 0)) || (isPreviewMode && index > 0)) && cvsRemaining <= 0);
+                          const isEvaluating = row.decision === "pending" && row.rating === 0;
                           return (
                             <motion.tr
                               layout
@@ -1460,11 +1515,11 @@ export const Dashboard = ({
                               exit={{ opacity: 0, scale: 0.9 }}
                               key={row.id}
                               onClick={() => {
-                                if (!isFomoLocked) {
+                                if (!isFomoLocked && !isEvaluating) {
                                   onViewDetails(row);
                                 }
                               }}
-                              className={`transition-colors group ${isFomoLocked ? 'bg-slate-50/50 dark:bg-slate-800/30' : 'hover:bg-slate-50 dark:bg-slate-800/80 cursor-pointer'}`}
+                              className={`transition-colors group ${isFomoLocked || isEvaluating ? 'bg-slate-50/50 dark:bg-slate-800/30' : 'hover:bg-slate-50 dark:bg-slate-800/80 cursor-pointer'}`}
                             >
                               {isSelectionMode && (
                                 <td className="px-3 py-4 w-10">
@@ -1522,13 +1577,8 @@ export const Dashboard = ({
                                     <span className={`font-bold text-navy dark:text-white ${isFomoLocked ? 'filter blur-[4px] select-none' : ''}`}>
                                       {isFomoLocked ? 'متقدم مخفي (نفد الرصيد)' : row.name}
                                     </span>
-                                    {isFomoLocked && (
-                                      <div className="mt-1 text-[10px] bg-purple-50 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-md inline-block font-bold w-fit border border-purple-100 dark:border-purple-800/30 shadow-sm">
-                                        خبرة: {row.voiceEval || "غير محدد"}
-                                      </div>
-                                    )}
                                     {row.nominatedTo && !isFomoLocked && (
-                                      <div 
+                                      <div
                                         className="mt-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md inline-block font-bold w-fit max-w-[180px] truncate border border-primary/20 shadow-sm"
                                         title={`تم ترشيحه لـ: ${row.nominatedTo}`}
                                       >
@@ -1545,7 +1595,7 @@ export const Dashboard = ({
                               </td>
                               <td className="px-2 py-3">
                                 <div className="flex justify-start">
-                                  <span 
+                                  <span
                                     className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white px-2 py-1 rounded-md text-[11px] font-bold inline-flex items-center justify-center whitespace-nowrap w-fit max-w-[140px] truncate"
                                     title={row.job}
                                   >
@@ -1557,6 +1607,11 @@ export const Dashboard = ({
                                 {row.rejection_reason && row.rejection_reason.includes("مرفوض آلياً") ? (
                                   <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2.5 py-1 rounded-md border border-rose-100 dark:border-rose-800/50 whitespace-nowrap">
                                     مستبعد آلياً
+                                  </span>
+                                ) : isEvaluating && !isFomoLocked ? (
+                                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 whitespace-nowrap flex items-center justify-center gap-1.5 w-fit shadow-sm">
+                                    <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                    قيد الفرز
                                   </span>
                                 ) : (
                                   <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
@@ -1645,20 +1700,11 @@ export const Dashboard = ({
                               <td className="px-2 py-3">
                                 <div className="flex items-center justify-end gap-1.5 w-full pl-4">
                                   {isFomoLocked ? (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setAddonsBoughtThisMonth(prev => prev + 1);
-                                        if (addonsBoughtThisMonth >= 2 && plan !== 'enterprise') {
-                                          setShowSoftUpgradeModal(true);
-                                        } else {
-                                          alert("سيتم توجيهك لبوابة الدفع لشراء 500 سيرة بـ 149 ريال...");
-                                        }
-                                      }}
-                                      className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md hover:shadow-lg animate-pulse"
-                                    >
-                                      <Lock size={14} /> فك القفل (149 ريال)
-                                    </button>
+                                    <div className="flex justify-center w-full">
+                                      <span className="bg-primary/10 text-primary dark:bg-primary/20 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap select-none border border-primary/20">
+                                        <Lock size={13} /> مقفل
+                                      </span>
+                                    </div>
                                   ) : row.decision === "filtered" ? (
                                     <button
                                       onClick={(e) => {
@@ -1670,7 +1716,7 @@ export const Dashboard = ({
                                     >
                                       <RotateCcw size={14} /> استعادة
                                     </button>
-                                  ) : row.decision && row.decision !== "pending" ? (
+                                  ) : (row.decision && row.decision !== "pending") || decisionFilter === "interview" || decisionFilter === "accepted" || decisionFilter === "rejected" ? (
                                     <>
                                       <button
                                         onClick={(e) => {
@@ -1713,17 +1759,17 @@ export const Dashboard = ({
                                   <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); onViewDetails(row); }}
-                                    disabled={isFomoLocked}
-                                    className={`flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isFomoLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={isFomoLocked || isEvaluating}
+                                    className={`flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isFomoLocked || isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                                     title="عرض الملف"
                                   >
                                     <FileText size={14} /> عرض الملف{" "}
                                   </button>
                                   <div className="relative">
                                     <button
-                                      disabled={isFomoLocked}
+                                      disabled={isFomoLocked || isEvaluating}
                                       onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === row.id ? null : row.id); }}
-                                      className={`flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 hover:text-navy hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${isFomoLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                      className={`flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 transition-colors ${isFomoLocked || isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:text-navy hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                                     >
                                       <MoreVertical size={16} />
                                     </button>
@@ -1752,7 +1798,7 @@ export const Dashboard = ({
                                                   <Star size={16} className={row.is_favorite ? "text-yellow-500" : "text-slate-400"} fill={row.is_favorite ? "currentColor" : "none"} />
                                                   {row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
                                                 </button>
-                                                  {row.in_talent_pool ? (
+                                                {row.in_talent_pool ? (
                                                   <button
                                                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveFromPool(row.id); }}
                                                     className="w-full text-right px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
@@ -1803,7 +1849,7 @@ export const Dashboard = ({
                                   </div>
                                   <h4 className="text-xl font-black text-navy dark:text-white mb-2 tracking-tight">نفد رصيد السير الذاتية 🔒</h4>
                                   <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">للوصول إلى السير الذاتية الإضافية وإجراء الفرز الذكي، يرجى شراء باقة إضافية.</p>
-                                  <button onClick={() => { 
+                                  <button onClick={() => {
                                     setAddonsBoughtThisMonth(prev => prev + 1);
                                     if (addonsBoughtThisMonth >= 2 && plan !== 'enterprise') {
                                       setShowSoftUpgradeModal(true);
@@ -1833,58 +1879,68 @@ export const Dashboard = ({
                     exit={{ opacity: 0, scale: 0.95 }}
                     className="bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl p-8 max-w-md w-full relative overflow-hidden"
                   >
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+                    <div className="absolute -top-32 -right-32 w-80 h-80 bg-gradient-to-br from-primary/20 to-teal-400/20 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-full blur-3xl" />
                     <button
                       onClick={() => setShowSoftUpgradeModal(false)}
                       className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 transition-colors z-10"
                     >
                       <X size={16} />
                     </button>
-                    
-                    <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6">
-                      <TrendingUp size={32} />
-                    </div>
-                    
-                    <h3 className="text-2xl font-black text-navy dark:text-white mb-4">
-                      استخدامك عالي! وفر أموالك 🚀
-                    </h3>
-                    
-                    <p className="text-slate-600 dark:text-slate-300 font-medium mb-6 leading-relaxed">
-                      لاحظنا أنك قمت بشراء إضافات متعددة مؤخراً. يمكنك توفير أكثر من 30% من تكاليفك عند الترقية إلى باقة الأعمال بدلاً من شراء الإضافات المتكررة.
-                    </p>
-                    
-                    <div className="space-y-3 mb-8">
-                      <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-                        <CheckCircle size={16} className="text-emerald-500" /> 5000 سيرة ذاتية شهرياً
+
+                    <div className="relative z-10 flex flex-col items-center text-center">
+
+                      <h3 className="text-2xl sm:text-3xl font-black mb-4 bg-gradient-to-r from-navy via-primary to-teal-600 dark:from-white dark:via-primary dark:to-teal-400 bg-clip-text text-transparent">
+                        وفر أموالك ورقي باقتك!
+                      </h3>
+
+                      <p className="text-slate-600 dark:text-slate-300 font-medium mb-8 leading-relaxed text-sm sm:text-base px-2">
+                        لاحظنا أنك تدفع للإضافات بشكل متكرر! يمكنك توفير أكثر من <span className="text-primary font-black">30%</span> من تكاليفك الحالية، والحصول على مميزات لا محدودة عند الترقية إلى <strong className="text-navy dark:text-white">باقة الأعمال</strong>.
+                      </p>
+
+                      <div className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-2xl p-5 mb-8 text-right space-y-4 shadow-sm">
+                        <div className="flex items-center gap-3 text-sm font-bold text-slate-700 dark:text-slate-200">
+                          <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <CheckCircle size={14} />
+                          </div>
+                          رصيد 5000 سيرة ذاتية شهرياً
+                        </div>
+                        <div className="flex items-center gap-3 text-sm font-bold text-slate-700 dark:text-slate-200">
+                          <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <CheckCircle size={14} />
+                          </div>
+                          15 إعلان وظيفي نشط
+                        </div>
+                        <div className="flex items-center gap-3 text-sm font-bold text-slate-700 dark:text-slate-200">
+                          <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                            <CheckCircle size={14} />
+                          </div>
+                          15 مقابلة صوتية بالذكاء الاصطناعي
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-                        <CheckCircle size={16} className="text-emerald-500" /> 10 إعلانات وظيفية
+
+                      <div className="flex flex-col sm:flex-row gap-3 w-full">
+                        <button
+                          onClick={() => {
+                            setShowSoftUpgradeModal(false);
+                            setActiveTab("باقات فرز");
+                          }}
+                          className="flex-1 bg-gradient-to-b from-primary to-[#0e988c] hover:from-[#0e988c] hover:to-primary text-white py-3.5 rounded-xl font-bold transition-all active:scale-[0.95] text-sm shadow-[0_4px_0_#09736A,0_5px_10px_rgba(0,0,0,0.2)] hover:shadow-[0_2px_0_#09736A,0_3px_5px_rgba(0,0,0,0.2)] hover:translate-y-[2px]"
+                        >
+                          الترقية
+                        </button>
+                        <button
+                          onClick={() => {
+                            const dismissedKey = `dismissed_upsell_${plan}_${(userProfile as any)?.subscription_end_date || 'none'}`;
+                            window.localStorage.setItem(dismissedKey, "true");
+                            setShowSoftUpgradeModal(false);
+                            alert("سيتم توجيهك لبوابة الدفع لشراء 500 سيرة بـ 149 ريال...");
+                          }}
+                          className="flex-1 bg-gradient-to-b from-white to-[#f0fbf9] hover:from-[#f0fbf9] hover:to-[#e1f7f4] text-teal-900 border border-teal-100 py-3.5 rounded-xl font-bold transition-all active:scale-[0.95] text-sm shadow-[0_4px_0_#ccfbf1,0_5px_10px_rgba(0,0,0,0.05)] hover:shadow-[0_2px_0_#ccfbf1,0_3px_5px_rgba(0,0,0,0.05)] hover:translate-y-[2px]"
+                        >
+                          الاستمرار بالدفع 149 ريال
+                        </button>
                       </div>
-                      <div className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-200">
-                        <CheckCircle size={16} className="text-emerald-500" /> مدير حساب مخصص
-                      </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => {
-                          setShowSoftUpgradeModal(false);
-                          setActiveTab("الحساب");
-                          setTimeout(() => window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' })), 50);
-                        }}
-                        className="flex-1 bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary-dark transition-all"
-                      >
-                        الترقية للوفر
-                      </button>
-                      <button
-                        onClick={() => {
-                          setShowSoftUpgradeModal(false);
-                          alert("سيتم توجيهك لبوابة الدفع لشراء 500 سيرة بـ 149 ريال...");
-                        }}
-                        className="flex-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 py-3 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
-                      >
-                        الاستمرار كإضافة
-                      </button>
                     </div>
                   </motion.div>
                 </div>
@@ -2271,10 +2327,10 @@ export const Dashboard = ({
             <div className={`flex ${isSidebarOpen ? 'items-center gap-4' : 'flex-col items-center gap-5'} px-2`}>
               <LogoIcon />{" "}
               {isSidebarOpen && (
-              <span className="text-3xl font-black tracking-tighter text-white flex-1">
-                فرز
-              </span>
-            )}{" "}
+                <span className="text-3xl font-black tracking-tighter text-white flex-1">
+                  فرز
+                </span>
+              )}{" "}
               <button
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 title={isSidebarOpen ? 'تصغير القائمة' : 'توسيع القائمة'}
@@ -2283,7 +2339,7 @@ export const Dashboard = ({
                 {isSidebarOpen ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
               </button>
             </div>
-            
+
             <div className={`flex px-2 ${isSidebarOpen ? 'justify-end' : 'justify-center'}`}>
               <button
                 onClick={() => setDarkMode(!darkMode)}
@@ -2333,12 +2389,12 @@ export const Dashboard = ({
                   <User className="text-slate-400" size={20} />
                 )}
               </div>
-              {isSidebarOpen && ( <div className="overflow-hidden flex-1">
-                  <p className="text-sm font-bold text-white">
-                    {(userProfile?.name || "مستخدم جديد").length > 25 ? (userProfile?.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile?.name || "مستخدم جديد")}
-                  </p>
-                  {userProfile?.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile?.title}</p>}
-              </div> )}
+              {isSidebarOpen && (<div className="overflow-hidden flex-1">
+                <p className="text-sm font-bold text-white">
+                  {(userProfile?.name || "مستخدم جديد").length > 25 ? (userProfile?.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile?.name || "مستخدم جديد")}
+                </p>
+                {userProfile?.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile?.title}</p>}
+              </div>)}
               {isSidebarOpen && (
                 <button
                   onClick={async () => await supabase.auth.signOut()}
@@ -2352,7 +2408,7 @@ export const Dashboard = ({
 
 
             {/* Usage Widget */}
-{isSidebarOpen && ( <div className="bg-slate-800/40 rounded-2xl p-4 pt-5 border border-slate-700/50 space-y-4 relative mt-3">
+            {isSidebarOpen && (<div className="bg-slate-800/40 rounded-2xl p-4 pt-5 border border-slate-700/50 space-y-4 relative mt-3">
               <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#1b2537] border border-slate-700 px-3 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1.5 shadow-md whitespace-nowrap">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_5px_rgba(13,148,136,0.8)]"></div>
                 {plan === 'startup' || plan === 'growth' ? 'نمو' : plan === 'business' ? 'أعمال' : plan === 'enterprise' ? 'الشركات الكبرى' : 'المجانية'}
@@ -2373,10 +2429,10 @@ export const Dashboard = ({
                   cvsRemaining <= 0 ? (
                     <div
                       onClick={() => setActiveTab('باقات فرز')}
-                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 text-red-400 py-2.5 px-2 rounded-xl cursor-pointer hover:from-red-500/20 hover:to-orange-500/20 transition-all active:scale-95 shadow-sm group"
+                      className="w-full flex items-center justify-center gap-2 bg-primary/10 border border-primary/20 text-primary py-2.5 px-3 rounded-xl cursor-pointer hover:bg-primary hover:text-white transition-all active:scale-95 shadow-sm group"
                     >
                       <Lock size={14} className="group-hover:scale-110 transition-transform" />
-                      <span className="text-[11px] font-bold">نفد الرصيد المجاني! بادر بالترقية الآن</span>
+                      <span className="text-xs font-bold whitespace-nowrap">الباقة منتهية - اضغط للترقية</span>
                     </div>
                   ) : (
                     <>
@@ -2409,7 +2465,7 @@ export const Dashboard = ({
                   style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (interviewsRemaining / (interviewsLimit || 1)) * 100)}%` }}
                 />
               </div>
-</div> )}
+            </div>)}
 
           </div>
         </aside>{" "}
