@@ -281,6 +281,14 @@ export const Dashboard = ({
   const activeCount = jobs.filter(j => j.status === 'نشط').length;
   let plan = userProfile?.subscription_tier || 'free';
 
+  let daysLeft: number | null = null;
+  if (userProfile?.subscription_end_date) {
+    const end = new Date(userProfile.subscription_end_date);
+    const now = new Date();
+    const diffTime = end.getTime() - now.getTime();
+    daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
   const [supportStatus, setSupportStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
@@ -2521,8 +2529,27 @@ export const Dashboard = ({
         </aside>{" "}
         {/* Main Content */}{" "}
         <main className="flex-1 flex flex-col min-h-screen transition-all duration-300">
+          {(daysLeft !== null && daysLeft <= 5 && plan !== 'free' && !userProfile?.is_auto_renew) && (
+            <div className={`bg-red-100 dark:bg-red-900/50 border-b border-red-200 dark:border-red-700/50 mt-16 md:mt-0 z-10 transition-colors ${isSidebarOpen ? 'sidebar-padding-open' : 'sidebar-padding-closed'}`}>
+              <div className="max-w-6xl mx-auto p-3 sm:px-8 flex items-center justify-between text-red-900 dark:text-red-100 text-sm md:text-base">
+                <span className="font-bold flex items-center gap-2 max-w-[70%] leading-relaxed">
+                  <span className="text-red-600 dark:text-red-400 shrink-0 text-lg">⚠️</span> 
+                  {daysLeft <= 0 
+                    ? "انتهى اشتراكك في الباقة! يرجى التجديد لتجنب توقف الخدمات."
+                    : `تنبيه: سينتهي اشتراكك بعد ${daysLeft} ${daysLeft === 1 ? 'يوم' : daysLeft === 2 ? 'يومين' : 'أيام'}. يرجى التجديد لضمان استمرار الخدمة.`}
+                </span>
+                <button
+                  onClick={() => setActiveTab('باقات فرز')}
+                  className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors whitespace-nowrap"
+                >
+                  تجديد الاشتراك
+                </button>
+              </div>
+            </div>
+          )}
+
           {(userProfile?.isLoaded && !userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
-            <div className={`bg-amber-100 dark:bg-amber-900/50 border-b border-amber-200 dark:border-amber-700/50 mt-16 md:mt-0 z-10 transition-colors ${isSidebarOpen ? 'sidebar-padding-open' : 'sidebar-padding-closed'}`}>
+            <div className={`bg-amber-100 dark:bg-amber-900/50 border-b border-amber-200 dark:border-amber-700/50 ${(!daysLeft || daysLeft > 5 || plan === 'free' || userProfile?.is_auto_renew) ? 'mt-16 md:mt-0' : ''} z-10 transition-colors ${isSidebarOpen ? 'sidebar-padding-open' : 'sidebar-padding-closed'}`}>
               <div className="max-w-6xl mx-auto p-3 sm:px-8 flex items-center justify-between text-amber-900 dark:text-amber-100 text-sm md:text-base">
                 <span className="font-bold flex items-center gap-2 max-w-[70%] leading-relaxed">
                   <ShieldCheck size={20} className="text-orange-600 dark:text-orange-400 shrink-0" /> أهلاً بك! لتتمكن من نشر إعلاناتك الوظيفية، يرجى استكمال بيانات الكيان القانونية.

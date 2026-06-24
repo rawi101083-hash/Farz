@@ -2640,7 +2640,7 @@ export const SettingsPage = ({
                                 <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
                                 <span>باقتك الحالية</span>
                               </div>
-                              {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
+                              {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">تاريخ الانتهاء: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('en-US')}</span>}
                             </button>
                           ) : (
                             <button onClick={() => handleSubscribe('startup')} className={`relative w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 overflow-hidden ${highlightedTier === 'startup' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
@@ -2682,7 +2682,7 @@ export const SettingsPage = ({
                                 <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
                                 <span>باقتك الحالية</span>
                               </div>
-                              {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
+                              {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">تاريخ الانتهاء: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('en-US')}</span>}
                             </button>
                           ) : (
                             <button onClick={() => handleSubscribe('business')} className={`relative w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 overflow-hidden ${highlightedTier === 'business' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
@@ -2724,7 +2724,7 @@ export const SettingsPage = ({
                                 <CheckCircle size={18} className="text-white" strokeWidth={2.5} />
                                 <span>باقتك الحالية</span>
                               </div>
-                              {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">صلاحية: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('ar-SA')}</span>}
+                              {(userProfile as any).subscription_end_date && <span className="text-[10px] font-normal opacity-90 mt-1 relative z-10">تاريخ الانتهاء: {new Date((userProfile as any).subscription_end_date).toLocaleDateString('en-US')}</span>}
                             </button>
                           ) : (
                             <button onClick={() => window.dispatchEvent(new Event('openBookingModal'))} className={`relative w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 overflow-hidden ${highlightedTier === 'enterprise' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>

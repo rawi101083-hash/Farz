@@ -1991,6 +1991,12 @@ export default function App() {
           const { data, error } = await supabase.from('companies').select('*').eq('id', user.id).single();
           if (data && !error) {
             const isProfileComplete = !!(data.company_name && data.city);
+            
+            const rawPlan = data.subscription_plan || "free";
+            let normalizedPlan = rawPlan.replace('_yearly', '').replace('_monthly', '');
+            if (normalizedPlan === 'single_job') normalizedPlan = 'one-time';
+            const isYearly = rawPlan.includes('_yearly');
+
             setUserProfile(prev => ({
               ...prev,
               id: user.id,
@@ -2003,9 +2009,10 @@ export default function App() {
               taxNumber: data.tax_number || prev.taxNumber,
               city: data.city || prev.city,
               companyLogo: data.company_logo || prev.companyLogo,
-              subscription_tier: data.subscription_plan || "free",
+              subscription_tier: normalizedPlan,
               subscription_end_date: data.subscription_end_date || null,
-              subscription_is_yearly: data.subscription_is_yearly || false,
+              subscription_is_yearly: isYearly,
+              is_auto_renew: data.is_auto_renew || false,
               cvs_processed_count: data.cvs_processed_count || 0,
               fields_locked: data.fields_locked || false,
               cv_limit: data.cv_limit || 0,
