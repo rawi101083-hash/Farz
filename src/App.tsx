@@ -730,6 +730,49 @@ const LoginPage = ({
   const [authStep, setAuthStep] = useState<"initial" | "otp" | "new_password">("initial");
   const [otpType, setOtpType] = useState<"signup" | "recovery" | null>(null);
   const [otp, setOtp] = useState("");
+  const [resendTimer, setResendTimer] = useState(0);
+  const [isResent, setIsResent] = useState(false);
+
+  useEffect(() => {
+    let interval: any;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  const handleResendOtp = async () => {
+    if (!email) return;
+    setIsLoading(true);
+    
+    try {
+      const { error } = await supabase.auth.resend({ 
+        type: otpType || 'signup',
+        email,
+        options: { 
+          emailRedirectTo: window.location.origin
+        }
+      });
+      
+      if (error) throw error;
+      
+      setIsResent(true);
+      setResendTimer(60);
+      setTimeout(() => setIsResent(false), 3000);
+    } catch (err: any) {
+      console.error("Resend error:", err);
+      let errorMsg = "حدث خطأ أثناء إعادة إرسال الكود. يرجى المحاولة مرة أخرى.";
+      if (err.message?.toLowerCase().includes("rate limit") || err.message?.toLowerCase().includes("too many requests")) {
+        errorMsg = "تم تجاوز الحد المسموح للإرسال. يرجى المحاولة بعد قليل.";
+      }
+      setIsError(true);
+      setMessage(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -754,6 +797,7 @@ const LoginPage = ({
       setOtpType("recovery");
       setMessage("تم إرسال رمز التحقق المكون من 6 أرقام لبريدك الإلكتروني.");
       setIsError(false);
+      if (resendTimer === 0) setResendTimer(60);
     } catch (err: any) {
       console.error("Reset password error:", err);
       setIsError(true);
@@ -931,6 +975,15 @@ const LoginPage = ({
           animate={{ opacity: 1, x: 0 }}
           className="w-full max-w-md my-auto pt-16 pb-8"
         >
+          {(isForgotPassword || authStep !== "initial") && (
+            <button
+              onClick={() => { setIsForgotPassword(false); setAuthStep("initial"); setOtpType(null); setOtp(""); setMessage(""); setIsError(false); }}
+              className="flex items-center text-sm font-bold text-slate-500 hover:text-primary mb-6 transition-colors"
+            >
+              <ArrowRight className="w-4 h-4 ml-1" />
+              العودة
+            </button>
+          )}
           <div className="mb-10 text-center md:text-right">
             <h2 className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight mb-2">
               {authStep === "otp" ? "التحقق من البريد الإلكتروني" : authStep === "new_password" ? "تعيين كلمة المرور الجديدة" : isForgotPassword ? "استعادة كلمة المرور" : mode === "register" ? "إنشاء حساب جديد" : "تسجيل الدخول"}
@@ -1123,14 +1176,18 @@ const LoginPage = ({
               </div>
             )}
 
-            {(isForgotPassword || authStep !== "initial") && (
-              <button
-                type="button"
-                onClick={() => { setIsForgotPassword(false); setAuthStep("initial"); setOtpType(null); setOtp(""); setMessage(""); setIsError(false); }}
-                className="w-full py-4 px-6 rounded-xl font-bold text-slate-600 dark:text-slate-400 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-all"
-              >
-                العودة لتسجيل الدخول
-              </button>
+            {authStep === "otp" && (
+              <div className="mt-6 text-center text-sm">
+                <span className="text-slate-600 dark:text-slate-400 font-medium">لم يصلك الكود؟ </span>
+                <button
+                  type="button"
+                  onClick={handleResendOtp}
+                  disabled={isLoading || isResent || resendTimer > 0}
+                  className={`font-bold transition-colors disabled:opacity-50 ${isResent ? 'text-emerald-600' : resendTimer > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-primary hover:text-primary/80'}`}
+                >
+                  {isResent ? 'تم الإرسال ✓' : resendTimer > 0 ? `إعادة إرسال (${resendTimer})` : 'إعادة إرسال'}
+                </button>
+              </div>
             )}
           </form>
 

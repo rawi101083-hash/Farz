@@ -654,13 +654,13 @@ export const Dashboard = ({
 
   // Auto-Processor for pending applicants with rating 0 when cv limits are available
   const processingIdsRef = useRef<Set<string>>(new Set());
-  
-  useEffect(() => {
-    if (cvsRemaining <= 0 || applicantsState.length === 0) return;
 
-    const pendingApplicants = applicantsState.filter(a => 
-      a.rating === 0 && 
-      a.decision === 'pending' && 
+  useEffect(() => {
+    if (cvsRemaining <= 0 || applicants.length === 0) return;
+
+    const pendingApplicants = applicants.filter(a =>
+      a.rating === 0 &&
+      a.decision === 'pending' &&
       a.raw_cv_file_url && // ensure we have a file
       !processingIdsRef.current.has(a.id)
     );
@@ -673,7 +673,7 @@ export const Dashboard = ({
       for (const app of applicantsToProcess) {
         // Mark as processing to avoid duplicate calls
         processingIdsRef.current.add(app.id);
-        
+
         try {
           await fetch("https://farz-cv-processo-1.onrender.com/api/v1/extract-cv", {
             method: "POST",
@@ -699,7 +699,7 @@ export const Dashboard = ({
     };
 
     processApplicants();
-  }, [applicantsState, cvsRemaining]);
+  }, [applicants, cvsRemaining]);
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [selectedApplicantIds, setSelectedApplicantIds] = useState<string[]>([]);
@@ -1313,20 +1313,23 @@ export const Dashboard = ({
                   <CompactJobSelector jobs={jobs} selectedFilter={jobFilter} onFilterChange={(id) => setJobFilter(id)} />
                   <div className="flex bg-slate-100/50 dark:bg-slate-800/80 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto hide-scrollbar max-w-full">
                     {[
-                      { id: "pending", label: "قيد المراجعة", color: "text-orange-600 dark:text-orange-400" },
-                      { id: "interview", label: "المقابلات", color: "text-yellow-600 dark:text-yellow-400" },
-                      { id: "accepted", label: "المقبولين", color: "text-green-600 dark:text-green-400" },
-                      { id: "rejected", label: "المرفوضين", color: "text-red-600 dark:text-red-400" },
-                      { id: "filtered", label: "تمت تصفيتهم", color: "text-slate-500 dark:text-slate-400" }
-                    ].map(tab => (
+                      { id: "pending", label: "قيد المراجعة", color: "text-orange-600 dark:text-orange-400", dotActive: "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.8),inset_0_1.5px_2px_rgba(255,255,255,0.8)] border-orange-400", dotInactive: "bg-slate-200/80 dark:bg-slate-700/80 shadow-inner border-slate-300 dark:border-slate-600" },
+                      { id: "interview", label: "المقابلات", color: "text-yellow-600 dark:text-yellow-400", dotActive: "bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.8),inset_0_1.5px_2px_rgba(255,255,255,0.8)] border-yellow-400", dotInactive: "bg-slate-200/80 dark:bg-slate-700/80 shadow-inner border-slate-300 dark:border-slate-600" },
+                      { id: "accepted", label: "المقبولين", color: "text-green-600 dark:text-green-400", dotActive: "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8),inset_0_1.5px_2px_rgba(255,255,255,0.8)] border-green-400", dotInactive: "bg-slate-200/80 dark:bg-slate-700/80 shadow-inner border-slate-300 dark:border-slate-600" },
+                      { id: "rejected", label: "المرفوضين", color: "text-red-600 dark:text-red-400", dotActive: "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8),inset_0_1.5px_2px_rgba(255,255,255,0.8)] border-red-400", dotInactive: "bg-slate-200/80 dark:bg-slate-700/80 shadow-inner border-slate-300 dark:border-slate-600" },
+                      { id: "filtered", label: "تمت تصفيتهم", color: "text-slate-500 dark:text-slate-400", dotActive: "bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.8),inset_0_1.5px_2px_rgba(255,255,255,0.8)] border-slate-400", dotInactive: "bg-slate-200/80 dark:bg-slate-700/80 shadow-inner border-slate-300 dark:border-slate-600" }
+                    ].map(tab => {
+                      const isActive = decisionFilter === tab.id;
+                      return (
                       <button
                         key={tab.id}
                         onClick={() => setDecisionFilter(tab.id as any)}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${decisionFilter === tab.id ? `bg-white dark:bg-slate-700 shadow-md border-b-[3px] border-slate-200 dark:border-slate-600 transform -translate-y-0.5 ${tab.color}` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 border-b-[3px] border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${isActive ? `bg-white dark:bg-slate-700 shadow-md border border-slate-100 dark:border-slate-600 transform -translate-y-0.5 text-slate-800 dark:text-slate-200` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 border border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                       >
+                        <span className={`w-2 h-2 rounded-full border transition-all duration-300 ${isActive ? tab.dotActive + ' scale-110' : tab.dotInactive}`}></span>
                         {tab.label}
                       </button>
-                    ))}
+                    )})}
                   </div>{" "}
 
 
