@@ -144,7 +144,7 @@ const CompactJobSelector = ({
             )}
           </div>
         </div>
-        <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold whitespace-nowrap ${job.status === "نشط" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"}`}>
+        <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold whitespace-nowrap ${job.status === "نشط" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : job.status === "مغلق مؤقتاً" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"}`}>
           {job.status}
         </span>
       </div>
@@ -292,6 +292,7 @@ export const Dashboard = ({
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const [supportMessage, setSupportMessage] = useState("");
   const [supportStatus, setSupportStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [supportFile, setSupportFile] = useState<File | null>(null);
 
   const handleSupportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,30 +300,36 @@ export const Dashboard = ({
     setSupportStatus("sending");
 
     try {
+      const formData = new FormData();
+      formData.append("_subject", "رسالة دعم فني جديدة من منصة فرز");
+      formData.append("email", userProfile?.email || userEmail || "غير محدد");
+      formData.append("اسم المستخدم / الشركة", userProfile?.company_name || userProfile?.name || "غير محدد");
+      formData.append("البريد الإلكتروني للعميل", userProfile?.email || userEmail || "غير محدد");
+      formData.append("نص المشكلة", supportMessage);
+
+      if (supportFile) {
+        formData.append("مرفق", supportFile);
+      }
+
       await fetch("https://formsubmit.co/ajax/farz101083@gmail.com", {
         method: "POST",
         headers: {
-          'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({
-          _subject: "رسالة دعم فني جديدة من منصة فرز",
-          email: userProfile?.email || userEmail || "غير محدد",
-          "اسم المستخدم / الشركة": userProfile?.company_name || userProfile?.name || "غير محدد",
-          "البريد الإلكتروني للعميل": userProfile?.email || userEmail || "غير محدد",
-          "نص المشكلة": supportMessage
-        })
+        body: formData
       });
+
       setSupportStatus("success");
       setTimeout(() => {
         setIsSupportModalOpen(false);
         setSupportMessage("");
+        setSupportFile(null);
         setSupportStatus("idle");
       }, 3000);
     } catch (error) {
       console.error(error);
       setSupportStatus("success");
-      setTimeout(() => { setIsSupportModalOpen(false); setSupportMessage(""); setSupportStatus("idle"); }, 3000);
+      setTimeout(() => { setIsSupportModalOpen(false); setSupportMessage(""); setSupportFile(null); setSupportStatus("idle"); }, 3000);
     }
   };
 
@@ -443,7 +450,7 @@ export const Dashboard = ({
     setShowWelcomeModal(false);
   };
   const smartSortRef = useRef<HTMLDivElement>(null);
-  const [subTab, setSubTab] = useState<"active" | "inactive" | "drafts">("active");
+  const [subTab, setSubTab] = useState<"active" | "inactive" | "drafts" | "paused">("active");
 
   useEffect(() => {
     if (activeTab === "إدارة الوظائف") {
@@ -773,7 +780,7 @@ export const Dashboard = ({
     const hasWeak = applicants.some(a => {
       const d = a.decision || "pending";
       const statusMatch = d === decisionFilter;
-      const jobMatch = jobFilter === "all" || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "");
+      const jobMatch = jobFilter === "all" || a.job_id === jobFilter || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "____NEVER_MATCH____");
       const favMatch = !showFavoritesOnly || a.is_favorite === true;
       return statusMatch && jobMatch && favMatch && Number(a.rating) < 50;
     });
@@ -791,7 +798,7 @@ export const Dashboard = ({
     const hasElite = applicants.some(a => {
       const d = a.decision || "pending";
       const statusMatch = d === decisionFilter;
-      const jobMatch = jobFilter === "all" || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "");
+      const jobMatch = jobFilter === "all" || a.job_id === jobFilter || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "____NEVER_MATCH____");
       const favMatch = !showFavoritesOnly || a.is_favorite === true;
       return statusMatch && jobMatch && favMatch && Number(a.rating) >= 80;
     });
@@ -810,7 +817,7 @@ export const Dashboard = ({
     const statusMatch = decisionFilter === "interview"
       ? (d === "interview" || d === "interview_sent" || d === "interviewing")
       : d === decisionFilter;
-    const jobMatch = jobFilter === "all" || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "");
+    const jobMatch = jobFilter === "all" || a.job_id === jobFilter || (a.job || "").includes(jobs.find(j => j.id === jobFilter)?.title || "____NEVER_MATCH____");
     const favMatch = !showFavoritesOnly || a.is_favorite === true;
 
     const searchLower = (applicantSearchQuery || "").toLowerCase().trim();
@@ -1118,6 +1125,7 @@ export const Dashboard = ({
   };
   const isJobExpired = (job: Job) => {
     if (job.status === "مغلق") return true;
+    if (job.status === "مغلق مؤقتاً") return false;
     if (!job.endDate) return false;
     return new Date() > new Date(job.endDate);
   };
@@ -1130,8 +1138,9 @@ export const Dashboard = ({
     return titleMatch || numberMatch;
   });
 
-  const activeJobsList = filteredSearchJobs.filter((j) => !isJobExpired(j) && j.status !== "مسودة");
-  const inactiveJobsList = filteredSearchJobs.filter((j) => isJobExpired(j) && j.status !== "مسودة");
+  const activeJobsList = filteredSearchJobs.filter((j) => !isJobExpired(j) && j.status !== "مسودة" && j.status !== "مغلق مؤقتاً");
+  const inactiveJobsList = filteredSearchJobs.filter((j) => isJobExpired(j) && j.status !== "مسودة" && j.status !== "مغلق مؤقتاً");
+  const pausedJobsList = filteredSearchJobs.filter((j) => j.status === "مغلق مؤقتاً");
   const draftJobsList = filteredSearchJobs.filter((j) => j.status === "مسودة");
   const renderContent = () => {
     switch (activeTab) {
@@ -1159,7 +1168,7 @@ export const Dashboard = ({
                 )}
                 <button
                   onClick={() => {
-                    if (plan === 'free' || plan === 'none') {
+                    if (plan === 'none') {
                       setToastMessage("يجب الاشتراك في إحدى الباقات لإضافة إعلان وظيفي");
                       setActiveTab("باقات فرز");
                       setTimeout(() => setToastMessage(null), 3000);
@@ -1172,7 +1181,7 @@ export const Dashboard = ({
                     }
                     onCreateJob();
                   }}
-                  className={`px-4 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap ${(plan === 'free' || plan === 'none') ? 'bg-slate-200 text-slate-500 cursor-not-allowed' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30'}`}
+                  className={`px-4 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap ${(activeCount >= jobLimit || plan === 'none') ? 'bg-slate-200 text-slate-500 cursor-not-allowed shadow-[0_6px_0_#cbd5e1] translate-y-[2px]' : 'bg-gradient-to-b from-primary to-[#0d847a] text-white shadow-[0_6px_0_#096159,0_12px_20px_rgba(13,148,136,0.3)] hover:shadow-[0_4px_0_#096159,0_8px_15px_rgba(13,148,136,0.3)] hover:translate-y-[2px] active:shadow-[0_0px_0_#096159] active:translate-y-[6px]'}`}
                 >
                   <Briefcase size={20} /> <span className="hidden md:inline">إنشاء إعلان وظيفي</span>
                 </button>
@@ -1329,15 +1338,16 @@ export const Dashboard = ({
                     ].map(tab => {
                       const isActive = decisionFilter === tab.id;
                       return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setDecisionFilter(tab.id as any)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${isActive ? `bg-white dark:bg-slate-700 shadow-md border border-slate-100 dark:border-slate-600 transform -translate-y-0.5 text-slate-800 dark:text-slate-200` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 border border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
-                      >
-                        <span className={`w-2 h-2 rounded-full border transition-all duration-300 ${isActive ? tab.dotActive + ' scale-110' : tab.dotInactive}`}></span>
-                        {tab.label}
-                      </button>
-                    )})}
+                        <button
+                          key={tab.id}
+                          onClick={() => setDecisionFilter(tab.id as any)}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${isActive ? `bg-white dark:bg-slate-700 shadow-md border border-slate-100 dark:border-slate-600 transform -translate-y-0.5 text-slate-800 dark:text-slate-200` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 border border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
+                        >
+                          <span className={`w-2 h-2 rounded-full border transition-all duration-300 ${isActive ? tab.dotActive + ' scale-110' : tab.dotInactive}`}></span>
+                          {tab.label}
+                        </button>
+                      )
+                    })}
                   </div>{" "}
 
 
@@ -1474,81 +1484,40 @@ export const Dashboard = ({
                 }
                 return null;
               })()}
-              <div className="overflow-x-auto overflow-y-hidden min-h-[60vh] hide-scrollbar">
-                <table className="w-full text-right">
-                  <thead className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-200 text-xs uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
-                    <tr>
-                      {isSelectionMode && (
-                        <th className="px-3 py-4 w-10 font-bold text-navy dark:text-white">
-                          <div className="flex flex-col items-center justify-center gap-1">
-                            <div
-                              onClick={() => {
-                                const allSelected = visibleApplicants.length > 0 && selectedApplicantIds.length === visibleApplicants.length;
-                                if (allSelected) {
-                                  setSelectedApplicantIds([]);
-                                } else {
-                                  setSelectedApplicantIds(visibleApplicants.map(a => a.id));
-                                }
-                              }}
-                              className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${visibleApplicants.length > 0 && selectedApplicantIds.length === visibleApplicants.length ? "bg-primary border-primary text-white" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 opacity-50 hover:opacity-100 hover:border-slate-400"}`}
-                            >
-                              {visibleApplicants.length > 0 && selectedApplicantIds.length === visibleApplicants.length && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                            </div>
-                            <span className="text-[10px] text-slate-500 font-bold">الكل</span>
-                          </div>
-                        </th>
-                      )}
-                      <th className="px-2 pr-14 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">اسم المتقدم</th>
-                      <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الوظيفة المقدم إليها</th>
-                      <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">التقييم الآلي</th>
-                      <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الجاهزية</th>
-                      <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">معلومات التواصل</th>
-                      {decisionFilter === "interview" && (
-                        <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">حالة المقابلة</th>
-                      )}
-                      <th className="px-2 py-4 font-bold text-navy dark:text-white whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5 w-full pl-4">
-                          <div className={`flex justify-center shrink-0 ${decisionFilter === "pending" ? "w-[200px]" : decisionFilter === "locked_fomo" ? "w-[160px]" : "w-[75px]"}`}>
-                            الإجراءات
-                          </div>
-                          <div className="w-px h-5 mx-1 opacity-0 shrink-0"></div>
-                          <div className="w-[110px] opacity-0 shrink-0"></div>
-                          <div className="w-8 opacity-0 shrink-0"></div>
-                        </div>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {jobs.length === 0 ? (
-                      <tr>
-                        <td colSpan={6 + (isSelectionMode ? 1 : 0) + (decisionFilter === "interview" ? 1 : 0)} className="p-0">
+              {(() => {
+                const isHomeMockState = jobs.filter((j) => j.status !== "مسودة").length === 0;
+                const isEmptyRealState = !isHomeMockState && !isLoadingApplicants && visibleApplicants.length === 0;
+                const shouldShowMockTable = isHomeMockState || isEmptyRealState;
+                const fakeMockData: any[] = [
+                  { id: "fake1", name: "محمد عبدالله", job: "مسؤول مبيعات", rating: 92, status: "مكتمل", decision: decisionFilter === "all" ? "pending" : decisionFilter, phone: "966500000000", email: "mohamed@example.com", is_favorite: true, photoUrl: "", has_started_interview: true, is_interview_completed: true },
+                  { id: "fake2", name: "سارة خالد", job: "مهندس برمجيات", rating: 85, status: "قيد المراجعة", decision: decisionFilter === "all" ? "pending" : decisionFilter, phone: "966500000001", email: "sara@example.com", is_favorite: false, photoUrl: "", has_started_interview: true, is_interview_completed: false },
+                  { id: "fake3", name: "عمر فهد", job: "محاسب عام", rating: 78, status: "مرفوض", decision: decisionFilter === "all" ? "rejected" : decisionFilter, phone: "966500000002", email: "omar@example.com", is_favorite: false, photoUrl: "", rejection_reason: "مرفوض آلياً" },
+                  { id: "fake4", name: "نورة سعد", job: "مصمم جرافيك", rating: 65, status: "بانتظار المقابلة", decision: decisionFilter === "all" ? "interview" : decisionFilter, phone: "966500000003", email: "noura@example.com", is_favorite: true, photoUrl: "", interview_sent: true, interview_sent_at: new Date().toISOString() },
+                  { id: "fake5", name: "خالد عبدالله", job: "مدير تسويق", rating: 45, status: "قيد المراجعة", decision: decisionFilter === "all" ? "pending" : decisionFilter, phone: "966500000004", email: "khalid@example.com", is_favorite: false, photoUrl: "" }
+                ];
+                const rowsToRender = shouldShowMockTable ? fakeMockData : visibleApplicants.slice(0, displayCount);
+
+                return (
+                  <div className="relative overflow-x-auto overflow-y-hidden min-h-[60vh] hide-scrollbar pb-10">
+                    {isHomeMockState && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none px-4">
+                        <div className="pointer-events-auto scale-90 md:scale-100 w-full max-w-2xl">
                           <EmptyState
-                            title="لوحة التحكم بانتظارك! لم تقم بإنشاء أي شواغر وظيفية حتى الآن."
-                            actionLabel="أنشئ إعلان وظيفي الآن"
+                            title="لوحة التحكم بانتظارك! لم تقم بإنشاء أي إعلانات وظيفية حتى الآن"
+                            actionLabel={isHomeMockState ? "أنشئ إعلان وظيفي الآن" : undefined}
                             onAction={onCreateJob}
+                            className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-2xl border border-white/40 dark:border-slate-700/50"
+                            icon={<LayoutDashboard size={32} className="text-emerald-400" />}
                           />
-                        </td>
-                      </tr>
-                    ) : isLoadingApplicants && applicants.length === 0 ? (
-                      <tr>
-                        <td colSpan={6 + (isSelectionMode ? 1 : 0) + (decisionFilter === "interview" ? 1 : 0)} className="p-8">
-                          <div className="flex flex-col items-center justify-center min-h-[400px] text-center bg-white dark:bg-slate-800/50">
-                            <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-                            <h3 className="text-xl font-bold text-navy dark:text-white mb-2">
-                              جاري جلب بيانات المرشحين...
-                            </h3>
-                            <p className="text-slate-500 dark:text-slate-400 font-medium">
-                              يرجى الانتظار قليلاً بينما نقوم بتجهيز قائمة المتقدمين.
-                            </p>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : visibleApplicants.length === 0 ? (
-                      <tr>
-                        <td colSpan={6 + (isSelectionMode ? 1 : 0) + (decisionFilter === "interview" ? 1 : 0)} className="p-0">
-                          <div className="flex flex-col items-center justify-center min-h-[400px] text-center bg-white dark:bg-slate-800/50">
+                        </div>
+                      </div>
+                    )}
+                    {isEmptyRealState && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none px-4">
+                        <div className="pointer-events-auto scale-90 md:scale-100 w-full max-w-xl">
+                          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-2xl border border-white/40 dark:border-slate-700/50 p-8 rounded-[32px] flex flex-col items-center justify-center text-center transform transition-all hover:scale-[1.02]">
                             <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner-3d">
-                              <Search size={32} className="text-slate-300 dark:text-slate-500" />
+                              <Search size={32} className="text-slate-300 dark:text-slate-500 drop-shadow-md" />
                             </div>
                             <h3 className="text-xl font-bold text-navy dark:text-white mb-2">
                               {decisionFilter === "accepted" ? "لا يوجد مرشحين مقبولين حالياً" : decisionFilter === "rejected" ? "لا يوجد مرشحين مرفوضين حالياً" : decisionFilter === "interview" ? "لا يوجد مرشحين في مرحلة المقابلة حالياً" : decisionFilter === "filtered" ? "لا يوجد مرشحين في قائمة التصفية" : decisionFilter === "locked_fomo" ? "لا توجد سير ذاتية مقفلة حالياً" : "لا يوجد مرشحين قيد المراجعة في الوقت الحالي"}
@@ -1557,374 +1526,435 @@ export const Dashboard = ({
                               لم يتم العثور على أي مرشح مطابق لخيارات التصفية الحالية.
                             </p>
                           </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      <AnimatePresence>
-                        {visibleApplicants.slice(0, displayCount).map((originalRow, index) => {
-                          const row = originalRow;
-                          const isFomoLocked = row.decision === "locked_fomo" || (plan === 'free' && row.decision === "pending" && (!row.rating || row.rating === 0) && cvsRemaining <= 0);
-                          const isEvaluating = row.decision === "pending" && row.rating === 0;
-                          return (
-                            <motion.tr
-                              layout
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.9 }}
-                              key={row.id}
-                              onClick={() => {
-                                if (!isFomoLocked && !isEvaluating) {
-                                  onViewDetails(row);
-                                }
-                              }}
-                              className={`transition-colors group ${isFomoLocked || isEvaluating ? 'bg-slate-50/50 dark:bg-slate-800/30' : 'hover:bg-slate-50 dark:bg-slate-800/80 cursor-pointer'}`}
-                            >
-                              {isSelectionMode && (
-                                <td className="px-3 py-4 w-10">
-                                  <div
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (selectedApplicantIds.includes(row.id)) {
-                                        setSelectedApplicantIds(prev => prev.filter(id => id !== row.id));
-                                      } else {
-                                        setSelectedApplicantIds(prev => [...prev, row.id]);
-                                      }
-                                    }}
-                                    className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${selectedApplicantIds.includes(row.id) ? "bg-primary border-primary text-white opacity-100" : "border-slate-300 dark:border-slate-600 bg-slate-100/50 dark:bg-slate-800 opacity-0 group-hover:opacity-100 hover:border-slate-400"}`}
-                                  >
-                                    {selectedApplicantIds.includes(row.id) && (
-                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                    )}
-                                  </div>
-                                </td>
-                              )}
-                              <td className="px-2 py-3">
-                                <div className="flex items-center gap-2 whitespace-nowrap">
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleToggleFavorite(row.id); }}
-                                    className={`transition-all ${row.is_favorite ? "text-yellow-500 scale-75" : "text-slate-200 hover:text-yellow-500"}`}
-                                    title={row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
-                                  >
-                                    <Star
-                                      size={18}
-                                      fill={
-                                        row.is_favorite
-                                          ? "currentColor"
-                                          : "none"
-                                      }
-                                    />{" "}
-                                  </button>{" "}
-                                  <div
-                                    onClick={(e) => {
-                                      if (row.photoUrl && !isFomoLocked) {
-                                        e.stopPropagation();
-                                        setLightboxPhoto(row.photoUrl);
-                                      }
-                                    }}
-                                    className={`w-10 h-10 rounded-[14px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d transition-colors overflow-hidden ${row.photoUrl && !isFomoLocked ? "cursor-pointer hover:opacity-80" : "group-hover:text-primary dark:group-hover:text-primary group-hover:bg-primary/10 dark:group-hover:bg-primary/20"}`}
-                                  >
-                                    {row.photoUrl && !isFomoLocked ? (
-                                      <img src={row.photoUrl} alt={row.name} className="w-full h-full object-cover" />
-                                    ) : isFomoLocked ? (
-                                      <Lock size={16} className="text-slate-400" />
-                                    ) : (
-                                      row.name.charAt(0)
-                                    )}{" "}
-                                  </div>{" "}
-                                  <div className="flex flex-col">
-                                    <span className={`font-bold text-navy dark:text-white ${isFomoLocked ? 'filter blur-[4px] select-none' : ''}`}>
-                                      {isFomoLocked ? 'متقدم مخفي (نفد الرصيد)' : row.name}
-                                    </span>
-                                    {row.nominatedTo && !isFomoLocked && (
-                                      <div
-                                        className="mt-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md inline-block font-bold w-fit max-w-[180px] truncate border border-primary/20 shadow-sm"
-                                        title={`تم ترشيحه لـ: ${row.nominatedTo}`}
-                                      >
-                                        تم ترشيحه لـ: {row.nominatedTo}
-                                      </div>
-                                    )}
-                                    {row.source === 'ترشيح متقاطع' && !isFomoLocked && (
-                                      <div className="mt-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md inline-block font-bold w-fit border border-primary/20 shadow-sm">
-                                        تم ترشيحه
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>{" "}
-                              </td>
-                              <td className="px-2 py-3">
-                                <div className="flex justify-start">
-                                  <span
-                                    className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white px-2 py-1 rounded-md text-[11px] font-bold inline-flex items-center justify-center whitespace-nowrap w-fit max-w-[140px] truncate"
-                                    title={row.job}
-                                  >
-                                    {row.job}
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="px-2 py-3">
-                                {row.rejection_reason && row.rejection_reason.includes("مرفوض آلياً") ? (
-                                  <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2.5 py-1 rounded-md border border-rose-100 dark:border-rose-800/50 whitespace-nowrap">
-                                    مستبعد آلياً
-                                  </span>
-                                ) : isEvaluating && !isFomoLocked ? (
-                                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 whitespace-nowrap flex items-center justify-center gap-1.5 w-fit shadow-sm">
-                                    <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                                    قيد الفرز
-                                  </span>
-                                ) : (
-                                  <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
-                                    <div className={`w-16 h-2.5 rounded-full overflow-hidden ${isFomoLocked ? "bg-slate-100 dark:bg-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] border border-slate-200/50 dark:border-slate-700/50" : row.rating >= 80 ? "bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d" : row.rating >= 50 ? "bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d" : "bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d"}`}>
-                                      <div
-                                        className={`h-full rounded-full transition-all duration-500 ${isFomoLocked ? "bg-slate-300 dark:bg-slate-600" : row.rating >= 80 ? "bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" : row.rating >= 50 ? "bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" : "bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"}`}
-                                        style={{ width: isFomoLocked ? '100%' : `${row.rating}%` }}
-                                      />
-                                    </div>
-                                    <span className={`text-sm font-bold ${isFomoLocked ? "text-slate-400 filter blur-[4px] select-none" : row.rating >= 80 ? "text-teal-600 dark:text-teal-400" : row.rating >= 50 ? "text-amber-600 dark:text-amber-500" : "text-rose-600 dark:text-rose-500"}`}>
-                                      {isFomoLocked ? "00%" : `${row.rating}%`}
-                                    </span>
-                                  </div>
-                                )}
-                              </td>
-                              <td className="px-2 py-3 text-xs text-slate-600 dark:text-slate-300 font-bold whitespace-nowrap text-right">
-                                {isFomoLocked ? <span className="filter blur-[4px] select-none">مقفل</span> : row.status}
-                              </td>
-                              <td className="px-2 py-3">
-                                <div className={`flex items-center justify-center gap-1 ${isFomoLocked ? 'filter blur-[4px] select-none pointer-events-none' : ''}`}>
-                                  <a
-                                    href={`https://wa.me/${row.phone}`}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (row.decision === "interview") {
-                                        markInterviewSent(row.id);
-                                      }
-                                    }}
-                                    className="w-8 h-8 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300 rounded-lg flex items-center justify-center hover:bg-teal-100 dark:hover:bg-teal-900/50 hover:text-teal-700 transition-all shadow-sm"
-                                    title="واتساب"
-                                  >
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-                                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.878-.788-1.47-1.761-1.643-2.059-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
-                                    </svg>{" "}
-                                  </a>{" "}
-                                  <a
-                                    href={`mailto:${row.email}`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (row.decision === "interview") {
-                                        markInterviewSent(row.id);
-                                      }
-                                    }}
-                                    className="w-8 h-8 bg-navy/5 dark:bg-slate-700/50 text-navy dark:text-slate-200 rounded-lg flex items-center justify-center hover:bg-navy dark:hover:bg-slate-600 hover:text-white transition-all shadow-sm"
-                                    title="إيميل"
-                                  >
-                                    <Mail size={15} />{" "}
-                                  </a>{" "}
-                                  <a
-                                    href={`tel:${row.phone}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-lg flex items-center justify-center hover:bg-blue-500 dark:hover:bg-blue-500/60 dark:hover:text-blue-100 hover:text-white transition-all shadow-sm"
-                                    title="اتصال"
-                                  >
-                                    <Phone size={15} />{" "}
-                                  </a>{" "}
-                                </div>{" "}
-                              </td>
-                              {decisionFilter === "interview" && (
-                                <td className="px-2 py-3">
-                                  <div className="flex justify-center">
-                                    {isFomoLocked ? (
-                                      <span className="filter blur-[4px] select-none text-xs text-slate-400 font-bold">مقفل</span>
-                                    ) : row.is_interview_completed ? (
-                                      <span className="bg-green-50 text-green-600 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
-                                        <Mic size={13} /> تمت المقابلة
-                                      </span>
-                                    ) : (row.has_started_interview && !row.is_interview_completed) ? (
-                                      <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
-                                        <Clock size={13} /> جاري المقابلة
-                                      </span>
-                                    ) : (!row.interview_revoked && (!row.interview_sent_at || (Date.now() - new Date(row.interview_sent_at).getTime() <= 72 * 60 * 60 * 1000)) && (row.interview_sent || row.decision === "interviewing")) ? (
-                                      <span className="bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
-                                        <Clock size={13} /> بانتظار المتقدم
-                                      </span>
-                                    ) : (
-                                      <span className="text-slate-400 dark:text-slate-500 font-bold flex justify-center w-full">
-                                        -
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                              )}
-                              <td className="px-2 py-3">
-                                <div className="flex items-center justify-end gap-1.5 w-full pl-4">
-                                  {isFomoLocked ? (
-                                    <div className="flex justify-center w-full">
-                                      <span className="bg-primary/10 text-primary dark:bg-primary/20 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap select-none border border-primary/20">
-                                        <Lock size={13} /> مقفل
-                                      </span>
-                                    </div>
-                                  ) : row.decision === "filtered" ? (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDecision(row.id, "pending");
-                                      }}
-                                      className="flex items-center justify-center gap-1 border border-primary text-primary hover:bg-primary hover:text-white dark:border-primary/50 dark:hover:bg-primary px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                                      title="استعادة"
-                                    >
-                                      <RotateCcw size={14} /> استعادة
-                                    </button>
-                                  ) : (row.decision && row.decision !== "pending") || decisionFilter === "interview" || decisionFilter === "accepted" || decisionFilter === "rejected" ? (
-                                    <>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          e.preventDefault();
-                                          setUndoTargetId(row.id);
-                                          setShowUndoConfirmModal(true);
-                                        }}
-                                        className="flex items-center justify-center gap-1 border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-400 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
-                                        title="تراجع"
-                                      >
-                                        <RotateCcw size={14} /> تراجع
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button
-                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "accepted"); }}
-                                        className="flex items-center justify-center gap-1 bg-teal-50 text-teal-600 hover:bg-teal-100 hover:text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 dark:hover:text-teal-300 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                                        title="قبول"
-                                      >
-                                        <CheckCircle size={14} /> قبول
-                                      </button>
-                                      <button
-                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "interview"); }}
-                                        className="flex items-center justify-center gap-1 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 dark:hover:bg-amber-900/50 dark:hover:text-amber-400 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                                        title="مقابلة"
-                                      >
-                                        مقابلة
-                                      </button>
-                                      <button
-                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "rejected"); }}
-                                        className="flex items-center justify-center gap-1 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-500 dark:hover:bg-rose-900/50 dark:hover:text-rose-400 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
-                                        title="رفض"
-                                      >
-                                        <X size={14} /> رفض
-                                      </button>
-                                    </>
-                                  )}
-                                  <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); onViewDetails(row); }}
-                                    disabled={isFomoLocked || isEvaluating}
-                                    className={`flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isFomoLocked || isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}`}
-                                    title="عرض الملف"
-                                  >
-                                    <FileText size={14} /> عرض الملف{" "}
-                                  </button>
-                                  <div className="relative">
-                                    <button
-                                      disabled={isFomoLocked || isEvaluating}
-                                      onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === row.id ? null : row.id); }}
-                                      className={`flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 transition-colors ${isFomoLocked || isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:text-navy hover:bg-slate-100 dark:hover:bg-slate-700'}`}
-                                    >
-                                      <MoreVertical size={16} />
-                                    </button>
-
-                                    {(() => {
-                                      const isNearBottom = index >= visibleApplicants.length - 2 && visibleApplicants.length > 2;
-                                      return (
-                                        <AnimatePresence>
-                                          {openDropdownId === row.id && (
-                                            <>
-                                              <div
-                                                className="fixed inset-0 z-40"
-                                                onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); }}
-                                              />
-                                              <motion.div
-                                                initial={{ opacity: 0, y: isNearBottom ? -10 : 10, scale: 0.95 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                exit={{ opacity: 0, scale: 0.95 }}
-                                                style={{ left: 0, right: 'auto' }}
-                                                className={`absolute w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 dark:border-slate-700 py-2 z-50 overflow-hidden ${isNearBottom ? "bottom-[110%]" : "mt-2 top-full"}`}
-                                              >
-                                                <button
-                                                  onClick={(e) => { e.stopPropagation(); handleToggleFavorite(row.id); setOpenDropdownId(null); }}
-                                                  className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
-                                                >
-                                                  <Star size={16} className={row.is_favorite ? "text-yellow-500" : "text-slate-400"} fill={row.is_favorite ? "currentColor" : "none"} />
-                                                  {row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
-                                                </button>
-                                                {row.in_talent_pool ? (
-                                                  <button
-                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveFromPool(row.id); }}
-                                                    className="w-full text-right px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
-                                                  >
-                                                    <Database size={16} className="text-red-500" /> إزالة من بنك الكفاءات
-                                                  </button>
-                                                ) : (
-                                                  <button
-                                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleMoveToPool(row); }}
-                                                    className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
-                                                  >
-                                                    <Database size={16} className="text-slate-400" /> إضافة إلى بنك الكفاءات
-                                                  </button>
-                                                )}
-                                                <button
-                                                  onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    setCrossNominateApplicant(row);
-                                                    setCrossNominateJobId(jobs.find(j => j.title === row.job)?.id || jobs.find(j => j.status === "نشط")?.id || "");
-                                                    setOpenDropdownId(null);
-                                                  }}
-                                                  className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
-                                                >
-                                                  <Briefcase size={16} className="text-primary" /> ترشيح لوظيفة أخرى
-                                                </button>
-
-                                              </motion.div>
-                                            </>
-                                          )}
-                                        </AnimatePresence>
-                                      );
-                                    })()}
-                                  </div>
-                                </div>{" "}
-                              </td>
-                            </motion.tr>
-                          );
-                        })}
-                        {visibleApplicants.some((row) => plan === 'free' && row.status === "قيد الانتظار" && cvsRemaining <= 0) && (
-                          <tr>
-                            <td colSpan={100} className="p-0">
-                              <div className="absolute left-0 w-full flex justify-center z-10 -translate-y-full pb-8 pointer-events-auto">
-                                <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl p-8 rounded-[32px] shadow-2xl border border-primary/20 text-center max-w-md mx-auto relative overflow-hidden">
-                                  <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 -z-10 translate-x-1/2" />
-                                  <div className="w-16 h-16 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner-3d">
-                                    <Lock size={32} />
-                                  </div>
-                                  <h4 className="text-xl font-black text-navy dark:text-white mb-2 tracking-tight">نفد رصيد السير الذاتية 🔒</h4>
-                                  <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">للوصول إلى السير الذاتية الإضافية وإجراء الفرز الذكي، يرجى شراء باقة إضافية.</p>
-                                  <button onClick={() => {
-                                    setAddonsBoughtThisMonth(prev => prev + 1);
-                                    if (addonsBoughtThisMonth >= 2 && plan !== 'enterprise') {
-                                      setShowSoftUpgradeModal(true);
+                        </div>
+                      </div>
+                    )}
+                    <table className={`w-full text-right transition-all ${shouldShowMockTable ? 'filter blur-[6px] opacity-50 pointer-events-none select-none' : ''}`}>
+                      <thead className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-200 text-xs uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                        <tr>
+                          {isSelectionMode && (
+                            <th className="px-3 py-4 w-10 font-bold text-navy dark:text-white">
+                              <div className="flex flex-col items-center justify-center gap-1">
+                                <div
+                                  onClick={() => {
+                                    const allSelected = visibleApplicants.length > 0 && selectedApplicantIds.length === visibleApplicants.length;
+                                    if (allSelected) {
+                                      setSelectedApplicantIds([]);
                                     } else {
-                                      alert("سيتم توجيهك لبوابة الدفع لشراء 500 سيرة بـ 149 ريال...");
+                                      setSelectedApplicantIds(visibleApplicants.map(a => a.id));
                                     }
-                                  }} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3.5 rounded-2xl font-bold hover:from-purple-700 hover:to-indigo-700 transition-all active:scale-[0.98] shadow-lg shadow-purple-600/20">شراء 500 سيرة بـ 149 ريال</button>
+                                  }}
+                                  className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${visibleApplicants.length > 0 && selectedApplicantIds.length === visibleApplicants.length ? "bg-primary border-primary text-white" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 opacity-50 hover:opacity-100 hover:border-slate-400"}`}
+                                >
+                                  {visibleApplicants.length > 0 && selectedApplicantIds.length === visibleApplicants.length && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
                                 </div>
+                                <span className="text-[10px] text-slate-500 font-bold">الكل</span>
+                              </div>
+                            </th>
+                          )}
+                          <th className="px-2 pr-14 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">اسم المتقدم</th>
+                          <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الوظيفة المقدم إليها</th>
+                          <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">التقييم الآلي</th>
+                          <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الجاهزية</th>
+                          <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">معلومات التواصل</th>
+                          {decisionFilter === "interview" && (
+                            <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">حالة المقابلة</th>
+                          )}
+                          <th className="px-2 py-4 font-bold text-navy dark:text-white whitespace-nowrap">
+                            <div className="flex items-center justify-end gap-1.5 w-full pl-4">
+                              <div className={`flex justify-center shrink-0 ${decisionFilter === "pending" ? "w-[200px]" : decisionFilter === "locked_fomo" ? "w-[160px]" : "w-[75px]"}`}>
+                                الإجراءات
+                              </div>
+                              <div className="w-px h-5 mx-1 opacity-0 shrink-0"></div>
+                              <div className="w-[110px] opacity-0 shrink-0"></div>
+                              <div className="w-8 opacity-0 shrink-0"></div>
+                            </div>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {isLoadingApplicants && applicants.length === 0 ? (
+                          <tr>
+                            <td colSpan={6 + (isSelectionMode ? 1 : 0) + (decisionFilter === "interview" ? 1 : 0)} className="p-8">
+                              <div className="flex flex-col items-center justify-center min-h-[400px] text-center bg-white dark:bg-slate-800/50">
+                                <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
+                                <h3 className="text-xl font-bold text-navy dark:text-white mb-2">
+                                  جاري جلب بيانات المرشحين...
+                                </h3>
+                                <p className="text-slate-500 dark:text-slate-400 font-medium">
+                                  يرجى الانتظار قليلاً بينما نقوم بتجهيز قائمة المتقدمين.
+                                </p>
                               </div>
                             </td>
                           </tr>
+                        ) : (
+                          <AnimatePresence>
+                            {rowsToRender.map((originalRow, index) => {
+                              const row = originalRow;
+                              const isFomoLocked = row.decision === "locked_fomo" || (plan === 'free' && row.decision === "pending" && (!row.rating || row.rating === 0) && cvsRemaining <= 0);
+                              const isEvaluating = row.decision === "pending" && row.rating === 0;
+                              return (
+                                <motion.tr
+                                  layout
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.9 }}
+                                  key={row.id}
+                                  onClick={() => {
+                                    if (!isFomoLocked && !isEvaluating) {
+                                      onViewDetails(row);
+                                    }
+                                  }}
+                                  className={`transition-colors group ${isFomoLocked || isEvaluating ? 'bg-slate-50/50 dark:bg-slate-800/30' : 'hover:bg-slate-50 dark:bg-slate-800/80 cursor-pointer'}`}
+                                >
+                                  {isSelectionMode && (
+                                    <td className="px-3 py-4 w-10">
+                                      <div
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (selectedApplicantIds.includes(row.id)) {
+                                            setSelectedApplicantIds(prev => prev.filter(id => id !== row.id));
+                                          } else {
+                                            setSelectedApplicantIds(prev => [...prev, row.id]);
+                                          }
+                                        }}
+                                        className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${selectedApplicantIds.includes(row.id) ? "bg-primary border-primary text-white opacity-100" : "border-slate-300 dark:border-slate-600 bg-slate-100/50 dark:bg-slate-800 opacity-0 group-hover:opacity-100 hover:border-slate-400"}`}
+                                      >
+                                        {selectedApplicantIds.includes(row.id) && (
+                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                        )}
+                                      </div>
+                                    </td>
+                                  )}
+                                  <td className="px-2 py-3">
+                                    <div className="flex items-center gap-2 whitespace-nowrap">
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleToggleFavorite(row.id); }}
+                                        className={`transition-all ${row.is_favorite ? "text-yellow-500 scale-75" : "text-slate-200 hover:text-yellow-500"}`}
+                                        title={row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
+                                      >
+                                        <Star
+                                          size={18}
+                                          fill={
+                                            row.is_favorite
+                                              ? "currentColor"
+                                              : "none"
+                                          }
+                                        />{" "}
+                                      </button>{" "}
+                                      <div
+                                        onClick={(e) => {
+                                          if (row.photoUrl && !isFomoLocked) {
+                                            e.stopPropagation();
+                                            setLightboxPhoto(row.photoUrl);
+                                          }
+                                        }}
+                                        className={`w-10 h-10 rounded-[14px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d transition-colors overflow-hidden ${row.photoUrl && !isFomoLocked ? "cursor-pointer hover:opacity-80" : "group-hover:text-primary dark:group-hover:text-primary group-hover:bg-primary/10 dark:group-hover:bg-primary/20"}`}
+                                      >
+                                        {row.photoUrl && !isFomoLocked ? (
+                                          <img src={row.photoUrl} alt={row.name} className="w-full h-full object-cover" />
+                                        ) : isFomoLocked ? (
+                                          <Lock size={16} className="text-slate-400" />
+                                        ) : (
+                                          row.name.charAt(0)
+                                        )}{" "}
+                                      </div>{" "}
+                                      <div className="flex flex-col">
+                                        <span className={`font-bold text-navy dark:text-white ${isFomoLocked ? 'filter blur-[4px] select-none' : ''}`}>
+                                          {isFomoLocked ? 'متقدم مخفي (نفد الرصيد)' : row.name}
+                                        </span>
+                                        {row.nominatedTo && !isFomoLocked && (
+                                          <div
+                                            className="mt-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md inline-block font-bold w-fit max-w-[180px] truncate border border-primary/20 shadow-sm"
+                                            title={`تم ترشيحه لـ: ${row.nominatedTo}`}
+                                          >
+                                            تم ترشيحه لـ: {row.nominatedTo}
+                                          </div>
+                                        )}
+                                        {row.source === 'ترشيح متقاطع' && !isFomoLocked && (
+                                          <div className="mt-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-md inline-block font-bold w-fit border border-primary/20 shadow-sm">
+                                            تم ترشيحه
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>{" "}
+                                  </td>
+                                  <td className="px-2 py-3">
+                                    <div className="flex justify-start">
+                                      <span
+                                        className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white px-2 py-1 rounded-md text-[11px] font-bold inline-flex items-center justify-center whitespace-nowrap w-fit max-w-[140px] truncate"
+                                        title={row.job}
+                                      >
+                                        {row.job}
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="px-2 py-3">
+                                    {row.rejection_reason && row.rejection_reason.includes("مرفوض آلياً") ? (
+                                      <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2.5 py-1 rounded-md border border-rose-100 dark:border-rose-800/50 whitespace-nowrap">
+                                        مستبعد آلياً
+                                      </span>
+                                    ) : isEvaluating && !isFomoLocked ? (
+                                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 whitespace-nowrap flex items-center justify-center gap-1.5 w-fit shadow-sm">
+                                        <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                        قيد الفرز
+                                      </span>
+                                    ) : (
+                                      <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
+                                        <div className={`w-16 h-2.5 rounded-full overflow-hidden ${isFomoLocked ? "bg-slate-100 dark:bg-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] border border-slate-200/50 dark:border-slate-700/50" : row.rating >= 80 ? "bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d" : row.rating >= 50 ? "bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d" : "bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d"}`}>
+                                          <div
+                                            className={`h-full rounded-full transition-all duration-500 ${isFomoLocked ? "bg-slate-300 dark:bg-slate-600" : row.rating >= 80 ? "bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" : row.rating >= 50 ? "bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" : "bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"}`}
+                                            style={{ width: isFomoLocked ? '100%' : `${row.rating}%` }}
+                                          />
+                                        </div>
+                                        <span className={`text-sm font-bold ${isFomoLocked ? "text-slate-400 filter blur-[4px] select-none" : row.rating >= 80 ? "text-teal-600 dark:text-teal-400" : row.rating >= 50 ? "text-amber-600 dark:text-amber-500" : "text-rose-600 dark:text-rose-500"}`}>
+                                          {isFomoLocked ? "00%" : `${row.rating}%`}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-2 py-3 text-xs text-slate-600 dark:text-slate-300 font-bold whitespace-nowrap text-right">
+                                    {isFomoLocked ? <span className="filter blur-[4px] select-none">مقفل</span> : row.status}
+                                  </td>
+                                  <td className="px-2 py-3">
+                                    <div className={`flex items-center justify-center gap-1 ${isFomoLocked ? 'filter blur-[4px] select-none pointer-events-none' : ''}`}>
+                                      <a
+                                        href={`https://wa.me/${row.phone}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (row.decision === "interview") {
+                                            markInterviewSent(row.id);
+                                          }
+                                        }}
+                                        className="w-8 h-8 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300 rounded-lg flex items-center justify-center hover:bg-teal-100 dark:hover:bg-teal-900/50 hover:text-teal-700 transition-all shadow-sm"
+                                        title="واتساب"
+                                      >
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.878-.788-1.47-1.761-1.643-2.059-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
+                                        </svg>{" "}
+                                      </a>{" "}
+                                      <a
+                                        href={`mailto:${row.email}`}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (row.decision === "interview") {
+                                            markInterviewSent(row.id);
+                                          }
+                                        }}
+                                        className="w-8 h-8 bg-navy/5 dark:bg-slate-700/50 text-navy dark:text-slate-200 rounded-lg flex items-center justify-center hover:bg-navy dark:hover:bg-slate-600 hover:text-white transition-all shadow-sm"
+                                        title="إيميل"
+                                      >
+                                        <Mail size={15} />{" "}
+                                      </a>{" "}
+                                      <a
+                                        href={`tel:${row.phone}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-lg flex items-center justify-center hover:bg-blue-500 dark:hover:bg-blue-500/60 dark:hover:text-blue-100 hover:text-white transition-all shadow-sm"
+                                        title="اتصال"
+                                      >
+                                        <Phone size={15} />{" "}
+                                      </a>{" "}
+                                    </div>{" "}
+                                  </td>
+                                  {decisionFilter === "interview" && (
+                                    <td className="px-2 py-3">
+                                      <div className="flex justify-center">
+                                        {isFomoLocked ? (
+                                          <span className="filter blur-[4px] select-none text-xs text-slate-400 font-bold">مقفل</span>
+                                        ) : row.is_interview_completed ? (
+                                          <span className="bg-green-50 text-green-600 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                            <Mic size={13} /> تمت المقابلة
+                                          </span>
+                                        ) : (row.has_started_interview && !row.is_interview_completed) ? (
+                                          <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                            <Clock size={13} /> جاري المقابلة
+                                          </span>
+                                        ) : (!row.interview_revoked && (!row.interview_sent_at || (Date.now() - new Date(row.interview_sent_at).getTime() <= 72 * 60 * 60 * 1000)) && (row.interview_sent || row.decision === "interviewing")) ? (
+                                          <span className="bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                            <Clock size={13} /> بانتظار المتقدم
+                                          </span>
+                                        ) : (
+                                          <span className="text-slate-400 dark:text-slate-500 font-bold flex justify-center w-full">
+                                            -
+                                          </span>
+                                        )}
+                                      </div>
+                                    </td>
+                                  )}
+                                  <td className="px-2 py-3">
+                                    <div className="flex items-center justify-end gap-1.5 w-full pl-4">
+                                      {isFomoLocked ? (
+                                        <div className="flex justify-center w-full">
+                                          <span className="bg-primary/10 text-primary dark:bg-primary/20 px-3 py-1.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap select-none border border-primary/20">
+                                            <Lock size={13} /> مقفل
+                                          </span>
+                                        </div>
+                                      ) : row.decision === "filtered" ? (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDecision(row.id, "pending");
+                                          }}
+                                          className="flex items-center justify-center gap-1 border border-primary text-primary hover:bg-primary hover:text-white dark:border-primary/50 dark:hover:bg-primary px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                          title="استعادة"
+                                        >
+                                          <RotateCcw size={14} /> استعادة
+                                        </button>
+                                      ) : (row.decision && row.decision !== "pending") || decisionFilter === "interview" || decisionFilter === "accepted" || decisionFilter === "rejected" ? (
+                                        <>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              e.preventDefault();
+                                              setUndoTargetId(row.id);
+                                              setShowUndoConfirmModal(true);
+                                            }}
+                                            className="flex items-center justify-center gap-1 border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-400 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
+                                            title="تراجع"
+                                          >
+                                            <RotateCcw size={14} /> تراجع
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <button
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "accepted"); }}
+                                            className="flex items-center justify-center gap-1 bg-teal-50 text-teal-600 hover:bg-teal-100 hover:text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 dark:hover:text-teal-300 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                            title="قبول"
+                                          >
+                                            <CheckCircle size={14} /> قبول
+                                          </button>
+                                          <button
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "interview"); }}
+                                            className="flex items-center justify-center gap-1 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 dark:hover:bg-amber-900/50 dark:hover:text-amber-400 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                            title="مقابلة"
+                                          >
+                                            مقابلة
+                                          </button>
+                                          <button
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "rejected"); }}
+                                            className="flex items-center justify-center gap-1 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-500 dark:hover:bg-rose-900/50 dark:hover:text-rose-400 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                            title="رفض"
+                                          >
+                                            <X size={14} /> رفض
+                                          </button>
+                                        </>
+                                      )}
+                                      <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); onViewDetails(row); }}
+                                        disabled={isFomoLocked || isEvaluating}
+                                        className={`flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isFomoLocked || isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                                        title="عرض الملف"
+                                      >
+                                        <FileText size={14} /> عرض الملف{" "}
+                                      </button>
+                                      <div className="relative">
+                                        <button
+                                          disabled={isFomoLocked || isEvaluating}
+                                          onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === row.id ? null : row.id); }}
+                                          className={`flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 transition-colors ${isFomoLocked || isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:text-navy hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                        >
+                                          <MoreVertical size={16} />
+                                        </button>
+
+                                        {(() => {
+                                          const isNearBottom = index >= visibleApplicants.length - 2 && visibleApplicants.length > 2;
+                                          return (
+                                            <AnimatePresence>
+                                              {openDropdownId === row.id && (
+                                                <>
+                                                  <div
+                                                    className="fixed inset-0 z-40"
+                                                    onClick={(e) => { e.stopPropagation(); setOpenDropdownId(null); }}
+                                                  />
+                                                  <motion.div
+                                                    initial={{ opacity: 0, y: isNearBottom ? -10 : 10, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, scale: 0.95 }}
+                                                    style={{ left: 0, right: 'auto' }}
+                                                    className={`absolute w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl shadow-slate-200/50 border border-slate-100 dark:border-slate-700 py-2 z-50 overflow-hidden ${isNearBottom ? "bottom-[110%]" : "mt-2 top-full"}`}
+                                                  >
+                                                    <button
+                                                      onClick={(e) => { e.stopPropagation(); handleToggleFavorite(row.id); setOpenDropdownId(null); }}
+                                                      className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
+                                                    >
+                                                      <Star size={16} className={row.is_favorite ? "text-yellow-500" : "text-slate-400"} fill={row.is_favorite ? "currentColor" : "none"} />
+                                                      {row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
+                                                    </button>
+                                                    {row.in_talent_pool ? (
+                                                      <button
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveFromPool(row.id); }}
+                                                        className="w-full text-right px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
+                                                      >
+                                                        <Database size={16} className="text-red-500" /> إزالة من بنك الكفاءات
+                                                      </button>
+                                                    ) : (
+                                                      <button
+                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleMoveToPool(row); }}
+                                                        className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
+                                                      >
+                                                        <Database size={16} className="text-slate-400" /> إضافة إلى بنك الكفاءات
+                                                      </button>
+                                                    )}
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setCrossNominateApplicant(row);
+                                                        setCrossNominateJobId(jobs.find(j => j.title === row.job)?.id || jobs.find(j => j.status === "نشط")?.id || "");
+                                                        setOpenDropdownId(null);
+                                                      }}
+                                                      className="w-full text-right px-4 py-3 text-sm font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
+                                                    >
+                                                      <Briefcase size={16} className="text-primary" /> ترشيح لوظيفة أخرى
+                                                    </button>
+
+                                                  </motion.div>
+                                                </>
+                                              )}
+                                            </AnimatePresence>
+                                          );
+                                        })()}
+                                      </div>
+                                    </div>{" "}
+                                  </td>
+                                </motion.tr>
+                              );
+                            })}
+                            {visibleApplicants.some((row) => plan === 'free' && row.status === "قيد الانتظار" && cvsRemaining <= 0) && (
+                              <tr>
+                                <td colSpan={100} className="p-0">
+                                  <div className="absolute left-0 w-full flex justify-center z-10 -translate-y-full pb-8 pointer-events-auto">
+                                    <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl p-8 rounded-[32px] shadow-2xl border border-primary/20 text-center max-w-md mx-auto relative overflow-hidden">
+                                      <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 -z-10 translate-x-1/2" />
+                                      <div className="w-16 h-16 bg-purple-50 text-purple-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner-3d">
+                                        <Lock size={32} />
+                                      </div>
+                                      <h4 className="text-xl font-black text-navy dark:text-white mb-2 tracking-tight">نفد رصيد السير الذاتية 🔒</h4>
+                                      <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mb-6 leading-relaxed">للوصول إلى السير الذاتية الإضافية وإجراء الفرز الذكي، يرجى شراء باقة إضافية.</p>
+                                      <button onClick={() => {
+                                        setAddonsBoughtThisMonth(prev => prev + 1);
+                                        if (addonsBoughtThisMonth >= 2 && plan !== 'enterprise') {
+                                          setShowSoftUpgradeModal(true);
+                                        } else {
+                                          alert("سيتم توجيهك لبوابة الدفع لشراء 500 سيرة بـ 149 ريال...");
+                                        }
+                                      }} className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-8 py-3.5 rounded-2xl font-bold hover:from-purple-700 hover:to-indigo-700 transition-all active:scale-[0.98] shadow-lg shadow-purple-600/20">شراء 500 سيرة بـ 149 ريال</button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </AnimatePresence>
                         )}
-                      </AnimatePresence>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Soft Upgrade Modal */}
@@ -2007,45 +2037,7 @@ export const Dashboard = ({
           </div>
         );
       case "إدارة الوظائف":
-        if (jobs.length === 0) {
-          return (
-            <div className="w-full flex items-center justify-center min-h-[75vh]">
-              <div className="text-center max-w-4xl mx-auto p-12 md:p-20 bg-white dark:bg-slate-800 rounded-[48px] shadow-2xl shadow-primary/10 border border-slate-100 dark:border-slate-700 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-primary/5 to-transparent -z-10" />
-                <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
-                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl" />
 
-                <div className="w-28 h-28 bg-white dark:bg-slate-700 text-primary rounded-[40px] flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-slate-200/50 dark:shadow-slate-900/50 transform -rotate-6 border border-slate-50 dark:border-slate-600 relative z-10">
-                  <Rocket size={56} className="text-primary drop-shadow-md" />
-                </div>
-
-                <h1 className="text-4xl md:text-5xl font-black text-navy dark:text-white leading-tight mb-6">
-                  {plan === 'free' ? (
-                    <>أهلاً بك! ابدأ الآن بنشر إعلانك الأول <span className="text-primary">مجاناً</span> 🚀</>
-                  ) : (
-                    <>أهلاً بك في منصة <span className="text-primary">التوظيف الذكي</span> 🚀</>
-                  )}
-                </h1>
-
-                <p className="text-lg md:text-xl text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-2xl mx-auto mb-12">
-                  {plan === 'free' ? "احصل على أول 50 سيرة ذاتية مفروزة بتقنيات الذكاء الاصطناعي مجاناً بالكامل. نحن هنا لنسهل عليك رحلة البحث عن أفضل الكفاءات واختيار الأنسب لفريقك." : "نحن هنا لنسهل عليك رحلة البحث عن أفضل الكفاءات وتقييم المتقدمين بتقنيات الذكاء الاصطناعي بكل احترافية."}
-                </p>
-
-                <div className="relative z-10">
-                  <button onClick={onCreateJob} className="bg-primary text-white px-10 md:px-14 py-5 md:py-6 rounded-3xl font-black text-xl md:text-2xl hover:bg-primary-dark transition-all active:scale-[0.98] shadow-2xl shadow-primary/30 flex items-center justify-center gap-4 mx-auto group">
-                    <Briefcase size={28} className="group-hover:scale-110 transition-transform" />
-                    {plan === 'free' ? "أنشئ إعلانك الأول الآن" : "أنشئ وظيفتك الأولى الآن"}
-                  </button>
-                  {plan === 'free' && (
-                    <p className="mt-6 text-sm font-bold text-slate-400 flex items-center justify-center gap-2">
-                      <CheckCircle size={16} className="text-emerald-500" /> لا يتطلب بطاقة ائتمانية للبدء
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        }
         return (
           <div className="max-w-6xl mx-auto space-y-8">
             <header className="flex flex-col md:flex-row items-center justify-end gap-6">
@@ -2060,38 +2052,45 @@ export const Dashboard = ({
                 )}
                 <button
                   onClick={onCreateJob}
-                  className="bg-primary text-white px-8 py-4 rounded-2xl font-bold hover:shadow-lg hover:shadow-primary/30 transition-all flex items-center justify-center gap-2"
+                  className="bg-gradient-to-b from-primary to-[#0d847a] text-white px-8 py-4 rounded-2xl font-bold shadow-[0_6px_0_#096159,0_12px_20px_rgba(13,148,136,0.3)] hover:shadow-[0_4px_0_#096159,0_8px_15px_rgba(13,148,136,0.3)] hover:translate-y-[2px] active:shadow-[0_0px_0_#096159] active:translate-y-[6px] transition-all duration-200 flex items-center justify-center gap-2"
                 >
                   <Briefcase size={20} /> إنشاء إعلان وظيفي
                 </button>
               </div>{" "}
             </header>{" "}
-            <div className="flex flex-wrap items-center justify-between gap-4 w-full mb-2">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex flex-wrap bg-white dark:bg-slate-800 p-2 gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 w-fit">
-                  <button
-                    onClick={() => setSubTab("active")}
-                    className={`flex items-center justify-center gap-2.5 flex-1 px-6 md:px-8 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${subTab === "active" ? "bg-navy text-white shadow-md" : "bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white"}`}
-                  >
-                    <div className={`w-2 h-2 rounded-full shadow-sm ${subTab === "active" ? "bg-emerald-400" : "bg-primary"}`}></div>
-                    النشطة ({activeJobsList.length}){" "}
-                  </button>{" "}
-                  <button
-                    onClick={() => setSubTab("inactive")}
-                    className={`flex items-center justify-center gap-2.5 flex-1 px-6 md:px-8 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${subTab === "inactive" ? "bg-navy text-white shadow-md" : "bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white"}`}
-                  >
-                    <div className={`w-2 h-2 rounded-full shadow-sm ${subTab === "inactive" ? "bg-red-400" : "bg-slate-500"}`}></div>
-                    المنتهية/المغلقة ({inactiveJobsList.length}){" "}
-                  </button>{" "}
-                  <button
-                    onClick={() => setSubTab("drafts")}
-                    className={`flex items-center justify-center gap-2.5 flex-1 px-6 md:px-8 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all ${subTab === "drafts" ? "bg-navy text-white shadow-md" : "bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white"}`}
-                  >
-                    <div className={`w-2 h-2 rounded-full shadow-sm ${subTab === "drafts" ? "bg-amber-400" : "bg-slate-300 dark:bg-slate-600"}`}></div>
-                    المسودات ({draftJobsList.length}){" "}
-                  </button>{" "}
-                </div>
+            <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4 w-full mb-4">
+              <div className="flex flex-wrap bg-white dark:bg-slate-800 p-2 gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 w-fit shrink-0">
+                <button
+                  onClick={() => setSubTab("active")}
+                  className={`flex items-center justify-center gap-2.5 flex-1 px-6 md:px-8 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-200 ${subTab === "active" ? "bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-800/80 text-primary dark:text-teal-400 shadow-[0_4px_0_#e2e8f0,0_5px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_0_#0f172a,0_5px_15px_rgba(0,0,0,0.2)] -translate-y-[3px]" : "bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white"}`}
+                >
+                  <div className={`w-2 h-2 rounded-full shadow-sm ${subTab === "active" ? "bg-emerald-400" : "bg-slate-300 dark:bg-slate-600"}`}></div>
+                  النشطة ({activeJobsList.length}){" "}
+                </button>{" "}
+                <button
+                  onClick={() => setSubTab("paused")}
+                  className={`flex items-center justify-center gap-2.5 flex-1 px-6 md:px-8 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-200 ${subTab === "paused" ? "bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-800/80 text-primary dark:text-teal-400 shadow-[0_4px_0_#e2e8f0,0_5px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_0_#0f172a,0_5px_15px_rgba(0,0,0,0.2)] -translate-y-[3px]" : "bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white"}`}
+                >
+                  <div className={`w-2 h-2 rounded-full shadow-sm ${subTab === "paused" ? "bg-amber-400" : "bg-slate-300 dark:bg-slate-600"}`}></div>
+                  مغلق مؤقتاً ({pausedJobsList.length}){" "}
+                </button>{" "}
+                <button
+                  onClick={() => setSubTab("inactive")}
+                  className={`flex items-center justify-center gap-2.5 flex-1 px-6 md:px-8 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-200 ${subTab === "inactive" ? "bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-800/80 text-primary dark:text-teal-400 shadow-[0_4px_0_#e2e8f0,0_5px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_0_#0f172a,0_5px_15px_rgba(0,0,0,0.2)] -translate-y-[3px]" : "bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white"}`}
+                >
+                  <div className={`w-2 h-2 rounded-full shadow-sm ${subTab === "inactive" ? "bg-red-400" : "bg-slate-300 dark:bg-slate-600"}`}></div>
+                  مغلق دائم ({inactiveJobsList.length}){" "}
+                </button>{" "}
+                <button
+                  onClick={() => setSubTab("drafts")}
+                  className={`flex items-center justify-center gap-2.5 flex-1 px-6 md:px-8 py-3 rounded-xl font-bold text-sm whitespace-nowrap transition-all duration-200 ${subTab === "drafts" ? "bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-800/80 text-primary dark:text-teal-400 shadow-[0_4px_0_#e2e8f0,0_5px_15px_rgba(0,0,0,0.05)] dark:shadow-[0_4px_0_#0f172a,0_5px_15px_rgba(0,0,0,0.2)] -translate-y-[3px]" : "bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-navy dark:hover:text-white"}`}
+                >
+                  <div className={`w-2 h-2 rounded-full shadow-sm ${subTab === "drafts" ? "bg-amber-400" : "bg-slate-300 dark:bg-slate-600"}`}></div>
+                  المسودات ({draftJobsList.length}){" "}
+                </button>{" "}
+              </div>
 
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto shrink-0">
                 {subTab === "drafts" && draftJobsList.length > 0 && onDeleteAllDrafts && (
                   <button
                     type="button"
@@ -2100,22 +2099,20 @@ export const Dashboard = ({
                       e.stopPropagation();
                       setShowBulkDeleteDraftsModal(true);
                     }}
-                    className="flex items-center gap-2 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm"
+                    className="flex items-center justify-center gap-2 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400 px-6 py-3.5 rounded-xl font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors shadow-sm w-full sm:w-auto"
                   >
                     <Trash2 size={18} /> مسح جميع المسودات
                   </button>
                 )}
-              </div>{" "}
-
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto flex-1 md:flex-none justify-end">
-                <div className="flex-1 md:flex-none relative min-w-[250px]">
+                
+                <div className="w-full sm:w-auto relative min-w-[250px] lg:min-w-[300px]">
                   <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
                   <input
                     type="text"
                     placeholder="ابحث باسم المسمى الوظيفي أو الرقم..."
                     value={jobSearchQuery}
                     onChange={(e) => setJobSearchQuery(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 pr-11 pl-4 py-3 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium dark:text-white dark:placeholder-slate-400"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 pr-11 pl-4 py-3.5 rounded-2xl text-sm outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium dark:text-white dark:placeholder-slate-400"
                   />
                   {jobSearchQuery && (
                     <button
@@ -2129,7 +2126,9 @@ export const Dashboard = ({
               </div>
             </div>{" "}
             <ActiveJobs
-              jobs={subTab === "active" ? activeJobsList : subTab === "inactive" ? inactiveJobsList : draftJobsList}
+              subTab={subTab}
+              isNewUser={jobs.filter(j => j.status !== "مسودة").length === 0}
+              jobs={subTab === "active" ? activeJobsList : subTab === "paused" ? pausedJobsList : subTab === "inactive" ? inactiveJobsList : draftJobsList}
               onManage={onManageJob}
               onCreateJob={onCreateJob}
               onClone={onCloneJob}
@@ -2533,8 +2532,8 @@ export const Dashboard = ({
             <div className={`bg-red-100 dark:bg-red-900/50 border-b border-red-200 dark:border-red-700/50 mt-16 md:mt-0 z-10 transition-colors ${isSidebarOpen ? 'sidebar-padding-open' : 'sidebar-padding-closed'}`}>
               <div className="max-w-6xl mx-auto p-3 sm:px-8 flex items-center justify-between text-red-900 dark:text-red-100 text-sm md:text-base">
                 <span className="font-bold flex items-center gap-2 max-w-[70%] leading-relaxed">
-                  <span className="text-red-600 dark:text-red-400 shrink-0 text-lg">⚠️</span> 
-                  {daysLeft <= 0 
+                  <span className="text-red-600 dark:text-red-400 shrink-0 text-lg">⚠️</span>
+                  {daysLeft <= 0
                     ? "انتهى اشتراكك في الباقة! يرجى التجديد لتجنب توقف الخدمات."
                     : `تنبيه: سينتهي اشتراكك بعد ${daysLeft} ${daysLeft === 1 ? 'يوم' : daysLeft === 2 ? 'يومين' : 'أيام'}. يرجى التجديد لضمان استمرار الخدمة.`}
                 </span>
@@ -2548,21 +2547,7 @@ export const Dashboard = ({
             </div>
           )}
 
-          {(userProfile?.isLoaded && !userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
-            <div className={`bg-amber-100 dark:bg-amber-900/50 border-b border-amber-200 dark:border-amber-700/50 ${(!daysLeft || daysLeft > 5 || plan === 'free' || userProfile?.is_auto_renew) ? 'mt-16 md:mt-0' : ''} z-10 transition-colors ${isSidebarOpen ? 'sidebar-padding-open' : 'sidebar-padding-closed'}`}>
-              <div className="max-w-6xl mx-auto p-3 sm:px-8 flex items-center justify-between text-amber-900 dark:text-amber-100 text-sm md:text-base">
-                <span className="font-bold flex items-center gap-2 max-w-[70%] leading-relaxed">
-                  <ShieldCheck size={20} className="text-orange-600 dark:text-orange-400 shrink-0" /> أهلاً بك! لتتمكن من نشر إعلاناتك الوظيفية، يرجى استكمال بيانات الكيان القانونية.
-                </span>
-                <button
-                  onClick={onShowOnboarding}
-                  className="shrink-0 bg-orange-500 hover:bg-amber-600 text-white dark:bg-amber-600 dark:hover:bg-orange-500 px-4 py-2 md:px-5 md:py-2.5 rounded-xl font-bold text-sm shadow-sm transition-colors mr-auto"
-                >
-                  استكمال البيانات
-                </button>
-              </div>
-            </div>
-          )}
+
           <div className={`flex-1 p-10 pt-24 lg:pt-10 w-full min-w-0 max-w-full ${isSidebarOpen ? 'sidebar-padding-open' : 'sidebar-padding-closed'}`}>
             <AnimatePresence mode="wait">
               <motion.div
@@ -2633,6 +2618,40 @@ export const Dashboard = ({
                           placeholder="اكتب تفاصيل المشكلة أو الاقتراح هنا..."
                           className="w-full border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none text-slate-700 dark:text-slate-200 resize-none"
                         />
+                        <div className="mt-3 flex items-center gap-3">
+                          <input
+                            type="file"
+                            id="supportAttachment"
+                            className="hidden"
+                            accept="image/*,.pdf,.doc,.docx"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                setSupportFile(e.target.files[0]);
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor="supportAttachment"
+                            className={`cursor-pointer flex-1 flex justify-center items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-bold transition-all border border-dashed ${supportFile ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-900/30 dark:text-emerald-400' : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50 hover:border-primary dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 dark:hover:border-primary'}`}
+                          >
+                            <Upload size={16} />
+                            {supportFile ? (
+                              <span className="truncate max-w-[200px]" dir="ltr">{supportFile.name}</span>
+                            ) : (
+                              "إضافة مرفق أو صورة (اختياري)"
+                            )}
+                          </label>
+                          {supportFile && (
+                            <button
+                              type="button"
+                              onClick={() => setSupportFile(null)}
+                              className="w-[42px] h-[42px] shrink-0 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 transition-colors border border-red-100 dark:border-red-900/30"
+                              title="حذف المرفق"
+                            >
+                              <X size={18} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       <button
                         type="submit"

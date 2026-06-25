@@ -856,7 +856,7 @@ export const ApplicantForm = ({
     ? new Date(job.endDate)
     : new Date(8640000000000000);
   // far future fallback
-  const isClosed = job?.status === "مغلق";
+  const isClosed = job?.status === "مغلق" || job?.status === "مغلق مؤقتاً";
 
   if (formStep === "success") {
     return (
@@ -899,6 +899,7 @@ export const ApplicantForm = ({
   }
 
   if (isClosed || now > jobEnd) {
+    const isTempClosed = job?.status === "مغلق مؤقتاً";
     return (
       <div className="min-h-screen bg-bg dark:bg-navy pt-40 pb-20 px-4 flex items-center justify-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-1/2 h-full bg-primary/5 -skew-x-12 -z-10 translate-x-1/2" />{" "}
@@ -907,14 +908,14 @@ export const ApplicantForm = ({
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white dark:bg-slate-800/90 backdrop-blur-xl w-full max-w-lg p-10 md:p-14 rounded-[40px] shadow-2xl border border-white dark:border-slate-700 text-center"
         >
-          <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner-3d">
+          <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner-3d ${isTempClosed ? "bg-amber-50 text-amber-500" : "bg-red-50 text-red-500"}`}>
             <Ban size={32} />{" "}
           </div>{" "}
           <h2 className="text-3xl font-bold mb-4 text-navy dark:text-white">
-            عذراً، تم انتهاء وقت التقديم على هذه الوظيفة.
+            {isTempClosed ? "عذراً، التقديم متوقف مؤقتاً في الوقت الحالي." : "عذراً، تم انتهاء وقت التقديم على هذه الوظيفة."}
           </h2>{" "}
           <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium leading-relaxed">
-            نتمنى لك التوفيق في الفرص القادمة.
+            {isTempClosed ? "يرجى المحاولة لاحقاً." : "نتمنى لك التوفيق في الفرص القادمة."}
           </p>{" "}
         </motion.div>{" "}
       </div>

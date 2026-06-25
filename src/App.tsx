@@ -9,6 +9,7 @@ import { ManageJob } from './components/ManageJob';
 import { SharedManagementView } from './components/SharedManagementView';
 import { InterviewRoom } from './components/InterviewRoom';
 import SeekerProfile from './components/SeekerProfile';
+import { WelcomeSlidesModal } from './components/WelcomeSlidesModal';
 import React, { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from "react";
 
 class ErrorBoundary extends React.Component<any, any> {
@@ -41,7 +42,7 @@ class ErrorBoundary extends React.Component<any, any> {
 }
 import { supabase } from "./lib/supabaseClient";
 import { motion, AnimatePresence } from "motion/react";
-import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, ArrowUp, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target, Moon, Sun , Eye, EyeOff, Building2, User, Mic } from 'lucide-react';
+import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, ArrowUp, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target, Moon, Sun, Eye, EyeOff, Building2, User, Mic } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import skillsDictionaryRaw from "./skillsDictionary.json";
 ;
@@ -726,7 +727,7 @@ const LoginPage = ({
   const [isError, setIsError] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   const [authStep, setAuthStep] = useState<"initial" | "otp" | "new_password">("initial");
   const [otpType, setOtpType] = useState<"signup" | "recovery" | null>(null);
   const [otp, setOtp] = useState("");
@@ -746,18 +747,18 @@ const LoginPage = ({
   const handleResendOtp = async () => {
     if (!email) return;
     setIsLoading(true);
-    
+
     try {
-      const { error } = await supabase.auth.resend({ 
+      const { error } = await supabase.auth.resend({
         type: otpType || 'signup',
         email,
-        options: { 
+        options: {
           emailRedirectTo: window.location.origin
         }
       });
-      
+
       if (error) throw error;
-      
+
       setIsResent(true);
       setResendTimer(60);
       setTimeout(() => setIsResent(false), 3000);
@@ -783,7 +784,7 @@ const LoginPage = ({
 
     try {
       const { data: userExists } = await supabase.rpc('check_user_exists', { lookup_email: email });
-      
+
       if (userExists === false) {
         setIsError(true);
         setMessage("عذراً، هذا الحساب غير مسجل لدينا.");
@@ -831,7 +832,7 @@ const LoginPage = ({
             }
           }
         });
-        
+
         if (error) {
           if (error.message.includes("User already registered")) {
             // Trick: User already exists. Verify their password instead of rejecting!
@@ -849,7 +850,7 @@ const LoginPage = ({
           }
           throw error;
         }
-        
+
         setAuthStep("otp");
         setOtpType("signup");
         setMessage("تم إرسال رمز التحقق المكون من 6 أرقام لبريدك الإلكتروني.");
@@ -859,13 +860,13 @@ const LoginPage = ({
           password,
         });
         if (error) throw error;
-        
+
         onLogin();
       }
     } catch (err: any) {
       console.error("Auth error:", err);
       setIsError(true);
-      
+
       let errorMsg = "حدث خطأ أثناء المصادقة. يرجى المحاولة مرة أخرى.";
       if (err.message === "Invalid login credentials") {
         errorMsg = "البريد الإلكتروني أو كلمة المرور غير صحيحة.";
@@ -878,7 +879,7 @@ const LoginPage = ({
       } else if (err.message) {
         errorMsg = err.message;
       }
-      
+
       setMessage(errorMsg);
     } finally {
       setIsLoading(false);
@@ -891,7 +892,7 @@ const LoginPage = ({
     setIsLoading(true);
     setMessage("");
     setIsError(false);
-    
+
     try {
       const { data, error } = await supabase.auth.verifyOtp({
         email,
@@ -899,7 +900,7 @@ const LoginPage = ({
         type: otpType as "signup" | "recovery",
       });
       if (error) throw error;
-      
+
       if (otpType === "signup") {
         onLogin();
       } else if (otpType === "recovery") {
@@ -926,7 +927,7 @@ const LoginPage = ({
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      
+
       setMessage("تم تغيير كلمة المرور بنجاح!");
       onLogin();
     } catch (err: any) {
@@ -1038,102 +1039,102 @@ const LoginPage = ({
               </div>
             ) : (
               <>
-            {!isForgotPassword && mode === "register" && (
-              <>
-                <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-xl mb-6 border border-slate-200/50 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => setEntityType("company")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold transition-all ${entityType === "company" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"}`}
-                  >
-                    <Building2 size={18} /> شركة / جهة اعتبارية
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEntityType("freelance")}
-                    className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold transition-all ${entityType === "freelance" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"}`}
-                  >
-                    <User size={18} /> فرد / عمل حر
-                  </button>
-                </div>
-                
+                {!isForgotPassword && mode === "register" && (
+                  <>
+                    <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-xl mb-6 border border-slate-200/50 dark:border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => setEntityType("company")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold transition-all ${entityType === "company" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"}`}
+                      >
+                        <Building2 size={18} /> شركة / جهة اعتبارية
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEntityType("freelance")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold transition-all ${entityType === "freelance" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"}`}
+                      >
+                        <User size={18} /> فرد / عمل حر
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                        {entityType === "company" ? "اسم الشركة / الجهة" : "الاسم الكامل"}
+                      </label>
+                      <div className="relative">
+                        <User
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary"
+                          size={20}
+                        />
+                        <input
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
+                          placeholder={entityType === "company" ? "اسم الشركة أو الجهة" : "الاسم الكامل"}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    {entityType === "company" ? "اسم الشركة / الجهة" : "الاسم الكامل"}
+                    البريد الإلكتروني
                   </label>
                   <div className="relative">
-                    <User
+                    <Mail
                       className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary"
                       size={20}
                     />
                     <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
-                      placeholder={entityType === "company" ? "اسم الشركة أو الجهة" : "الاسم الكامل"}
+                      placeholder={entityType === "company" && mode === "register" ? "name@company.com" : "name@example.com"}
+                      dir="ltr"
                     />
                   </div>
                 </div>
+
+                {!isForgotPassword && (
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+                        كلمة المرور
+                      </label>
+                      {mode === "login" && (
+                        <button type="button" onClick={() => setIsForgotPassword(true)} className="text-sm font-bold text-primary hover:text-primary-dark transition-colors">
+                          نسيت كلمة المرور؟
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <Lock
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary z-10"
+                        size={20}
+                      />
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
+                        placeholder="••••••••"
+                        dir="ltr"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-primary dark:hover:text-primary/80 transition-colors z-10"
+                      >
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
-            )}
-
-            <div>
-              <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                البريد الإلكتروني
-              </label>
-              <div className="relative">
-                <Mail
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary"
-                  size={20}
-                />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
-                  placeholder={entityType === "company" && mode === "register" ? "name@company.com" : "name@example.com"}
-                  dir="ltr"
-                />
-              </div>
-            </div>
-
-            {!isForgotPassword && (
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
-                    كلمة المرور
-                  </label>
-                  {mode === "login" && (
-                    <button type="button" onClick={() => setIsForgotPassword(true)} className="text-sm font-bold text-primary hover:text-primary-dark transition-colors">
-                      نسيت كلمة المرور؟
-                    </button>
-                  )}
-                </div>
-                <div className="relative">
-                  <Lock
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary z-10"
-                    size={20}
-                  />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
-                    placeholder="••••••••"
-                    dir="ltr"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-primary dark:hover:text-primary/80 transition-colors z-10"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-              </div>
-            )}
-            </>
             )}
 
             {message && (
@@ -1161,7 +1162,7 @@ const LoginPage = ({
                 "تسجيل الدخول"
               )}
             </button>
-            
+
             {!isForgotPassword && authStep === "initial" && (
               <div className="mt-6 text-center">
                 {mode === "login" ? (
@@ -1193,10 +1194,10 @@ const LoginPage = ({
 
           <div className="mt-12 pt-8 text-center flex flex-col items-center justify-center gap-2">
             <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 justify-center">
-               <span className="text-[10px] font-bold tracking-widest uppercase opacity-70">Powered By</span>
-               <div className="flex items-center justify-center">
-                 <div className="scale-[0.6] -mx-1"><LogoIcon /></div>
-               </div>
+              <span className="text-[10px] font-bold tracking-widest uppercase opacity-70">Powered By</span>
+              <div className="flex items-center justify-center">
+                <div className="scale-[0.6] -mx-1"><LogoIcon /></div>
+              </div>
             </div>
             <p className="text-[11px] font-medium text-slate-400/70 dark:text-slate-500/70">
               جميع الحقوق محفوظة &copy; {new Date().getFullYear()}
@@ -1446,7 +1447,7 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
         <div className="relative z-10 text-center">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-navy dark:text-white mb-6 leading-tight">الفرز اليدوي انتهى. لغة الأرقام تتحدث</h2>
           <p className="text-slate-500 dark:text-slate-400 text-xl font-medium mb-16 max-w-3xl mx-auto">نظام <span className="font-bold text-primary">فرز</span> ليس مجرد أداة، بل هو ترقية كاملة لقسم الموارد البشرية لديك</p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[32px] p-10 text-center shadow-sm card-3d">
               <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -1533,16 +1534,16 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
           </motion.div>
         )}{" "}
       </AnimatePresence>{" "}
-      <motion.a 
-        href="https://wa.me/message/IAOWRM4I5MJAL1" 
-        target="_blank" 
-        rel="noopener noreferrer" 
+      <motion.a
+        href="https://wa.me/message/IAOWRM4I5MJAL1"
+        target="_blank"
+        rel="noopener noreferrer"
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
         className="fixed bottom-6 right-6 z-[9999] bg-primary text-white p-3.5 rounded-full no-underline shadow-[0_8px_20px_rgba(13,148,136,0.3)] hover:opacity-90 transition-all flex items-center justify-center group"
       >
         <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" className="relative z-10 group-hover:scale-110 transition-transform">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
         </svg>
       </motion.a>
     </div>
@@ -1602,14 +1603,14 @@ const UpdatePasswordPage = ({ onComplete }: { onComplete: () => void }) => {
           <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">تحديث كلمة المرور</h2>
           <p className="text-slate-500 dark:text-slate-400 font-medium">الرجاء إدخال كلمة المرور الجديدة لحسابك</p>
         </div>
-        
+
         <form onSubmit={handleUpdate} className="space-y-6 relative z-10">
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">كلمة المرور الجديدة</label>
             <div className="relative">
-              <input 
-                type={showPassword ? "text" : "password"} 
-                value={password} 
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-4 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm text-left"
                 dir="ltr"
@@ -1617,8 +1618,8 @@ const UpdatePasswordPage = ({ onComplete }: { onComplete: () => void }) => {
                 minLength={6}
                 placeholder="••••••••"
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
               >
@@ -1629,9 +1630,9 @@ const UpdatePasswordPage = ({ onComplete }: { onComplete: () => void }) => {
           <div>
             <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">تأكيد كلمة المرور</label>
             <div className="relative">
-              <input 
-                type={showConfirmPassword ? "text" : "password"} 
-                value={confirmPassword} 
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-4 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm text-left"
                 dir="ltr"
@@ -1639,8 +1640,8 @@ const UpdatePasswordPage = ({ onComplete }: { onComplete: () => void }) => {
                 minLength={6}
                 placeholder="••••••••"
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
               >
@@ -1648,7 +1649,7 @@ const UpdatePasswordPage = ({ onComplete }: { onComplete: () => void }) => {
               </button>
             </div>
           </div>
-          
+
           {message && (
             <div className={`p-4 rounded-xl text-sm font-bold ${isError ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
               {message}
@@ -1688,7 +1689,7 @@ const BookingModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
       <button onClick={onClose} className="absolute top-4 right-4 md:top-6 md:right-6 text-white hover:text-red-400 z-[10000] font-light text-4xl w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors backdrop-blur-md">
         &times;
       </button>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
@@ -1705,9 +1706,9 @@ const BookingModal = ({ isOpen, onClose }: { isOpen: boolean; onClose: () => voi
           </div>
         )}
 
-        <iframe 
-          src="https://calendar.google.com/appointments/schedules/AcZssZ23hdcsfWvLfxKZLZw_UewmtjWQvj6JYrsjOkVGed9XcDPRs0Gim8_m9pHrqmvH1_IN8Z05byHM?gv=true" 
-          style={{ border: 0, width: '100%', height: '100%', borderRadius: '16px', opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s ease-in-out' }} 
+        <iframe
+          src="https://calendar.google.com/appointments/schedules/AcZssZ23hdcsfWvLfxKZLZw_UewmtjWQvj6JYrsjOkVGed9XcDPRs0Gim8_m9pHrqmvH1_IN8Z05byHM?gv=true"
+          style={{ border: 0, width: '100%', height: '100%', borderRadius: '16px', opacity: isLoading ? 0 : 1, transition: 'opacity 0.3s ease-in-out' }}
           frameBorder="0"
           onLoad={() => setIsLoading(false)}
         ></iframe>
@@ -1757,10 +1758,10 @@ export default function App() {
 
   const verifyCompanySession = async (currentSession: any, isInitial: boolean = false) => {
     if (!currentSession) return;
-    
+
     setSession(currentSession);
     setUser(currentSession.user || null);
-    
+
     if (isInitial) {
       if (!window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
         const savedStep = sessionStorage.getItem('sahab_active_step');
@@ -1808,6 +1809,7 @@ export default function App() {
   const [showOnboardingGlobal, setShowOnboardingGlobal] = useState(false);
   const [globalPendingDraftId, setGlobalPendingDraftId] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showWelcomeSlides, setShowWelcomeSlides] = useState(false);
   useEffect(() => {
     localStorage.setItem("sahab_dark_mode", String(darkMode));
     if (window.location.pathname.startsWith("/apply/") || window.location.pathname.startsWith("/interview/")) {
@@ -1913,7 +1915,7 @@ export default function App() {
 
       setSession(session);
       setUser(session?.user || null);
-      
+
       if (_event === 'PASSWORD_RECOVERY') {
         setStep("updatePassword");
       } else if (_event === 'TOKEN_REFRESHED' || _event === 'SIGNED_IN') {
@@ -1991,7 +1993,7 @@ export default function App() {
           const { data, error } = await supabase.from('companies').select('*').eq('id', user.id).single();
           if (data && !error) {
             const isProfileComplete = !!(data.company_name && data.city);
-            
+
             const rawPlan = data.subscription_plan || "free";
             let normalizedPlan = rawPlan.replace('_yearly', '').replace('_monthly', '');
             if (normalizedPlan === 'single_job') normalizedPlan = 'one-time';
@@ -2025,6 +2027,13 @@ export default function App() {
               addons_bought_this_month: data.addons_bought_this_month || 0,
               isLoaded: true,
             }));
+
+            // Welcome Slides Logic
+            // const hasSeenWelcome = localStorage.getItem(`welcome_slides_seen_${user.id}`);
+            // if (!hasSeenWelcome) {
+            setShowWelcomeSlides(true);
+            // }
+
             // Force Settings tab if profile is incomplete
             if (!isProfileComplete) {
               setDashboardTab("الحساب");
@@ -2034,12 +2043,12 @@ export default function App() {
             return;
           } else {
             // Handle new user so we don't get stuck in loading
-            setUserProfile(prev => ({ 
-              ...prev, 
-              id: user.id, 
-              name: user.user_metadata?.full_name || prev.name, 
+            setUserProfile(prev => ({
+              ...prev,
+              id: user.id,
+              name: user.user_metadata?.full_name || prev.name,
               entityType: user.user_metadata?.entity_type || prev.entityType,
-              isLoaded: true 
+              isLoaded: true
             }));
             setDashboardTab("الحساب");
           }
@@ -2050,7 +2059,7 @@ export default function App() {
           setDashboardTab("الحساب");
         }
       };
-      
+
       const fetchUserJobs = async () => {
         try {
           const { data, error } = await supabase.from('jobs').select('*').eq('company_id', user.id).order('created_at', { ascending: false });
@@ -2095,7 +2104,7 @@ export default function App() {
             }));
 
             setJobs(prevJobs => {
-              const drafts = prevJobs.filter(j => j.status === "مسودة" && !mappedDbJobs.find(dbj => dbj.id === j.id));
+              const drafts = prevJobs.filter(j => j.status === "مسودة" && j.company_id === user.id && !mappedDbJobs.find(dbj => dbj.id === j.id));
               return [...drafts, ...mappedDbJobs];
             });
           }
@@ -2109,7 +2118,7 @@ export default function App() {
         fetchUserJobs();
       };
       window.addEventListener('online', handleOnline);
-      
+
       fetchCompanyProfile();
       fetchUserJobs();
     }
@@ -2125,74 +2134,74 @@ export default function App() {
     const path = window.location.pathname;
     if (path.startsWith('/apply/')) {
       const jobId = path.split('/')[2];
-      
+
       const fetchJobDirectly = async () => {
-         const { data, error } = await supabase.from('jobs').select('*').eq('id', jobId).single();
-         if (data && !error) {
-             const fetchedJob = {
-                id: data.id,
-                company_id: data.company_id,
-                title: data.title,
-                recordType: data.record_type || 'single',
-                company: data.department || data.company_name || "",
-                department: data.department || "",
-                location: data.location || "",
-                type: data.type || "",
-                experience: data.experience_level || "",
-                qualification: data.qualification || "",
-                description: data.description || "",
-                responsibilities: data.responsibilities || "",
-                qualifications: data.qualifications_details || "",
-                targetMajors: Array.isArray(data.target_majors) ? data.target_majors : [],
-                targetSkills: Array.isArray(data.target_skills) ? data.target_skills : [],
-                requiredLanguages: Array.isArray(data.required_languages) ? data.required_languages : [],
-                salaryMin: data.salary_min || 0,
-                salaryMax: data.salary_max || 0,
-                hideSalary: data.hide_salary || false,
-                knockoutQuestions: Array.isArray(data.knockout_questions) ? data.knockout_questions : [],
-                customQuestions: Array.isArray(data.custom_questions) ? data.custom_questions : [],
-                customAttachments: Array.isArray(data.custom_attachments) ? data.custom_attachments : [],
-                aiInstructions: data.ai_instructions || "",
-                status: data.status || "مسودة",
-                createdAt: data.created_at ? data.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
-                applicants: 0,
-                directUpload: data.direct_upload || false,
-                roles: Array.isArray(data.roles) ? data.roles : [],
-                aiOverrideFields: data.ai_override_fields || undefined,
-                job_number: data.job_number
-             };
-             setSelectedJob(fetchedJob as Job);
-             setStep(
-               fetchedJob.directUpload || fetchedJob.roles?.some((r: any) => r.directUpload) || fetchedJob.roles?.[0]?.directUpload
-                 ? 'form'
-                 : 'publicJob'
-             );
-         } else {
-             // Fallback to local storage if not synced
-             const localData = localStorage.getItem("sahab_jobs_db_v1");
-             if (localData) {
-                 const localJobs = JSON.parse(localData);
-                 const jobFound = localJobs.find((j: any) => j.id === jobId);
-                 if (jobFound) {
-                     setSelectedJob(jobFound);
-                     setStep(
-                       jobFound.directUpload || jobFound.roles?.some((r: any) => r.directUpload) || jobFound.roles?.[0]?.directUpload
-                         ? 'form'
-                         : 'publicJob'
-                     );
-                     return;
-                 }
-             }
-             setStep('notFound');
-         }
+        const { data, error } = await supabase.from('jobs').select('*').eq('id', jobId).single();
+        if (data && !error) {
+          const fetchedJob = {
+            id: data.id,
+            company_id: data.company_id,
+            title: data.title,
+            recordType: data.record_type || 'single',
+            company: data.department || data.company_name || "",
+            department: data.department || "",
+            location: data.location || "",
+            type: data.type || "",
+            experience: data.experience_level || "",
+            qualification: data.qualification || "",
+            description: data.description || "",
+            responsibilities: data.responsibilities || "",
+            qualifications: data.qualifications_details || "",
+            targetMajors: Array.isArray(data.target_majors) ? data.target_majors : [],
+            targetSkills: Array.isArray(data.target_skills) ? data.target_skills : [],
+            requiredLanguages: Array.isArray(data.required_languages) ? data.required_languages : [],
+            salaryMin: data.salary_min || 0,
+            salaryMax: data.salary_max || 0,
+            hideSalary: data.hide_salary || false,
+            knockoutQuestions: Array.isArray(data.knockout_questions) ? data.knockout_questions : [],
+            customQuestions: Array.isArray(data.custom_questions) ? data.custom_questions : [],
+            customAttachments: Array.isArray(data.custom_attachments) ? data.custom_attachments : [],
+            aiInstructions: data.ai_instructions || "",
+            status: data.status || "مسودة",
+            createdAt: data.created_at ? data.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+            applicants: 0,
+            directUpload: data.direct_upload || false,
+            roles: Array.isArray(data.roles) ? data.roles : [],
+            aiOverrideFields: data.ai_override_fields || undefined,
+            job_number: data.job_number
+          };
+          setSelectedJob(fetchedJob as Job);
+          setStep(
+            fetchedJob.directUpload || fetchedJob.roles?.some((r: any) => r.directUpload) || fetchedJob.roles?.[0]?.directUpload
+              ? 'form'
+              : 'publicJob'
+          );
+        } else {
+          // Fallback to local storage if not synced
+          const localData = localStorage.getItem("sahab_jobs_db_v1");
+          if (localData) {
+            const localJobs = JSON.parse(localData);
+            const jobFound = localJobs.find((j: any) => j.id === jobId);
+            if (jobFound) {
+              setSelectedJob(jobFound);
+              setStep(
+                jobFound.directUpload || jobFound.roles?.some((r: any) => r.directUpload) || jobFound.roles?.[0]?.directUpload
+                  ? 'form'
+                  : 'publicJob'
+              );
+              return;
+            }
+          }
+          setStep('notFound');
+        }
       };
-      
+
       fetchJobDirectly();
-     } else if (path.startsWith('/share/')) {
-       setStep('share');
-     } else if (path.startsWith('/interview/')) {
-       setStep('interview');
-     }
+    } else if (path.startsWith('/share/')) {
+      setStep('share');
+    } else if (path.startsWith('/interview/')) {
+      setStep('interview');
+    }
   }, []);
 
   useEffect(() => {
@@ -2336,7 +2345,7 @@ export default function App() {
       j.id === job.id ? { ...j, status: "مغلق" as const } : j,
     );
     setJobs(updatedJobs);
-    
+
     // Backend Sync
     try {
       await supabase.from('jobs').update({ status: 'مغلق', closed_at: new Date().toISOString() }).eq('id', job.id);
@@ -2413,6 +2422,13 @@ export default function App() {
         <Navbar setStep={setStep} currentStep={step} onOpenBookingModal={() => setShowBookingModal(true)} />
       )}{" "}
       {" "}
+
+      <WelcomeSlidesModal isOpen={showWelcomeSlides} onClose={() => {
+        setShowWelcomeSlides(false);
+        if (session?.user?.id) {
+          localStorage.setItem(`welcome_slides_seen_${session.user.id}`, 'true');
+        }
+      }} />
 
       {showPaywallModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60] flex items-center justify-center p-4">
@@ -2506,71 +2522,71 @@ export default function App() {
               </div>
             ) : (step === "dashboard" || step === "applicantDetails") && (
               <div className={step === "applicantDetails" ? "hidden" : "block"}>
-              <Dashboard
-                activeTab={dashboardTab}
-                setActiveTab={setDashboardTab}
-                userEmail={session?.user?.email || ""}
-                onViewDetails={(app) => { 
-                  sessionStorage.setItem('dashboardScroll', window.scrollY.toString());
-                  setSelectedApplicantForDetails(app); 
-                  setStep("applicantDetails"); 
-                }}
-                onCreateJob={() => {
-                  setClonedJob(null);
-                  startJobCreation("single");
-                }}
-                onManageJob={(job) => {
-                  setSelectedJob(job);
-                  setStep("manageJob");
-                }}
-                onCloneJob={(job) =>
-                  startJobCreation(job.recordType || "single", job)
-                }
-                onDeactivateJob={handleDeactivateJob}
-                onReactivateJob={handleReactivateJob}
-                onPreviewJob={(job) => setPreviewJobState(job)}
-                jobs={jobs}
-                shortlistedIds={shortlistedIds}
-                onToggleShortlist={(id) => {
-                  setShortlistedIds((prev) =>
-                    prev.includes(id)
-                      ? prev.filter((i) => i !== id)
-                      : [...prev, id],
-                  );
-                }}
-                darkMode={darkMode}
-                setDarkMode={setDarkMode}
-                userProfile={userProfile}
-                setUserProfile={setUserProfile}
-                onShowOnboarding={() => setShowOnboardingGlobal(true)}
-                talentPool={talentPool}
-                setTalentPool={setTalentPool}
-                onDeleteJob={async (id) => {
-                  setJobs(prev => {
-                    const newJobs = prev.filter(j => j.id !== id);
-                    localStorage.setItem("sahab_jobs_db_v1", JSON.stringify(newJobs));
-                    return newJobs;
-                  });
-                  try {
-                    await supabase.from('jobs').delete().eq('id', id);
-                  } catch (err) {
-                    console.error("Failed to delete job from Supabase:", err);
+                <Dashboard
+                  activeTab={dashboardTab}
+                  setActiveTab={setDashboardTab}
+                  userEmail={session?.user?.email || ""}
+                  onViewDetails={(app) => {
+                    sessionStorage.setItem('dashboardScroll', window.scrollY.toString());
+                    setSelectedApplicantForDetails(app);
+                    setStep("applicantDetails");
+                  }}
+                  onCreateJob={() => {
+                    setClonedJob(null);
+                    startJobCreation("single");
+                  }}
+                  onManageJob={(job) => {
+                    setSelectedJob(job);
+                    setStep("manageJob");
+                  }}
+                  onCloneJob={(job) =>
+                    startJobCreation(job.recordType || "single", job)
                   }
-                }}
-                onDeleteAllDrafts={async () => {
-                  const draftIds = jobs.filter(j => j.status === "مسودة").map(j => j.id);
-                  setJobs(prev => prev.filter(j => j.status !== "مسودة"));
-                  if (draftIds.length > 0) {
+                  onDeactivateJob={handleDeactivateJob}
+                  onReactivateJob={handleReactivateJob}
+                  onPreviewJob={(job) => setPreviewJobState(job)}
+                  jobs={jobs}
+                  shortlistedIds={shortlistedIds}
+                  onToggleShortlist={(id) => {
+                    setShortlistedIds((prev) =>
+                      prev.includes(id)
+                        ? prev.filter((i) => i !== id)
+                        : [...prev, id],
+                    );
+                  }}
+                  darkMode={darkMode}
+                  setDarkMode={setDarkMode}
+                  userProfile={userProfile}
+                  setUserProfile={setUserProfile}
+                  onShowOnboarding={() => setShowOnboardingGlobal(true)}
+                  talentPool={talentPool}
+                  setTalentPool={setTalentPool}
+                  onDeleteJob={async (id) => {
+                    setJobs(prev => {
+                      const newJobs = prev.filter(j => j.id !== id);
+                      localStorage.setItem("sahab_jobs_db_v1", JSON.stringify(newJobs));
+                      return newJobs;
+                    });
                     try {
-                      await supabase.from('jobs').delete().in('id', draftIds);
+                      await supabase.from('jobs').delete().eq('id', id);
                     } catch (err) {
-                      console.error("Failed to delete drafts from Supabase:", err);
+                      console.error("Failed to delete job from Supabase:", err);
                     }
-                  }
-                }}
-                pendingAction={dashboardPendingAction}
-                clearPendingAction={() => setDashboardPendingAction(null)}
-              />
+                  }}
+                  onDeleteAllDrafts={async () => {
+                    const draftIds = jobs.filter(j => j.status === "مسودة").map(j => j.id);
+                    setJobs(prev => prev.filter(j => j.status !== "مسودة"));
+                    if (draftIds.length > 0) {
+                      try {
+                        await supabase.from('jobs').delete().in('id', draftIds);
+                      } catch (err) {
+                        console.error("Failed to delete drafts from Supabase:", err);
+                      }
+                    }
+                  }}
+                  pendingAction={dashboardPendingAction}
+                  clearPendingAction={() => setDashboardPendingAction(null)}
+                />
               </div>
             )}{" "}
             {step === "updatePassword" && (
@@ -2592,9 +2608,9 @@ export default function App() {
             )}{" "}
             {step === "superAdmin" && <SuperAdmin />}{" "}
             {step === "applicantDetails" && (
-              <ApplicantDetails 
-                onBack={() => setStep("dashboard")} 
-                applicant={selectedApplicantForDetails} 
+              <ApplicantDetails
+                onBack={() => setStep("dashboard")}
+                applicant={selectedApplicantForDetails}
                 job={jobs.find(j => j.id === selectedApplicantForDetails?.job_id || j.title === selectedApplicantForDetails?.job)}
                 userProfile={userProfile}
                 onStatusUpdate={(id, decision, isOffer) => setDashboardPendingAction({ id, decision, isOffer })}
@@ -2623,13 +2639,17 @@ export default function App() {
             {step === "manageJob" && selectedJob && (
               <ErrorBoundary>
                 <ManageJob
-                  job={{...selectedJob, company: selectedJob.company || userProfile.companyName || "لم تُحدد"}}
+                  job={{ ...selectedJob, company: selectedJob.company || userProfile.companyName || "لم تُحدد" }}
                   onBack={() => setStep("dashboard")}
-                  onUpdate={(updatedJob) => {
+                  onUpdate={(updatedJob, stayOnPage) => {
                     setJobs(
                       jobs.map((j) => (j.id === updatedJob.id ? updatedJob : j)),
                     );
-                    setStep("dashboard");
+                    if (!stayOnPage) {
+                      setStep("dashboard");
+                    } else {
+                      setSelectedJob(updatedJob);
+                    }
                   }}
                   onDelete={(id) => {
                     setJobs(jobs.filter((j) => j.id !== id));
@@ -2689,7 +2709,7 @@ export default function App() {
               <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4" dir="rtl">
                 <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-[32px] p-8 shadow-2xl border border-slate-100 dark:border-slate-700 text-center">
                   <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-2xl flex items-center justify-center mx-auto mb-6 text-red-500">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6" /><path d="m9 9 6 6" /></svg>
                   </div>
                   <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-3">الوظيفة غير متاحة</h2>
                   <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-6">

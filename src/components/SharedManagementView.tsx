@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
-import { Job, Applicant, ImageLightbox } from "../Shared";
+import { Job, Applicant, ImageLightbox, EmptyState } from "../Shared";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Search, FileText, X, Phone, Mail, Building2, Save, Sparkles } from "lucide-react";
+import { ArrowLeft, Search, FileText, X, Phone, Mail, Building2, Save, Sparkles, Database } from "lucide-react";
 import ApplicantDetails from "./ApplicantDetails";
 
 export const SharedManagementView = ({ jobId }: { jobId: string }) => {
@@ -185,31 +185,68 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
         </div>
 
         {/* Table Container */}
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="overflow-x-auto min-h-[50vh] p-1">
-            <table className="w-full text-right border-collapse">
-              <thead className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-200 text-xs uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
-                <tr>
-                  <th className="px-6 py-5 font-bold text-navy dark:text-white text-right whitespace-nowrap rounded-tr-2xl">اسم المتقدم</th>
-                  <th className="px-6 py-5 font-bold text-navy dark:text-white text-right whitespace-nowrap">التقييم الآلي</th>
-                  <th className="px-6 py-5 font-bold text-navy dark:text-white text-right whitespace-nowrap">الجاهزية</th>
-                  <th className="px-6 py-5 font-bold text-navy dark:text-white text-center whitespace-nowrap rounded-tl-2xl">ملف المرشح</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleApplicants.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="p-12">
-                      <div className="flex flex-col items-center justify-center text-center">
-                        <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                          <Search size={32} className="text-slate-300 dark:text-slate-500" />
-                        </div>
-                        <h3 className="text-xl font-bold text-navy dark:text-white mb-2">لا يوجد مرشحين</h3>
-                        <p className="text-slate-500 font-medium">لم يتم العثور على أي مرشح مطابق لبحثك.</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
+        {(() => {
+          const isHomeMockState = applicants.length === 0 && !searchQuery;
+          return (
+            <div className="relative bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+              {isHomeMockState && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-900/10 dark:bg-slate-900/50 backdrop-blur-[6px] px-4">
+                  <div className="pointer-events-auto w-full max-w-xl">
+                    <EmptyState
+                      title="بنك الكفاءات بانتظارك! لم تقم بإضافة أي مرشحين حتى الآن."
+                      actionLabel="العودة لإدارة الوظائف"
+                      onAction={() => window.history.back()}
+                      icon={<Database size={32} className="text-emerald-400 drop-shadow-md" />}
+                      className="bg-white/95 dark:bg-slate-800/95 shadow-2xl border-white/50"
+                    />
+                  </div>
+                </div>
+              )}
+              <div className="overflow-x-auto min-h-[50vh] p-1">
+                <table className={`w-full text-right border-collapse transition-all ${isHomeMockState ? 'filter blur-[5px] opacity-60 pointer-events-none select-none' : ''}`}>
+                  <thead className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-200 text-xs uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                    <tr>
+                      <th className="px-6 py-5 font-bold text-navy dark:text-white text-right whitespace-nowrap rounded-tr-2xl">اسم المتقدم</th>
+                      <th className="px-6 py-5 font-bold text-navy dark:text-white text-right whitespace-nowrap">التقييم الآلي</th>
+                      <th className="px-6 py-5 font-bold text-navy dark:text-white text-right whitespace-nowrap">الجاهزية</th>
+                      <th className="px-6 py-5 font-bold text-navy dark:text-white text-center whitespace-nowrap rounded-tl-2xl">ملف المرشح</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isHomeMockState ? (
+                      <>
+                        {[1, 2, 3, 4, 5, 6].map((_, i) => (
+                          <tr key={i} className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700/50">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-[14px] bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
+                                <div className="w-24 h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-16 h-2.5 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
+                                <div className="w-8 h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4"><div className="w-16 h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse"></div></td>
+                            <td className="px-6 py-4"><div className="w-24 h-8 bg-slate-200 dark:bg-slate-700 rounded-xl mx-auto animate-pulse"></div></td>
+                          </tr>
+                        ))}
+                      </>
+                    ) : visibleApplicants.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="p-12">
+                          <div className="flex flex-col items-center justify-center text-center">
+                            <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                              <Search size={32} className="text-slate-300 dark:text-slate-500" />
+                            </div>
+                            <h3 className="text-xl font-bold text-navy dark:text-white mb-2">لا يوجد مرشحين</h3>
+                            <p className="text-slate-500 font-medium">لم يتم العثور على أي مرشح مطابق لبحثك.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
                   <AnimatePresence>
                     {visibleApplicants.map((app) => (
                       <motion.tr 
@@ -279,6 +316,8 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
             </table>
           </div>
         </div>
+        );
+        })()}
       </div>
     </div>
   );

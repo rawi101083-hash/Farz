@@ -47,6 +47,21 @@
 - لا تقم أبداً بتخمين أسماء الأعمدة (Columns) بناءً على كود الواجهة الأمامية (Frontend) أو بناءً على المعرفة العامة.
 - إذا طلب منك المستخدم كتابة كود SQL لجدول معين، **يجب عليك أولاً** أن تطلب منه إرسال بنية الجدول الدقيقة (`CREATE TABLE...`)، أو استخدام أدواتك للبحث عن ملفات الـ `schema` في المشروع وقراءتها للتأكد 100% قبل كتابة أي كود قاعدة بيانات.
 
+### 10. MANDATORY STRUCTURAL ANALYSIS BEFORE UI FIXES (التحليل الهيكلي الإلزامي قبل التعديل)
+- **Understand the Big Picture First (افهم الصورة الكاملة أولاً):** If the user reports an issue with a UI layout, an empty state, or a specific message, **DO NOT rush to modify the code.** You must first use `view_file` to read the entire component and understand its rendering logic and different states (e.g., New User vs. Existing User).
+- **Trace the Exact Text (تتبع النص الدقيق):** Search for the exact text or element the user is complaining about, and analyze the exact conditional logic (e.g., `if/else`, ternary operators) that triggers it. 
+- **Respect Intended Architecture (احترم البنية الأساسية):** Before modifying any condition (like changing `jobs.length === 0` to something else), ask yourself: "What was this variable *intended* to represent?" Do not bypass the architectural logic. If the UI is rendering the wrong state, find the root cause of why the state is wrong, rather than patching the UI condition itself.
+- **Ask Before Patching (اسأل قبل الترقيع):** If you discover that fixing the bug requires bypassing the intended UI logic, STOP and explain the architecture to the user first.
+
+### 11. MANDATORY SCOPE VERIFICATION (التحقق الإلزامي من نطاق المتغيرات)
+- **Do not assume variable availability (لا تفترض توفر المتغير):** Before modifying code to use an existing variable (e.g., `filteredJobs`), you MUST verify that this variable is actually defined and accessible within the exact scope (block/function/component) you are modifying.
+- **Use inline logic if unsure (استخدم المنطق المباشر عند الشك):** If you are inside a nested component, an isolated function, or an IIFE `(() => {...})()`, and you are not 100% sure the variable is in scope, write the explicit inline logic (e.g., `jobs.filter(...)`) instead of risking a `ReferenceError` that causes a White Screen of Death (WSOD).
+- **Read the surrounding context (اقرأ السياق المحيط):** Do not blind-paste variables based on assumptions. A variable defined at the top of a file might not be accessible inside a different exported component in the same file.
+
+### 12. MANDATORY FILE SEARCH BEFORE MODIFICATION (البحث الإلزامي عن الملف قبل التعديل)
+- **Never guess file locations (لا تخمن أماكن الملفات):** Even if a structure is common (like `App.tsx` handling routing), you MUST use `grep_search` to confirm the exact file containing the code you want to modify before using any editing tools.
+- **Verify tool output (تحقق من نتيجة الأداة):** If a replacement tool (like `multi_replace_file_content`) reports "We did our best... despite inaccuracies", you MUST stop and double-check if you targeted the right file. Do not assume the edit was successful.
+
 ---
 
 *This file acts as the ultimate constitution for AI agents operating on this codebase. Read it, understand it, and never violate it.*

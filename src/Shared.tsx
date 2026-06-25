@@ -61,6 +61,7 @@ import {
   Wallet,
   ArrowDownLeft,
   ArrowUpRight,
+  Rocket,
 } from "lucide-react";
 import { addDays, addMonths, addYears } from "date-fns";
 import {
@@ -365,7 +366,7 @@ export interface Job {
   benefits?: string;
   aiInstructions?: string;
   applicants: number;
-  status: "نشط" | "مغلق" | "مسودة";
+  status: "نشط" | "مغلق" | "مغلق مؤقتاً" | "مسودة";
   createdAt: string;
   startDate?: string;
   endDate?: string;
@@ -457,43 +458,32 @@ export const ImageLightbox = ({ url, onClose }: { url: string | null; onClose: (
   </AnimatePresence>
 );
 
-export const EmptyState = ({
-  title,
-  actionLabel,
-  onAction,
-}: {
-  title: string;
-  actionLabel: string;
-  onAction: () => void;
-}) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="flex flex-col items-center justify-center py-12 px-4 text-center w-full max-w-md mx-auto"
-  >
-    <div className="mb-4">
-      <motion.div
-        animate={{ y: [0, -6, 0] }}
-        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-        className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500"
-      >
-        <Search size={24} strokeWidth={2} />
-      </motion.div>
+export const EmptyState = ({ title, actionLabel, onAction, icon, className = "" }: any) => {
+  return (
+    <div className={`flex flex-col items-center justify-center py-16 px-6 text-center w-full max-w-2xl mx-auto rounded-[32px] border border-slate-200/60 dark:border-slate-700/60 shadow-sm backdrop-blur-xl relative overflow-hidden my-8 ${className || "bg-white dark:bg-slate-800/80"}`}>
+
+      {/* الدائرة الخلفية للزينة */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-[-50%] left-[-10%] w-64 h-64 bg-primary/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[-50%] right-[-10%] w-64 h-64 bg-blue-500/5 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="w-20 h-20 bg-primary/10 dark:bg-primary/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto text-slate-400 dark:text-slate-500 border border-primary/20 dark:border-primary/30 shadow-sm">
+        {icon || <Search size={32} className="text-primary" />}
+      </div>
+      <h3 className="text-2xl font-black text-navy dark:text-white mt-6 mb-3">{title}</h3>
+      {actionLabel && onAction && (
+        <button
+          onClick={onAction}
+          className="mt-6 bg-gradient-to-b from-primary to-[#0d847a] text-white px-6 py-3 rounded-xl font-bold text-sm shadow-[0_4px_0_#096159,0_8px_15px_rgba(13,148,136,0.2)] hover:shadow-[0_2px_0_#096159,0_4px_10px_rgba(13,148,136,0.2)] hover:translate-y-[2px] active:shadow-[0_0px_0_#096159] active:translate-y-[4px] transition-all duration-200 flex items-center gap-2 mx-auto"
+        >
+          <Plus size={18} strokeWidth={2.5} />
+          {actionLabel}
+        </button>
+      )}
     </div>
-
-    <h3 className="text-base md:text-lg font-bold text-slate-700 dark:text-slate-300 mb-5 leading-relaxed text-center">
-      {title}
-    </h3>
-
-    <button
-      onClick={onAction}
-      className="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-teal-600 transition-colors flex items-center gap-2 mx-auto shadow-sm active:scale-95"
-    >
-      <Plus size={16} strokeWidth={2.5} />
-      {actionLabel}
-    </button>
-  </motion.div>
-);
+  );
+};
 export const PreviewModal = ({ job, onClose }: { job: Job; onClose: () => void }) => {
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [step, setStep] = useState(
@@ -679,6 +669,77 @@ export const TalentPoolModal = ({
   );
 };
 
+const CompactRatingSelector = ({
+  selectedFilter,
+  onFilterChange,
+}: {
+  selectedFilter: string;
+  onFilterChange: (rating: string) => void;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (ref.current && !ref.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const ratingOptions = [
+    { value: "all", label: "التقييم الآلي: الكل" },
+    { value: "+90", label: "90% فما فوق" },
+    { value: "+80", label: "80% فما فوق" },
+    { value: "+70", label: "70% فما فوق" },
+    { value: "-70", label: "أقل من 70%" },
+  ];
+
+  return (
+    <div className="relative z-[50] group" ref={ref}>
+      <Sparkles
+        className={`absolute right-4 top-1/2 -translate-y-1/2 drop-shadow-[0_0_5px_rgba(13,148,136,0.3)] transition-transform pointer-events-none z-10 ${selectedFilter === "all" ? "text-slate-400 dark:text-slate-500" : "text-primary dark:text-primary group-hover:scale-110"}`}
+        size={18}
+      />
+      <div
+        className={`pr-12 pl-4 py-4 rounded-2xl cursor-pointer flex items-center justify-between transition-all duration-200 min-w-[160px] border shadow-[0_3px_0_rgba(15,23,42,0.05)] dark:shadow-[0_3px_0_rgba(15,23,42,0.3)] -translate-y-[2px] active:translate-y-[1px] active:shadow-none ${selectedFilter === "all" ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-primary/50" : "bg-primary/10 border-primary/50 dark:bg-primary/20 dark:border-primary/50"}`}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className={`font-bold truncate ${selectedFilter === "all" ? "text-navy dark:text-white" : "text-primary"}`}>
+          {ratingOptions.find(o => o.value === selectedFilter)?.label || "التقييم الآلي: الكل"}
+        </span>
+        <ChevronDown size={14} className={`transition-transform shrink-0 ${selectedFilter === "all" ? "text-slate-400" : "text-primary"} ${isOpen ? "rotate-180" : ""}`} />
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+            className="absolute top-full mt-2 left-0 right-0 min-w-[200px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden"
+          >
+            <div className="max-h-64 overflow-y-auto p-2 scrollbar-thin">
+              {ratingOptions.map(option => (
+                <div
+                  key={option.value}
+                  className={`flex items-center gap-3 p-3 mb-1.5 rounded-lg cursor-pointer transition-all duration-200 shadow-[0_2px_0_rgba(15,23,42,0.05)] dark:shadow-[0_2px_0_rgba(15,23,42,0.2)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-none ${selectedFilter === option.value ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
+                  onClick={() => { onFilterChange(option.value); setIsOpen(false); }}
+                >
+                  <div className="w-4 shrink-0">
+                    {selectedFilter === option.value && <CheckCircle size={14} className="text-primary" />}
+                  </div>
+                  <span className={`font-medium ${selectedFilter === option.value ? 'text-primary font-bold' : 'text-navy dark:text-white'}`}>{option.label}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 const CompactCitySelector = ({
   cities,
   selectedFilter,
@@ -713,7 +774,7 @@ const CompactCitySelector = ({
         size={18}
       />
       <div
-        className={`pr-12 pl-4 py-4 rounded-2xl cursor-pointer flex items-center gap-1.5 transition-all min-w-[160px] border ${selectedFilter === "all" ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-primary/50" : "bg-primary/10 border-primary/50 dark:bg-primary/20 dark:border-primary/50"}`}
+        className={`pr-12 pl-4 py-4 rounded-2xl cursor-pointer flex items-center gap-1.5 transition-all duration-200 min-w-[160px] border shadow-[0_3px_0_rgba(15,23,42,0.05)] dark:shadow-[0_3px_0_rgba(15,23,42,0.3)] -translate-y-[2px] active:translate-y-[1px] active:shadow-none ${selectedFilter === "all" ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-primary/50" : "bg-primary/10 border-primary/50 dark:bg-primary/20 dark:border-primary/50"}`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className={`font-medium truncate ${selectedFilter === "all" ? "text-navy dark:text-white" : "font-bold text-primary"}`}>
@@ -741,7 +802,7 @@ const CompactCitySelector = ({
             </div>
             <div className="max-h-64 overflow-y-auto p-2 scrollbar-thin">
               <div
-                className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === "all" ? "bg-primary/10 text-primary font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300"}`}
+                className={`flex items-center gap-2 p-3 mb-1.5 rounded-lg cursor-pointer transition-all duration-200 shadow-[0_2px_0_rgba(15,23,42,0.05)] dark:shadow-[0_2px_0_rgba(15,23,42,0.2)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-none ${selectedFilter === "all" ? "bg-primary/10 text-primary font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300"}`}
                 onClick={() => { onFilterChange("all"); setIsOpen(false); setSearch(""); }}
               >
                 <div className="w-4 shrink-0">
@@ -752,7 +813,7 @@ const CompactCitySelector = ({
               {filteredCities.map(city => (
                 <div
                   key={city}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === city ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
+                  className={`flex items-center gap-3 p-3 mb-1.5 rounded-lg cursor-pointer transition-all duration-200 shadow-[0_2px_0_rgba(15,23,42,0.05)] dark:shadow-[0_2px_0_rgba(15,23,42,0.2)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-none ${selectedFilter === city ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
                   onClick={() => { onFilterChange(city); setIsOpen(false); setSearch(""); }}
                 >
                   <div className="w-4 shrink-0">
@@ -807,18 +868,21 @@ export const TalentPool = ({
     if (score >= 50) return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800";
     return "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-800";
   };
-  if (jobs.length === 0) {
-    return (
-      <div className="space-y-10">
-        <EmptyState
-          title="لوحة التحكم بانتظارك! لم تقم بإنشاء أي شواغر وظيفية حتى الآن."
-          actionLabel="أنشئ أول وظيفة الآن"
-          onAction={onCreateJob}
-        />{" "}
-      </div>
-    );
-  }
   const baseApplicants = (externalApplicants || []).filter((t: any) => t.in_talent_pool);
+
+  const isEmpty = jobs.length === 0 || baseApplicants.length === 0;
+  const isNewUser = jobs.filter((j) => j.status !== "مسودة").length === 0;
+
+  const mockTalentBankData = [
+    { id: "mock1", name: "بوردقا", job: "مهندس برمجيات", rating: 85, is_favorite: false, photoUrl: "", city: "مكة المكرمة", skills_match: 90, experience_match: 85, education_match: 80 },
+    { id: "mock2", name: "طاق شان", job: "مهندس برمجيات", rating: 72, is_favorite: false, photoUrl: "", city: "الطائف", skills_match: 75, experience_match: 70, education_match: 60 },
+    { id: "mock3", name: "طارق الذكاء الاصطناعي", job: "مهندس أتمتة عمليات", rating: 92, is_favorite: true, photoUrl: "", city: "الرياض", skills_match: 95, experience_match: 90, education_match: 85 },
+    { id: "mock4", name: "ورده علي العتيبي", job: "مدير مشاريع", rating: 68, is_favorite: false, photoUrl: "", city: "المدينة المنورة", skills_match: 60, experience_match: 65, education_match: 75 },
+    { id: "mock5", name: "سعد محمد", job: "مصمم جرافيك", rating: 88, is_favorite: false, photoUrl: "", city: "جدة", skills_match: 90, experience_match: 80, education_match: 85 },
+    { id: "mock6", name: "فهد العتيبي", job: "محلل بيانات", rating: 78, is_favorite: false, photoUrl: "", city: "الدمام", skills_match: 80, experience_match: 75, education_match: 70 },
+    { id: "mock7", name: "شروق عبدالله", job: "أخصائية تسويق", rating: 95, is_favorite: true, photoUrl: "", city: "الرياض", skills_match: 98, experience_match: 95, education_match: 90 },
+    { id: "mock8", name: "خالد سعيد", job: "محاسب", rating: 82, is_favorite: false, photoUrl: "", city: "الخبر", skills_match: 85, experience_match: 80, education_match: 75 }
+  ];
 
   const getTalentCity = (talent: any) => {
     if (!talent) return "";
@@ -834,7 +898,7 @@ export const TalentPool = ({
     jobFilteredApplicants.map(getTalentCity)
   )).filter(Boolean).sort();
 
-  const filteredTalents = baseApplicants.filter((t: any) => {
+  const actualFilteredTalents = baseApplicants.filter((t: any) => {
     if (!t) return false;
 
     if (showOnlyShortlisted && !t.is_favorite) return false;
@@ -858,6 +922,8 @@ export const TalentPool = ({
 
     return matchesJob && matchesCity && matchesSearch && matchesRating;
   });
+
+  const displayTalents = isEmpty ? mockTalentBankData : actualFilteredTalents;
   return (
     <div className="space-y-10">
 
@@ -892,7 +958,7 @@ export const TalentPool = ({
               placeholder="ابحث عن مهارة، اسم، أو مسمى وظيفي..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pr-12 pl-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium dark:text-white dark:placeholder-slate-400"
+              className="w-full pr-12 pl-5 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium dark:text-white dark:placeholder-slate-400 shadow-[inset_0_3px_5px_rgba(0,0,0,0.02)] focus:shadow-[0_3px_0_rgba(13,148,136,0.2)] focus:-translate-y-[1px]"
             />{" "}
           </div>{" "}
           <div className="flex gap-4">
@@ -901,26 +967,13 @@ export const TalentPool = ({
               selectedFilter={cityFilter}
               onFilterChange={setCityFilter}
             />
-            <div className="relative group">
-              <Sparkles
-                className={`absolute right-4 top-1/2 -translate-y-1/2 drop-shadow-[0_0_5px_rgba(13,148,136,0.3)] transition-transform pointer-events-none ${ratingFilter === "all" ? "text-slate-400 dark:text-slate-500" : "text-primary dark:text-primary group-hover:scale-110"}`}
-                size={18}
-              />{" "}
-              <select
-                value={ratingFilter}
-                onChange={(e) => setRatingFilter(e.target.value)}
-                className={`pr-12 pl-10 py-4 rounded-2xl outline-none transition-all appearance-none cursor-pointer font-bold min-w-[160px] border ${ratingFilter === "all" ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 text-navy dark:text-white hover:border-primary/50" : "bg-primary/10 border-primary/50 text-primary dark:bg-primary/20 dark:border-primary/50"}`}
-              >
-                <option value="all" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-white font-medium">التقييم الآلي: الكل</option>
-                <option value="+90" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-white font-medium">90% فما فوق</option>{" "}
-                <option value="+80" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-white font-medium">80% فما فوق</option>
-                <option value="+70" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-white font-medium">70% فما فوق</option>{" "}
-                <option value="-70" className="bg-white dark:bg-slate-800 text-slate-800 dark:text-white font-medium">أقل من 70%</option>
-              </select>{" "}
-            </div>{" "}
+            <CompactRatingSelector
+              selectedFilter={ratingFilter}
+              onFilterChange={setRatingFilter}
+            />
             <button
               onClick={() => setShowOnlyShortlisted(!showOnlyShortlisted)}
-              className={`px-4 py-4 rounded-2xl font-bold transition-all shadow-sm flex items-center gap-2 border ${showOnlyShortlisted ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700'}`}
+              className={`px-4 py-4 rounded-2xl font-bold transition-all duration-200 shadow-[0_3px_0_rgba(15,23,42,0.05)] dark:shadow-[0_3px_0_rgba(15,23,42,0.3)] -translate-y-[2px] active:translate-y-[1px] active:shadow-none flex items-center gap-2 border ${showOnlyShortlisted ? 'bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700'}`}
               title="عرض المفضلين فقط"
             >
               <Star size={18} fill={showOnlyShortlisted ? "currentColor" : "none"} className={showOnlyShortlisted ? "text-yellow-500" : "text-slate-400"} /> عرض المفضلين
@@ -928,199 +981,220 @@ export const TalentPool = ({
           </div>{" "}
         </div>{" "}
       </div>{" "}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={searchTerm + cityFilter + ratingFilter + String(showOnlyShortlisted)}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.15 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-6"
-        >
-          {filteredTalents.map((talent: any, index: number) => (
+      <div className="relative min-h-[40vh]">
+        {isEmpty && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center px-4">
+            <div className="w-full max-w-xl scale-90 md:scale-100">
+              <EmptyState
+                title={
+                  isNewUser
+                    ? "لوحة التحكم بانتظارك! لم تقم بإنشاء أي شواغر وظيفية حتى الآن"
+                    : "بنك الكفاءات فارغ حالياً"
+                }
+                actionLabel={isNewUser ? "أنشئ أول وظيفة الآن" : undefined}
+                onAction={isNewUser ? onCreateJob : undefined}
+                className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-2xl border border-white/40 dark:border-slate-700/50"
+                icon={<Database size={32} className="text-emerald-400" />}
+              />
+            </div>
+          </div>
+        )}
+        <div className={isEmpty ? "filter blur-[8px] opacity-60 pointer-events-none select-none transition-all duration-500" : ""}>
+          <AnimatePresence mode="wait">
             <motion.div
-              key={talent.id}
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.3) }}
-              whileHover={{ y: -4 }}
-              onClick={() => onViewDetails(talent)}
-              className="cursor-pointer bg-white dark:bg-slate-800 p-3.5 pb-2 rounded-2xl border border-slate-100 dark:border-slate-700/80 hover:border-primary/40 dark:hover:border-primary/40 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between h-full min-h-[205px]"
+              key={searchTerm + cityFilter + ratingFilter + String(showOnlyShortlisted)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.15 }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-6"
             >
-              <div>
-                {/* Header Bar: Match Score & Action Buttons */}
-                <div className="flex items-center justify-between mb-3" onClick={(e) => e.stopPropagation()}>
-                  <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-sm ${getScoreColor((talent.rating || 0).toString())}`}>
-                    {talent.rating || 0}% مطابقة
-                  </div>
-                  <div className="flex items-center gap-1.5 relative shrink-0">
-                    <button
-                      onClick={() => onToggleShortlist(talent.id)}
-                      className={`p-1.5 rounded-lg transition-all ${talent.is_favorite ? "bg-yellow-100 text-yellow-500 shadow-sm" : "bg-slate-50 dark:bg-slate-800/50 text-slate-300 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"}`}
-                    >
-                      <Star size={12} fill={talent.is_favorite ? "currentColor" : "none"} />
-                    </button>
-                    <div className="relative">
-                      <button
-                        onClick={() => setOpenDropdownId(openDropdownId === talent.id ? null : talent.id)}
-                        className="p-1.5 rounded-lg transition-all bg-slate-50 dark:bg-slate-800/50 text-slate-400 hover:text-navy dark:hover:text-white"
+              {displayTalents.map((talent: any, index: number) => (
+                <motion.div
+                  key={talent.id}
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.3) }}
+                  whileHover={{ y: -4 }}
+                  onClick={() => onViewDetails(talent)}
+                  className="cursor-pointer bg-white dark:bg-slate-800 p-3.5 pb-2 rounded-2xl border border-slate-100 dark:border-slate-700/80 hover:border-primary/40 dark:hover:border-primary/40 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 group relative overflow-hidden flex flex-col justify-between h-full min-h-[205px]"
+                >
+                  <div>
+                    {/* Header Bar: Match Score & Action Buttons */}
+                    <div className="flex items-center justify-between mb-3" onClick={(e) => e.stopPropagation()}>
+                      <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap shadow-sm ${getScoreColor((talent.rating || 0).toString())}`}>
+                        {talent.rating || 0}% مطابقة
+                      </div>
+                      <div className="flex items-center gap-1.5 relative shrink-0">
+                        <button
+                          onClick={() => onToggleShortlist(talent.id)}
+                          className={`p-1.5 rounded-lg transition-all ${talent.is_favorite ? "bg-yellow-100 text-yellow-500 shadow-sm" : "bg-slate-50 dark:bg-slate-800/50 text-slate-300 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"}`}
+                        >
+                          <Star size={12} fill={talent.is_favorite ? "currentColor" : "none"} />
+                        </button>
+                        <div className="relative">
+                          <button
+                            onClick={() => setOpenDropdownId(openDropdownId === talent.id ? null : talent.id)}
+                            className="p-1.5 rounded-lg transition-all bg-slate-50 dark:bg-slate-800/50 text-slate-400 hover:text-navy dark:hover:text-white"
+                          >
+                            <MoreVertical size={12} />
+                          </button>
+                          <AnimatePresence>
+                            {openDropdownId === talent.id && (
+                              <>
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={() => setOpenDropdownId(null)}
+                                />
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, scale: 0.95 }}
+                                  style={{ left: 0, right: 'auto' }}
+                                  className="absolute top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 py-1.5 z-50 overflow-hidden"
+                                >
+                                  <button
+                                    onClick={() => {
+                                      if (onCrossNominate) {
+                                        onCrossNominate(talent);
+                                      }
+                                      setOpenDropdownId(null);
+                                    }}
+                                    className="w-full text-right px-4 py-2 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2"
+                                  >
+                                    <Briefcase size={13} className="text-primary" /> ترشيح لشاغر جديد
+                                  </button>
+                                  <div className="h-px bg-slate-100 dark:bg-slate-700 w-full my-1"></div>
+                                  <button
+                                    onClick={() => {
+                                      if (window.confirm("هل أنت متأكد من الحذف؟")) setOpenDropdownId(null);
+                                    }}
+                                    className="w-full text-right px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
+                                  >
+                                    <Trash2 size={13} /> إزالة من البنك
+                                  </button>
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Profile details (avatar, name, job) */}
+                    <div className="flex flex-col items-center text-center mb-3">
+                      <div
+                        className={`w-11 h-11 bg-slate-100 dark:bg-slate-700 rounded-[12px] flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d shrink-0 overflow-hidden ${talent.photoUrl ? "cursor-pointer group-hover:opacity-80" : "group-hover:bg-primary/10 group-hover:text-primary"} transition-colors`}
+                        onClick={(e) => {
+                          if (talent.photoUrl) {
+                            e.stopPropagation();
+                            setLightboxPhoto(talent.photoUrl);
+                          }
+                        }}
                       >
-                        <MoreVertical size={12} />
-                      </button>
-                      <AnimatePresence>
-                        {openDropdownId === talent.id && (
-                          <>
-                            <div
-                              className="fixed inset-0 z-40"
-                              onClick={() => setOpenDropdownId(null)}
-                            />
-                            <motion.div
-                              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                              animate={{ opacity: 1, y: 0, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              style={{ left: 0, right: 'auto' }}
-                              className="absolute top-full mt-1 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 py-1.5 z-50 overflow-hidden"
-                            >
-                              <button
-                                onClick={() => {
-                                  if (onCrossNominate) {
-                                    onCrossNominate(talent);
-                                  }
-                                  setOpenDropdownId(null);
-                                }}
-                                className="w-full text-right px-4 py-2 text-xs font-bold text-navy dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center gap-2"
-                              >
-                                <Briefcase size={13} className="text-primary" /> ترشيح لشاغر جديد
-                              </button>
-                              <div className="h-px bg-slate-100 dark:bg-slate-700 w-full my-1"></div>
-                              <button
-                                onClick={() => {
-                                  if (window.confirm("هل أنت متأكد من الحذف؟")) setOpenDropdownId(null);
-                                }}
-                                className="w-full text-right px-4 py-2 text-xs font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
-                              >
-                                <Trash2 size={13} /> إزالة من البنك
-                              </button>
-                            </motion.div>
-                          </>
+                        {talent.photoUrl ? (
+                          <img src={talent.photoUrl} alt={talent.name} className="w-full h-full object-cover" />
+                        ) : (
+                          talent.name ? talent.name.charAt(0) : "م"
                         )}
-                      </AnimatePresence>
+                      </div>
+                      <h3 className="text-sm font-bold text-navy dark:text-white mt-2 mb-0.5 line-clamp-1 w-full px-1" title={talent.name}>
+                        {talent.name}
+                      </h3>
+                      <div className="mt-1 flex items-center justify-center max-w-full px-1">
+                        <span className="inline-flex items-center bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-100/80 dark:border-slate-700/50 shadow-[0_1px_2px_rgba(0,0,0,0.02),_inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] text-[9.5px] font-bold truncate" title={talent.job}>
+                          متقدم لـ: {talent.job}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Profile details (avatar, name, job) */}
-                <div className="flex flex-col items-center text-center mb-3">
-                  <div
-                    className={`w-11 h-11 bg-slate-100 dark:bg-slate-700 rounded-[12px] flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d shrink-0 overflow-hidden ${talent.photoUrl ? "cursor-pointer group-hover:opacity-80" : "group-hover:bg-primary/10 group-hover:text-primary"} transition-colors`}
-                    onClick={(e) => {
-                      if (talent.photoUrl) {
-                        e.stopPropagation();
-                        setLightboxPhoto(talent.photoUrl);
-                      }
-                    }}
-                  >
-                    {talent.photoUrl ? (
-                      <img src={talent.photoUrl} alt={talent.name} className="w-full h-full object-cover" />
-                    ) : (
-                      talent.name ? talent.name.charAt(0) : "م"
-                    )}
-                  </div>
-                  <h3 className="text-sm font-bold text-navy dark:text-white mt-2 mb-0.5 line-clamp-1 w-full px-1" title={talent.name}>
-                    {talent.name}
-                  </h3>
-                  <div className="mt-1 flex items-center justify-center max-w-full px-1">
-                    <span className="inline-flex items-center bg-slate-50/50 dark:bg-slate-800/30 text-slate-500 dark:text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-100/80 dark:border-slate-700/50 shadow-[0_1px_2px_rgba(0,0,0,0.02),_inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] text-[9.5px] font-bold truncate" title={talent.job}>
-                      متقدم لـ: {talent.job}
-                    </span>
-                  </div>
-                </div>
+                    {/* Progress bars matching the Job details */}
+                    <div className="space-y-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] font-bold">
+                          <span className="text-slate-500 dark:text-slate-400">تطابق المهارات</span>
+                          <span className="text-navy dark:text-white">{talent.skills_match || 0}%</span>
+                        </div>
+                        <div className={`w-full rounded-full h-1 overflow-hidden ${talent.skills_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.skills_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
+                          <div className={`h-full rounded-full transition-all duration-1000 ${talent.skills_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.skills_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.skills_match || 0}%` }}></div>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] font-bold">
+                          <span className="text-slate-500 dark:text-slate-400">تطابق الخبرة</span>
+                          <span className="text-navy dark:text-white">{talent.experience_match || 0}%</span>
+                        </div>
+                        <div className={`w-full rounded-full h-1 overflow-hidden ${talent.experience_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.experience_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
+                          <div className={`h-full rounded-full transition-all duration-1000 ${talent.experience_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.experience_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.experience_match || 0}%` }}></div>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[9px] font-bold">
+                          <span className="text-slate-500 dark:text-slate-400">تطابق التعليم</span>
+                          <span className="text-navy dark:text-white">{talent.education_match || 0}%</span>
+                        </div>
+                        <div className={`w-full rounded-full h-1 overflow-hidden ${talent.education_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.education_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
+                          <div className={`h-full rounded-full transition-all duration-1000 ${talent.education_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.education_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.education_match || 0}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Progress bars matching the Job details */}
-                <div className="space-y-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[9px] font-bold">
-                      <span className="text-slate-500 dark:text-slate-400">تطابق المهارات</span>
-                      <span className="text-navy dark:text-white">{talent.skills_match || 0}%</span>
-                    </div>
-                    <div className={`w-full rounded-full h-1 overflow-hidden ${talent.skills_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.skills_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
-                      <div className={`h-full rounded-full transition-all duration-1000 ${talent.skills_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.skills_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.skills_match || 0}%` }}></div>
-                    </div>
+                    {/* Key Metadata (City Only) - Placed below progress bars */}
+                    {(() => {
+                      const city = talent.city || (talent.customAnswers || []).find((a: any) => a.question === "المدينة")?.answer;
+                      if (!city) return null;
+                      return (
+                        <div className="flex items-center justify-center mb-0">
+                          <span className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-100/60 dark:border-slate-700/40 shadow-[0_1px_2px_rgba(0,0,0,0.02)] text-[10px] text-slate-500 dark:text-slate-400 font-bold">
+                            <MapPin size={11} className="text-primary shrink-0" />
+                            <span className="truncate max-w-[120px]">{city}</span>
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[9px] font-bold">
-                      <span className="text-slate-500 dark:text-slate-400">تطابق الخبرة</span>
-                      <span className="text-navy dark:text-white">{talent.experience_match || 0}%</span>
-                    </div>
-                    <div className={`w-full rounded-full h-1 overflow-hidden ${talent.experience_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.experience_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
-                      <div className={`h-full rounded-full transition-all duration-1000 ${talent.experience_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.experience_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.experience_match || 0}%` }}></div>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-[9px] font-bold">
-                      <span className="text-slate-500 dark:text-slate-400">تطابق التعليم</span>
-                      <span className="text-navy dark:text-white">{talent.education_match || 0}%</span>
-                    </div>
-                    <div className={`w-full rounded-full h-1 overflow-hidden ${talent.education_match >= 80 ? 'bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d' : talent.education_match >= 50 ? 'bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d' : 'bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d'}`}>
-                      <div className={`h-full rounded-full transition-all duration-1000 ${talent.education_match >= 80 ? 'bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : talent.education_match >= 50 ? 'bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]' : 'bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]'}`} style={{ width: `${talent.education_match || 0}%` }}></div>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Key Metadata (City Only) - Placed below progress bars */}
-                {(() => {
-                  const city = talent.city || (talent.customAnswers || []).find((a: any) => a.question === "المدينة")?.answer;
-                  if (!city) return null;
-                  return (
-                    <div className="flex items-center justify-center mb-0">
-                      <span className="inline-flex items-center gap-1 bg-slate-50 dark:bg-slate-800/60 px-2.5 py-1 rounded-full border border-slate-100/60 dark:border-slate-700/40 shadow-[0_1px_2px_rgba(0,0,0,0.02)] text-[10px] text-slate-500 dark:text-slate-400 font-bold">
-                        <MapPin size={11} className="text-primary shrink-0" />
-                        <span className="truncate max-w-[120px]">{city}</span>
-                      </span>
+                  {/* Skills / Badges section */}
+                  <div className="mt-auto">
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {(talent.skills || []).slice(0, 2).map((skill: string, index: number) => (
+                        <span
+                          key={index}
+                          className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-lg text-[10px] font-bold border border-indigo-200/30 dark:border-indigo-800/30 shadow-sm truncate max-w-[85px]"
+                          title={skill}
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                      {(talent.skills || []).length > 2 && (
+                        <span className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-200/50 dark:border-slate-700/50 shadow-sm shrink-0">
+                          +{(talent.skills || []).length - 2}
+                        </span>
+                      )}
                     </div>
-                  );
-                })()}
-              </div>
+                  </div>
+                </motion.div>
+              ))}
 
-              {/* Skills / Badges section */}
-              <div className="mt-auto">
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  {(talent.skills || []).slice(0, 2).map((skill: string, index: number) => (
-                    <span
-                      key={index}
-                      className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-lg text-[10px] font-bold border border-indigo-200/30 dark:border-indigo-800/30 shadow-sm truncate max-w-[85px]"
-                      title={skill}
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                  {(talent.skills || []).length > 2 && (
-                    <span className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-lg text-[10px] font-bold border border-slate-200/50 dark:border-slate-700/50 shadow-sm shrink-0">
-                      +{(talent.skills || []).length - 2}
-                    </span>
+              {displayTalents.length === 0 && (
+                <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-white dark:bg-slate-800 rounded-[32px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
+                  <div className={`w-24 h-24 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner-3d ${isLoading ? 'animate-pulse' : ''}`}>
+                    <Search size={40} className="text-slate-300 dark:text-slate-500" />
+                  </div>
+                  {!isLoading && (
+                    <>
+                      <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">لا توجد نتائج مطابقة</h3>
+                      <p className="text-slate-500 dark:text-slate-400 font-medium max-w-md">
+                        لم نتمكن من العثور على أي متقدم يطابق خيارات الفلاتر الحالية. حاول تعديل أو إزالة بعض الفلاتر لرؤية المزيد من النتائج.
+                      </p>
+                    </>
                   )}
                 </div>
-              </div>
+              )}{" "}
             </motion.div>
-          ))}
-
-          {filteredTalents.length === 0 && (
-            <div className="col-span-full py-20 flex flex-col items-center justify-center text-center bg-white dark:bg-slate-800 rounded-[32px] border border-white dark:border-slate-700 shadow-xl shadow-slate-200/40">
-              <div className={`w-24 h-24 bg-slate-50 dark:bg-slate-800/80 rounded-full flex items-center justify-center mb-6 shadow-inner-3d ${isLoading ? 'animate-pulse' : ''}`}>
-                <Search size={40} className="text-slate-300 dark:text-slate-500" />
-              </div>
-              {!isLoading && (
-                <>
-                  <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">لا توجد نتائج مطابقة</h3>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium max-w-md">
-                    لم نتمكن من العثور على أي متقدم يطابق خيارات الفلاتر الحالية. حاول تعديل أو إزالة بعض الفلاتر لرؤية المزيد من النتائج.
-                  </p>
-                </>
-              )}
-            </div>
-          )}{" "}
-        </motion.div>
-      </AnimatePresence>{" "}
+          </AnimatePresence>{" "}
+        </div>
+      </div>
       <AnimatePresence>
         {selectedTalent && (
           <TalentPoolModal
@@ -1190,7 +1264,7 @@ export const GlobalJobSelector = ({
             )}
           </div>
         </div>
-        <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold whitespace-nowrap ${job.status === "نشط" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"}`}>
+        <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold whitespace-nowrap ${job.status === "نشط" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400" : job.status === "مغلق مؤقتاً" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"}`}>
           {job.status}
         </span>
       </div>
@@ -1198,9 +1272,9 @@ export const GlobalJobSelector = ({
   };
 
   return (
-    <div className="relative z-[70] flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white dark:bg-slate-800/50 backdrop-blur-sm p-6 rounded-[32px] border border-white dark:border-slate-700 shadow-sm">
+    <div className="relative z-[70] flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white dark:bg-slate-800/50 backdrop-blur-sm p-6 rounded-[32px] border border-white dark:border-slate-700 shadow-[0_6px_0_#e2e8f0,0_10px_20px_rgba(0,0,0,0.05)] dark:shadow-[0_6px_0_#0f172a,0_10px_20px_rgba(0,0,0,0.2)] -translate-y-[2px] transition-all duration-300">
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0 shadow-[0_3px_0_rgba(13,148,136,0.2)] dark:shadow-[0_3px_0_rgba(13,148,136,0.4)] -translate-y-[2px] active:translate-y-[1px] active:shadow-none transition-all duration-200">
           <Filter size={20} />
         </div>
         <div className="flex flex-col">
@@ -1209,7 +1283,7 @@ export const GlobalJobSelector = ({
           </p>
           <div className="relative w-64 md:w-80" ref={ref}>
             <div
-              className={`px-4 py-2.5 rounded-xl cursor-pointer flex items-center justify-between transition-colors border ${selectedFilter === "all" ? "bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-primary/50" : "bg-primary/10 border-primary/50 dark:bg-primary/20"}`}
+              className={`px-4 py-2.5 rounded-xl cursor-pointer flex items-center justify-between transition-all duration-200 border shadow-[0_3px_0_rgba(15,23,42,0.05)] dark:shadow-[0_3px_0_rgba(15,23,42,0.3)] -translate-y-[2px] active:translate-y-[1px] active:shadow-none ${selectedFilter === "all" ? "bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 hover:border-primary/50" : "bg-primary/10 border-primary/50 dark:bg-primary/20"}`}
               onClick={() => setIsOpen(!isOpen)}
             >
               <span className={`font-bold text-sm truncate max-w-[200px] ${selectedFilter === "all" ? "text-navy dark:text-white" : "text-primary"}`}>
@@ -1239,7 +1313,7 @@ export const GlobalJobSelector = ({
                   </div>
                   <div className="max-h-64 overflow-y-auto p-2 scrollbar-thin">
                     <div
-                      className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === "all" ? "bg-primary/10 text-primary font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300"}`}
+                      className={`flex items-center gap-2 p-3 mb-1.5 rounded-lg cursor-pointer transition-all duration-200 shadow-[0_2px_0_rgba(15,23,42,0.05)] dark:shadow-[0_2px_0_rgba(15,23,42,0.2)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-none ${selectedFilter === "all" ? "bg-primary/10 text-primary font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300"}`}
                       onClick={() => { onFilterChange("all"); setIsOpen(false); setSearch(""); }}
                     >
                       <div className="w-4 shrink-0">
@@ -1250,7 +1324,7 @@ export const GlobalJobSelector = ({
                     {filteredJobs.map(job => (
                       <div
                         key={job.id}
-                        className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === job.id ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
+                        className={`flex items-center gap-3 p-3 mb-1.5 rounded-lg cursor-pointer transition-all duration-200 shadow-[0_2px_0_rgba(15,23,42,0.05)] dark:shadow-[0_2px_0_rgba(15,23,42,0.2)] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-none ${selectedFilter === job.id ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
                         onClick={() => { onFilterChange(job.id); setIsOpen(false); setSearch(""); }}
                       >
                         <div className="w-4 shrink-0">
@@ -1269,7 +1343,7 @@ export const GlobalJobSelector = ({
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2 text-slate-400 dark:text-slate-300 text-xs font-medium bg-slate-100/50 dark:bg-slate-800/50 px-4 py-2 rounded-full border dark:border-slate-700">
+      <div className="flex items-center gap-2 text-slate-400 dark:text-slate-300 text-xs font-medium bg-slate-100/50 dark:bg-slate-800/50 px-4 py-2 rounded-full border dark:border-slate-700 shadow-[0_3px_0_rgba(15,23,42,0.05)] dark:shadow-[0_3px_0_rgba(15,23,42,0.3)] -translate-y-[2px]">
         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> يتم
         تحديث جميع الإحصائيات والرسوم البيانية تلقائياً
       </div>
@@ -1688,7 +1762,7 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
             </h3>{" "}
             <BarChartIcon className="text-slate-900 dark:text-white drop-shadow-[0_3px_3px_rgba(0,0,0,0.3)] dark:drop-shadow-[0_3px_3px_rgba(0,0,0,0.8)]" size={18} strokeWidth={2.5} />
           </div>{" "}
-          <div className="h-[200px] w-full" dir="ltr">
+          <div className="relative h-[200px] w-full" dir="ltr">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={hiringFunnelData}
@@ -1740,6 +1814,9 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
                 </Bar>
               </BarChart>
             </ResponsiveContainer>{" "}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-8 pl-[45%]">
+              <BarChartIcon size={32} className="text-slate-300 dark:text-slate-600/50" strokeWidth={1.5} />
+            </div>
           </div>{" "}
         </div>{" "}
       </div>{" "}
@@ -1831,7 +1908,9 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">لا توجد بيانات كافية</div>
+            <div className="w-full h-full flex items-center justify-center pointer-events-none">
+              <BarChartIcon size={32} className="text-slate-300 dark:text-slate-600/50" strokeWidth={1.5} />
+            </div>
           )}
         </div>
       </div>
@@ -2244,7 +2323,7 @@ export const SettingsPage = ({
             {activeTab === "الملف الشخصي" && (
               <div className="max-w-2xl space-y-8">
                 <div className="flex items-center gap-8 mb-10">
-                  <label className="cursor-pointer relative overflow-hidden w-24 h-24 rounded-3xl bg-slate-100 border-slate-200 dark:bg-slate-700 dark:border-slate-600 flex items-center justify-center border-2 border-dashed group hover:border-primary/50 transition-colors">
+                  <label className="cursor-pointer relative overflow-hidden w-24 h-24 rounded-3xl bg-slate-100 border-slate-200 dark:bg-slate-700 dark:border-slate-600 flex items-center justify-center border-2 border-dashed group hover:border-primary/50 transition-colors shrink-0">
                     <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         const file = e.target.files[0];
@@ -2262,8 +2341,28 @@ export const SettingsPage = ({
                     )}
                   </label>
                   <div>
-                    <h4 className="font-bold text-navy dark:text-white mb-1">الصورة الشخصية</h4>
-
+                    <h4 className="font-bold text-navy dark:text-white mb-3">الصورة الشخصية</h4>
+                    <div className="flex items-center gap-2">
+                      <label className="cursor-pointer px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors border border-slate-200 dark:border-slate-700">
+                        تغيير
+                        <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                          if (e.target.files && e.target.files[0]) {
+                            const file = e.target.files[0];
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setUserProfile({ ...userProfile, companyLogo: reader.result });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }} />
+                      </label>
+                      <button
+                        onClick={() => setUserProfile({ ...userProfile, companyLogo: null })}
+                        className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 text-xs font-bold rounded-xl transition-colors border border-red-100 dark:border-red-500/20"
+                      >
+                        إزالة
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2890,6 +2989,8 @@ export const SettingsPage = ({
 };
 export const ActiveJobs = ({
   jobs,
+  subTab = "active",
+  isNewUser = false,
   onManage,
   onCreateJob,
   onClone,
@@ -2900,6 +3001,8 @@ export const ActiveJobs = ({
   isLoading,
 }: {
   jobs: Job[];
+  subTab?: "active" | "inactive" | "drafts" | "paused";
+  isNewUser?: boolean;
   onManage: (job: Job) => void;
   onCreateJob: () => void;
   onClone?: (job: Job) => void;
@@ -2911,17 +3014,21 @@ export const ActiveJobs = ({
 }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  if (jobs.length === 0) {
-    return (
-      <EmptyState
-        title="لا توجد شواغر وظيفية حالياً بانتظارك."
-        actionLabel="أنشئ وظيفة جديدة الآن"
-        onAction={onCreateJob}
-      />
-    );
-  }
+
+  const isMockState = jobs.length === 0;
+  const targetStatus = subTab === "inactive" ? "مغلق" : subTab === "drafts" ? "مسودة" : "نشط";
+  const displayJobs = isMockState ? [
+    { id: 'mock-1', title: 'مطور واجهات أمامية', department: 'تقنية المعلومات', status: targetStatus, applicants: 12, createdAt: new Date().toISOString(), type: 'دوام كامل' } as Job,
+    { id: 'mock-2', title: 'أخصائي تسويق', department: 'التسويق', status: targetStatus, applicants: 8, createdAt: new Date().toISOString(), type: 'دوام كامل' } as Job,
+    { id: 'mock-3', title: 'مدير مشروع', department: 'الإدارة', status: targetStatus, applicants: 5, createdAt: new Date().toISOString(), type: 'دوام كامل' } as Job,
+    { id: 'mock-4', title: 'محاسب مالي', department: 'المالية', status: targetStatus, applicants: 15, createdAt: new Date().toISOString(), type: 'دوام كامل' } as Job,
+    { id: 'mock-5', title: 'ممثل خدمة عملاء', department: 'المبيعات', status: targetStatus, applicants: 20, createdAt: new Date().toISOString(), type: 'دوام كامل' } as Job,
+  ] : jobs;
+
+
   const isJobExpired = (job: Job) => {
     if (job.status === "مغلق") return true;
+    if (job.status === "مغلق مؤقتاً") return false;
     if (!job.endDate) return false;
     return new Date() > new Date(job.endDate);
   };
@@ -2950,7 +3057,28 @@ export const ActiveJobs = ({
     return <Briefcase size={24} />;
   };
   return (
-    <>
+    <div className="relative w-full min-h-[400px]">
+      {isMockState && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
+          <EmptyState
+            title={
+              isNewUser
+                ? "لوحة التحكم بانتظارك! لم تقم بإنشاء أي إعلانات وظيفية حتى الآن"
+                : subTab === "inactive"
+                  ? "لا توجد أي وظائف مغلقة بشكل دائم في سجلك"
+                  : subTab === "paused"
+                    ? "لا توجد وظائف مغلقة مؤقتاً"
+                    : subTab === "drafts"
+                      ? "لا توجد مسودات محفوظة"
+                      : "لا توجد إعلانات وظيفية نشطة في الوقت الحالي"
+            }
+            actionLabel={isNewUser ? "أنشئ إعلانك الأول الآن" : undefined}
+            onAction={isNewUser ? onCreateJob : undefined}
+            className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-md shadow-2xl border border-white/40 dark:border-slate-700/50"
+            icon={<Briefcase size={32} className="text-primary" />}
+          />
+        </div>
+      )}
       {openDropdownId && (
         <div
           className="fixed inset-0 z-10"
@@ -2959,14 +3087,14 @@ export const ActiveJobs = ({
       )}
       <AnimatePresence mode="wait">
         <motion.div
-          key={jobs.map(j => j.id).join(',')}
+          key={displayJobs.map(j => j.id).join(',')}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.15 }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-6"
+          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-6 transition-all ${isMockState ? 'filter blur-[5px] opacity-60 pointer-events-none select-none' : ''}`}
         >
-          {jobs.map((job, index) => {
+          {displayJobs.map((job, index) => {
             const expired = isJobExpired(job);
             return (
               <motion.div
@@ -2983,13 +3111,15 @@ export const ActiveJobs = ({
                 <div className="flex items-center justify-between mb-3 w-full" onClick={(e) => e.stopPropagation()}>
                   <span
                     className={`px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${expired
-                        ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                        : job.status === "مسودة"
-                          ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                      ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                      : job.status === "مسودة"
+                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                        : job.status === "مغلق مؤقتاً"
+                          ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                           : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                       }`}
                   >
-                    {expired ? "منتهي/مغلق" : job.status}
+                    {expired ? "مغلق دائم" : job.status}
                   </span>
 
                   <div className="flex items-center gap-1.5 shrink-0">
@@ -3124,16 +3254,18 @@ export const ActiveJobs = ({
                 </div>
 
                 {/* Boxy Subcards styled exactly like Talent Bank progress grid */}
-                <div className="grid grid-cols-2 gap-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                  <div className="flex flex-col items-center justify-center text-center">
-                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">المتقدمين</span>
-                    {isLoading ? (
-                      <span className="animate-pulse bg-slate-200 dark:bg-slate-700 w-8 h-4 rounded block mx-auto"></span>
-                    ) : (
-                      <span className="text-xs font-black text-navy dark:text-white leading-none">{job.applicants}</span>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-center justify-center text-center border-r border-slate-200/60 dark:border-slate-700/60 pr-2">
+                <div className={`grid ${job.status === "مسودة" ? "grid-cols-1" : "grid-cols-2"} gap-2 mb-3 bg-slate-50/50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80`}>
+                  {job.status !== "مسودة" && (
+                    <div className="flex flex-col items-center justify-center text-center">
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">المتقدمين</span>
+                      {isLoading ? (
+                        <span className="animate-pulse bg-slate-200 dark:bg-slate-700 w-8 h-4 rounded block mx-auto"></span>
+                      ) : (
+                        <span className="text-xs font-black text-navy dark:text-white leading-none">{job.applicants}</span>
+                      )}
+                    </div>
+                  )}
+                  <div className={`flex flex-col items-center justify-center text-center ${job.status === "مسودة" ? "" : "border-r border-slate-200/60 dark:border-slate-700/60 pr-2"}`}>
                     <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mb-0.5">نوع العمل</span>
                     <span className="text-[10px] font-bold text-navy dark:text-white leading-normal truncate max-w-[85px]" title={job.type}>{job.type}</span>
                   </div>
@@ -3142,7 +3274,7 @@ export const ActiveJobs = ({
                 {/* Footer Date centered */}
                 <div className="flex items-center justify-center pt-2.5 border-t border-slate-50 dark:border-slate-700/50 mt-auto">
                   <span className="text-[10.5px] text-slate-400 dark:text-slate-500 font-bold">
-                    نُشر: {job.createdAt}
+                    {job.status === "مسودة" ? "تاريخ الإنشاء:" : "نُشر:"} {job.createdAt}
                   </span>
                 </div>
               </motion.div>
@@ -3150,7 +3282,7 @@ export const ActiveJobs = ({
           })}
         </motion.div>
       </AnimatePresence>
-    </>
+    </div>
   );
 };
 interface Applicant {
@@ -3506,3 +3638,4 @@ export const FastScreening = () => {
     </div>
   );
 };
+

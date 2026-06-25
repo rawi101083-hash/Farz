@@ -18,11 +18,17 @@ export const ManageJob = ({
 }: {
   job: Job;
   onBack: () => void;
-  onUpdate: (job: Job) => void;
+  onUpdate: (job: Job, stayOnPage?: boolean) => void;
   onDelete: (id: string) => void;
   onClone?: (job: Job) => void;
 }) => {
   const [activeTab, setActiveTab] = useState<"أرشيف الوصف الوظيفي" | "إعدادات الوظيفة" | "متطلبات التقديم">("أرشيف الوصف الوظيفي");
+  const [toast, setToast] = useState<{message: string, type: 'success' | 'warning' | 'error'} | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'warning' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
   const isLocked = job.status === "نشط" && job.applicants > 0;
 
   // Archive Fields (Read-Only)
@@ -95,7 +101,7 @@ export const ManageJob = ({
   const [knockoutQuestions, setKnockoutQuestions] = useState<{ text: string; type: "yes_no" | "options"; options?: string[]; requiredAnswer: string }[]>(job.knockoutQuestions || []);
   const [customQuestions, setCustomQuestions] = useState<{ text: string; type: string; options?: string[]; required?: boolean }[]>(job.customQuestions || []);
   const [requiredAttachments, setRequiredAttachments] = useState<string[]>(job.requiredAttachments || ["السيرة الذاتية PDF"]);
-  const [customAttachments, setCustomAttachments] = useState<CustomAttachment[]>(job.customAttachments || []);
+  const [customAttachments, setCustomAttachments] = useState<any[]>(job.customAttachments || []);
 
   const [newCustomQuestion, setNewCustomQuestion] = useState("");
   const [newCustomQuestionType, setNewCustomQuestionType] = useState("نص");
@@ -260,8 +266,47 @@ export const ManageJob = ({
     alert("تم النسخ للحافظة!");
   };
 
+  const updateStatusDirectly = async (newStatus: "نشط" | "مغلق مؤقتاً" | "مغلق") => {
+    setStatus(newStatus);
+    try {
+      const { error } = await supabase.from('jobs').update({ status: newStatus }).eq('id', job.id);
+      if (error) throw error;
+      setStatus(newStatus);
+      onUpdate({...job, status: newStatus}, true);
+      
+      if (newStatus === "نشط") {
+        showToast("تم تنشيط الوظيفة بنجاح وإعادة استقبال الطلبات.", "success");
+      } else if (newStatus === "مغلق مؤقتاً") {
+        showToast("تم الإغلاق المؤقت للوظيفة وإيقاف استقبال الطلبات.", "warning");
+      } else {
+        showToast("تم إغلاق الوظيفة بشكل دائم.", "error");
+      }
+    } catch (err: any) {
+      if (err.message?.includes('LIMIT_REACHED') || err.details?.includes('LIMIT_REACHED')) {
+        showToast("لقد وصلت للحد الأقصى للوظائف النشطة في باقتك. الرجاء إغلاق وظيفة أخرى أولاً.", "error");
+        setStatus(job.status || "مغلق");
+      } else {
+        showToast("حدث خطأ أثناء تغيير الحالة. يرجى المحاولة مرة أخرى.", "error");
+        setStatus(job.status);
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 p-8 pt-24 lg:pt-10">
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: -50, x: "-50%" }}
+            className={`fixed top-8 left-1/2 z-[9999] border px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 font-bold text-sm md:text-base whitespace-nowrap ${toast.type === 'warning' ? 'bg-orange-50 text-orange-700 border-orange-200' : toast.type === 'error' ? 'bg-red-50 text-red-700 border-red-200' : 'bg-emerald-50 border-emerald-200 text-emerald-700'}`}
+          >
+            {toast.type === 'warning' ? <AlertTriangle size={20} /> : toast.type === 'error' ? <AlertTriangle size={20} /> : <CheckCircle size={20} />}
+            {toast.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="max-w-6xl mx-auto relative z-[100]">
         
         {/* HEADER SECTION */}
@@ -276,9 +321,17 @@ export const ManageJob = ({
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold text-navy dark:text-white">{title}</h1>
-                <span className="flex items-center gap-1.5 px-3 py-1 bg-green-100/50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800/50 rounded-full text-xs font-bold shadow-sm">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                  الفرز الذكي نشط
+                <span className={`flex items-center gap-1.5 px-3 py-1 border rounded-full text-xs font-bold shadow-sm ${
+                  status === "نشط" ? "bg-green-100/50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/50" :
+                  status === "مغلق مؤقتاً" ? "bg-amber-100/50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50" :
+                  "bg-red-100/50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/50"
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    status === "نشط" ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse" :
+                    status === "مغلق مؤقتاً" ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse" :
+                    "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
+                  }`}></div>
+                  {status === "نشط" ? "الفرز الذكي نشط" : status === "مغلق مؤقتاً" ? "الفرز الذكي مغلق مؤقتاً" : "الفرز الذكي مغلق"}
                 </span>
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mt-1">{company}</p>
@@ -287,8 +340,13 @@ export const ManageJob = ({
           
           <div className="flex items-center gap-3 w-full md:w-auto">
             <button
-              onClick={() => window.location.href = `/?jobFilter=${job.id}`}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-navy text-white px-6 py-3 rounded-xl font-bold text-sm shadow-lg shadow-navy/20 hover:bg-slate-800 transition-all active:scale-95"
+              onClick={() => {
+                window.localStorage.setItem("sahab_dashboard_jobFilter", job.id);
+                window.sessionStorage.setItem("sahab_dashboard_tab", "الرئيسية");
+                window.sessionStorage.setItem("sahab_active_step", "dashboard");
+                window.location.reload();
+              }}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-navy text-white px-6 py-3 rounded-xl font-bold text-sm shadow-[0_4px_14px_0_rgba(15,23,42,0.3)] hover:bg-slate-800 transition-all active:scale-95"
             >
               المرشحون لهذه الوظيفة <ArrowLeft size={16} />
             </button>
@@ -306,8 +364,10 @@ export const ManageJob = ({
             >
               
               {/* TABS */}
-              <div className="flex gap-4 border-b border-slate-200 dark:border-slate-700 mb-8 overflow-x-auto whitespace-nowrap hide-scrollbar pb-0">
-                {(["أرشيف الوصف الوظيفي", "إعدادات الوظيفة", "متطلبات التقديم"] as const).map(tab => (
+              <div className="flex justify-center gap-4 border-b border-slate-200 dark:border-slate-700 mb-8 overflow-x-auto whitespace-nowrap hide-scrollbar pb-0">
+                {/* ملاحظة: تم إخفاء هذه المعلومات مؤقتاً (إعدادات الوظيفة، متطلبات التقديم) */}
+                {/* (["أرشيف الوصف الوظيفي", "إعدادات الوظيفة", "متطلبات التقديم"] as const).map(tab => ( */}
+                {(["أرشيف الوصف الوظيفي"] as const).map(tab => (
                   <button
                     key={tab}
                     type="button"
@@ -328,87 +388,99 @@ export const ManageJob = ({
                   <div className="bg-amber-50 dark:bg-amber-900/20 border-r-4 border-amber-500 p-4 rounded-l-xl mb-6 flex items-start gap-3">
                     <Lock className="text-amber-500 shrink-0 mt-0.5" size={20} />
                     <p className="text-amber-800 dark:text-amber-400 font-bold text-sm leading-relaxed">
-                      البيانات في هذا القسم مقفلة للقراءة فقط للحفاظ على استقرار أوزان ومقاييس الذكاء الاصطناعي الذي تم بناء الفرز بناءً عليها. لتعديلها، قم بتكرار الوظيفة كإعلان جديد.
+                      البيانات في هذا القسم مقفلة للقراءة، قم بتكرار هذه الوظيفة كإعلان جديد إذا أردت التعديل عليها.
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                      <p className="text-xs text-slate-400 font-bold mb-1">المسمى الوظيفي</p>
+                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">المسمى الوظيفي</p>
                       <p className="font-bold text-navy dark:text-white">{title || "لم تُحدد"}</p>
                     </div>
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                      <p className="text-xs text-slate-400 font-bold mb-1">الجهة / الشركة</p>
+                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الجهة / الشركة</p>
                       <p className="font-bold text-navy dark:text-white">{company || "لم تُحدد"}</p>
                     </div>
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                      <p className="text-xs text-slate-400 font-bold mb-1">سنوات الخبرة</p>
+                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">سنوات الخبرة</p>
                       <p className="font-bold text-navy dark:text-white">{experience}</p>
                     </div>
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                      <p className="text-xs text-slate-400 font-bold mb-1">الحد الأدنى للمؤهل</p>
+                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الحد الأدنى للمؤهل</p>
                       <p className="font-bold text-navy dark:text-white">{qualification}</p>
                     </div>
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                      <p className="text-xs text-slate-400 font-bold mb-1">نوع العمل</p>
+                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">نوع العمل</p>
                       <p className="font-bold text-navy dark:text-white">{jobType}</p>
                     </div>
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                      <p className="text-xs text-slate-400 font-bold mb-1">مقر العمل</p>
+                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">مقر العمل</p>
                       <p className="font-bold text-navy dark:text-white">{jobLocation}</p>
                     </div>
+                    {(job.salaryMin || job.salaryMax) && (
+                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 md:col-span-2 text-center flex flex-col items-center justify-center">
+                        <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الراتب</p>
+                        <p className="font-bold text-navy dark:text-white">
+                          {job.salaryMin && job.salaryMax 
+                            ? `${job.salaryMin} - ${job.salaryMax} ريال` 
+                            : job.salaryMin 
+                              ? `${job.salaryMin} ريال` 
+                              : `${job.salaryMax} ريال`}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {roleSummary && (
-                    <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 mt-6">
-                      <p className="text-xs text-slate-400 font-bold mb-3 flex items-center gap-1"><FileText size={14}/> نبذة عن الدور</p>
-                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{roleSummary}</p>
+                    <div className="bg-white dark:bg-slate-800/50 mt-8">
+                      <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> نبذة عن الدور</h3>
+                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed px-4">{roleSummary}</p>
                     </div>
                   )}
 
                   {responsibilities && (
-                    <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 mt-4">
-                      <p className="text-xs text-slate-400 font-bold mb-3 flex items-center gap-1"><CheckCircle size={14}/> المهام والمسؤوليات</p>
-                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{responsibilities}</p>
+                    <div className="bg-white dark:bg-slate-800/50 mt-8">
+                      <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهام والمسؤوليات</h3>
+                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed px-4">{responsibilities}</p>
                     </div>
                   )}
 
                   {qualificationsText && (
-                    <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 mt-4">
-                      <p className="text-xs text-slate-400 font-bold mb-3 flex items-center gap-1"><CheckCircle size={14}/> المتطلبات (الشروط والخبرات)</p>
-                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{qualificationsText}</p>
+                    <div className="bg-white dark:bg-slate-800/50 mt-8">
+                      <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المؤهلات والمتطلبات</h3>
+                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed px-4">{qualificationsText}</p>
                     </div>
                   )}
 
                   {benefits && (
-                    <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 mt-4">
-                      <p className="text-xs text-slate-400 font-bold mb-3 flex items-center gap-1"><Sparkles size={14}/> المميزات (Perks)</p>
-                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{benefits}</p>
+                    <div className="bg-white dark:bg-slate-800/50 mt-8">
+                      <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المميزات</h3>
+                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed px-4">{benefits}</p>
                     </div>
                   )}
 
-                  <div className="space-y-4">
+                  <div className="space-y-8 mt-8">
                     {targetMajors.length > 0 && (
-                      <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
-                        <p className="text-xs text-slate-400 font-bold mb-3">التخصصات المستهدفة</p>
-                        <div className="flex flex-wrap gap-2">
-                          {targetMajors.map(major => <span key={major} className="px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-bold">{major}</span>)}
+                      <div className="bg-white dark:bg-slate-800/50">
+                        <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> التخصصات المستهدفة</h3>
+                        <div className="flex flex-wrap gap-3 px-4">
+                          {targetMajors.map(major => <span key={major} className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-bold shadow-sm">{major}</span>)}
                         </div>
                       </div>
                     )}
                     {selectedSkills.length > 0 && (
-                      <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
-                        <p className="text-xs text-slate-400 font-bold mb-3">المهارات والتفضيلات</p>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedSkills.map(skill => <span key={skill} className="px-3 py-1.5 bg-primary/10 text-primary rounded-xl text-sm font-bold">{skill}</span>)}
+                      <div className="bg-white dark:bg-slate-800/50">
+                        <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهارات</h3>
+                        <div className="flex flex-wrap gap-3 px-4">
+                          {selectedSkills.map(skill => <span key={skill} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm">{skill}</span>)}
                         </div>
                       </div>
                     )}
                     {selectedLanguages.length > 0 && (
-                      <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
-                        <p className="text-xs text-slate-400 font-bold mb-3">اللغات المطلوبة</p>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedLanguages.map(lang => <span key={lang} className="px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-xl text-sm font-bold">{lang}</span>)}
+                      <div className="bg-white dark:bg-slate-800/50">
+                        <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> اللغات المطلوبة</h3>
+                        <div className="flex flex-wrap gap-3 px-4">
+                          {selectedLanguages.map(lang => <span key={lang} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm">{lang}</span>)}
                         </div>
                       </div>
                     )}
@@ -468,7 +540,6 @@ export const ManageJob = ({
                     </div>
                   </div>
                   
-                  {/* Additional Settings that were moved here */}
                   <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                      <h4 className="font-bold text-navy dark:text-white mb-2">تخصيص الواجهة والفرز الذكي</h4>
                      <div className="space-y-2 mb-4 bg-primary/5 border border-primary/20 p-4 rounded-xl">
@@ -740,21 +811,34 @@ export const ManageJob = ({
                 <Settings size={18} className="text-primary"/> أدوات الإغلاق
               </h3>
               
-              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 mb-4">
-                <div>
-                  <p className="font-bold text-navy dark:text-white text-sm">الحالة: <span className={status === "نشط" ? "text-green-600 dark:text-green-400" : "text-amber-600 dark:text-amber-400"}>{status}</span></p>
+              <div className="mb-6">
+                <p className="font-bold text-navy dark:text-white text-sm mb-3">تغيير حالة الإعلان:</p>
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 relative shadow-inner">
+                  <button 
+                    type="button"
+                    onClick={() => updateStatusDirectly("نشط")}
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl text-xs font-bold transition-all z-10 ${status === "نشط" ? "bg-white text-green-600 shadow-[0_4px_20px_-4px_rgba(34,197,94,0.3),inset_0_2px_0_rgba(255,255,255,0.8)] border border-slate-100/50 dark:bg-slate-700 dark:text-green-400 dark:border-slate-600 dark:shadow-[0_4px_20px_-4px_rgba(34,197,94,0.15)] scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50"}`}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${status === "نشط" ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse" : "bg-slate-300 dark:bg-slate-600"}`}></div>
+                    نشط
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => updateStatusDirectly("مغلق مؤقتاً")}
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl text-xs font-bold transition-all z-10 ${status === "مغلق مؤقتاً" ? "bg-white text-amber-600 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.3),inset_0_2px_0_rgba(255,255,255,0.8)] border border-slate-100/50 dark:bg-slate-700 dark:text-amber-400 dark:border-slate-600 dark:shadow-[0_4px_20px_-4px_rgba(245,158,11,0.15)] scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50"}`}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${status === "مغلق مؤقتاً" ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse" : "bg-slate-300 dark:bg-slate-600"}`}></div>
+                    إغلاق مؤقت
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => updateStatusDirectly("مغلق")}
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl text-xs font-bold transition-all z-10 ${status === "مغلق" ? "bg-white text-red-600 shadow-[0_4px_20px_-4px_rgba(239,68,68,0.3),inset_0_2px_0_rgba(255,255,255,0.8)] border border-slate-100/50 dark:bg-slate-700 dark:text-red-400 dark:border-slate-600 dark:shadow-[0_4px_20px_-4px_rgba(239,68,68,0.15)] scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50"}`}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${status === "مغلق" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "bg-slate-300 dark:bg-slate-600"}`}></div>
+                    إغلاق دائم
+                  </button>
                 </div>
-                <button 
-                  onClick={() => {
-                    const newStatus = status === "نشط" ? "مغلق" : "نشط";
-                    setStatus(newStatus);
-                    setTimeout(() => document.getElementById("hidden-submit")?.click(), 100);
-                  }} 
-                  className={`w-14 h-7 rounded-full relative transition-all shadow-inner focus:outline-none focus:ring-4 focus:ring-primary/20 ${status === "نشط" ? "bg-green-500" : "bg-slate-300 dark:bg-slate-600"}`}
-                >
-                  <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-all shadow-md ${status === "نشط" ? "left-1" : "left-8"}`} />
-                </button>
-                <form onSubmit={handleUpdate} className="hidden"><button id="hidden-submit" type="submit"></button></form>
               </div>
 
               <button
@@ -765,9 +849,12 @@ export const ManageJob = ({
                   setSelectedLockedIds([]);
                   setSearchLocked("");
                 }}
-                className="w-full flex items-center justify-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 p-3 rounded-2xl font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors mb-4"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-900/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 py-3 px-4 rounded-2xl font-bold text-sm hover:shadow-[0_8px_24px_-4px_rgba(16,185,129,0.25),inset_0_2px_0_rgba(255,255,255,1)] hover:-translate-y-1 active:translate-y-0 transition-all mb-4 relative overflow-hidden group shadow-[0_4px_12px_-2px_rgba(16,185,129,0.15),inset_0_2px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_12px_-2px_rgba(16,185,129,0.15),inset_0_2px_0_rgba(255,255,255,0.05)]"
               >
-                <RotateCcw size={16} /> فتح التقديم يدوياً (فك حظر 90 يوم)
+                <div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div>
+                <RotateCcw size={18} className="relative z-10" /> 
+                <span className="relative z-10">فتح التقديم يدوياً</span>
+                <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-800/50 dark:text-emerald-300 px-2 py-0.5 rounded-lg relative z-10 shadow-sm border border-emerald-200 dark:border-emerald-700">فك حظر 90 يوم</span>
               </button>
 
               {onClone && (
@@ -784,62 +871,64 @@ export const ManageJob = ({
             </div>
 
             {/* Funnel Analytics */}
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50">
+            <div className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-800/90 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-[0_8px_30px_rgb(0,0,0,0.04),inset_0_2px_0_rgba(255,255,255,0.8)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.1)] relative overflow-hidden group hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] transition-all">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-10 transition-transform group-hover:scale-110"></div>
               <h3 className="font-bold text-navy dark:text-white mb-4 flex items-center gap-2">
                 <Target size={18} className="text-primary"/> معدل التحويل
               </h3>
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                  <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Eye size={14} className="text-primary"/> الزيارات</span>
-                  <span className="font-bold text-navy dark:text-white">{job.visits_count || 0}</span>
+                <div className="flex justify-between items-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.05),inset_0_2px_0_rgba(255,255,255,0.8)] dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.05)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.1),inset_0_2px_0_rgba(255,255,255,0.9)] dark:hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.1)] transition-all hover:-translate-y-0.5 group">
+                  <span className="text-xs font-bold text-slate-500 flex items-center gap-2"><Eye size={16} className="text-primary group-hover:scale-110 transition-transform"/> الزيارات</span>
+                  <span className="font-bold text-navy dark:text-white text-lg">{job.visits_count || 0}</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
-                  <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5"><Users size={14} className="text-primary"/> إجمالي المتقدمين</span>
-                  <span className="font-bold text-navy dark:text-white">{totalAppsCount !== null ? totalAppsCount : job.applicants}</span>
+                <div className="flex justify-between items-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.05),inset_0_2px_0_rgba(255,255,255,0.8)] dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.05)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.1),inset_0_2px_0_rgba(255,255,255,0.9)] dark:hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.1)] transition-all hover:-translate-y-0.5 group">
+                  <span className="text-xs font-bold text-slate-500 flex items-center gap-2"><Users size={16} className="text-primary group-hover:scale-110 transition-transform"/> إجمالي المتقدمين</span>
+                  <span className="font-bold text-navy dark:text-white text-lg">{totalAppsCount !== null ? totalAppsCount : job.applicants}</span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30">
-                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5"><CheckCircle size={14} className="text-primary"/> المجتازين للفرز</span>
-                  <span className="font-bold text-emerald-700 dark:text-emerald-400">{passedCount !== null ? passedCount : "..."}</span>
+                <div className="flex justify-between items-center p-4 bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-900/10 rounded-xl border border-emerald-200 dark:border-emerald-800/50 shadow-[0_4px_12px_-2px_rgba(16,185,129,0.15),inset_0_2px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_12px_-2px_rgba(16,185,129,0.15),inset_0_2px_0_rgba(255,255,255,0.05)] hover:shadow-[0_8px_24px_-4px_rgba(16,185,129,0.25),inset_0_2px_0_rgba(255,255,255,1)] dark:hover:shadow-[0_8px_24px_-4px_rgba(16,185,129,0.25),inset_0_2px_0_rgba(255,255,255,0.1)] transition-all hover:-translate-y-0.5 group">
+                  <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-2"><CheckCircle size={16} className="text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform"/> المجتازين للفرز</span>
+                  <span className="font-bold text-emerald-700 dark:text-emerald-400 text-lg">{passedCount !== null ? passedCount : "..."}</span>
                 </div>
               </div>
             </div>
 
             {/* Share Hub */}
-            <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50">
+            <div className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-800/90 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-700 shadow-[0_8px_30px_rgb(0,0,0,0.04),inset_0_2px_0_rgba(255,255,255,0.8)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.1)] relative overflow-hidden group hover:shadow-[0_8px_40px_rgb(0,0,0,0.08)] transition-all mt-6">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -z-10 transition-transform group-hover:scale-110"></div>
               <h3 className="font-bold text-navy dark:text-white mb-4 flex items-center gap-2">
                 <Share2 size={18} className="text-primary"/> مركز النشر
               </h3>
               
-              <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center mb-4">
-                <div className="bg-white p-3 rounded-xl shadow-sm mb-3">
+              <div className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-800/90 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center mb-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.05),inset_0_2px_0_rgba(255,255,255,0.8)] dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.05)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.1),inset_0_2px_0_rgba(255,255,255,0.9)] dark:hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.1)]">
+                <div className="bg-white p-3 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] mb-3 border border-slate-100">
                   <QRCode value={applyLink} size={120} level="H" fgColor="#0F172A" />
                 </div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">رمز التقديم السريع (QR)</p>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded-md shadow-inner">رمز التقديم السريع (QR)</p>
               </div>
 
               <div className="space-y-3">
                 <button onClick={() => copyToClipboard(applyLink)} className="w-full flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-white px-4 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors border border-slate-200 dark:border-slate-600">
                   <Link size={16} className="text-slate-400" /> نسخ رابط التقديم المباشر
                 </button>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  <button onClick={() => copyToClipboard(`${applyLink}?source=whatsapp`)} className="flex items-center justify-center gap-1 bg-[#25D366]/10 text-[#25D366] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#25D366]/20 transition-colors">
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
+                  <button onClick={() => copyToClipboard(`${applyLink}?source=whatsapp`)} className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-[#25D366]/10 to-[#25D366]/5 border border-[#25D366]/30 text-[#25D366] px-3 py-3 rounded-xl font-bold text-xs hover:from-[#25D366]/20 hover:to-[#25D366]/10 transition-all shadow-[0_4px_10px_-2px_rgba(37,211,102,0.15)] hover:shadow-[0_6px_16px_-2px_rgba(37,211,102,0.25)] hover:-translate-y-0.5 active:translate-y-0">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
                     WhatsApp
                   </button>
-                  <button onClick={() => copyToClipboard(`${applyLink}?source=twitter`)} className="flex items-center justify-center gap-1 bg-[#1DA1F2]/10 text-[#1DA1F2] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#1DA1F2]/20 transition-colors">
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M23.643 4.937c-.835.37-1.732.62-2.675.733a4.67 4.67 0 0 0 2.048-2.578 9.3 9.3 0 0 1-2.958 1.13 4.66 4.66 0 0 0-7.938 4.25 13.229 13.229 0 0 1-9.602-4.868c-.4.69-.63 1.49-.63 2.342A4.66 4.66 0 0 0 3.96 9.824a4.647 4.647 0 0 1-2.11-.583v.06a4.66 4.66 0 0 0 3.737 4.568 4.692 4.692 0 0 1-2.104.08 4.661 4.661 0 0 0 4.352 3.234 9.348 9.348 0 0 1-5.786 1.995 9.5 9.5 0 0 1-1.112-.065 13.175 13.175 0 0 0 7.14 2.093c8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602a9.47 9.47 0 0 0 2.323-2.41z"/></svg>
+                  <button onClick={() => copyToClipboard(`${applyLink}?source=twitter`)} className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-[#1DA1F2]/10 to-[#1DA1F2]/5 border border-[#1DA1F2]/30 text-[#1DA1F2] px-3 py-3 rounded-xl font-bold text-xs hover:from-[#1DA1F2]/20 hover:to-[#1DA1F2]/10 transition-all shadow-[0_4px_10px_-2px_rgba(29,161,242,0.15)] hover:shadow-[0_6px_16px_-2px_rgba(29,161,242,0.25)] hover:-translate-y-0.5 active:translate-y-0">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M23.643 4.937c-.835.37-1.732.62-2.675.733a4.67 4.67 0 0 0 2.048-2.578 9.3 9.3 0 0 1-2.958 1.13 4.66 4.66 0 0 0-7.938 4.25 13.229 13.229 0 0 1-9.602-4.868c-.4.69-.63 1.49-.63 2.342A4.66 4.66 0 0 0 3.96 9.824a4.647 4.647 0 0 1-2.11-.583v.06a4.66 4.66 0 0 0 3.737 4.568 4.692 4.692 0 0 1-2.104.08 4.661 4.661 0 0 0 4.352 3.234 9.348 9.348 0 0 1-5.786 1.995 9.5 9.5 0 0 1-1.112-.065 13.175 13.175 0 0 0 7.14 2.093c8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602a9.47 9.47 0 0 0 2.323-2.41z"/></svg>
                     X/Twitter
                   </button>
-                  <button onClick={() => copyToClipboard(`${applyLink}?source=linkedin`)} className="flex items-center justify-center gap-1 bg-[#0A66C2]/10 text-[#0A66C2] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#0A66C2]/20 transition-colors">
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                  <button onClick={() => copyToClipboard(`${applyLink}?source=linkedin`)} className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-[#0A66C2]/10 to-[#0A66C2]/5 border border-[#0A66C2]/30 text-[#0A66C2] px-3 py-3 rounded-xl font-bold text-xs hover:from-[#0A66C2]/20 hover:to-[#0A66C2]/10 transition-all shadow-[0_4px_10px_-2px_rgba(10,102,194,0.15)] hover:shadow-[0_6px_16px_-2px_rgba(10,102,194,0.25)] hover:-translate-y-0.5 active:translate-y-0">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
                     LinkedIn
                   </button>
-                  <button onClick={() => copyToClipboard(`${applyLink}?source=telegram`)} className="flex items-center justify-center gap-1 bg-[#0088cc]/10 text-[#0088cc] px-3 py-2 rounded-xl font-bold text-xs hover:bg-[#0088cc]/20 transition-colors">
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                  <button onClick={() => copyToClipboard(`${applyLink}?source=telegram`)} className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-[#0088cc]/10 to-[#0088cc]/5 border border-[#0088cc]/30 text-[#0088cc] px-3 py-3 rounded-xl font-bold text-xs hover:from-[#0088cc]/20 hover:to-[#0088cc]/10 transition-all shadow-[0_4px_10px_-2px_rgba(0,136,204,0.15)] hover:shadow-[0_6px_16px_-2px_rgba(0,136,204,0.25)] hover:-translate-y-0.5 active:translate-y-0">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
                     Telegram
                   </button>
-                  <button onClick={() => copyToClipboard(`${applyLink}?source=tiktok`)} className="flex items-center justify-center gap-1 bg-black/5 text-black dark:bg-white/10 dark:text-white px-3 py-2 rounded-xl font-bold text-xs hover:bg-black/10 dark:hover:bg-white/20 transition-colors">
-                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.12-3.44-3.17-3.64-5.46-.23-2.42.52-4.88 2.11-6.57 1.59-1.71 3.94-2.57 6.27-2.31 0 1.34-.02 2.67.01 4.01-.81-.07-1.64.04-2.38.38-.85.39-1.54 1.09-1.87 1.96-.34.92-.3 1.96.16 2.84.45.86 1.25 1.48 2.18 1.7.94.22 1.95.05 2.76-.45.82-.5 1.38-1.28 1.57-2.22.19-.93.12-1.9-.13-2.79-.01-5.06-.02-10.12.01-15.18h.27z"/></svg>
+                  <button onClick={() => copyToClipboard(`${applyLink}?source=tiktok`)} className="flex items-center justify-center gap-1.5 bg-gradient-to-b from-black/5 to-black/5 dark:from-white/10 dark:to-white/5 border border-black/10 dark:border-white/20 text-black dark:text-white px-3 py-3 rounded-xl font-bold text-xs hover:from-black/10 dark:hover:from-white/20 transition-all shadow-[0_4px_10px_-2px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_16px_-2px_rgba(0,0,0,0.15)] hover:-translate-y-0.5 active:translate-y-0">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.12-3.44-3.17-3.64-5.46-.23-2.42.52-4.88 2.11-6.57 1.59-1.71 3.94-2.57 6.27-2.31 0 1.34-.02 2.67.01 4.01-.81-.07-1.64.04-2.38.38-.85.39-1.54 1.09-1.87 1.96-.34.92-.3 1.96.16 2.84.45.86 1.25 1.48 2.18 1.7.94.22 1.95.05 2.76-.45.82-.5 1.38-1.28 1.57-2.22.19-.93.12-1.9-.13-2.79-.01-5.06-.02-10.12.01-15.18h.27z"/></svg>
                     TikTok
                   </button>
                   <button 
@@ -908,7 +997,7 @@ export const ManageJob = ({
                       alert('الرجاء إدخال اسم المصدر أولاً');
                     }
                   }}
-                  className={`w-full flex items-center justify-center gap-2 p-3 rounded-xl font-bold text-sm transition-colors shadow-lg ${customLinkSource.trim() ? 'bg-primary text-white hover:bg-primary/90 shadow-primary/20' : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed'}`}
+                  className={`w-full flex items-center justify-center gap-2 p-3 rounded-xl font-bold text-sm transition-all ${customLinkSource.trim() ? 'bg-gradient-to-b from-primary to-primary/90 text-white hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.3)] shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15),inset_0_2px_0_rgba(255,255,255,0.2)] hover:-translate-y-0.5 active:translate-y-0' : 'bg-slate-200 dark:bg-slate-700 text-slate-400 cursor-not-allowed shadow-inner'}`}
                 >
                   <Copy size={16} /> نسخ الرابط المخصص
                 </button>
@@ -960,7 +1049,7 @@ export const ManageJob = ({
                           alert("حدث خطأ: " + e.message);
                         }
                       }}
-                      className="w-full p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors flex items-center justify-center gap-2"
+                      className="w-full p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-gradient-to-b from-emerald-50 to-white dark:from-emerald-900/20 dark:to-slate-800 text-emerald-700 dark:text-emerald-400 font-bold hover:from-emerald-100 transition-all flex items-center justify-center gap-2 shadow-[0_8px_20px_-4px_rgba(16,185,129,0.2),inset_0_2px_0_rgba(255,255,255,0.9)] hover:-translate-y-1 active:translate-y-0"
                     >
                       <Users size={18} /> فتح للكل
                     </button>
@@ -969,7 +1058,7 @@ export const ManageJob = ({
                         setUnlockMode("select_people");
                         fetchLockedApplicants();
                       }}
-                      className="w-full p-4 rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center justify-center gap-2"
+                      className="w-full p-4 rounded-xl border border-blue-200 dark:border-blue-800/50 bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/20 dark:to-slate-800 text-blue-700 dark:text-blue-400 font-bold hover:from-blue-100 transition-all flex items-center justify-center gap-2 shadow-[0_8px_20px_-4px_rgba(59,130,246,0.2),inset_0_2px_0_rgba(255,255,255,0.9)] hover:-translate-y-1 active:translate-y-0"
                     >
                       <Target size={18} /> لأشخاص معينين
                     </button>
@@ -981,7 +1070,7 @@ export const ManageJob = ({
                       placeholder="ابحث بالاسم أو الإيميل..."
                       value={searchLocked}
                       onChange={e => setSearchLocked(e.target.value)}
-                      className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-navy dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                      className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-navy dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none shadow-inner"
                     />
                     
                     {isLoadingLocked ? (
@@ -994,7 +1083,7 @@ export const ManageJob = ({
                           <div className="text-center p-4 text-slate-500">لا يوجد نتائج</div>
                         ) : (
                           lockedApplicants.filter(a => (a.full_name || "").toLowerCase().includes(searchLocked.toLowerCase()) || (a.email || "").toLowerCase().includes(searchLocked.toLowerCase())).map(applicant => (
-                            <label key={applicant.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition-colors">
+                            <label key={applicant.id} className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 dark:border-slate-700 bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-800/80 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.05),inset_0_2px_0_rgba(255,255,255,0.8)] dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.05)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.12),inset_0_2px_0_rgba(255,255,255,0.9)] dark:hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.1)] cursor-pointer transition-all hover:-translate-y-1">
                               <input
                                 type="checkbox"
                                 checked={selectedLockedIds.includes(applicant.id)}
@@ -1002,7 +1091,7 @@ export const ManageJob = ({
                                   if (e.target.checked) setSelectedLockedIds(prev => [...prev, applicant.id]);
                                   else setSelectedLockedIds(prev => prev.filter(id => id !== applicant.id));
                                 }}
-                                className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary"
+                                className="w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary shadow-inner"
                               />
                               <div className="flex-1">
                                 <p className="font-bold text-sm text-navy dark:text-white">{applicant.full_name || "متقدم"}</p>
@@ -1032,13 +1121,13 @@ export const ManageJob = ({
                       }
                     }}
                     disabled={selectedLockedIds.length === 0}
-                    className="flex-1 py-3 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    className="flex-1 py-3 bg-gradient-to-b from-primary to-primary/90 text-white font-bold rounded-xl shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15),inset_0_2px_0_rgba(255,255,255,0.2)] hover:-translate-y-0.5 hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.3)] active:translate-y-0 transition-all disabled:opacity-50 disabled:pointer-events-none disabled:shadow-none"
                   >
                     تأكيد الفتح ({selectedLockedIds.length})
                   </button>
                   <button
                     onClick={() => setUnlockMode("initial")}
-                    className="px-6 py-3 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                    className="px-6 py-3 bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-700 border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 font-bold rounded-xl shadow-[0_4px_12px_-2px_rgba(0,0,0,0.05),inset_0_2px_0_rgba(255,255,255,0.8)] dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.05)] hover:shadow-[0_6px_16px_-2px_rgba(0,0,0,0.1),inset_0_2px_0_rgba(255,255,255,0.9)] hover:-translate-y-0.5 active:translate-y-0 transition-all"
                   >
                     رجوع
                   </button>
