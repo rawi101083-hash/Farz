@@ -2028,11 +2028,7 @@ export default function App() {
               isLoaded: true,
             }));
 
-            // Welcome Slides Logic
-            // const hasSeenWelcome = localStorage.getItem(`welcome_slides_seen_${user.id}`);
-            // if (!hasSeenWelcome) {
-            setShowWelcomeSlides(true);
-            // }
+
 
             // Force Settings tab if profile is incomplete
             if (!isProfileComplete) {
@@ -2050,6 +2046,13 @@ export default function App() {
               entityType: user.user_metadata?.entity_type || prev.entityType,
               isLoaded: true
             }));
+            
+            // Welcome Slides Logic (ONLY for brand new accounts)
+            const hasSeenWelcome = localStorage.getItem(`welcome_slides_seen_${user.id}`);
+            if (!hasSeenWelcome) {
+              setShowWelcomeSlides(true);
+            }
+            
             setDashboardTab("الحساب");
           }
         } catch (err: any) {

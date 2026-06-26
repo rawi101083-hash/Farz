@@ -1646,7 +1646,7 @@ export const Dashboard = ({
                                             setLightboxPhoto(row.photoUrl);
                                           }
                                         }}
-                                        className={`w-10 h-10 rounded-[14px] bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 shadow-inner-3d transition-colors overflow-hidden ${row.photoUrl && !isFomoLocked ? "cursor-pointer hover:opacity-80" : "group-hover:text-primary dark:group-hover:text-primary group-hover:bg-primary/10 dark:group-hover:bg-primary/20"}`}
+                                        className={`w-10 h-10 rounded-[14px] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-600 dark:border-b-slate-900 shadow-sm transition-colors overflow-hidden ${row.photoUrl && !isFomoLocked ? "cursor-pointer hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-[2px]" : "group-hover:text-primary dark:group-hover:text-primary"}`}
                                       >
                                         {row.photoUrl && !isFomoLocked ? (
                                           <img src={row.photoUrl} alt={row.name} className="w-full h-full object-cover" />
@@ -1679,7 +1679,7 @@ export const Dashboard = ({
                                   <td className="px-2 py-3">
                                     <div className="flex justify-start">
                                       <span
-                                        className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white px-2 py-1 rounded-md text-[11px] font-bold inline-flex items-center justify-center whitespace-nowrap w-fit max-w-[140px] truncate"
+                                        className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-700 dark:border-b-slate-950 text-slate-700 dark:text-white px-3 py-1.5 rounded-xl text-[11px] font-black inline-flex items-center justify-center whitespace-nowrap w-fit max-w-[140px] truncate shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
                                         title={row.job}
                                       >
                                         {row.job}
@@ -1688,30 +1688,36 @@ export const Dashboard = ({
                                   </td>
                                   <td className="px-2 py-3">
                                     {row.rejection_reason && row.rejection_reason.includes("مرفوض آلياً") ? (
-                                      <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/30 px-2.5 py-1 rounded-md border border-rose-100 dark:border-rose-800/50 whitespace-nowrap">
+                                      <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 bg-gradient-to-b from-rose-50 to-rose-100 dark:from-rose-900/30 dark:to-rose-900/50 px-3 py-1.5 rounded-xl border-[2px] border-rose-100 border-b-[4px] border-b-rose-200 dark:border-rose-800 dark:border-b-rose-950 whitespace-nowrap inline-flex shadow-sm">
                                         مستبعد آلياً
                                       </span>
                                     ) : isEvaluating && !isFomoLocked ? (
-                                      <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 whitespace-nowrap flex items-center justify-center gap-1.5 w-fit shadow-sm">
+                                      <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 px-3 py-1.5 rounded-xl border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-700 dark:border-b-slate-950 whitespace-nowrap inline-flex items-center justify-center gap-1.5 w-fit shadow-sm">
                                         <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
                                         قيد الفرز
                                       </span>
                                     ) : (
                                       <div className="flex items-center justify-start gap-1.5 whitespace-nowrap">
-                                        <div className={`w-16 h-2.5 rounded-full overflow-hidden ${isFomoLocked ? "bg-slate-100 dark:bg-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] border border-slate-200/50 dark:border-slate-700/50" : row.rating >= 80 ? "bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d" : row.rating >= 50 ? "bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d" : "bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d"}`}>
+                                        <div className={`w-16 h-2.5 rounded-full overflow-hidden ${isFomoLocked ? "bg-slate-100 dark:bg-slate-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] border border-slate-200/50 dark:border-slate-700/50" : row.rating >= 80 ? "bg-teal-50 dark:bg-teal-900/30 shadow-inner-3d border border-teal-100/50 dark:border-teal-800/50" : row.rating >= 50 ? "bg-amber-50 dark:bg-amber-900/30 shadow-inner-3d border border-amber-100/50 dark:border-amber-800/50" : "bg-rose-50 dark:bg-rose-900/30 shadow-inner-3d border border-rose-100/50 dark:border-rose-800/50"}`}>
                                           <div
                                             className={`h-full rounded-full transition-all duration-500 ${isFomoLocked ? "bg-slate-300 dark:bg-slate-600" : row.rating >= 80 ? "bg-teal-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" : row.rating >= 50 ? "bg-amber-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]" : "bg-rose-500 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)]"}`}
                                             style={{ width: isFomoLocked ? '100%' : `${row.rating}%` }}
                                           />
                                         </div>
-                                        <span className={`text-sm font-bold ${isFomoLocked ? "text-slate-400 filter blur-[4px] select-none" : row.rating >= 80 ? "text-teal-600 dark:text-teal-400" : row.rating >= 50 ? "text-amber-600 dark:text-amber-500" : "text-rose-600 dark:text-rose-500"}`}>
+                                        <span className={`text-[11px] px-2 py-0.5 rounded-md font-black shadow-sm border-[1px] border-b-[2px] ${isFomoLocked ? "text-slate-400 filter blur-[4px] select-none bg-slate-100 border-slate-200" : row.rating >= 80 ? "bg-gradient-to-b from-teal-50 to-teal-100 dark:from-teal-900/30 dark:to-teal-900/50 text-teal-700 dark:text-teal-300 border-teal-200 dark:border-teal-800" : row.rating >= 50 ? "bg-gradient-to-b from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-900/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800" : "bg-gradient-to-b from-rose-50 to-rose-100 dark:from-rose-900/30 dark:to-rose-900/50 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"}`}>
                                           {isFomoLocked ? "00%" : `${row.rating}%`}
                                         </span>
                                       </div>
                                     )}
                                   </td>
-                                  <td className="px-2 py-3 text-xs text-slate-600 dark:text-slate-300 font-bold whitespace-nowrap text-right">
-                                    {isFomoLocked ? <span className="filter blur-[4px] select-none">مقفل</span> : row.status}
+                                  <td className="px-2 py-3 text-right">
+                                    {isFomoLocked ? (
+                                      <span className="filter blur-[4px] select-none text-xs font-bold text-slate-400">مقفل</span>
+                                    ) : (
+                                      <span className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-700 dark:border-b-slate-950 text-slate-700 dark:text-white px-3 py-1.5 rounded-xl text-[11px] font-black inline-flex items-center justify-center whitespace-nowrap shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]">
+                                        {row.status}
+                                      </span>
+                                    )}
                                   </td>
                                   <td className="px-2 py-3">
                                     <div className={`flex items-center justify-center gap-1 ${isFomoLocked ? 'filter blur-[4px] select-none pointer-events-none' : ''}`}>
@@ -1725,7 +1731,7 @@ export const Dashboard = ({
                                             markInterviewSent(row.id);
                                           }
                                         }}
-                                        className="w-8 h-8 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300 rounded-lg flex items-center justify-center hover:bg-teal-100 dark:hover:bg-teal-900/50 hover:text-teal-700 transition-all shadow-sm"
+                                        className="w-8 h-8 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300 rounded-lg flex items-center justify-center hover:bg-teal-100 dark:hover:bg-teal-900/50 hover:text-teal-700 transition-all border-b-[3px] border-teal-200 dark:border-teal-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
                                         title="واتساب"
                                       >
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
@@ -1740,7 +1746,7 @@ export const Dashboard = ({
                                             markInterviewSent(row.id);
                                           }
                                         }}
-                                        className="w-8 h-8 bg-navy/5 dark:bg-slate-700/50 text-navy dark:text-slate-200 rounded-lg flex items-center justify-center hover:bg-navy dark:hover:bg-slate-600 hover:text-white transition-all shadow-sm"
+                                        className="w-8 h-8 bg-navy/5 dark:bg-slate-700/50 text-navy dark:text-slate-200 rounded-lg flex items-center justify-center hover:bg-navy dark:hover:bg-slate-600 hover:text-white transition-all border-b-[3px] border-slate-300 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
                                         title="إيميل"
                                       >
                                         <Mail size={15} />{" "}
@@ -1748,7 +1754,7 @@ export const Dashboard = ({
                                       <a
                                         href={`tel:${row.phone}`}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-lg flex items-center justify-center hover:bg-blue-500 dark:hover:bg-blue-500/60 dark:hover:text-blue-100 hover:text-white transition-all shadow-sm"
+                                        className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-lg flex items-center justify-center hover:bg-blue-500 dark:hover:bg-blue-500/60 dark:hover:text-blue-100 hover:text-white transition-all border-b-[3px] border-blue-200 dark:border-blue-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
                                         title="اتصال"
                                       >
                                         <Phone size={15} />{" "}
@@ -1794,7 +1800,7 @@ export const Dashboard = ({
                                             e.stopPropagation();
                                             handleDecision(row.id, "pending");
                                           }}
-                                          className="flex items-center justify-center gap-1 border border-primary text-primary hover:bg-primary hover:text-white dark:border-primary/50 dark:hover:bg-primary px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                          className="flex items-center justify-center gap-1 border border-primary border-b-[3px] border-b-primary/60 text-primary hover:bg-primary hover:text-white dark:border-primary/50 dark:hover:bg-primary px-3 py-2 rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-[1px] shadow-sm"
                                           title="استعادة"
                                         >
                                           <RotateCcw size={14} /> استعادة
@@ -1808,7 +1814,7 @@ export const Dashboard = ({
                                               setUndoTargetId(row.id);
                                               setShowUndoConfirmModal(true);
                                             }}
-                                            className="flex items-center justify-center gap-1 border-2 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-400 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-md"
+                                            className="flex items-center justify-center gap-1 border-2 border-slate-300 dark:border-slate-600 border-b-[4px] bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 hover:border-slate-400 dark:hover:bg-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-[2px] shadow-md"
                                             title="تراجع"
                                           >
                                             <RotateCcw size={14} /> تراجع
@@ -1818,21 +1824,21 @@ export const Dashboard = ({
                                         <>
                                           <button
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "accepted"); }}
-                                            className="flex items-center justify-center gap-1 bg-teal-50 text-teal-600 hover:bg-teal-100 hover:text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 dark:hover:text-teal-300 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                            className="flex items-center justify-center gap-1 bg-teal-50 text-teal-600 hover:bg-teal-100 hover:text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 dark:hover:text-teal-300 border-b-[3px] border-teal-200 dark:border-teal-800 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
                                             title="قبول"
                                           >
                                             <CheckCircle size={14} /> قبول
                                           </button>
                                           <button
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "interview"); }}
-                                            className="flex items-center justify-center gap-1 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 dark:hover:bg-amber-900/50 dark:hover:text-amber-400 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                            className="flex items-center justify-center gap-1 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 dark:hover:bg-amber-900/50 dark:hover:text-amber-400 border-b-[3px] border-amber-200 dark:border-amber-800 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
                                             title="مقابلة"
                                           >
                                             مقابلة
                                           </button>
                                           <button
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "rejected"); }}
-                                            className="flex items-center justify-center gap-1 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-500 dark:hover:bg-rose-900/50 dark:hover:text-rose-400 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm"
+                                            className="flex items-center justify-center gap-1 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-500 dark:hover:bg-rose-900/50 dark:hover:text-rose-400 border-b-[3px] border-rose-200 dark:border-rose-800 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
                                             title="رفض"
                                           >
                                             <X size={14} /> رفض
@@ -1843,7 +1849,7 @@ export const Dashboard = ({
                                       <button
                                         onClick={(e) => { e.stopPropagation(); onViewDetails(row); }}
                                         disabled={isFomoLocked || isEvaluating}
-                                        className={`flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isFomoLocked || isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-50 dark:hover:bg-slate-700'}`}
+                                        className={`flex items-center justify-center gap-1 bg-white text-navy border border-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all border-b-[3px] border-slate-300 dark:border-slate-600 shadow-sm ${isFomoLocked || isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                                         title="عرض الملف"
                                       >
                                         <FileText size={14} /> عرض الملف{" "}
@@ -2581,7 +2587,7 @@ export const Dashboard = ({
               >
                 <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-b from-primary/10 to-primary/20 text-primary flex items-center justify-center border-b-[3px] border-primary/20 shadow-sm">
                       <Headset size={22} />
                     </div>
                     <div>
@@ -2589,9 +2595,43 @@ export const Dashboard = ({
                       <p className="text-xs text-slate-500 dark:text-slate-400">نحن هنا لمساعدتك دائماً</p>
                     </div>
                   </div>
-                  <button onClick={() => setIsSupportModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
-                    <X size={20} />
-                  </button>
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-teal-400 to-teal-700 flex items-center justify-center relative shadow-[0_8px_16px_rgba(13,148,136,0.3),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-4px_8px_rgba(0,0,0,0.3)] transition-transform shrink-0">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent rounded-[12px]" />
+                      <svg
+                        width="22"
+                        height="22"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="relative z-10 drop-shadow-sm ml-0.5 mt-0.5"
+                      >
+                        <path
+                          d="M10 6H6V18H10"
+                          stroke="#064E3B"
+                          strokeWidth="2.5"
+                          strokeLinecap="square"
+                          strokeLinejoin="miter"
+                        />
+                        <circle cx="14" cy="12" r="3" fill="url(#copperGrdSupport)" />
+                        <defs>
+                          <radialGradient
+                            id="copperGrdSupport"
+                            cx="0"
+                            cy="0"
+                            r="1"
+                            gradientUnits="userSpaceOnUse"
+                            gradientTransform="translate(14 12) rotate(90) scale(3)"
+                          >
+                            <stop stopColor="#FCD34D" />
+                            <stop offset="1" stopColor="#92400E" />
+                          </radialGradient>
+                        </defs>
+                      </svg>
+                    </div>
+                    <button onClick={() => setIsSupportModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-all hover:scale-110 active:scale-95">
+                      <X size={20} />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="p-6">
@@ -2653,7 +2693,7 @@ export const Dashboard = ({
                       <button
                         type="submit"
                         disabled={supportStatus === "sending" || !supportMessage.trim()}
-                        className="w-full bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:hover:bg-primary text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-sm"
+                        className={`w-full font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_4px_10px_-2px_rgba(13,148,136,0.5)] border-b-[4px] hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mt-[4px] ${(supportStatus === "sending" || !supportMessage.trim()) ? 'bg-slate-200 text-slate-400 border-slate-300 dark:bg-slate-700 dark:border-slate-800 dark:text-slate-500 cursor-not-allowed active:translate-y-0 active:border-b-[4px] active:mt-0 hover:translate-y-0 shadow-none' : 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] hover:to-[#0a6f66] border-[#075952] text-white'}`}
                       >
                         {supportStatus === "sending" ? (
                           <>
@@ -2731,8 +2771,8 @@ export const Dashboard = ({
                 exit={{ scale: 0.95, opacity: 0, y: 20 }}
                 className="bg-white dark:bg-slate-800 w-full max-w-md rounded-[32px] shadow-2xl relative z-10 overflow-hidden border border-slate-100 dark:border-slate-700 p-8 text-center"
               >
-                <div className="w-16 h-16 bg-red-50 dark:bg-red-900/30 rounded-full flex items-center justify-center mb-6 mx-auto">
-                  <RotateCcw className="text-red-500" size={32} />
+                <div className="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center mb-6 mx-auto shadow-inner">
+                  <RotateCcw className="text-primary" size={32} />
                 </div>
                 <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">
                   تأكيد التراجع
@@ -2758,7 +2798,7 @@ export const Dashboard = ({
                       handleDecision(undoTargetId, "pending");
                       setUndoTargetId(null);
                     }}
-                    className="flex-1 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white py-3.5 rounded-xl font-bold transition-all"
+                    className="flex-1 bg-gradient-to-b from-[#0D9488] to-[#0b7c72] hover:to-[#0a6f66] text-white py-3.5 rounded-xl font-bold transition-all shadow-[0_4px_10px_-2px_rgba(13,148,136,0.5)] border-b-[3px] border-[#075952] hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mt-[3px]"
                   >
                     نعم، تراجع
                   </button>
@@ -2767,7 +2807,7 @@ export const Dashboard = ({
                       setShowUndoConfirmModal(false);
                       setUndoTargetId(null);
                     }}
-                    className="flex-1 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 py-3.5 rounded-xl font-bold transition-all"
+                    className="flex-1 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600 py-3.5 rounded-xl font-bold transition-all border-b-[3px] border-slate-300 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mt-[3px]"
                   >
                     إلغاء
                   </button>

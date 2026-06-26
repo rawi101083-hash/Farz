@@ -2345,7 +2345,7 @@ export const SettingsPage = ({
                   <div>
                     <h4 className="font-bold text-navy dark:text-white mb-3">الصورة الشخصية</h4>
                     <div className="flex items-center gap-2">
-                      <label className="cursor-pointer px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition-colors border border-slate-200 dark:border-slate-700">
+                      <label className="cursor-pointer px-4 py-2 bg-gradient-to-b from-slate-100 to-slate-200 hover:to-slate-300 text-slate-700 dark:from-slate-700 dark:to-slate-800 dark:hover:to-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-600 border-b-[3px] border-b-slate-300 dark:border-b-slate-900 shadow-sm hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-[1px]">
                         تغيير
                         <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                           if (e.target.files && e.target.files[0]) {
@@ -2360,7 +2360,7 @@ export const SettingsPage = ({
                       </label>
                       <button
                         onClick={() => setUserProfile({ ...userProfile, companyLogo: null })}
-                        className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-500/10 dark:hover:bg-red-500/20 dark:text-red-400 text-xs font-bold rounded-xl transition-colors border border-red-100 dark:border-red-500/20"
+                        className="px-4 py-2 bg-gradient-to-b from-red-50 to-red-100 hover:to-red-200 text-red-600 dark:from-red-900/20 dark:to-red-900/40 dark:text-red-400 text-xs font-bold rounded-xl transition-all border border-red-200 dark:border-red-800/50 border-b-[3px] border-b-red-300 dark:border-b-red-900/80 shadow-sm hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-[1px]"
                       >
                         إزالة
                       </button>
@@ -2384,7 +2384,7 @@ export const SettingsPage = ({
                 <button
                   onClick={handleSaveProfile}
                   disabled={isSaving}
-                  className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 mt-4 ${saveSuccess ? 'bg-primary text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30 disabled:opacity-70 disabled:cursor-not-allowed'}`}
+                  className={`px-10 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 mt-4 shadow-sm border-b-[4px] hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mt-[20px] mb-4 ${saveSuccess ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 border-emerald-600 text-white' : 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] hover:to-[#0a6f66] border-[#075952] text-white disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:border-b-[4px] disabled:mt-4 disabled:active:mt-4'}`}
                 >
                   {isSaving ? (
                     <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
@@ -2528,7 +2528,7 @@ export const SettingsPage = ({
                 <button
                   onClick={handleSaveProfile}
                   disabled={Object.keys(errors).length > 0 || isSaving}
-                  className={`px-10 py-4 rounded-2xl font-bold transition-all active:scale-95 flex items-center gap-2 ${Object.keys(errors).length > 0 ? 'bg-slate-200 text-slate-400 cursor-not-allowed dark:bg-slate-700 dark:text-slate-500' : saveSuccess ? 'bg-primary text-white' : 'bg-primary text-white hover:shadow-lg hover:shadow-primary/30'}`}
+                  className={`px-10 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-[0_4px_10px_-2px_rgba(13,148,136,0.5)] border-b-[4px] hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mt-[4px] ${Object.keys(errors).length > 0 ? 'bg-slate-200 text-slate-400 border-slate-300 dark:bg-slate-700 dark:border-slate-800 dark:text-slate-500 cursor-not-allowed active:translate-y-0 active:border-b-[4px] active:mt-0 hover:translate-y-0 shadow-none' : saveSuccess ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 border-emerald-600 text-white shadow-emerald-500/30' : 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] hover:to-[#0a6f66] border-[#075952] text-white'}`}
                 >
                   {isSaving ? (
                     <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
@@ -2653,35 +2653,35 @@ export const SettingsPage = ({
                 <div className="flex flex-col items-center gap-5 mb-6">
 
                   {/* Toggle Wrapper - Very Rectangular */}
-                  <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg flex gap-1 shadow-inner border border-transparent dark:border-slate-700">
+                  <div className="bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl flex gap-1 shadow-inner border border-slate-200 dark:border-slate-700">
                     <button
                       onClick={() => setBillingCycle('subscription')}
-                      className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'subscription' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:text-slate-400 dark:hover:text-white'}`}
+                      className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-b-[3px] ${billingCycle === 'subscription' ? 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-600 border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
                     >
                       اشتراكات مستمرة
                     </button>
                     <button
                       onClick={() => setBillingCycle('one-time')}
-                      className={`px-6 py-2.5 rounded-md text-sm font-bold transition-all ${billingCycle === 'one-time' ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:text-slate-400 dark:hover:text-white'}`}
+                      className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-b-[3px] ${billingCycle === 'one-time' ? 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-600 border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
                     >
                       توظيف لمرة واحدة
                     </button>
                   </div>
 
                   {billingCycle === 'subscription' && (
-                    <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-full flex gap-1 shadow-inner border border-slate-200/50 dark:border-slate-700 mt-2">
+                    <div className="bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl flex gap-1 shadow-inner border border-slate-200 dark:border-slate-700 mt-2">
                       <button
                         onClick={() => setIsYearly(false)}
-                        className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all ${!isYearly ? 'bg-white text-navy shadow-sm' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
+                        className={`px-5 py-2 rounded-lg text-xs font-bold transition-all border-b-[3px] ${!isYearly ? 'bg-gradient-to-b from-white to-slate-50 text-slate-800 dark:from-slate-700 dark:to-slate-600 dark:text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-500 border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
                       >
                         دفع شهري
                       </button>
                       <button
                         onClick={() => setIsYearly(true)}
-                        className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 ${isYearly ? 'bg-[#0D9488] text-white shadow-md' : 'text-slate-500 hover:text-navy dark:hover:text-white'}`}
+                        className={`px-5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border-b-[3px] ${isYearly ? 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-500 border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
                       >
                         دفع سنوي
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isYearly ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600'}`}>16%</span>
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded-md shadow-sm border-b-[2px] ${isYearly ? 'bg-white/20 text-white border-transparent' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>16%</span>
                       </button>
                     </div>
                   )}

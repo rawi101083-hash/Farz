@@ -210,7 +210,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
     else if (plan === 'enterprise') interviewsLimit = 1500;
   }
   const interviewsUsed = userProfile?.used_interviews || 0;
-  const interviewsRemaining = 0; // TEMPORARY Math.max(0, interviewsLimit - interviewsUsed);
+  const interviewsRemaining = Math.max(0, interviewsLimit - interviewsUsed);
   const overbooked = pendingInterviewsCount >= interviewsRemaining && interviewsRemaining > 0;
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);

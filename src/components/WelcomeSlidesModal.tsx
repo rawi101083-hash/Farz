@@ -12,15 +12,15 @@ const slides = [
   },
   {
     id: 2,
-    useIcon: true,
-    icon: <Bot className="w-32 h-32 text-teal-600 drop-shadow-xl" />,
+    useImage: true,
+    imageSrc: '/assets/ai_interview_saudi.png',
     title: 'مقابلات بالذكاء الاصطناعي',
     description: 'وفر وقتك ودع الذكاء الاصطناعي يجري المقابلات الأولية مع المرشحين بدقة واحترافية عالية، ويقدم لك تقييماً شاملاً لكل متقدم.'
   },
   {
     id: 3,
-    useIcon: true,
-    icon: <FileSearch className="w-32 h-32 text-teal-600 drop-shadow-xl" />,
+    useImage: true,
+    imageSrc: '/assets/cv_screening_saudi_v2.png',
     title: 'فرز تلقائي للسير الذاتية',
     description: 'يقوم النظام بتحليل آلاف السير الذاتية في ثوانٍ لاستخراج الكفاءات المطابقة لمتطلباتك وتصفية الغير مؤهلين تلقائياً.'
   }
@@ -61,6 +61,10 @@ export const WelcomeSlidesModal = ({ isOpen, onClose }: { isOpen: boolean; onClo
               {slides[currentStep].useLogo ? (
                 <div className="scale-[4] origin-center drop-shadow-2xl text-primary my-12">
                   <LogoIcon />
+                </div>
+              ) : slides[currentStep].useImage ? (
+                <div className="my-6 flex items-center justify-center">
+                   <img src={slides[currentStep].imageSrc} alt="" className="w-44 h-44 object-cover rounded-3xl shadow-2xl border-[4px] border-white/50 dark:border-slate-700/50" />
                 </div>
               ) : slides[currentStep].useIcon ? (
                 <div className="my-10 flex items-center justify-center">

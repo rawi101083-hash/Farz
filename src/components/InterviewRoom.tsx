@@ -195,7 +195,24 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
   };
 
   if (isChecking) {
-    return null;
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+          <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] rounded-full bg-primary/5 blur-3xl" />
+          <div className="absolute -bottom-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-blue-500/5 blur-3xl" />
+        </div>
+        <div className="flex flex-col items-center z-10">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+            className="w-24 h-24 mb-6"
+          >
+            <LogoIcon />
+          </motion.div>
+          <h2 className="text-xl font-bold text-navy dark:text-white mb-2 tracking-tight">جاري تهيئة المقابلة...</h2>
+        </div>
+      </div>
+    );
   }
 
   return (
