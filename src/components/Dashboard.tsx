@@ -1099,16 +1099,16 @@ export const Dashboard = ({
     const csvContent = [headers.join(",")];
     visibleApplicants.forEach((app) => {
       const row = [
-        app.name,
-        app.job,
-        app.rating + "%",
-        app.status,
-        app.phone,
-        app.email,
-        app.skills.join(" - "),
-        `"${app.aiSummary}"`,
-        `"${app.voiceEval}"`,
-        `"${app.customAnswers[0]?.answer || ""}"`,
+        app.name || "",
+        app.job || "",
+        (app.rating || 0) + "%",
+        app.status || "",
+        app.phone || "",
+        app.email || "",
+        (app.skills || []).join(" - "),
+        `"${(app.aiSummary || "").replace(/"/g, '""')}"`,
+        `"${(app.voiceEval || "").replace(/"/g, '""')}"`,
+        `"${(app.customAnswers && app.customAnswers[0]?.answer) ? app.customAnswers[0].answer.replace(/"/g, '""') : ""}"`,
       ];
       csvContent.push(row.join(","));
     });
@@ -1520,11 +1520,8 @@ export const Dashboard = ({
                               <Search size={32} className="text-slate-300 dark:text-slate-500 drop-shadow-md" />
                             </div>
                             <h3 className="text-xl font-bold text-navy dark:text-white mb-2">
-                              {decisionFilter === "accepted" ? "لا يوجد مرشحين مقبولين حالياً" : decisionFilter === "rejected" ? "لا يوجد مرشحين مرفوضين حالياً" : decisionFilter === "interview" ? "لا يوجد مرشحين في مرحلة المقابلة حالياً" : decisionFilter === "filtered" ? "لا يوجد مرشحين في قائمة التصفية" : decisionFilter === "locked_fomo" ? "لا توجد سير ذاتية مقفلة حالياً" : "لا يوجد مرشحين قيد المراجعة في الوقت الحالي"}
+                              {showFavoritesOnly ? "لا يوجد مرشحين في عرض المفضلين" : decisionFilter === "accepted" ? "لا يوجد مرشحين مقبولين حالياً" : decisionFilter === "rejected" ? "لا يوجد مرشحين مرفوضين حالياً" : decisionFilter === "interview" ? "لا يوجد مرشحين في مرحلة المقابلة حالياً" : decisionFilter === "filtered" ? "لا يوجد مرشحين في قائمة التصفية" : decisionFilter === "locked_fomo" ? "لا توجد سير ذاتية مقفلة حالياً" : "لا يوجد مرشحين قيد المراجعة في الوقت الحالي"}
                             </h3>
-                            <p className="text-slate-500 dark:text-slate-400 font-medium">
-                              لم يتم العثور على أي مرشح مطابق لخيارات التصفية الحالية.
-                            </p>
                           </div>
                         </div>
                       </div>

@@ -1814,9 +1814,11 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
                 </Bar>
               </BarChart>
             </ResponsiveContainer>{" "}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-8 pl-[45%]">
-              <BarChartIcon size={32} className="text-slate-300 dark:text-slate-600/50" strokeWidth={1.5} />
-            </div>
+            {hiringFunnelData.every(d => d.value === 0) && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none mt-8 pl-[45%]">
+                <BarChartIcon size={32} className="text-slate-300 dark:text-slate-600/50" strokeWidth={1.5} />
+              </div>
+            )}
           </div>{" "}
         </div>{" "}
       </div>{" "}
@@ -2541,14 +2543,14 @@ export const SettingsPage = ({
             {activeTab === "المحفظة" && (
               <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex justify-end mb-4">
-                  <button onClick={() => alert('بوابة ميسور قيد التجهيز للربط الحقيقي')} className="bg-primary hover:bg-primary/90 text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center gap-2">
+                  <button onClick={() => alert('بوابة ميسور قيد التجهيز للربط الحقيقي')} className="bg-gradient-to-b from-[#0D9488] to-[#0b7c72] hover:to-[#0a6f66] border-b-[4px] border-[#075952] text-white px-8 py-3.5 rounded-2xl font-bold shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] transition-all active:scale-95 flex items-center gap-2 hover:-translate-y-1 hover:shadow-[0_15px_30px_-10px_rgba(13,148,136,0.6)]">
                     <Plus size={20} /> شحن الرصيد
                   </button>
                 </div>
 
                 <div className="flex flex-col items-center max-w-md mx-auto w-full">
                   {/* Wallet Card - Adaptive Light/Dark */}
-                  <div className="bg-white dark:bg-slate-800 rounded-[32px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 relative overflow-hidden h-[240px] w-full flex flex-col justify-between transition-all duration-500 group mb-8">
+                  <div className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-[32px] p-8 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.08)] border-[3px] border-white/90 dark:border-slate-700/50 border-b-[6px] border-b-slate-200 dark:border-b-slate-900 relative overflow-hidden h-[240px] w-full flex flex-col justify-between transition-all duration-500 group mb-8 hover:-translate-y-1 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.12)]">
                     <div className="absolute -left-10 -top-10 w-40 h-40 bg-[#0D9488]/5 rounded-full blur-3xl pointer-events-none group-hover:bg-[#0D9488]/10 transition-colors duration-500"></div>
                     <div className="absolute right-6 top-8 opacity-[0.03] dark:opacity-5 text-navy dark:text-white"><CreditCard size={120} /></div>
 
@@ -2579,7 +2581,7 @@ export const SettingsPage = ({
                   {/* Toggle Button for History */}
                   <button
                     onClick={() => setShowWalletHistory(!showWalletHistory)}
-                    className="text-navy dark:text-white font-bold hover:text-[#0D9488] transition-colors flex items-center gap-2 mb-6"
+                    className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-[2px] border-slate-100 dark:border-slate-700 border-b-[4px] border-b-slate-200 dark:border-b-slate-900 text-navy dark:text-white font-bold hover:text-[#0D9488] hover:border-[#0D9488]/30 transition-all hover:-translate-y-1 active:scale-95 px-6 py-3 rounded-xl flex items-center gap-2 mb-6 shadow-sm"
                   >
                     {showWalletHistory ? <ChevronDown className="rotate-180 transition-transform" size={18} /> : <Clock size={18} />}
                     {showWalletHistory ? 'إخفاء سجل العمليات' : 'عرض سجل العمليات'}
@@ -2587,7 +2589,7 @@ export const SettingsPage = ({
 
                   {/* Transaction History - Elegant List */}
                   {showWalletHistory && (
-                    <div className="w-full bg-white dark:bg-slate-800 rounded-[32px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none border border-slate-100 dark:border-slate-700 flex flex-col animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="w-full bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 rounded-[32px] p-8 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.08)] border-[3px] border-white/90 dark:border-slate-700/50 border-b-[6px] border-b-slate-200 dark:border-b-slate-900 flex flex-col animate-in fade-in slide-in-from-top-4 duration-300">
                       <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-100 dark:border-slate-700/50">
                         <div>
                           <h4 className="font-bold text-navy dark:text-white text-xl flex items-center gap-2">
@@ -3016,7 +3018,7 @@ export const ActiveJobs = ({
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const isMockState = jobs.length === 0;
-  const targetStatus = subTab === "inactive" ? "مغلق" : subTab === "drafts" ? "مسودة" : "نشط";
+  const targetStatus = subTab === "inactive" ? "مغلق" : subTab === "paused" ? "مغلق مؤقتاً" : subTab === "drafts" ? "مسودة" : "نشط";
   const displayJobs = isMockState ? [
     { id: 'mock-1', title: 'مطور واجهات أمامية', department: 'تقنية المعلومات', status: targetStatus, applicants: 12, createdAt: new Date().toISOString(), type: 'دوام كامل' } as Job,
     { id: 'mock-2', title: 'أخصائي تسويق', department: 'التسويق', status: targetStatus, applicants: 8, createdAt: new Date().toISOString(), type: 'دوام كامل' } as Job,
