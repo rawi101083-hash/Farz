@@ -42,9 +42,13 @@ class ErrorBoundary extends React.Component<any, any> {
 }
 import { supabase } from "./lib/supabaseClient";
 import { motion, AnimatePresence } from "motion/react";
-import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, ArrowUp, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target, Moon, Sun, Eye, EyeOff, Building2, User, Mic } from 'lucide-react';
+import { Users, Database, CheckCircle, AlertTriangle, Play, FileText, Clock, Sparkles, ShieldCheck, Zap, ArrowLeft, ArrowRight, ArrowUp, Briefcase, LogOut, Lock, Mail, CreditCard, Calendar, Phone, Copy, ExternalLink, MapPin, Share2, Save, Star, X, Plus, Info, GraduationCap, Target, Moon, Sun, Eye, EyeOff, Building2, User, Mic, BarChart2, BrainCircuit } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import skillsDictionaryRaw from "./skillsDictionary.json";
+import featureAiInterviewImg from './assets/feature_ai_interview.png';
+import featureDashboardImg from './assets/feature_dashboard.png';
+import featureJobsImg from './assets/feature_jobs.png';
+import featureTalentPoolImg from './assets/feature_talent_pool.png';
 ;
 const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPublishDraft }: { isOpen: boolean; onClose: () => void; userProfile: any; setUserProfile: any; onPublishDraft?: () => void; }) => {
   const [entityType, setEntityType] = useState<"company" | "freelance">(userProfile.entityType || "company");
@@ -1513,23 +1517,123 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-5xl aspect-video bg-black rounded-[24px] md:rounded-[40px] shadow-2xl overflow-hidden border border-white dark:border-slate-700/10 flex items-center justify-center"
+              className="relative w-full max-w-6xl max-h-[90vh] bg-slate-50 dark:bg-slate-900 rounded-[24px] md:rounded-[40px] shadow-2xl overflow-y-auto border border-slate-200 dark:border-slate-800"
             >
-              {" "}
               <button
                 onClick={() => setShowVideoModal(false)}
-                className="absolute top-4 right-4 md:top-6 md:right-6 w-12 h-12 bg-white dark:bg-slate-800/10 hover:bg-red-500 transition-colors rounded-full flex items-center justify-center text-white z-10 backdrop-blur-sm shadow-lg"
+                className="sticky top-4 right-4 md:top-6 md:right-6 float-left ml-4 mt-4 w-12 h-12 bg-white dark:bg-slate-800 hover:bg-red-500 transition-colors rounded-full flex items-center justify-center text-slate-800 dark:text-white hover:text-white z-50 shadow-lg border border-slate-200 dark:border-slate-700"
               >
-                {" "}
-                <X size={24} />{" "}
-              </button>{" "}
-              <div className="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-slate-400 p-8">
-                <div className="w-20 h-20 bg-slate-700 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                  <Play size={32} className="text-slate-500 ml-2" />
+                <X size={24} />
+              </button>
+
+              <div className="p-8 md:p-16 clear-both">
+                <div className="text-center mb-16">
+                  <h2 className="text-3xl md:text-5xl font-bold text-navy dark:text-white mb-6">كيف تعمل منصة فرز؟</h2>
+                  <p className="text-slate-500 dark:text-slate-400 text-lg max-w-2xl mx-auto">
+                    نظام ATS متكامل يقود رحلة توظيفك بالكامل؛ يجذب الكفاءات، يحلل السير الذاتية، ويجري المقابلات آلياً ليوفر لك أفضل المرشحين.
+                  </p>
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-2">شاهد كيف نعمل</h3>
-                <p className="text-slate-400 text-lg text-center max-w-sm">(مساحة مخصصة لعرض فيديو توضيحي قصير أو صورة متحركة GIF مدتها 10-12 ثانية)</p>
-              </div>{" "}
+
+                <div className="space-y-24">
+                  {/* Feature 1: AI Interview */}
+                  <div className="flex flex-col md:flex-row items-center gap-12">
+                    <div className="flex-1 space-y-6 text-right w-full">
+                      <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
+                         <Mic size={32} />
+                      </div>
+                      <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">تقييم آلي ومقابلات صوتية ذكية</h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
+                        دع الذكاء الاصطناعي يتولى إجراء المقابلات المبدئية مع المرشحين نيابة عنك. تتبع حالة كل مرشح، استعرض التقييم الآلي، وتواصل معهم بضغطة زر.
+                      </p>
+                    </div>
+                    <div className="flex-1 w-full relative">
+                      <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 group">
+                         <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
+                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                         </div>
+                         <div className="relative">
+                           <img src={featureAiInterviewImg} alt="المقابلات الذكية" className="w-full h-auto object-cover" />
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feature 2: Dashboard */}
+                  <div className="flex flex-col md:flex-row-reverse items-center gap-12">
+                    <div className="flex-1 space-y-6 text-right w-full">
+                      <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
+                         <BarChart2 size={32} />
+                      </div>
+                      <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">لوحة قيادة متكاملة لقرارات أذكى</h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
+                        تابع مسار التوظيف بالكامل من مكان واحد. إحصائيات دقيقة ومباشرة لمصادر التوظيف ومؤشرات مطابقة المتقدمين لتتخذ قراراتك بناءً على بيانات حقيقية.
+                      </p>
+                    </div>
+                    <div className="flex-1 w-full">
+                      <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800">
+                         <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
+                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                         </div>
+                         <img src={featureDashboardImg} alt="لوحة التحكم" className="w-full h-auto object-cover" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feature 3: Job Management */}
+                  <div className="flex flex-col md:flex-row items-center gap-12">
+                    <div className="flex-1 space-y-6 text-right w-full">
+                      <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
+                         <Briefcase size={32} />
+                      </div>
+                      <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">إدارة مرنة للوظائف ومسار التوظيف</h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
+                        أنشئ إعلاناتك الوظيفية، تحكم في حالاتها، وتابع أعداد المتقدمين لكل وظيفة بكل سهولة واحترافية من خلال واجهة موحدة.
+                      </p>
+                    </div>
+                    <div className="flex-1 w-full">
+                      <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800">
+                         <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
+                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                         </div>
+                         <img src={featureJobsImg} alt="إدارة الوظائف" className="w-full h-auto object-cover" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feature 4: Talent Pool */}
+                  <div className="flex flex-col md:flex-row-reverse items-center gap-12">
+                    <div className="flex-1 space-y-6 text-right w-full">
+                      <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
+                         <BrainCircuit size={32} />
+                      </div>
+                      <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">بنك كفاءات مدعوم بالذكاء الاصطناعي</h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
+                        لا تضيع وقتك في قراءة مئات السير الذاتية يدوياً. يقوم النظام تلقائياً بتحليل المتقدمين وإعطائك نسب مطابقة دقيقة بناءً على المهارات، التعليم، والخبرة.
+                      </p>
+                    </div>
+                    <div className="flex-1 w-full relative">
+                      <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 group">
+                         <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
+                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                         </div>
+                         <div className="relative">
+                           <img src={featureTalentPoolImg} alt="بنك الكفاءات" className="w-full h-auto object-cover" />
+                           {/* Blur Overlay for privacy */}
+                           <div className="absolute inset-0 backdrop-blur-[2px] bg-white/5 dark:bg-black/5 pointer-events-none transition-all duration-500 group-hover:backdrop-blur-0"></div>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </motion.div>{" "}
           </motion.div>
         )}{" "}
