@@ -116,42 +116,55 @@ export const ApplicantForm = ({
   const formRef = React.useRef<HTMLFormElement>(null);
   const isCampaign = job?.recordType === "campaign";
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      
-      const { data, error } = await supabase.from('job_seekers').select('*').eq('user_id', session.user.id).single();
-      if (data && !error) {
-        setUserProfile(data);
-        setFormDataState(prev => ({
-          ...prev,
-          fullName: data.full_name || prev.fullName,
-          phone: data.phone || prev.phone,
-          email: session.user.email || prev.email,
-          city: data.profile_data?.city || prev.city,
-          nationality: data.profile_data?.nationality || prev.nationality,
-          education: data.profile_data?.qualification?.[0] || prev.education,
-          experience: data.profile_data?.notice_period || prev.experience,
-          linkedin: data.profile_data?.linkedin_url || prev.linkedin,
-          cvUrl: data.cv_file_url || '',
-        }));
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setIsLoadingProfile(false);
+          return;
+        }
         
-        if (data.profile_data?.portfolio_url) {
-          setPortfolioLinksState([data.profile_data.portfolio_url]);
+        const { data, error } = await supabase.from('job_seekers').select('*').eq('user_id', session.user.id).single();
+        if (data && !error) {
+          setUserProfile(data);
+        
+        if (applyMode === 'fast') {
+          setFormDataState(prev => ({
+            ...prev,
+            fullName: data.full_name || prev.fullName,
+            phone: data.phone || prev.phone,
+            email: session.user.email || prev.email,
+            city: data.profile_data?.city || prev.city,
+            nationality: data.profile_data?.nationality || prev.nationality,
+            education: data.profile_data?.qualification?.[0] || prev.education,
+            experience: data.profile_data?.notice_period || prev.experience,
+            linkedin: data.profile_data?.linkedin_url || prev.linkedin,
+            cvUrl: data.cv_file_url || '',
+          }));
+          
+          if (data.profile_data?.portfolio_url) {
+            setPortfolioLinksState([data.profile_data.portfolio_url]);
+          }
+          if (data.cv_file_url) {
+            setIsParsed(true);
+            setResumeFileName("السيرة الذاتية المرفوعة مسبقاً");
+          }
+          if (data.profile_data?.personal_photo_url) {
+            setPhotoPreview(data.profile_data.personal_photo_url);
+          }
         }
-        if (data.cv_file_url) {
-          setIsParsed(true);
-          setResumeFileName("السيرة الذاتية المرفوعة مسبقاً");
         }
-        if (data.profile_data?.personal_photo_url) {
-          setPhotoPreview(data.profile_data.personal_photo_url);
-        }
+      } catch (err) {
+        console.error("Error fetching profile", err);
+      } finally {
+        setIsLoadingProfile(false);
       }
     };
     fetchProfile();
-  }, []);
+  }, [applyMode]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -955,18 +968,14 @@ export const ApplicantForm = ({
         <div className="text-center mb-12">
           {formStep === "details" && (
             <div className="flex flex-col items-center gap-2 mb-8 relative">
-              {!userProfile && (
                 <div className="absolute top-0 right-0">
                   <a
                     href="/profile"
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="flex items-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm"
                   >
-                    <User size={14} /> تسجيل دخول
+                    <User size={14} /> {userProfile ? "ملفي المهني" : "تسجيل دخول"}
                   </a>
                 </div>
-              )}
               {job?.companyLogo && (
                 <div className="w-20 h-20 p-0 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center overflow-hidden">
                   <img
@@ -1011,6 +1020,13 @@ export const ApplicantForm = ({
             </>
           )}{" "}
         </div>{" "}
+
+        {isLoadingProfile ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          </div>
+        ) : (
+        <>
         <form
           ref={formRef}
           className={`grid grid-cols-1 md:grid-cols-2 gap-8 ${formStep === "details" ? "block" : "hidden"}`}
@@ -1065,25 +1081,25 @@ export const ApplicantForm = ({
             );
           })()}
 
-          {applyMode === 'fast' && !userProfile && (
-            <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl mb-8 flex flex-col sm:flex-row items-center justify-between shadow-sm">
+          {applyMode === 'fast' && !isLoadingProfile && !userProfile && (
+            <div className="md:col-span-2 bg-amber-50 border border-amber-200 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="bg-amber-100 text-amber-600 p-2 rounded-xl shrink-0">
-                  <AlertTriangle size={24} />
+                <div className="bg-amber-100 text-amber-600 p-1.5 rounded-lg shrink-0">
+                  <AlertTriangle size={20} />
                 </div>
                 <div className="text-right">
-                  <h4 className="font-bold text-amber-900 text-base">التقديم السريع يتطلب تسجيل الدخول</h4>
-                  <p className="text-amber-800 text-sm mt-1">يرجى تسجيل الدخول وإكمال ملفك الشخصي لتتمكن من التقديم بضغطة زر.</p>
+                  <h4 className="font-bold text-amber-900 text-sm">التقديم السريع يتطلب تسجيل الدخول</h4>
+                  <p className="text-amber-800 text-xs mt-0.5">يرجى تسجيل الدخول وإكمال ملفك لتتمكن من التقديم بضغطة زر.</p>
                 </div>
               </div>
-              <a href="/profile" className="mt-4 sm:mt-0 whitespace-nowrap px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold shadow-md transition-all flex items-center gap-2">
-                <User size={16} /> تسجيل الدخول
+              <a href="/profile" className="mt-3 sm:mt-0 whitespace-nowrap px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-bold shadow-sm transition-all flex items-center gap-2">
+                <User size={14} /> تسجيل الدخول
               </a>
             </div>
           )}
 
-          {applyMode === 'fast' && userProfile && !canOneClickApply && (
-            <div className="bg-orange-50 border border-orange-200 p-5 rounded-2xl mb-8 flex items-center gap-3 shadow-sm">
+          {applyMode === 'fast' && !isLoadingProfile && userProfile && !canOneClickApply && (
+            <div className="md:col-span-2 bg-orange-50 border border-orange-200 p-5 rounded-2xl flex items-center gap-3 shadow-sm">
                 <div className="bg-orange-100 text-orange-600 p-2 rounded-xl shrink-0">
                   <AlertTriangle size={24} />
                 </div>
@@ -1095,25 +1111,9 @@ export const ApplicantForm = ({
           )}
 
           {canOneClickApply && (
-            <div className="bg-gradient-to-r from-teal-50 to-teal-100/50 border border-teal-200 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row items-center justify-between shadow-sm">
-              <div className="text-right w-full">
-                <h3 className="text-xl font-bold text-teal-900 mb-2 flex items-center gap-2">
-                  <Zap className="w-6 h-6 text-teal-600 fill-teal-600" />
-                  تقديم سريع بضغطة زر!
-                </h3>
-                <p className="text-teal-700/90 font-medium">تم جلب معلوماتك الشخصية وسيرتك الذاتية من ملفك الشخصي.</p>
-              </div>
-              <button 
-                type="button" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  formRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-                }}
-                className="mt-6 sm:mt-0 w-full sm:w-auto whitespace-nowrap px-8 py-3.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-lg shadow-teal-600/20 hover:shadow-teal-600/40 transition-all flex items-center justify-center gap-2"
-              >
-                <CheckCircle className="w-5 h-5" />
-                تقديم الآن
-              </button>
+            <div className="md:col-span-2 text-center text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800 rounded-xl py-3 px-4 flex items-center justify-center gap-2 mb-4 font-bold text-sm">
+              <Zap size={18} className="fill-teal-600 dark:fill-teal-400 shrink-0" />
+              تم جلب بياناتك وسيرتك الذاتية من ملفك الشخصي لتسهيل التقديم.
             </div>
           )}
 
@@ -1864,10 +1864,11 @@ export const ApplicantForm = ({
                 )}
               </div>
 
+
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="md:col-span-2 bg-primary text-white py-5 rounded-2xl text-lg font-bold hover:shadow-2xl hover:shadow-primary/40 transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-3 disabled:opacity-70 disabled:grayscale"
+                className={`md:col-span-2 text-white py-5 rounded-2xl text-lg font-bold transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-3 disabled:opacity-70 disabled:grayscale ${canOneClickApply ? 'bg-teal-600 hover:bg-teal-700 hover:shadow-2xl hover:shadow-teal-600/40' : 'bg-primary hover:shadow-2xl hover:shadow-primary/40'}`}
               >
                 {isSubmitting ? (
                   <>
@@ -1876,6 +1877,8 @@ export const ApplicantForm = ({
                   </>
                 ) : isRequireVoiceInterview ? (
                   <>التالي: المقابلة الصوتية <Mic size={20} /></>
+                ) : canOneClickApply ? (
+                  <><Zap size={20} className="fill-white" /> تقديم سريع الآن</>
                 ) : (
                   <>إرسال الطلب</>
                 )}
@@ -2003,6 +2006,8 @@ export const ApplicantForm = ({
             </div>{" "}
           </motion.div>
         )}{" "}
+        </>
+        )}
       </motion.div>{" "}
     </div>
   );

@@ -461,7 +461,13 @@ export default function SeekerProfile() {
         <div className="max-w-4xl w-full bg-white rounded-[32px] shadow-xl border border-slate-100 relative overflow-hidden flex flex-col md:flex-row">
           
           <button 
-            onClick={() => window.history.length > 2 ? window.history.back() : window.location.href = '/'}
+            onClick={() => {
+              if (window.history.length > 1 && document.referrer) {
+                window.history.back();
+              } else {
+                window.close();
+              }
+            }}
             className="absolute top-6 right-6 z-20 w-8 h-8 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full flex items-center justify-center transition-all border border-slate-100 shadow-sm"
             title="العودة"
           >
@@ -584,7 +590,7 @@ export default function SeekerProfile() {
                 <button
                   onClick={handleAuth}
                   disabled={isLoading || !email || (authMode !== 'reset' && !password)}
-                  className="w-full flex items-center justify-center py-3.5 px-4 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-bold text-base shadow-lg shadow-teal-700/20 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center py-3.5 px-4 bg-[#064E3B] hover:bg-[#022c22] text-white rounded-xl font-bold text-base shadow-lg shadow-[#064E3B]/20 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -733,9 +739,18 @@ export default function SeekerProfile() {
                 <p className="text-white/90 mt-1 text-sm font-medium">أكمل بياناتك مرة واحدة فقط، لتتمكن من التقديم على أي وظيفة بضغطة زر ⚡️</p>
               </div>
             </div>
-            <button onClick={handleLogout} className="group relative overflow-hidden bg-white/10 hover:bg-red-500 text-white px-6 py-2.5 rounded-full border border-white/20 backdrop-blur-md flex items-center font-bold text-sm transition-all duration-300 shadow-lg hover:shadow-red-500/30 hover:border-red-400">
-              <LogOut className="w-5 h-5 ml-2 transition-transform group-hover:-translate-x-1" />
-              تسجيل الخروج
+            <button 
+              onClick={() => {
+                if (window.history.length > 1 && document.referrer) {
+                  window.history.back();
+                } else {
+                  window.location.href = '/';
+                }
+              }} 
+              className="group relative overflow-hidden bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-full border border-white/20 backdrop-blur-md flex items-center font-bold text-sm transition-all duration-300 shadow-lg"
+            >
+              <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
+              الخروج
             </button>
           </div>
 

@@ -236,6 +236,28 @@ const PublicJobPage = ({
   onApply: (mode: "fast" | "normal") => void;
   onBackToCampaign?: () => void;
 }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+
+    checkSession();
+    window.addEventListener('focus', checkSession);
+    window.addEventListener('pageshow', checkSession);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => {
+      window.removeEventListener('focus', checkSession);
+      window.removeEventListener('pageshow', checkSession);
+      subscription.unsubscribe();
+    };
+  }, []);
   if (job.status === "مسودة") {
     return (
       <div className="min-h-screen bg-bg dark:bg-navy flex items-center justify-center p-6">
@@ -280,14 +302,21 @@ const PublicJobPage = ({
                     <ArrowRight size={16} /> العودة لقائمة الوظائف
                   </button>
                 ) : <div></div>}
-                <a
-                  href="/profile"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all shadow-sm mr-auto whitespace-nowrap"
-                >
-                  <User size={16} className="text-teal-400" /> تسجيل دخول / إنشاء حساب
-                </a>
+                {isLoggedIn ? (
+                  <a
+                    href="/profile"
+                    className="flex items-center gap-2 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all shadow-sm mr-auto whitespace-nowrap"
+                  >
+                    <User size={16} className="text-teal-400" /> ملفي المهني
+                  </a>
+                ) : (
+                  <a
+                    href="/profile"
+                    className="flex items-center gap-2 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all shadow-sm mr-auto whitespace-nowrap"
+                  >
+                    <User size={16} className="text-teal-400" /> تسجيل دخول
+                  </a>
+                )}
               </div>
               <div className="flex items-center gap-4 mb-8">
                 <div className={`w-16 h-16 p-0 backdrop-blur rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm ${job.companyLogo ? "bg-white dark:bg-slate-800/10 border border-white dark:border-slate-700/10" : "bg-white/5 border border-white/10"}`}>

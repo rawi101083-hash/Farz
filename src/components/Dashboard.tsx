@@ -300,24 +300,57 @@ export const Dashboard = ({
     setSupportStatus("sending");
 
     try {
-      const formData = new FormData();
-      formData.append("_subject", "رسالة دعم فني جديدة من منصة فرز");
-      formData.append("email", userProfile?.email || userEmail || "غير محدد");
-      formData.append("اسم المستخدم / الشركة", userProfile?.company_name || userProfile?.name || "غير محدد");
-      formData.append("البريد الإلكتروني للعميل", userProfile?.email || userEmail || "غير محدد");
-      formData.append("نص المشكلة", supportMessage);
+      const form = document.createElement('form');
+      form.action = "https://formsubmit.co/farz101083@gmail.com";
+      form.method = "POST";
+      form.enctype = "multipart/form-data";
+      form.target = "hidden_iframe";
+      form.style.display = 'none';
+
+      const inputs = [
+        { name: "_subject", value: "رسالة دعم فني جديدة من منصة فرز" },
+        { name: "email", value: userProfile?.email || userEmail || "غير محدد" },
+        { name: "اسم المستخدم / الشركة", value: userProfile?.company_name || userProfile?.name || "غير محدد" },
+        { name: "البريد الإلكتروني للعميل", value: userProfile?.email || userEmail || "غير محدد" },
+        { name: "نص المشكلة", value: supportMessage },
+        { name: "_captcha", value: "false" },
+      ];
+
+      inputs.forEach(inputData => {
+        const input = document.createElement('input');
+        input.type = "hidden";
+        input.name = inputData.name;
+        input.value = inputData.value;
+        form.appendChild(input);
+      });
 
       if (supportFile) {
-        formData.append("مرفق", supportFile);
+        const fileInput = document.createElement('input');
+        fileInput.type = "file";
+        fileInput.name = "attachment";
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(supportFile);
+        fileInput.files = dataTransfer.files;
+        form.appendChild(fileInput);
       }
 
-      await fetch("https://formsubmit.co/ajax/farz101083@gmail.com", {
-        method: "POST",
-        headers: {
-          'Accept': 'application/json'
-        },
-        body: formData
-      });
+      let iframe = document.getElementById("hidden_iframe") as HTMLIFrameElement;
+      if (!iframe) {
+        iframe = document.createElement("iframe");
+        iframe.name = "hidden_iframe";
+        iframe.id = "hidden_iframe";
+        iframe.style.display = "none";
+        document.body.appendChild(iframe);
+      }
+
+      document.body.appendChild(form);
+      form.submit();
+
+      setTimeout(() => {
+        if (document.body.contains(form)) {
+          document.body.removeChild(form);
+        }
+      }, 2000);
 
       setSupportStatus("success");
       setTimeout(() => {

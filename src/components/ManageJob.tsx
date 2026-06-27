@@ -29,6 +29,20 @@ export const ManageJob = ({
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
+  
+  const handleRefreshDate = async () => {
+    const newDateStr = new Date().toISOString();
+    try {
+      const { error } = await supabase.from('jobs').update({ created_at: newDateStr }).eq('id', job.id);
+      if (error) throw error;
+      onUpdate({ ...job, createdAt: newDateStr.split("T")[0] }, true);
+      showToast("تم تحديث تاريخ النشر بنجاح!", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("فشل تحديث التاريخ، يرجى المحاولة مرة أخرى.", "error");
+    }
+  };
+
   const isLocked = job.status === "نشط" && job.applicants > 0;
 
   // Archive Fields (Read-Only)
@@ -840,6 +854,16 @@ export const ManageJob = ({
                   </button>
                 </div>
               </div>
+
+              <button
+                type="button"
+                onClick={handleRefreshDate}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-900/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 py-3 px-4 rounded-2xl font-bold text-sm hover:shadow-[0_8px_24px_-4px_rgba(59,130,246,0.25),inset_0_2px_0_rgba(255,255,255,1)] hover:-translate-y-1 active:translate-y-0 transition-all mb-4 relative overflow-hidden group shadow-[0_4px_12px_-2px_rgba(59,130,246,0.15),inset_0_2px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_12px_-2px_rgba(59,130,246,0.15),inset_0_2px_0_rgba(255,255,255,0.05)]"
+              >
+                <div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div>
+                <RefreshCw size={18} className="relative z-10" /> 
+                <span className="relative z-10">تحديث تاريخ النشر</span>
+              </button>
 
               <button
                 type="button"
