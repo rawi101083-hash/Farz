@@ -590,7 +590,7 @@ export default function SeekerProfile() {
                 <button
                   onClick={handleAuth}
                   disabled={isLoading || !email || (authMode !== 'reset' && !password)}
-                  className="w-full flex items-center justify-center py-3.5 px-4 bg-[#064E3B] hover:bg-[#022c22] text-white rounded-xl font-bold text-base shadow-lg shadow-[#064E3B]/20 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full flex items-center justify-center py-3.5 px-4 bg-primary hover:bg-primary/90 text-white rounded-xl font-bold text-base shadow-lg shadow-primary/20 active:scale-[0.98] transition-all disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

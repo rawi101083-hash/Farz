@@ -49,6 +49,7 @@ import featureAiInterviewImg from './assets/feature_ai_interview.png';
 import featureDashboardImg from './assets/feature_dashboard.png';
 import featureJobsImg from './assets/feature_jobs.png';
 import featureTalentPoolImg from './assets/feature_talent_pool.png';
+import featureQuickApplyImg from './assets/feature_quick_apply.png';
 ;
 const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPublishDraft }: { isOpen: boolean; onClose: () => void; userProfile: any; setUserProfile: any; onPublishDraft?: () => void; }) => {
   const [entityType, setEntityType] = useState<"company" | "freelance">(userProfile.entityType || "company");
@@ -1657,6 +1658,31 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                            <img src={featureTalentPoolImg} alt="بنك الكفاءات" className="w-full h-auto object-cover" />
                            {/* Blur Overlay for privacy */}
                            <div className="absolute inset-0 backdrop-blur-[2px] bg-white/5 dark:bg-black/5 pointer-events-none transition-all duration-500 group-hover:backdrop-blur-0"></div>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feature 5: Quick Apply */}
+                  <div className="flex flex-col md:flex-row items-center gap-12">
+                    <div className="flex-1 space-y-6 text-right w-full">
+                      <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
+                         <Zap size={32} />
+                      </div>
+                      <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">تقديم سريع يقلص تسرب المتقدمين</h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
+                        تجربة تقديم سلسة وسريعة بخطوات معدودة. تضمن لك تقليل معدل خروج المتقدمين وزيادة نسبة استكمال طلبات التوظيف لأقصى حد.
+                      </p>
+                    </div>
+                    <div className="flex-1 w-full relative">
+                      <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800">
+                         <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
+                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                         </div>
+                         <div className="relative">
+                           <img src={featureQuickApplyImg} alt="تقديم سريع" className="w-full h-auto object-cover" />
                          </div>
                       </div>
                     </div>
