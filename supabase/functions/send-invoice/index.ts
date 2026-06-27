@@ -34,7 +34,7 @@ serve(async (req) => {
     // 2. Fetch the company info for the invoice
     const { data: company } = await supabase
       .from('companies')
-      .select('company_name, contact_email, tax_number, commercial_registration')
+      .select('company_name, contact_email, tax_number, commercial_registration, city, freelance_document, contact_phone, entity_type')
       .eq('id', wallet.user_id)
       .single()
 
@@ -62,9 +62,15 @@ serve(async (req) => {
     page.drawText(`Riyadh, Saudi Arabia | CR: 7052842361 | Phone: 0579543701`, { x: 50, y: 325, size: 10 })
 
     // Customer Info
+    const docType = company.entity_type === 'individual' ? 'Freelance ID' : 'CR';
+    const docNumber = company.entity_type === 'individual' ? company.freelance_document : company.commercial_registration;
+
     page.drawText(`To: ${safeCompanyName}`, { x: 50, y: 290, size: 14 })
     page.drawText(`Email: ${email}`, { x: 50, y: 270, size: 12 })
-    page.drawText(`Customer CR: ${company.commercial_registration || 'N/A'}`, { x: 50, y: 250, size: 12 })
+    page.drawText(`Customer ${docType}: ${docNumber || 'N/A'}`, { x: 50, y: 250, size: 12 })
+    if (company.tax_number) {
+      page.drawText(`Tax ID: ${company.tax_number}`, { x: 50, y: 230, size: 12 })
+    }
     
     page.drawText(`Invoice ID: ${record.id}`, { x: 50, y: 210, size: 12 })
     page.drawText(`Total Due: ${record.amount} SAR`, { x: 50, y: 190, size: 14, color: rgb(0.1, 0.7, 0.4) }) // Green amount
@@ -99,8 +105,10 @@ serve(async (req) => {
               <div>
                 <strong>العميل:</strong> ${company.company_name}<br/>
                 <strong>البريد الإلكتروني:</strong> ${email}<br/>
+                ${company.contact_phone ? `<strong>رقم الجوال:</strong> <span dir="ltr">${company.contact_phone}</span><br/>` : ''}
                 <strong>المدينة:</strong> ${company.city || 'غير محدد'}<br/>
-                ${company.commercial_registration ? `<strong>السجل التجاري:</strong> ${company.commercial_registration}` : ''}
+                ${company.entity_type === 'individual' && company.freelance_document ? `<strong>وثيقة العمل الحر:</strong> ${company.freelance_document}<br/>` : company.commercial_registration ? `<strong>السجل التجاري:</strong> ${company.commercial_registration}<br/>` : ''}
+                ${company.tax_number ? `<strong>الرقم الضريبي:</strong> ${company.tax_number}<br/>` : ''}
               </div>
               <div style="text-align: left;">
                 <strong>رقم الفاتورة:</strong> ${record.id.substring(0, 8).toUpperCase()}<br/>
