@@ -1070,7 +1070,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                                   setInterviewSendMethod('whatsapp');
                                   setShowInterviewQuestionsModal(true);
                                 }}
-                                className="bg-[#25D366] text-white hover:bg-[#1DA851] px-5 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 border border-transparent w-full"
+                                className="bg-[#25D366] text-white hover:bg-[#1DA851] px-5 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 border border-transparent w-full whitespace-nowrap"
                               >
                                 <WhatsAppIcon size={18} /> إرسال عبر واتساب
                               </button>
@@ -1085,7 +1085,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                                   setInterviewSendMethod('email');
                                   setShowInterviewQuestionsModal(true);
                                 }}
-                                className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white dark:bg-blue-900/30 dark:text-blue-400 px-5 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 border border-blue-100 dark:border-blue-900/30 hover:border-transparent w-full"
+                                className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white dark:bg-blue-900/30 dark:text-blue-400 px-5 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 border border-blue-100 dark:border-blue-900/30 hover:border-transparent w-full whitespace-nowrap"
                               >
                                 <Mail size={18} /> إرسال بالإيميل
                               </button>

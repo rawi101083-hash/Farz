@@ -1492,13 +1492,13 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
   const renderHiringBackground = (props: any) => {
     const { x, y, width, height } = props;
     const fill = "rgba(148, 163, 184, 0.2)"; // unified grey
-    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={0} ry={0} filter="url(#innerTrackShadow)" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="1" />;
+    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={6} ry={6} filter="url(#innerTrackShadow)" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="1" />;
   };
 
   const renderQualityBackground = (props: any) => {
     const { x, y, width, height } = props;
     const fill = "rgba(148, 163, 184, 0.2)"; // unified grey
-    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={0} ry={0} filter="url(#innerTrackShadow)" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="1" />;
+    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={6} ry={6} filter="url(#innerTrackShadow)" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="1" />;
   };
 
   // Calculate dynamic average time to hire (based on time since job creation)
@@ -1799,7 +1799,7 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
                 />
                 <Bar
                   dataKey="value"
-                  radius={0}
+                  radius={6}
                   barSize={32}
                   stroke="none"
                   background={renderHiringBackground}
@@ -1892,7 +1892,7 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
                 />
                 <Bar
                   dataKey="value"
-                  radius={0}
+                  radius={6}
                   barSize={32}
                   stroke="none"
                   background={renderQualityBackground}
