@@ -84,6 +84,7 @@ import {
 } from "recharts";
 import React, { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import QRCode from "react-qr-code";
 import skillsDictionaryRaw from "./skillsDictionary.json";
 import { FEATURE_FLAGS } from "./config";
 import { PublicJobPage } from "./components/CreateJob";
@@ -1491,13 +1492,13 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
   const renderHiringBackground = (props: any) => {
     const { x, y, width, height } = props;
     const fill = "rgba(148, 163, 184, 0.2)"; // unified grey
-    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={height / 2} ry={height / 2} filter="url(#innerTrackShadow)" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="1" />;
+    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={0} ry={0} filter="url(#innerTrackShadow)" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="1" />;
   };
 
   const renderQualityBackground = (props: any) => {
     const { x, y, width, height } = props;
     const fill = "rgba(148, 163, 184, 0.2)"; // unified grey
-    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={height / 2} ry={height / 2} filter="url(#innerTrackShadow)" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="1" />;
+    return <rect x={x} y={y} width={width} height={height} fill={fill} rx={0} ry={0} filter="url(#innerTrackShadow)" stroke="rgba(148, 163, 184, 0.1)" strokeWidth="1" />;
   };
 
   // Calculate dynamic average time to hire (based on time since job creation)
@@ -1798,7 +1799,7 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
                 />
                 <Bar
                   dataKey="value"
-                  radius={100}
+                  radius={0}
                   barSize={32}
                   stroke="none"
                   background={renderHiringBackground}
@@ -1891,7 +1892,7 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
                 />
                 <Bar
                   dataKey="value"
-                  radius={100}
+                  radius={0}
                   barSize={32}
                   stroke="none"
                   background={renderQualityBackground}
@@ -1997,6 +1998,22 @@ export const SettingsPage = ({
   }, [userProfile.companyName, userProfile.commercialRegistration, userProfile.taxNumber, userProfile.freelanceDocument, userProfile.city, userProfile.entityType, isLocked]);
 
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  useEffect(() => {
+    const handleTabChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail);
+      }
+    };
+    window.addEventListener('changeSettingsTab', handleTabChange);
+    return () => window.removeEventListener('changeSettingsTab', handleTabChange);
+  }, []);
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showLockModal, setShowLockModal] = useState(false);
@@ -2007,10 +2024,16 @@ export const SettingsPage = ({
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [walletTransactions, setWalletTransactions] = useState<any[]>([]);
   const [isLoadingWallet, setIsLoadingWallet] = useState(false);
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [rechargeAmount, setRechargeAmount] = useState("");
+  const [rechargeMethod, setRechargeMethod] = useState<'mada' | 'visa' | 'applepay'>('mada');
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [isRecharging, setIsRecharging] = useState(false);
+  const [checkoutPlan, setCheckoutPlan] = useState<{ id: string; price: number; name: string } | null>(null);
 
   useEffect(() => {
     const fetchWalletData = async () => {
-      if (activeTab !== "المحفظة") return;
+      if (activeTab !== "المحفظة" && activeTab !== "الفواتير") return;
       setIsLoadingWallet(true);
       try {
         const { supabase: sb } = await import('./lib/supabaseClient');
@@ -2050,6 +2073,191 @@ export const SettingsPage = ({
       <span className="text-[10px] font-black text-amber-600 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-2 py-0.5 rounded-full whitespace-nowrap">مقفل · ZATCA</span>
     </div>
   );
+
+  const getZatcaQrB64 = (sellerName: string, vatNumber: string, timestamp: string, totalAmount: string, vatAmount: string): string => {
+    const utf8Encode = new TextEncoder();
+    const tag1 = new Uint8Array([1, utf8Encode.encode(sellerName).length]);
+    const val1 = utf8Encode.encode(sellerName);
+    const tag2 = new Uint8Array([2, utf8Encode.encode(vatNumber).length]);
+    const val2 = utf8Encode.encode(vatNumber);
+    const tag3 = new Uint8Array([3, utf8Encode.encode(timestamp).length]);
+    const val3 = utf8Encode.encode(timestamp);
+    const tag4 = new Uint8Array([4, utf8Encode.encode(totalAmount).length]);
+    const val4 = utf8Encode.encode(totalAmount);
+    const tag5 = new Uint8Array([5, utf8Encode.encode(vatAmount).length]);
+    const val5 = utf8Encode.encode(vatAmount);
+    
+    const combined = new Uint8Array(
+      tag1.length + val1.length +
+      tag2.length + val2.length +
+      tag3.length + val3.length +
+      tag4.length + val4.length +
+      tag5.length + val5.length
+    );
+    let offset = 0;
+    const add = (arr1: Uint8Array, arr2: Uint8Array) => {
+      combined.set(arr1, offset); offset += arr1.length;
+      combined.set(arr2, offset); offset += arr2.length;
+    };
+    add(tag1, val1);
+    add(tag2, val2);
+    add(tag3, val3);
+    add(tag4, val4);
+    add(tag5, val5);
+    
+    let binStr = "";
+    for (let i = 0; i < combined.length; i++) {
+      binStr += String.fromCharCode(combined[i]);
+    }
+    return window.btoa(binStr);
+  };
+
+  const handleRechargeWallet = async (amount: number) => {
+    if (amount <= 0) return;
+    setIsRecharging(true);
+    try {
+      const { supabase: sb } = await import('./lib/supabaseClient');
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.user?.id) {
+        alert("يرجى تسجيل الدخول أولاً");
+        return;
+      }
+
+      let { data: wallet } = await sb.from('wallets').select('*').eq('user_id', session.user.id).single();
+      if (!wallet) {
+        const { data: newWallet } = await sb.from('wallets').insert([{ user_id: session.user.id }]).select().single();
+        wallet = newWallet;
+      }
+
+      if (!wallet) throw new Error("تعذر الوصول للمحفظة");
+
+      const newBalance = (wallet.balance || 0) + amount;
+
+      const { error: walletError } = await sb.from('wallets').update({ balance: newBalance }).eq('id', wallet.id);
+      if (walletError) throw walletError;
+
+      const { error: txError } = await sb.from('wallet_transactions').insert([{
+        wallet_id: wallet.id,
+        amount: amount,
+        transaction_type: 'deposit',
+        description: `شحن رصيد المحفظة عبر بطاقة (${rechargeMethod === 'mada' ? 'مدى' : rechargeMethod === 'applepay' ? 'Apple Pay' : 'فيزا/ماستركارد'})`,
+        status: 'success'
+      }]);
+      if (txError) throw txError;
+
+      setWalletBalance(newBalance);
+      const { data: txs } = await sb.from('wallet_transactions')
+        .select('*')
+        .eq('wallet_id', wallet.id)
+        .order('created_at', { ascending: false });
+      if (txs) setWalletTransactions(txs);
+
+      setShowRechargeModal(false);
+      setRechargeAmount("");
+      alert("🎉 تم شحن رصيد محفظتك بنجاح بقيمة " + amount + " ر.س");
+    } catch (err: any) {
+      console.error(err);
+      alert("حدث خطأ أثناء الشحن: " + (err.message || err));
+    } finally {
+      setIsRecharging(false);
+    }
+  };
+
+  const handlePayWithWallet = async (price: number, packageId: string) => {
+    if (walletBalance < price) {
+      alert(`⚠️ رصيد المحفظة غير كافٍ. تحتاج إلى ${price} ر.س، بينما رصيدك الحالي هو ${walletBalance} ر.س. يرجى شحن المحفظة أولاً.`);
+      setActiveTab("المحفظة");
+      setCheckoutPlan(null);
+      return;
+    }
+
+    if (!confirm(`هل أنت متأكد من دفع ${price} ر.س من رصيد محفظتك لتفعيل ${packageId === 'single_job' ? 'شراء إعلان وظيفي' : `اشتراك باقة (${packageId})`}؟`)) {
+      return;
+    }
+
+    setIsSaving(true);
+    setCheckoutPlan(null);
+    try {
+      const { supabase: sb } = await import('./lib/supabaseClient');
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.user?.id) return;
+
+      const { data: wallet } = await sb.from('wallets').select('*').eq('user_id', session.user.id).single();
+      if (!wallet) throw new Error("المحفظة غير موجودة");
+
+      const newBalance = wallet.balance - price;
+      const { error: walletError } = await sb.from('wallets').update({ balance: newBalance }).eq('id', wallet.id);
+      if (walletError) throw walletError;
+
+      const { error: txError } = await sb.from('wallet_transactions').insert([{
+        wallet_id: wallet.id,
+        amount: -price,
+        transaction_type: packageId === 'single_job' ? 'addon_fee' : 'subscription_fee',
+        description: packageId === 'single_job' ? 'شراء إعلان وظيفي منفرد' : `اشتراك باقة فرز - ${packageId}`,
+        status: 'success'
+      }]);
+      if (txError) throw txError;
+
+      let tier = 'free';
+      let interviewsLimit = 0;
+      if (packageId.startsWith('startup')) {
+        tier = 'startup';
+        interviewsLimit = 100;
+      } else if (packageId.startsWith('business')) {
+        tier = 'business';
+        interviewsLimit = 500;
+      } else if (packageId.startsWith('enterprise')) {
+        tier = 'enterprise';
+        interviewsLimit = 1500;
+      } else if (packageId === 'single_job') {
+        tier = 'one-time';
+        interviewsLimit = (userProfile?.interviews_limit || 0) + 1;
+      }
+
+      const isYearlyPlan = packageId.endsWith('yearly');
+      const endDate = isYearlyPlan 
+        ? new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString()
+        : new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString();
+
+      const updateData: any = {
+        subscription_status: 'Active',
+        subscription_tier: tier,
+        subscription_end_date: endDate,
+      };
+
+      if (packageId === 'single_job') {
+        updateData.interviews_limit = interviewsLimit;
+      } else {
+        updateData.interviews_limit = interviewsLimit;
+        updateData.used_interviews = 0;
+      }
+
+      const { error: compError } = await sb.from('companies').update(updateData).eq('id', userProfile.id);
+      if (compError) throw compError;
+
+      setWalletBalance(newBalance);
+      setUserProfile((prev: any) => ({
+        ...prev,
+        subscription_tier: tier,
+        interviews_limit: interviewsLimit,
+        used_interviews: packageId === 'single_job' ? prev.used_interviews : 0,
+        subscription_status: 'Active'
+      }));
+
+      const { data: txs } = await sb.from('wallet_transactions')
+        .select('*')
+        .eq('wallet_id', wallet.id)
+        .order('created_at', { ascending: false });
+      if (txs) setWalletTransactions(txs);
+
+      alert(`🎉 تم الاشتراك بنجاح وتفعيل الباقة! تم خصم ${price} ر.س من محفظتك.`);
+    } catch (err: any) {
+      console.error(err);
+      alert("حدث خطأ أثناء إتمام العملية: " + err.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const executeSave = () => {
     // Immediately show success in the UI
@@ -2187,13 +2395,14 @@ export const SettingsPage = ({
   };
 
   const handleSubscribe = async (tier: string) => {
-    // Determine the actual packageId matching the DB rows
     const packageId = `${tier}_${isYearly ? 'yearly' : 'monthly'}`;
-    await generatePaymentForm(packageId, isYearly);
+    const name = tier === 'startup' ? `باقة نمو (${isYearly ? 'سنوي' : 'شهري'})` : `باقة الشركات (${isYearly ? 'سنوي' : 'شهري'})`;
+    const price = tier === 'startup' ? (isYearly ? 4990 : 499) : (isYearly ? 14990 : 1499);
+    setCheckoutPlan({ id: packageId, price, name });
   };
 
   const handleBuyAd = async () => {
-    await generatePaymentForm('single_job', false);
+    setCheckoutPlan({ id: 'single_job', price: 199, name: 'شراء إعلان وظيفي منفرد' });
   };
 
   const handleConfirmPayment = () => {
@@ -2303,6 +2512,7 @@ export const SettingsPage = ({
             className={`flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 dark:border-slate-700 dark:bg-slate-900/50`}
           >
             {" "}
+            {/* "الفواتير" تم إخفائها مؤقتاً بناءً على طلب المستخدم */}
             {["الملف الشخصي", "بيانات المنشأة / المستقل", "باقات فرز", "المحفظة", "المظهر"].map((tab) => (
               <button
                 key={tab}
@@ -2543,7 +2753,7 @@ export const SettingsPage = ({
             {activeTab === "المحفظة" && (
               <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex justify-end mb-4">
-                  <button onClick={() => alert('بوابة ميسور قيد التجهيز للربط الحقيقي')} className="bg-gradient-to-b from-[#0D9488] to-[#0b7c72] hover:to-[#0a6f66] border-b-[4px] border-[#075952] text-white px-8 py-3.5 rounded-2xl font-bold shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] transition-all active:scale-95 flex items-center gap-2 hover:-translate-y-1 hover:shadow-[0_15px_30px_-10px_rgba(13,148,136,0.6)]">
+                  <button onClick={() => setShowRechargeModal(true)} className="bg-gradient-to-b from-[#0D9488] to-[#0b7c72] hover:to-[#0a6f66] border-b-[4px] border-[#075952] text-white px-8 py-3.5 rounded-2xl font-bold shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] transition-all active:scale-95 flex items-center gap-2 hover:-translate-y-1 hover:shadow-[0_15px_30px_-10px_rgba(13,148,136,0.6)]">
                     <Plus size={20} /> شحن الرصيد
                   </button>
                 </div>
@@ -2629,13 +2839,21 @@ export const SettingsPage = ({
                                   </div>
                                 </div>
                               </div>
-                              <div className="text-left shrink-0">
+                              <div className="text-left shrink-0 flex flex-col items-end">
                                 <p className={`font-black text-sm sm:text-base ${isDeposit ? 'text-[#0D9488]' : 'text-navy dark:text-white'}`} dir="ltr">
                                   {amountStr} <span className="text-[10px] font-bold text-slate-400">ر.س</span>
                                 </p>
-                                <span className={`inline-flex items-center gap-1 mt-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isDeposit ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
-                                  <CheckCircle size={8} /> {statusStr}
-                                </span>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${isDeposit ? 'bg-[#0D9488]/10 text-[#0D9488]' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'}`}>
+                                    <CheckCircle size={8} /> {statusStr}
+                                  </span>
+                                  <button
+                                    onClick={() => { setSelectedInvoice(tx); setActiveTab("الفواتير"); }}
+                                    className="text-[9px] font-bold text-primary hover:underline flex items-center gap-0.5 shrink-0"
+                                  >
+                                    <FileText size={8} /> الفاتورة
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )
@@ -2643,6 +2861,83 @@ export const SettingsPage = ({
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+            {activeTab === "الفواتير" && (
+              <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                  <div>
+                    <h4 className="text-xl font-black text-navy dark:text-white flex items-center gap-2">
+                      <FileText className="text-primary" /> الفواتير والمدفوعات
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      عرض وتحميل الفواتير الضريبية المبسطة المتوافقة مع متطلبات هيئة الزكاة والضريبة والجمارك (ZATCA).
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                  <div className="p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/30 flex items-center justify-between">
+                    <span className="font-bold text-sm text-navy dark:text-white">قائمة الفواتير الصادرة</span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-right border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-100 dark:border-slate-700 text-slate-400 text-xs font-bold bg-slate-50/50 dark:bg-slate-800/10">
+                          <th className="p-4">رقم الفاتورة</th>
+                          <th className="p-4">تاريخ الإصدار</th>
+                          <th className="p-4">بيان الخدمة</th>
+                          <th className="p-4">المبلغ الإجمالي</th>
+                          <th className="p-4">الضريبة (15%)</th>
+                          <th className="p-4 text-center">الإجراء</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm font-semibold">
+                        {isLoadingWallet ? (
+                          <tr>
+                            <td colSpan={6} className="p-10 text-center">
+                              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                            </td>
+                          </tr>
+                        ) : walletTransactions.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="p-10 text-center text-slate-400 font-bold">
+                              لا توجد فواتير صادرة حالياً.
+                            </td>
+                          </tr>
+                        ) : (
+                          walletTransactions.map((tx) => {
+                            const amountVal = Math.abs(Number(tx.amount || 0));
+                            const vatVal = amountVal - (amountVal / 1.15); // 15% VAT included
+                            const invNo = `INV-2026-${tx.id.slice(0, 8).toUpperCase()}`;
+                            const dateObj = new Date(tx.created_at);
+                            const dateStr = dateObj.toLocaleDateString('ar-SA');
+                            const title = tx.transaction_type === 'deposit' ? 'شحن رصيد المحفظة' : tx.transaction_type === 'subscription_fee' ? 'اشتراك باقة فرز' : tx.transaction_type === 'addon_fee' ? 'شراء إعلان وظيفي' : tx.description || 'خدمة منصة فرز';
+
+                            return (
+                              <tr key={tx.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                                <td className="p-4 font-mono font-bold text-navy dark:text-white" dir="ltr">#{invNo}</td>
+                                <td className="p-4 text-slate-500 dark:text-slate-400">{dateStr}</td>
+                                <td className="p-4 text-navy dark:text-white">{title}</td>
+                                <td className="p-4 text-navy dark:text-white font-mono">{amountVal.toFixed(2)} ر.س</td>
+                                <td className="p-4 text-[#0D9488] font-mono">{vatVal.toFixed(2)} ر.س</td>
+                                <td className="p-4 text-center">
+                                  <button
+                                    onClick={() => setSelectedInvoice(tx)}
+                                    className="px-4 py-2 text-xs font-bold bg-primary/10 text-primary hover:bg-primary hover:text-white rounded-xl transition-all flex items-center gap-1.5 mx-auto"
+                                  >
+                                    <ExternalLink size={12} /> عرض الفاتورة
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
             )}
@@ -2980,6 +3275,337 @@ export const SettingsPage = ({
                   className="px-8 py-3.5 bg-primary hover:bg-primary-dark text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 flex-1 sm:flex-none"
                 >
                   <CheckCircle size={18} /> تأكيد إتمام الدفع
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRechargeModal && (
+        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-lg text-navy dark:text-white flex items-center gap-2">
+                <Wallet className="text-[#0D9488]" size={20} /> شحن رصيد المحفظة
+              </h3>
+              <button
+                onClick={() => { setShowRechargeModal(false); setRechargeAmount(""); }}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Payment Methods */}
+              <div className="grid grid-cols-3 gap-2">
+                {(['mada', 'visa', 'applepay'] as const).map((method) => (
+                  <button
+                    key={method}
+                    onClick={() => setRechargeMethod(method)}
+                    className={`py-3 rounded-xl border-2 font-bold text-xs flex flex-col items-center gap-2 transition-all ${rechargeMethod === method ? 'border-[#0D9488] bg-[#0D9488]/5 text-[#0D9488]' : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 text-slate-500 hover:bg-slate-100'}`}
+                  >
+                    <CreditCard size={18} />
+                    {method === 'mada' ? 'مدى' : method === 'applepay' ? 'Apple Pay' : 'فيزا/ماستر'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Amount Input */}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-slate-500">مبلغ الشحن (ريال سعودي)</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={rechargeAmount}
+                    onChange={(e) => setRechargeAmount(e.target.value.replace(/\D/g, ''))}
+                    placeholder="أدخل مبلغ الشحن، مثال: 500"
+                    className="w-full px-5 py-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-750 dark:text-white rounded-xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-bold text-center text-lg"
+                  />
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">ر.س</span>
+                </div>
+              </div>
+
+              {/* Card Details Mock */}
+              {rechargeMethod !== 'applepay' && (
+                <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-slate-400">رقم البطاقة</label>
+                    <input
+                      type="text"
+                      placeholder="4000 1234 5678 9010"
+                      className="w-full px-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-lg outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400">تاريخ الانتهاء</label>
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        className="w-full px-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-lg outline-none text-center"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-bold text-slate-400">رمز التحقق (CVV)</label>
+                      <input
+                        type="password"
+                        placeholder="***"
+                        className="w-full px-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-lg outline-none text-center"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-800 flex gap-3">
+              <button
+                onClick={() => { setShowRechargeModal(false); setRechargeAmount(""); }}
+                className="flex-1 py-3 text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 rounded-xl transition-all"
+              >
+                إلغاء
+              </button>
+              <button
+                disabled={isRecharging || !rechargeAmount || Number(rechargeAmount) <= 0}
+                onClick={() => handleRechargeWallet(Number(rechargeAmount))}
+                className="flex-1 py-3 text-xs font-bold bg-primary text-white hover:bg-primary-dark rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-primary/10 disabled:opacity-50"
+              >
+                {isRecharging ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <Check size={16} /> تأكيد وشحن
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedInvoice && (() => {
+        const tx = selectedInvoice;
+        const amountVal = Math.abs(Number(tx.amount || 0));
+        const vatVal = amountVal - (amountVal / 1.15);
+        const subtotalVal = amountVal / 1.15;
+        const invNo = `INV-2026-${tx.id.slice(0, 8).toUpperCase()}`;
+        const dateObj = new Date(tx.created_at);
+        const dateStr = dateObj.toLocaleDateString('ar-SA');
+        const dateTimeStr = dateObj.toLocaleString('en-US');
+        const title = tx.transaction_type === 'deposit' ? 'شحن رصيد المحفظة' : tx.transaction_type === 'subscription_fee' ? 'اشتراك باقة فرز' : tx.transaction_type === 'addon_fee' ? 'شراء إعلان وظيفي' : tx.description || 'خدمة منصة فرز';
+        const sellerName = "مؤسسة منصة فرز لتقنية المعلومات";
+        const sellerVat = "302213456700003";
+
+        const qrBase64 = getZatcaQrB64(sellerName, sellerVat, dateTimeStr, amountVal.toFixed(2), vatVal.toFixed(2));
+
+        return (
+          <div className="fixed inset-0 z-[250] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 overflow-y-auto">
+            <style>{`
+              @media print {
+                body * {
+                  visibility: hidden;
+                }
+                #zatca-invoice-print-area, #zatca-invoice-print-area * {
+                  visibility: visible;
+                }
+                #zatca-invoice-print-area {
+                  position: absolute;
+                  left: 0;
+                  top: 0;
+                  width: 100%;
+                  background: white !important;
+                  color: black !important;
+                  padding: 20px !important;
+                  box-shadow: none !important;
+                  border: none !important;
+                }
+              }
+            `}</style>
+            
+            <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200 font-sans">
+              {/* Header */}
+              <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 print:hidden">
+                <h3 className="font-bold text-lg text-navy dark:text-white flex items-center gap-2">
+                  <FileText className="text-primary" /> فاتورة ضريبية مبسطة
+                </h3>
+                <button
+                  onClick={() => setSelectedInvoice(null)}
+                  className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-500 hover:bg-slate-300 dark:hover:bg-slate-750 transition-all"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Print Area */}
+              <div id="zatca-invoice-print-area" className="p-8 space-y-8 bg-white text-slate-800 select-text overflow-y-auto flex-1">
+                {/* Brand Header */}
+                <div className="flex justify-between items-start border-b border-slate-100 pb-6">
+                  <div>
+                    <h2 className="text-2xl font-black text-[#0D9488]">منصة فــرز</h2>
+                    <p className="text-[10px] text-slate-400 font-bold mt-1">Smart AI Recruitment Platform</p>
+                    <p className="text-xs text-slate-500 font-medium mt-3">{sellerName}</p>
+                    <p className="text-xs text-slate-500 font-medium">الرقم الضريبي: {sellerVat}</p>
+                    <p className="text-xs text-slate-500 font-medium">الرياض، المملكة العربية السعودية</p>
+                  </div>
+                  <div className="text-left font-semibold">
+                    <span className="inline-block px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black mb-4">فاتورة ضريبية مبسطة</span>
+                    <p className="text-xs text-slate-400">رقم الفاتورة: <span className="font-bold text-slate-700 font-mono">#{invNo}</span></p>
+                    <p className="text-xs text-slate-400 mt-1">تاريخ الإصدار: <span className="font-bold text-slate-700">{dateStr}</span></p>
+                  </div>
+                </div>
+
+                {/* Buyer / Seller details */}
+                <div className="grid grid-cols-2 gap-8 bg-slate-50 p-6 rounded-2xl">
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-wider">العميل المفوّت إليه</p>
+                    <p className="text-sm font-bold text-navy">{userProfile?.companyName || userProfile?.fullName || 'جهة غير محددة'}</p>
+                    <p className="text-xs text-slate-500 mt-1">الرقم الضريبي للعميل: {userProfile?.taxNumber || 'غير متوفر'}</p>
+                    <p className="text-xs text-slate-500">العنوان: {userProfile?.city || 'المملكة العربية السعودية'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black text-slate-400 mb-2 uppercase tracking-wider">مزوّد الخدمة</p>
+                    <p className="text-sm font-bold text-navy">مؤسسة منصة فرز لتقنية المعلومات</p>
+                    <p className="text-xs text-slate-500 mt-1">الموقع الإلكتروني: farz.sa</p>
+                  </div>
+                </div>
+
+                {/* Items Table */}
+                <table className="w-full text-right border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-slate-200 text-slate-400 text-xs font-black">
+                      <th className="pb-3 w-1/2">بيان الخدمة</th>
+                      <th className="pb-3 text-center">الكمية</th>
+                      <th className="pb-3 text-left">السعر (غير شامل الضريبة)</th>
+                      <th className="pb-3 text-left">الضريبة (15%)</th>
+                      <th className="pb-3 text-left">المجموع الإجمالي</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs font-bold text-slate-750">
+                    <tr>
+                      <td className="py-4 text-sm font-bold text-navy">{title}</td>
+                      <td className="py-4 text-center">1</td>
+                      <td className="py-4 text-left font-mono">{subtotalVal.toFixed(2)} ر.س</td>
+                      <td className="py-4 text-left font-mono text-[#0D9488]">{vatVal.toFixed(2)} ر.س</td>
+                      <td className="py-4 text-left font-mono text-navy text-sm font-black">{amountVal.toFixed(2)} ر.س</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Totals & QR Code Section */}
+                <div className="flex justify-between items-end border-t border-slate-100 pt-6">
+                  {/* QR Code Container */}
+                  <div className="bg-white p-2 border border-slate-200 rounded-2xl flex flex-col items-center gap-1.5">
+                    <QRCode value={qrBase64} size={100} style={{ height: "auto", maxWidth: "100%", width: "100px" }} />
+                    <span className="text-[8px] font-bold text-slate-400 select-none">متوافق مع فوترة ZATCA</span>
+                  </div>
+
+                  {/* Summary Box */}
+                  <div className="w-72 bg-slate-50 p-6 rounded-2xl space-y-3 font-bold text-xs text-slate-600">
+                    <div className="flex justify-between">
+                      <span>المجموع الفرعي (خاضع للضريبة)</span>
+                      <span className="font-mono text-navy">{subtotalVal.toFixed(2)} ر.س</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>ضريبة القيمة المضافة (15%)</span>
+                      <span className="font-mono text-[#0D9488]">{vatVal.toFixed(2)} ر.س</span>
+                    </div>
+                    <div className="flex justify-between border-t border-slate-200 pt-3 text-sm font-black text-navy">
+                      <span>الإجمالي شامل الضريبة</span>
+                      <span className="font-mono text-primary">{amountVal.toFixed(2)} ر.س</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* footer note */}
+                <div className="border-t border-slate-150 pt-6 text-center text-[10px] text-slate-400 font-bold">
+                  شكراً لتعاملكم مع منصة فرز لتقنيات التوظيف الذكي
+                </div>
+              </div>
+
+              {/* Actions Footer */}
+              <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3 print:hidden">
+                <button
+                  onClick={() => setSelectedInvoice(null)}
+                  className="px-6 py-3 font-bold text-slate-500 hover:text-slate-700 bg-slate-200 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-all text-xs"
+                >
+                  إغلاق النافذة
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="px-6 py-3 font-bold bg-[#0D9488] hover:bg-[#0b7c72] text-white rounded-xl transition-all flex items-center gap-2 text-xs shadow-lg shadow-teal-500/10"
+                >
+                  <FileText size={16} /> طباعة وتحميل PDF
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {checkoutPlan && (
+        <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="font-bold text-lg text-navy dark:text-white flex items-center gap-2">
+                <ShoppingBag className="text-primary" size={20} /> تأكيد ترقية الاشتراك
+              </h3>
+              <button
+                onClick={() => setCheckoutPlan(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Product Info */}
+              <div className="bg-slate-50 dark:bg-slate-800/30 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <div>
+                  <h4 className="font-bold text-navy dark:text-white text-base">{checkoutPlan.name}</h4>
+                  <p className="text-xs text-slate-400 mt-1">تفعيل فوري لخصائص الخدمة</p>
+                </div>
+                <div className="text-left font-semibold">
+                  <span className="text-2xl font-black text-primary font-mono">{checkoutPlan.price}</span>
+                  <span className="text-[10px] font-bold text-slate-400 block mt-1">ر.س (شامل الضريبة)</span>
+                </div>
+              </div>
+
+              {/* Payment Selector */}
+              <div className="space-y-3">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-wider">اختر طريقة الدفع</p>
+                
+                {/* Wallet option */}
+                <button
+                  onClick={() => handlePayWithWallet(checkoutPlan.price, checkoutPlan.id)}
+                  className="w-full p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-primary/50 bg-slate-50/50 dark:bg-slate-800/20 hover:bg-slate-50 text-right flex justify-between items-center transition-all group font-bold"
+                >
+                  <div>
+                    <p className="font-bold text-navy dark:text-white text-sm group-hover:text-primary transition-colors">الدفع السريع بمحفظة فرز</p>
+                    <p className="text-xs text-slate-450 mt-1">الرصيد المتوفر: <span className="font-bold text-slate-600 dark:text-slate-350 font-mono">{walletBalance.toFixed(2)} ر.س</span></p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <Wallet size={18} />
+                  </div>
+                </button>
+
+                {/* Card gateway option */}
+                <button
+                  onClick={async () => {
+                    const pid = checkoutPlan.id;
+                    setCheckoutPlan(null);
+                    await generatePaymentForm(pid, pid.endsWith('yearly'));
+                  }}
+                  className="w-full p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-primary/50 bg-slate-50/50 dark:bg-slate-800/20 hover:bg-slate-50 text-right flex justify-between items-center transition-all group font-bold"
+                >
+                  <div>
+                    <p className="font-bold text-navy dark:text-white text-sm group-hover:text-primary transition-colors">البطاقة الائتمانية / مدى</p>
+                    <p className="text-xs text-slate-450 mt-1">عبر بوابة NeoLeap الآمنة</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-[#0D9488]/10 text-[#0D9488] flex items-center justify-center shrink-0">
+                    <CreditCard size={18} />
+                  </div>
                 </button>
               </div>
             </div>

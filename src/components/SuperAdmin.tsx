@@ -17,8 +17,11 @@ import {
   Shield,
   Zap,
   Activity,
+  FileText,
+  Database,
+  Calendar,
 } from "lucide-react";
-import { LogoIcon } from '../Shared';
+import { LogoIcon, skillsDictionary } from '../Shared';
 import { getVoiceInterviewFeatureEnabled, setVoiceInterviewFeatureEnabled } from '../config';
 
 const SuperAdminDashboard = () => {
@@ -248,7 +251,7 @@ const SuperAdminDashboard = () => {
                   <div key={jobTitle} className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col h-full hover:shadow-md transition-shadow">
                     <h3 className="text-lg font-bold text-navy dark:text-white mb-4 border-b border-slate-100 dark:border-slate-700 pb-3">{jobTitle}</h3>
                     <div className="flex flex-wrap gap-2 mt-auto">
-                      {skills.map((skill, idx) => (
+                      {(skills as string[]).map((skill, idx) => (
                         <span key={idx} className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-light px-3 py-1.5 rounded-lg text-xs font-bold border border-primary/10">
                           {skill}
                         </span>

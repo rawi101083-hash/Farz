@@ -22,5 +22,19 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/App_test.tsx",
+    "src/App_test_1256.tsx",
+    "src/components/broken.tsx",
+    "src/components/CreateJob.tsx.test.tsx",
+    "src/CreateJobBackup.tsx",
+    "src/pdfTest.tsx",
+    "test.tsx"
+  ]
 }

@@ -616,6 +616,7 @@ export const Dashboard = ({
               top_percentile: raw.top_percentile,
               red_flags: raw.red_flags,
               interview_questions: raw.interview_questions,
+              interview_plan: raw.interview_plan,
               attachments: raw.attachments,
               ai_justification: raw.ai_summary || raw.ai_justification,
               job_id: raw.job_id,

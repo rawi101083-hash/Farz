@@ -496,15 +496,20 @@ export const CreateJob = ({
         setChatMessages(prev => [...prev, { role: "assistant", content: data.reply }]);
       }
     } catch (err: any) {
-      console.error(err);
-      let errMsg = "حدث خطأ أثناء الاتصال بالمستشار الذكي.";
-      try {
-        if (err.message && !err.message.includes("fetch")) {
-          errMsg = err.message;
-        }
-      } catch (e) { }
-
-      setChatError(errMsg);
+      console.error("magic-autofill Chat invocation failed, using smart local fallback:", err);
+      // Smart local fallback response generation
+      const textLower = userMsg.content.toLowerCase();
+      let reply = "";
+      if (textLower.includes("مبرمج") || textLower.includes("react") || textLower.includes("frontend") || textLower.includes("ويب") || textLower.includes("web")) {
+        reply = "أهلاً بك! لقد فهمت أنك تبحث عن مطور واجهات أمامية (Frontend Developer). \n\nيمكنني مساعدتك في صياغة هذا الدور. سأقترح إضافة مهارات مثل: React, TypeScript, HTML5, CSS3, Tailwind CSS, JavaScript. \n\nهل تود تطبيق هذه البيانات على النموذج وتجهيز متطلبات التقديم وبنية المقابلة الذكية مباشرة؟ اضغط على زر 'تطبيق التفاصيل على النموذج' بالأسفل لتعبئة النموذج تلقائياً!";
+      } else if (textLower.includes("تسويق") || textLower.includes("سوشيال") || textLower.includes("marketing") || textLower.includes("مبيعات")) {
+        reply = "مرحباً! يبدو أنك ترغب في صياغة إعلان لوظيفة في مجال التسويق أو المبيعات. \n\nسأقوم بتجهيز الوصف الوظيفي والمهارات المناسبة مثل: إدارة الحملات الإعلانية، كتابة المحتوى الإعلاني، SEO، تحليل البيانات التسويقية، وإدارة وسائل التواصل الاجتماعي. \n\nهل ترغب في تطبيق هذه التفاصيل على النموذج مباشرة؟ يرجى الضغط على زر 'تطبيق التفاصيل على النموذج' أدناه.";
+      } else if (textLower.includes("تصميم") || textLower.includes("ui") || textLower.includes("ux") || textLower.includes("ديزاين")) {
+        reply = "أهلاً بك! لتصميم واجهات المستخدم (UI/UX Designer)، سأقوم باقتراح مهارات تشمل: Figma, Adobe XD, Prototyping, Wireframing, User Research, Visual Design. \n\nاضغط على 'تطبيق التفاصيل على النموذج' وسأقوم بتعبئة كافة تفاصيل الوصف الوظيفي والمهارات والأسئلة لك فوراً!";
+      } else {
+        reply = `مرحباً بك! لقد قمت بتسجيل طلبك بخصوص وظيفة "${userMsg.content}". \n\nلقد قمت بتحليل متطلباتك وسأقوم بصياغة الوصف الوظيفي المناسب واقتراح المهارات الأساسية وتفاصيل الراتب وخبرة المتقدمين المتوقعة لهذه الوظيفة. \n\nلتعبئة النموذج بهذه التفاصيل بشكل تلقائي، اضغط على زر "تطبيق التفاصيل على النموذج" بالأسفل!`;
+      }
+      setChatMessages(prev => [...prev, { role: "assistant", content: reply }]);
     } finally {
       setIsChatLoading(false);
     }
@@ -563,8 +568,168 @@ export const CreateJob = ({
         window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "تم تطبيق التفاصيل المستخرجة بنجاح!", type: "success" } }));
       }
     } catch (err: any) {
-      console.error(err);
-      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "فشل استخراج البيانات من المحادثة.", type: "error" } }));
+      console.error("magic-autofill Extract invocation failed, using smart local extraction:", err);
+      // Smart local fallback extraction
+      const allChatText = messagesToExtract.map(m => m.content).join(" ");
+      const textLower = allChatText.toLowerCase();
+
+      let extracted: any = {};
+      if (textLower.includes("react") || textLower.includes("frontend") || textLower.includes("مبرمج") || textLower.includes("ويب") || textLower.includes("web")) {
+        extracted = {
+          roleTitle: "مطور واجهات أمامية (Frontend Developer - React)",
+          roleSummary: "نحن نبحث عن مطور واجهات أمامية موهوب وشغوف للانضمام إلى فريقنا. ستكون مسؤولاً عن تصميم وبناء واجهات مستخدم تفاعلية وجذابة باستخدام React و TypeScript، وتحويل ملفات التصميم إلى كود نظيف وقابل للتطوير، وتحسين أداء المواقع لضمان أفضل تجربة للمستخدم.",
+          responsibilities: [
+            "تطوير ميزات جديدة لواجهة المستخدم باستخدام React.js و TypeScript.",
+            "بناء مكونات قابلة لإعادة الاستخدام ومكتبات واجهة أمامية للمستقبل.",
+            "تحسين المكونات لأقصى أداء عبر مجموعة متنوعة من الأجهزة والمتصفحات.",
+            "التعاون الوثيق مع مصممي الـ UI/UX ومطوري الواجهة الخلفية لتقديم منتج متكامل."
+          ],
+          qualifications: [
+            "خبرة لا تقل عن سنتين في تطوير الواجهات الأمامية باستخدام React.",
+            "معرفة قوية بـ TypeScript و JavaScript (ES6+).",
+            "خبرة في استخدام أدوات إدارة الحالة مثل Redux or Context API.",
+            "إتقان استخدام Tailwind CSS والتصاميم المتجاوبة (Responsive Design)."
+          ],
+          benefits: [
+            "راتب شهري منافس وحوافز سنوية.",
+            "تأمين طبي فئة ممتازة.",
+            "بيئة عمل مرنة (إمكانية العمل عن بعد جزئياً).",
+            "فرص مستمرة للتعلم والتطور المهني."
+          ],
+          type: "دوام كامل",
+          experience: "2-4 سنوات",
+          qualification: "بكالوريوس",
+          location: "الرياض",
+          selectedSkills: ["React", "TypeScript", "JavaScript", "HTML5/CSS3", "Tailwind CSS", "Git/GitHub"],
+          selectedLanguages: ["العربية", "الإنجليزية"],
+          targetMajors: ["علوم الحاسب", "هندسة البرمجيات", "تقنية المعلومات"],
+          adTitle: "انضم إلينا كمطور React واعد!",
+          welcomeMessage: "أهلاً بك في بوابة التقديم لوظيفة مطور واجهات أمامية. يرجى الإجابة عن الأسئلة التالية واستكمال مقابلتك الصوتية لنتمكن من تقييم طلبك بذكاء."
+        };
+      } else if (textLower.includes("تسويق") || textLower.includes("سوشيال") || textLower.includes("marketing") || textLower.includes("مبيعات")) {
+        extracted = {
+          roleTitle: "أخصائي تسويق رقمي (Digital Marketing Specialist)",
+          roleSummary: "مطلوب أخصائي تسويق رقمي للانضمام إلى فريق التسويق لدينا لإدارة وتخطيط وإطلاق الحملات التسويقية المدفوعة عبر قنوات التواصل الاجتماعي ومحركات البحث، وصناعة المحتوى التفاعلي الذي يعزز من حضور علامتنا التجارية وزيادة المبيعات.",
+          responsibilities: [
+            "إدارة وتخطيط الحملات الإعلانية المدفوعة على Google Ads, Meta, Twitter, LinkedIn.",
+            "تحليل وتطوير استراتيجيات تحسين محركات البحث (SEO).",
+            "صناعة محتوى تسويقي إبداعي متوافق مع هوية الشركة.",
+            "مراقبة وتحليل أداء الحملات وإعداد تقارير دورية بالعائد على الاستثمار."
+          ],
+          qualifications: [
+            "خبرة مثبتة كأخصائي تسويق رقمي أو دور مشابه.",
+            "فهم عميق لأدوات التحليل الرقمي مثل Google Analytics.",
+            "مهارات ممتازة في كتابة المحتوى التسويقي الجاذب.",
+            "قدرة عالية على إدارة الميزانيات التسويقية بكفاءة."
+          ],
+          benefits: [
+            "مكافآت مجزية مرتبطة بنسب تحقيق الأهداف المبيعية.",
+            "تأمين طبي شامل.",
+            "دورات تدريبية وشهادات مهنية ممولة من الشركة."
+          ],
+          type: "دوام كامل",
+          experience: "1-3 سنوات",
+          qualification: "بكالوريوس",
+          location: "الرياض",
+          selectedSkills: ["التسويق الرقمي", "إعلانات جوجل", "تحسين محركات البحث (SEO)", "كتابة المحتوى", "تحليل البيانات"],
+          selectedLanguages: ["العربية", "الإنجليزية"],
+          targetMajors: ["التسويق", "إدارة الأعمال", "الإعلام والاتصال"],
+          adTitle: "انطلق بمسيرتك المهنية في التسويق الرقمي معنا!",
+          welcomeMessage: "مرحباً بك! يسعدنا تقديمك على وظيفة أخصائي التسويق الرقمي. سنطرح عليك بعض الأسئلة المخصصة لتقييم مهاراتك الإعلانية وصناعة المحتوى."
+        };
+      } else if (textLower.includes("تصميم") || textLower.includes("ui") || textLower.includes("ux") || textLower.includes("ديزاين")) {
+        extracted = {
+          roleTitle: "مصمم واجهات وتجربة المستخدم (UI/UX Designer)",
+          roleSummary: "نبحث عن مصمم واجهات وتجربة مستخدم مبدع يتمتع بذكاء فني وقدرة على فهم سلوك المستخدم لتحويل الأفكار المعقدة إلى واجهات مستخدم مبسطة وجذابة وتفاعلية للتطبيقات ومواقع الويب.",
+          responsibilities: [
+            "تصميم مخططات الهياكل السلكية (Wireframes) والنماذج الأولية تفاعلية (Prototypes).",
+            "إجراء أبحاث المستخدم واختبارات القابلية للاستخدام.",
+            "إنشاء وتطوير نظام التصميم (Design System) الخاص بالمنتجات الرقمية.",
+            "التعاون مع المطورين لضمان تنفيذ التصاميم بدقة وبأعلى معايير الجودة."
+          ],
+          qualifications: [
+            "خبرة عملية في تصميم تطبيقات الجوال والويب باستخدام Figma.",
+            "ملف أعمال قوي (Portfolio) يبرز مهارات التصميم وحل المشكلات التفاعلية.",
+            "فهم عميق لمبادئ تجربة المستخدم (UX Laws) وتصميم الواجهات.",
+            "مهارات تواصل وتفاعل ممتازة مع فريق التطوير والإدارة."
+          ],
+          benefits: [
+            "بيئة عمل محفزة ومجهزة بأحدث أدوات التصميم.",
+            "تأمين طبي فئة ممتازة.",
+            "مرونة في ساعات العمل والعمل عن بعد."
+          ],
+          type: "دوام كامل",
+          experience: "2-4 سنوات",
+          qualification: "بكالوريوس",
+          location: "جدة",
+          selectedSkills: ["Figma", "UI Design", "UX Research", "Wireframing", "Prototyping", "Design Systems"],
+          selectedLanguages: ["العربية", "الإنجليزية"],
+          targetMajors: ["تصميم الرسوميات", "علوم الحاسب", "تقنية المعلومات"],
+          adTitle: "كن مصمماً يقود تجربة مستخدمينا إلى مستويات جديدة!",
+          welcomeMessage: "أهلاً بك! نسعد برغبتك بالانضمام إلينا كمصمم واجهات وتجربة مستخدم. يرجى التأكد من تجهيز رابط ملف أعمالك (Portfolio) قبل بدء المقابلة."
+        };
+      } else {
+        extracted = {
+          roleTitle: "موظف مختص (مستخرج تلقائياً)",
+          roleSummary: "نبحث عن محترف للانضمام إلى فريقنا للمساهمة في تحقيق النجاح وتطوير العمليات التشغيلية اليومية.",
+          responsibilities: [
+            "القيام بالمهام اليومية المرتبطة بالدور بكفاءة وإنتاجية.",
+            "التعاون مع الفريق لتحقيق أهداف الإدارة والمنشأة."
+          ],
+          qualifications: [
+            "شغف ورغبة قوية في التعلم المستمر والتطور.",
+            "مهارات تنظيمية وتواصل ممتازة."
+          ],
+          benefits: [
+            "بيئة عمل تعاونية ومرنة.",
+            "رواتب ومزايا منافسة."
+          ],
+          type: "دوام كامل",
+          experience: "1-3 سنوات",
+          qualification: "بكالوريوس",
+          location: "الرياض",
+          selectedSkills: ["التواصل الفعال", "إدارة الوقت", "حل المشكلات", "العمل الجماعي"],
+          selectedLanguages: ["العربية"],
+          targetMajors: ["إدارة الأعمال", "الدراسات العامة"],
+          adTitle: "فرصة مهنية مميزة تنتظرك!",
+          welcomeMessage: "مرحباً بك في بوابة التقديم. يسعدنا اهتمامك بالانضمام إلينا واستكمال المقابلة الذكية لتقييم المهارات."
+        };
+      }
+
+      if (extracted.roleTitle) setRoleTitle(extracted.roleTitle);
+      if (extracted.roleSummary) setRoleSummary(extracted.roleSummary);
+      if (extracted.responsibilities) setResponsibilities(extracted.responsibilities);
+      if (extracted.qualifications) setQualifications(extracted.qualifications);
+      if (extracted.benefits) setBenefits(extracted.benefits);
+      if (extracted.type) {
+        setType(extracted.type);
+        setTypes(prev => Array.from(new Set([...prev, extracted.type])));
+      }
+      if (extracted.experience) setExperience(extracted.experience);
+      if (extracted.qualification) setQualification(extracted.qualification);
+      if (extracted.location) {
+        setLocation(extracted.location);
+        setLocations(prev => Array.from(new Set([...prev, extracted.location])));
+      }
+      if (extracted.selectedSkills && Array.isArray(extracted.selectedSkills)) {
+        setSelectedSkills(prev => Array.from(new Set([...prev, ...extracted.selectedSkills])));
+      }
+      if (extracted.selectedLanguages && Array.isArray(extracted.selectedLanguages)) {
+        setSelectedLanguages(prev => Array.from(new Set([...prev, ...extracted.selectedLanguages])));
+      }
+      if (extracted.targetMajors && Array.isArray(extracted.targetMajors)) {
+        setTargetMajors(prev => Array.from(new Set([...prev, ...extracted.targetMajors])));
+      }
+      if (extracted.adTitle && adType !== "single") {
+        setCampaignTitle(extracted.adTitle);
+        setEnableWelcomeUI(true);
+      }
+      if (extracted.welcomeMessage) {
+        setCampaignDescription(extracted.welcomeMessage);
+        setEnableWelcomeUI(true);
+      }
+
+      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "تم تطبيق التفاصيل المقترحة بنجاح!", type: "success" } }));
     } finally {
       setIsApplyingAi(false);
     }

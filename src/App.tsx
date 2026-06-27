@@ -1612,9 +1612,9 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                       <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
                          <BrainCircuit size={32} />
                       </div>
-                      <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">بنك كفاءات مدعوم بالذكاء الاصطناعي</h3>
+                      <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">بنك الكفاءات لحفظ المواهب</h3>
                       <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
-                        لا تضيع وقتك في قراءة مئات السير الذاتية يدوياً. يقوم النظام تلقائياً بتحليل المتقدمين وإعطائك نسب مطابقة دقيقة بناءً على المهارات، التعليم، والخبرة.
+                        احتفظ بالسير الذاتية للمتقدمين المفضلين لديك في بنك كفاءات خاص بك للعودة إليهم لاحقاً. ابنِ قاعدة مواهب قوية تضمن لك عدم ضياع أي كفاءة مميزة، واختصر وقت التوظيف المستقبلي.
                       </p>
                     </div>
                     <div className="flex-1 w-full relative">
@@ -1906,6 +1906,17 @@ export default function App() {
   useEffect(() => {
     sessionStorage.setItem("sahab_dashboard_tab", dashboardTab);
   }, [dashboardTab]);
+
+  useEffect(() => {
+    const handleTabChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setDashboardTab(customEvent.detail);
+      }
+    };
+    window.addEventListener('changeTab', handleTabChange);
+    return () => window.removeEventListener('changeTab', handleTabChange);
+  }, []);
   const [dashboardPendingAction, setDashboardPendingAction] = useState<{ id: string, decision: string, isOffer?: boolean } | null>(null);
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem("sahab_dark_mode") === "true";

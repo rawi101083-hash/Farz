@@ -3,8 +3,14 @@ import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, Target } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
+const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.662-2.062-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.82 9.82 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.81 11.81 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.88 11.88 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.8 11.8 0 0 0-3.48-8.413Z" />
+  </svg>
+);
+
 const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile, isSharedView = false }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, userProfile?: any, isSharedView?: boolean }) => {
-  const [activeTab, setActiveTab] = useState<"analysis" | "requirements" | "interview" | "notes">("analysis");
+  const [activeTab, setActiveTab] = useState<"analysis" | "requirements" | "interview" | "notes" | "ai_settings">("analysis");
   const [isAILoading, setIsAILoading] = useState(false);
   const [isFullscreenCV, setIsFullscreenCV] = useState(false);
 
@@ -47,7 +53,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
         .eq('decision', 'interviewing')
         .eq('has_started_interview', false)
         .neq('interview_revoked', true);
-        
+
       setPendingInterviewsCount(count || 0);
     };
     fetchPending();
@@ -112,10 +118,16 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
 
     if (applicant?.id) {
       if (applicant.hr_notes) {
-        try {
-          const parsedNotes = JSON.parse(applicant.hr_notes);
-          setNotesList(Array.isArray(parsedNotes) ? parsedNotes : []);
-        } catch (e) {
+        if (Array.isArray(applicant.hr_notes)) {
+          setNotesList(applicant.hr_notes);
+        } else if (typeof applicant.hr_notes === 'string') {
+          try {
+            const parsedNotes = JSON.parse(applicant.hr_notes);
+            setNotesList(Array.isArray(parsedNotes) ? parsedNotes : []);
+          } catch (e) {
+            setNotesList([]);
+          }
+        } else {
           setNotesList([]);
         }
       } else {
@@ -317,7 +329,13 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
   const actualWeaknesses = safeParseArray(applicant?.top_weaknesses);
   const topPercentile = dynamicPercentile || applicant?.top_percentile;
   const redFlags = safeParseArray(applicant?.red_flags);
-  const interviewQuestions = safeParseArray(applicant?.interview_questions);
+
+  let rawQuestions = applicant?.interview_questions;
+  if (!rawQuestions || (Array.isArray(rawQuestions) && rawQuestions.length === 0) || (typeof rawQuestions === 'string' && rawQuestions.length < 5)) {
+    rawQuestions = applicant?.suggested_questions || applicant?.interview_plan;
+  }
+  const interviewQuestions = safeParseArray(rawQuestions);
+
   const attachments = safeParseArray(applicant?.attachments);
 
   const getMatchColor = (score: number) => {
@@ -358,171 +376,45 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
       {" "}
       <div className="max-w-7xl mx-auto">
         {" "}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); onBack(); }}
-            className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-primary font-bold transition-colors group"
-          >
-            {" "}
-            <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 flex items-center justify-center group-hover:border-primary transition-all">
-              {" "}
-              <ArrowLeft size={18} className="rotate-180" />{" "}
-            </div>{" "}
-            العودة للوحة التحكم{" "}
-          </button>
-
-          {!isSharedView && (
-            <div className="flex items-center gap-3">
-              <button
-              onClick={() => { if (applicant) setShowOfferModal(true); }}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:shadow-md transition-all flex items-center gap-2"
-            >
-              <Send size={16} /> قبول وإرسال عرض
-            </button>
+        <div className="flex flex-col gap-4 mb-8">
+          {/* Top Row: Back Button & Primary Actions */}
+          <div className="flex flex-wrap items-center justify-between gap-4 w-full">
             <button
-              onClick={handleSilentAccept}
-              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-900/50 dark:hover:bg-emerald-600 dark:hover:text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 hover:border-transparent"
+              type="button"
+              onClick={(e) => { e.preventDefault(); onBack(); }}
+              className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-primary font-bold transition-colors group"
             >
-              <CheckCircle size={16} /> قبول
-            </button>
-            {(applicant?.decision === "interview" || applicant?.decision === "interviewing") && (
-              <div className="flex flex-col gap-2 bg-slate-50 dark:bg-slate-800/50 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400">لغة الذكاء الاصطناعي:</span>
-                  <select
-                    value={interviewLang}
-                    onChange={(e) => setInterviewLang(e.target.value as 'ar' | 'en')}
-                    className="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-md px-2 py-1 outline-none focus:border-primary"
-                  >
-                    <option value="ar">العربية</option>
-                    <option value="en">English</option>
-                  </select>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => { 
-                      if (interviewsRemaining === 0) {
-                        setToastMessage("رصيد المقابلات صفر، لا يمكنك إرسال رابط أو إعادة فتح الرابط.");
-                        setTimeout(() => setToastMessage(null), 3000);
-                        return;
-                      }
-                      setInterviewSendMethod('whatsapp'); 
-                      setShowInterviewQuestionsModal(true); 
-                    }}
-                    className="bg-green-50 text-green-600 hover:bg-green-600 hover:text-white border border-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-900/50 dark:hover:bg-green-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
-                  >
-                    <MessageCircle size={16} /> إرسال المقابلة (واتساب)
-                  </button>
-                  <button
-                    onClick={() => { 
-                      if (interviewsRemaining === 0) {
-                        setToastMessage("رصيد المقابلات صفر، لا يمكنك إرسال رابط أو إعادة فتح الرابط.");
-                        setTimeout(() => setToastMessage(null), 3000);
-                        return;
-                      }
-                      setInterviewSendMethod('email'); 
-                      setShowInterviewQuestionsModal(true); 
-                    }}
-                    className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-900/50 dark:hover:bg-blue-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
-                  >
-                    <Mail size={16} /> إرسال المقابلة (إيميل)
-                  </button>
-                  <button
-                    onClick={async () => {
-                      if (interviewsRemaining === 0) {
-                        setToastMessage("رصيد المقابلات صفر، لا يمكنك إرسال رابط أو إعادة فتح الرابط.");
-                        setTimeout(() => setToastMessage(null), 3000);
-                        return;
-                      }
-                      if (!window.confirm("تنبيه: هذا المتقدم قد أجرى المقابلة مسبقاً. هل تريد تأكيد فك القفل وإعادة فتح المقابلة له؟")) return;
-                      try {
-                        await supabase
-                          .from('applicants')
-                          .update({ has_started_interview: false, is_interview_completed: false, interview_revoked: false })
-                          .eq('id', applicant.id);
-                        if (applicant) {
-                          applicant.has_started_interview = false;
-                          applicant.is_interview_completed = false;
-                          applicant.interview_revoked = false;
-                        }
-                        if (onStatusUpdate) onStatusUpdate(applicant.id, applicant.decision || 'interview', false);
-                        alert("تم فك القفل بنجاح، يمكنك الآن إعادة إرسال الرابط.");
-                      } catch (err) {
-                        alert("حدث خطأ أثناء فك القفل.");
-                      }
-                    }}
-                    className="bg-yellow-50 text-yellow-600 hover:bg-yellow-600 hover:text-white border border-yellow-100 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-900/50 dark:hover:bg-yellow-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2"
-                  >
-                    <RefreshCw size={16} /> إعادة فتح رابط المقابلة
-                  </button>
-                </div>
+              <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center group-hover:border-primary transition-all">
+                <ArrowLeft size={18} className="rotate-180" />
               </div>
-            )}
-            
-            {/* Revoke Link Button */}
-            {((applicant?.decision === 'interview_sent' || applicant?.interview_sent || applicant?.decision === 'interviewing') && !applicant?.has_started_interview && !applicant?.interview_revoked) && (
-              <div className="flex flex-col gap-2 bg-rose-50 dark:bg-rose-900/10 p-4 rounded-xl border border-rose-100 dark:border-rose-800/30">
-                <p className="text-xs font-bold text-rose-600 dark:text-rose-400">
-                  تم إرسال رابط المقابلة مسبقاً. إذا لم يتجاوب المتقدم، يمكنك إلغاء الرابط لاسترجاع الحجز.
-                </p>
+              العودة للوحة التحكم
+            </button>
+
+            {!isSharedView && (
+              <div className="flex items-center gap-3 flex-wrap">
                 <button
-                  onClick={async () => {
-                    if (!window.confirm("هل أنت متأكد من إلغاء رابط المقابلة لهذا المتقدم؟")) return;
-                    try {
-                      await supabase.from('applicants').update({ interview_revoked: true }).eq('id', applicant.id);
-                      if (applicant) applicant.interview_revoked = true;
-                      setPendingInterviewsCount(prev => Math.max(0, prev - 1));
-                      alert("تم إلغاء الرابط بنجاح.");
-                    } catch (err) {
-                      console.error(err);
-                    }
-                  }}
-                  className="bg-rose-100 text-rose-700 hover:bg-rose-600 hover:text-white dark:bg-rose-900/30 dark:text-rose-400 dark:hover:bg-rose-600 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 w-fit mt-1"
+                  onClick={() => { if (applicant) setShowOfferModal(true); }}
+                  className="bg-primary hover:bg-teal-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2 border border-transparent"
                 >
-                  <Ban size={16} /> إلغاء رابط المقابلة
+                  <Send size={16} /> قبول وإرسال عرض
+                </button>
+
+                <button
+                  onClick={handleReject}
+                  className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border border-red-100 dark:border-red-900/30 hover:border-transparent"
+                >
+                  <X size={16} /> رفض
+                </button>
+
+                <button
+                  onClick={handleSilentAccept}
+                  className="bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white dark:bg-teal-900/20 dark:text-teal-400 dark:hover:bg-teal-600 dark:hover:text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border border-teal-100 dark:border-teal-900/30 hover:border-transparent"
+                >
+                  <CheckCircle size={16} /> قبول
                 </button>
               </div>
             )}
-            {applicant?.interview_revoked && (
-              <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-xs font-bold p-3 rounded-xl flex items-center gap-2 border border-slate-200 dark:border-slate-700">
-                <Ban size={16} /> تم إلغاء رابط المقابلة لهذا المتقدم.
-              </div>
-            )}
-            
-            {applicant?.decision !== "interview" && applicant?.decision !== "interviewing" && (
-              <button
-                onClick={() => {
-                  if (!applicant || !onStatusUpdate) return;
-                  setIsScheduling(true);
-                  setTimeout(() => {
-                    onStatusUpdate(applicant.id, "interview");
-                    setIsScheduling(false);
-                  }, 800);
-                }}
-                disabled={isScheduling}
-                className={`px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border ${isScheduling ? "bg-yellow-50 text-yellow-400 border-yellow-100 cursor-wait dark:bg-yellow-900/20 dark:text-yellow-600 dark:border-yellow-900/20" : "bg-yellow-50 text-yellow-600 hover:bg-yellow-500 hover:text-white dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-600 dark:hover:text-white border-yellow-100 dark:border-yellow-900/50 hover:border-transparent"}`}
-              >
-                {isScheduling ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-                    جاري النقل...
-                  </>
-                ) : (
-                  <>
-                    <Calendar size={16} /> مقابلة
-                  </>
-                )}
-              </button>
-            )}
-            <button
-              onClick={handleReject}
-              className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-600 dark:hover:text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 hover:border-transparent"
-            >
-              <X size={16} /> رفض
-            </button>
-            </div>
-          )}
+          </div>
         </div>{" "}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
           {" "}
@@ -542,566 +434,712 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                 </div>
               </div>{" "}
               {!isAutoRejected && (
-              <div className="bg-slate-50/50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-[32px] p-8 mb-8 flex flex-col items-center relative overflow-hidden">
-                {/* Subtle Background Glow */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+                <div className="bg-slate-50/50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-[32px] p-8 mb-8 flex flex-col items-center relative overflow-hidden">
+                  {/* Subtle Background Glow */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
 
-                <div className="relative w-28 h-28 mb-5 group">
-                  <svg className="w-full h-full drop-shadow-sm transition-transform duration-500 group-hover:scale-105" viewBox="0 0 100 100">
-                    <defs>
-                      <linearGradient id="matchGradient-teal" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#2dd4bf" />
-                        <stop offset="100%" stopColor="#14b8a6" />
-                      </linearGradient>
-                      <linearGradient id="matchGradient-amber" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#fbbf24" />
-                        <stop offset="100%" stopColor="#f59e0b" />
-                      </linearGradient>
-                      <linearGradient id="matchGradient-rose" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#fb7185" />
-                        <stop offset="100%" stopColor="#f43f5e" />
-                      </linearGradient>
-                    </defs>
-                    <circle
-                      className="text-slate-100 dark:text-slate-800 stroke-current shadow-inner"
-                      strokeWidth="6"
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      fill="transparent"
-                      style={{ filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.05))" }}
-                    />
-                    <motion.circle
-                      strokeWidth="6"
-                      strokeLinecap="round"
-                      cx="50"
-                      cy="50"
-                      r="42"
-                      fill="transparent"
-                      stroke={displayMatch >= 80 ? "url(#matchGradient-teal)" : displayMatch >= 50 ? "url(#matchGradient-amber)" : "url(#matchGradient-rose)"}
-                      style={{ filter: "drop-shadow(0px 1px 2px rgba(0,0,0,0.15))" }}
-                      strokeDasharray="263.89"
-                      initial={{ strokeDashoffset: 263.89 }}
-                      animate={{ strokeDashoffset: 263.89 * (1 - strokeOffsetMatch) }}
-                      transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center mt-0.5">
-                    <span className={`text-3xl font-bold ${matchColorClass}`}>
-                      {displayMatch}%
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
-                      مطابقة
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-center gap-3 mb-8 w-full z-10">
-                  <div className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-[20px] text-sm font-bold border ${displayMatch >= 80 ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/30' : displayMatch >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/30' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/30'} shadow-[0_4px_10px_rgba(0,0,0,0.03)]`}>
-                    {displayMatch >= 80 ? <CheckCircle size={16} /> : displayMatch >= 50 ? <AlertTriangle size={16} /> : <X size={16} />}
-                    {displayMatch >= 80 ? "ملاءمة عالية جداً" : displayMatch >= 50 ? "ملاءمة جزئية" : "غير مطابق"}
+                  <div className="relative w-28 h-28 mb-5 group">
+                    <svg className="w-full h-full drop-shadow-sm transition-transform duration-500 group-hover:scale-105" viewBox="0 0 100 100">
+                      <defs>
+                        <linearGradient id="matchGradient-teal" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#2dd4bf" />
+                          <stop offset="100%" stopColor="#14b8a6" />
+                        </linearGradient>
+                        <linearGradient id="matchGradient-amber" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#fbbf24" />
+                          <stop offset="100%" stopColor="#f59e0b" />
+                        </linearGradient>
+                        <linearGradient id="matchGradient-rose" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#fb7185" />
+                          <stop offset="100%" stopColor="#f43f5e" />
+                        </linearGradient>
+                      </defs>
+                      <circle
+                        className="text-slate-100 dark:text-slate-800 stroke-current shadow-inner"
+                        strokeWidth="6"
+                        cx="50"
+                        cy="50"
+                        r="42"
+                        fill="transparent"
+                        style={{ filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.05))" }}
+                      />
+                      <motion.circle
+                        strokeWidth="6"
+                        strokeLinecap="round"
+                        cx="50"
+                        cy="50"
+                        r="42"
+                        fill="transparent"
+                        stroke={displayMatch >= 80 ? "url(#matchGradient-teal)" : displayMatch >= 50 ? "url(#matchGradient-amber)" : "url(#matchGradient-rose)"}
+                        style={{ filter: "drop-shadow(0px 1px 2px rgba(0,0,0,0.15))" }}
+                        strokeDasharray="263.89"
+                        initial={{ strokeDashoffset: 263.89 }}
+                        animate={{ strokeDashoffset: 263.89 * (1 - strokeOffsetMatch) }}
+                        transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center mt-0.5">
+                      <span className={`text-3xl font-bold ${matchColorClass}`}>
+                        {displayMatch}%
+                      </span>
+                      <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
+                        مطابقة
+                      </span>
+                    </div>
                   </div>
 
-                  {topPercentile && (
-                    <div className="relative w-full max-w-[200px] mt-2">
-                      <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                        <div className="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
-                      </div>
-                      <div className="relative flex justify-center">
-                        <span className="bg-white dark:bg-slate-800 px-3 text-[13px] font-bold text-slate-500 dark:text-slate-400">
-                          أفضل من <span className="text-primary font-black">{topPercentile}%</span> من المتقدمين
-                        </span>
-                      </div>
+                  <div className="flex flex-col items-center gap-3 mb-8 w-full z-10">
+                    <div className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-[20px] text-sm font-bold border ${displayMatch >= 80 ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/30' : displayMatch >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/30' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/30'} shadow-[0_4px_10px_rgba(0,0,0,0.03)]`}>
+                      {displayMatch >= 80 ? <CheckCircle size={16} /> : displayMatch >= 50 ? <AlertTriangle size={16} /> : <X size={16} />}
+                      {displayMatch >= 80 ? "ملاءمة عالية جداً" : displayMatch >= 50 ? "ملاءمة جزئية" : "غير مطابق"}
                     </div>
-                  )}
-                </div>
 
-                <div className="w-full space-y-4 mt-2 pt-6 border-t border-slate-100 dark:border-slate-700/50 relative z-10">
-                  {[
-                    { label: "تطابق المهارات", val: skillsMatch, delay: 0.3 },
-                    { label: "تطابق الخبرة", val: expMatch, delay: 0.4 },
-                    { label: "تطابق التعليم", val: eduMatch, delay: 0.5 },
-                  ].map((item, idx) => (
-                    <div key={idx} className="w-full group">
-                      <div className="flex justify-between items-end mb-2 px-1">
-                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">{item.label}</span>
-                        <span className="text-sm font-black text-navy dark:text-white">{item.val}%</span>
+                    {topPercentile && (
+                      <div className="relative w-full max-w-[200px] mt-2">
+                        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                          <div className="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
+                        </div>
+                        <div className="relative flex justify-center">
+                          <span className="bg-white dark:bg-slate-800 px-3 text-[13px] font-bold text-slate-500 dark:text-slate-400">
+                            أفضل من <span className="text-primary font-black">{topPercentile}%</span> من المتقدمين
+                          </span>
+                        </div>
                       </div>
-                      <div className="w-full bg-slate-100 dark:bg-slate-800/80 rounded-full h-3 p-[2px] shadow-inner border border-slate-200/50 dark:border-slate-700/50">
-                        <motion.div 
-                          initial={{ width: 0 }} 
-                          animate={{ width: `${item.val}%` }} 
-                          transition={{ duration: 1, delay: item.delay }} 
-                          className={`h-full rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.1)] ${item.val >= 80 ? 'bg-gradient-to-r from-teal-400 to-teal-500' : item.val >= 50 ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-gradient-to-r from-rose-400 to-rose-500'}`} 
-                        />
+                    )}
+                  </div>
+
+                  <div className="w-full space-y-4 mt-2 pt-6 border-t border-slate-100 dark:border-slate-700/50 relative z-10">
+                    {[
+                      { label: "تطابق المهارات", val: skillsMatch, delay: 0.3 },
+                      { label: "تطابق الخبرة", val: expMatch, delay: 0.4 },
+                      { label: "تطابق التعليم", val: eduMatch, delay: 0.5 },
+                    ].map((item, idx) => (
+                      <div key={idx} className="w-full group">
+                        <div className="flex justify-between items-end mb-2 px-1">
+                          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">{item.label}</span>
+                          <span className="text-sm font-black text-navy dark:text-white">{item.val}%</span>
+                        </div>
+                        <div className="w-full bg-slate-100 dark:bg-slate-800/80 rounded-full h-3 p-[2px] shadow-inner border border-slate-200/50 dark:border-slate-700/50">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${item.val}%` }}
+                            transition={{ duration: 1, delay: item.delay }}
+                            className={`h-full rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.1)] ${item.val >= 80 ? 'bg-gradient-to-r from-teal-400 to-teal-500' : item.val >= 50 ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-gradient-to-r from-rose-400 to-rose-500'}`}
+                          />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
               )}
               <div className="flex flex-wrap bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-[20px] mb-8 border border-slate-100 dark:border-slate-700/50 gap-1.5">
                 <button
                   onClick={() => setActiveTab("analysis")}
-                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all ${activeTab === "analysis" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
+                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all active:translate-y-[4px] active:border-b-0 active:shadow-none ${activeTab === "analysis" ? "bg-white dark:bg-slate-700 text-primary shadow-md border-b-[4px] border-slate-200 dark:border-slate-800" : "bg-transparent text-slate-500 dark:text-slate-400 border-b-[4px] border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
                   المطابقة والتحليل
                 </button>
                 <button
                   onClick={() => setActiveTab("requirements")}
-                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all ${activeTab === "requirements" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
+                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all active:translate-y-[4px] active:border-b-0 active:shadow-none ${activeTab === "requirements" ? "bg-white dark:bg-slate-700 text-primary shadow-md border-b-[4px] border-slate-200 dark:border-slate-800" : "bg-transparent text-slate-500 dark:text-slate-400 border-b-[4px] border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
                   نموذج التقديم
                 </button>
                 {!isAutoRejected && (
-                <button
-                  onClick={() => setActiveTab("interview")}
-                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all ${activeTab === "interview" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
-                >
-                  خطة المقابلة
-                </button>
+                  <button
+                    onClick={() => setActiveTab("interview")}
+                    className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all active:translate-y-[4px] active:border-b-0 active:shadow-none ${activeTab === "interview" ? "bg-white dark:bg-slate-700 text-primary shadow-md border-b-[4px] border-slate-200 dark:border-slate-800" : "bg-transparent text-slate-500 dark:text-slate-400 border-b-[4px] border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
+                  >
+                    خطة المقابلة
+                  </button>
+                )}
+                {!isSharedView && !isAutoRejected && (
+                  <button
+                    onClick={() => setActiveTab("ai_settings")}
+                    className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all active:translate-y-[4px] active:border-b-0 active:shadow-none ${activeTab === "ai_settings" ? "bg-white dark:bg-slate-700 text-primary shadow-md border-b-[4px] border-slate-200 dark:border-slate-800" : "bg-transparent text-slate-500 dark:text-slate-400 border-b-[4px] border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
+                  >
+                    إعداد الذكاء الاصطناعي
+                  </button>
                 )}
                 <button
                   onClick={() => setActiveTab("notes")}
-                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all ${activeTab === "notes" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
+                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all active:translate-y-[4px] active:border-b-0 active:shadow-none ${activeTab === "notes" ? "bg-white dark:bg-slate-700 text-primary shadow-md border-b-[4px] border-slate-200 dark:border-slate-800" : "bg-transparent text-slate-500 dark:text-slate-400 border-b-[4px] border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
                   ملاحظات
                 </button>
               </div>
 
               <div className="min-h-[700px] w-full">
-              {activeTab === "analysis" && isAILoading && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20">
-                  <div className="w-16 h-16 border-4 border-slate-200 border-t-primary rounded-full animate-spin mb-6"></div>
-                  <h3 className="text-xl font-bold text-navy dark:text-white mb-2">جاري تحليل البيانات بواسطة نظام فرز... ⏳</h3>
-                  <p className="text-slate-500 dark:text-slate-400 font-medium">يقوم النظام بقراءة وتقييم البيانات حالياً.</p>
-                </motion.div>
-              )}
-              {activeTab === "analysis" && !isAILoading && isAutoRejected && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center py-16 bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800/30 rounded-[32px]">
-                   <Ban size={48} className="text-rose-500/50 mb-4" />
-                   <h3 className="text-2xl font-black text-rose-600 dark:text-rose-400">مستبعد آلياً</h3>
-                   <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium text-center px-4 max-w-lg leading-relaxed">تم استبعاد المتقدم تلقائياً لعدم اجتيازه الأسئلة الاستبعادية.</p>
-                </motion.div>
-              )}
-              {activeTab === "analysis" && !isAILoading && !isAutoRejected && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                {activeTab === "analysis" && isAILoading && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20">
+                    <div className="w-16 h-16 border-4 border-slate-200 border-t-primary rounded-full animate-spin mb-6"></div>
+                    <h3 className="text-xl font-bold text-navy dark:text-white mb-2">جاري تحليل البيانات بواسطة نظام فرز... ⏳</h3>
+                    <p className="text-slate-500 dark:text-slate-400 font-medium">يقوم النظام بقراءة وتقييم البيانات حالياً.</p>
+                  </motion.div>
+                )}
+                {activeTab === "analysis" && !isAILoading && isAutoRejected && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center py-16 bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800/30 rounded-[32px]">
+                    <Ban size={48} className="text-rose-500/50 mb-4" />
+                    <h3 className="text-2xl font-black text-rose-600 dark:text-rose-400">مستبعد آلياً</h3>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium text-center px-4 max-w-lg leading-relaxed">تم استبعاد المتقدم تلقائياً لعدم اجتيازه الأسئلة الاستبعادية.</p>
+                  </motion.div>
+                )}
+                {activeTab === "analysis" && !isAILoading && !isAutoRejected && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
 
-                  {applicant?.expectedSalary && (applicant?.askExpectedSalary === "open" || applicant?.askExpectedSalary === "ranges") && (
-                    <div className="bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 p-3.5 rounded-2xl flex items-center gap-3 shadow-sm mb-4">
-                      <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/30">
-                        <DollarSign size={16} />
-                      </div>
-                      <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                        الراتب المتوقع بناءً على إجابة المتقدم: <span className="text-navy dark:text-white font-black ml-1 text-sm">{applicant.expectedSalary} {applicant.expectedSalary.toString().includes("ريال") ? "" : "ريال"}</span>
-                      </p>
-                    </div>
-                  )}
-
-                  {applicant?.is_interview_completed && (
-                    <div className="bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800/30 p-6 rounded-[32px] mb-6">
-                      <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400 mb-4 flex items-center gap-2">
-                        <Mic size={20} /> تقرير المقابلة الصوتية (AI)
-                      </h3>
-                      <div className="flex flex-col gap-4 mb-4">
-                        <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3 w-fit">
-                          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">التقييم النهائي:</span>
-                          <span className="text-lg font-black text-purple-600 dark:text-purple-400">{applicant?.interview_score || "-"} / 10</span>
+                    {applicant?.expectedSalary && (applicant?.askExpectedSalary === "open" || applicant?.askExpectedSalary === "ranges") && (
+                      <div className="bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 p-3.5 rounded-2xl flex items-center gap-3 shadow-sm mb-4">
+                        <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/30">
+                          <DollarSign size={16} />
                         </div>
-
-                        {applicant?.voiceEvalUrl && (
-                          <div className="w-full bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">التسجيل الصوتي للمقابلة:</span>
-                            <audio controls src={applicant.voiceEvalUrl} className="w-full h-10 outline-none" />
-                          </div>
-                        )}
+                        <p className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                          الراتب المتوقع بناءً على إجابة المتقدم: <span className="text-navy dark:text-white font-black ml-1 text-sm">{applicant.expectedSalary} {applicant.expectedSalary.toString().includes("ريال") ? "" : "ريال"}</span>
+                        </p>
                       </div>
+                    )}
 
-                      <div className="space-y-4">
-                        <div className="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-purple-100 dark:border-purple-800/20">
-                          <h4 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">ملخص المقابلة</h4>
-                          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap">
-                            {applicant?.interview_summary || "لا يوجد ملخص."}
-                          </p>
-                        </div>
-
-                        {applicant?.interview_transcript && (
-                          <div className="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-purple-100 dark:border-purple-800/20 max-h-60 overflow-y-auto custom-scrollbar">
-                            <h4 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">التفريغ النصي للمحادثة (Transcript)</h4>
-                            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium whitespace-pre-wrap">
-                              {applicant.interview_transcript}
-                            </p>
+                    {applicant?.is_interview_completed && (
+                      <div className="bg-purple-50 dark:bg-purple-900/10 border-2 border-b-[6px] border-purple-200 dark:border-purple-800/50 p-6 rounded-[32px] mb-6 shadow-sm">
+                        <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400 mb-4 flex items-center gap-2">
+                          <Mic size={20} /> تقرير المقابلة الصوتية (AI)
+                        </h3>
+                        <div className="flex flex-col gap-4 mb-4">
+                          <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3 w-fit">
+                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">التقييم النهائي:</span>
+                            <span className="text-lg font-black text-purple-600 dark:text-purple-400">{applicant?.interview_score || "-"} / 10</span>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
-                  <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-6 flex items-center gap-2">
-                      <Sparkles size={20} className="text-primary" /> ملخص المطابقة
-                    </h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
-                      {actualSummary || applicant?.aiSummary || "لا يوجد ملخص متاح حالياً"}
-                    </p>
-                  </div>
-
-                  {redFlags && redFlags.length > 0 && (
-                    <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30 p-6 rounded-[32px]">
-                      <h4 className="font-bold text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
-                        رادار التحذيرات
-                      </h4>
-                      <ul className="space-y-2">
-                        {redFlags.map((flagObj: any, i: number) => {
-                          const flagText = typeof flagObj === 'string' ? flagObj : (flagObj.point || "");
-                          const evidenceText = typeof flagObj === 'string' ? "" : (flagObj.evidence || "");
-                          if (!flagText) return null;
-                          return (
-                            <li key={i} className="flex gap-3">
-                              <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
-                              <div>
-                                <p className="text-sm text-red-800 dark:text-red-300/90 leading-relaxed font-bold">{flagText}</p>
-                                {evidenceText && (
-                                  <details className="mt-1.5 group cursor-pointer">
-                                    <summary className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-red-500 transition-colors list-none [&::-webkit-details-marker]:hidden">
-                                      <svg className="w-3 h-3 group-open:rotate-90 transition-transform text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                                      عرض الدليل
-                                    </summary>
-                                    <p className="text-[13px] text-slate-600 dark:text-slate-300 italic mt-2 font-medium pr-3 border-r-2 border-red-200 dark:border-red-800/50 py-1" dir="ltr text-left">
-                                      {evidenceText.toString().replace(/^["']|["']$/g, '').trim()}
-                                    </p>
-                                  </details>
-                                )}
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="bg-[#F0FDF4] dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 p-6 rounded-[32px]">
-                      <h4 className="font-bold text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
-                        نقاط القوة
-                      </h4>
-                      <ul className="space-y-4">
-                        {actualStrengths.map((strObj: any, i: number) => {
-                          const strengthText = typeof strObj === 'string' ? strObj : (strObj.point || strObj.strength || "");
-                          const evidenceText = typeof strObj === 'string' ? "" : (strObj.evidence || "");
-                          if (!strengthText) return null;
-                          return (
-                            <li key={i} className="flex gap-3">
-                              <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 shrink-0" />
-                              <div>
-                                <p className="text-sm text-green-800 dark:text-green-300/90 leading-relaxed font-bold">{strengthText}</p>
-                                {evidenceText && (
-                                  <details className="mt-1.5 group cursor-pointer">
-                                    <summary className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-green-500 transition-colors list-none [&::-webkit-details-marker]:hidden">
-                                      <svg className="w-3 h-3 group-open:rotate-90 transition-transform text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                                      عرض الدليل
-                                    </summary>
-                                    <p className="text-[13px] text-slate-600 dark:text-slate-300 italic mt-2 font-medium pr-3 border-r-2 border-green-200 dark:border-green-800/50 py-1" dir="ltr text-left">
-                                      {evidenceText.toString().replace(/^["']|["']$/g, '').trim()}
-                                    </p>
-                                  </details>
-                                )}
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-
-                    <div className="bg-[#FFF7ED] dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800/30 p-6 rounded-[32px]">
-                      <h4 className="font-bold text-orange-700 dark:text-orange-400 mb-3 flex items-center gap-2">
-                        نقاط الضعف
-                      </h4>
-                      <ul className="space-y-2">
-                        {actualWeaknesses.map((weakObj: any, i: number) => {
-                          const weakText = typeof weakObj === 'string' ? weakObj : (weakObj.point || "");
-                          const evidenceText = typeof weakObj === 'string' ? "" : (weakObj.evidence || "");
-                          if (!weakText) return null;
-                          return (
-                            <li key={i} className="flex gap-3">
-                              <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-2 shrink-0" />
-                              <div>
-                                <p className="text-sm text-orange-800 dark:text-orange-300/90 leading-relaxed font-bold">{weakText}</p>
-                                {evidenceText && (
-                                  <details className="mt-1.5 group cursor-pointer">
-                                    <summary className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-orange-500 transition-colors list-none [&::-webkit-details-marker]:hidden">
-                                      <svg className="w-3 h-3 group-open:rotate-90 transition-transform text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                                      عرض الدليل
-                                    </summary>
-                                    <p className="text-[13px] text-slate-600 dark:text-slate-300 italic mt-2 font-medium pr-3 border-r-2 border-orange-200 dark:border-orange-800/50 py-1" dir="ltr text-left">
-                                      {evidenceText.toString().replace(/^["']|["']$/g, '').trim()}
-                                    </p>
-                                  </details>
-                                )}
-                              </div>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === "requirements" && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-
-                  {/* إجابات المتقدم على الأسئلة المخصصة */}
-                  {(() => {
-                    const answers = safeParseArray(applicant?.custom_answers || applicant?.customAnswers);
-                    let regularAnswers = answers.filter((a: any) => !a?.isKnockout && a?.answer && a.answer.toString().trim() !== "");
-                    
-                    if (candidate.email && !regularAnswers.some(a => a.question === "البريد الإلكتروني")) {
-                      regularAnswers = [{ question: "البريد الإلكتروني", answer: candidate.email }, ...regularAnswers];
-                    }
-                    if (candidate.phone && !regularAnswers.some(a => a.question === "رقم الجوال")) {
-                      let formattedPhone = candidate.phone;
-                      if (formattedPhone.startsWith("5")) {
-                        formattedPhone = "0" + formattedPhone;
-                      }
-                      regularAnswers = [{ question: "رقم الجوال", answer: formattedPhone }, ...regularAnswers];
-                    }
-
-                    const knockoutAnswers = answers.filter((a: any) => a?.isKnockout);
-                    const jobKnockoutQuestions = safeParseArray(job?.knockoutQuestions);
-
-                    return (
-                      <>
-                        {/* أسئلة الاستبعاد المباشر */}
-                        {knockoutAnswers.length > 0 && (
-                          <div className="bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-800/30 p-6 rounded-[32px] mt-6">
-                            <h4 className="font-bold text-rose-700 dark:text-rose-400 mb-4 flex items-center gap-2">
-                              <Ban size={18} /> إجابات أسئلة الاستبعاد المباشر (Knockout)
-                            </h4>
-                            <div className="space-y-4">
-                              {knockoutAnswers.map((ansObj: any, i: number) => (
-                                <div key={i} className="p-4 rounded-2xl shadow-sm border bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700">
-                                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {i + 1}: {ansObj.question}</p>
-                                  <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ansObj.answer}</p>
-                                </div>
-                              ))}
+                          {applicant?.voiceEvalUrl && (
+                            <div className="w-full bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                              <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">التسجيل الصوتي للمقابلة:</span>
+                              <audio controls src={applicant.voiceEvalUrl} className="w-full h-10 outline-none" />
                             </div>
-                          </div>
-                        )}
-
-                        {/* أسئلة نموذج التقديم */}
-                        {regularAnswers.length > 0 && (
-                          <div className="bg-primary/5 border border-primary/20 p-6 rounded-[32px] mt-6">
-                            <h4 className="font-bold text-primary mb-4 flex items-center gap-2">
-                              <MessageCircle size={18} /> إجابات أسئلة نموذج التقديم
-                            </h4>
-                            <div className="space-y-4">
-                              {regularAnswers.map((ans: any, i: number) => (
-                                <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
-                                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {i + 1}: {ans.question}</p>
-                                  {typeof ans.answer === 'string' && (ans.answer.startsWith('http://') || ans.answer.startsWith('https://')) && !ans.answer.includes(' ') ? (
-                                    <a href={ans.answer} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 mt-1 px-4 py-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 font-bold rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors shadow-sm">
-                                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                                      عرض المرفق / الرابط
-                                    </a>
-                                  ) : (
-                                    <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ans.answer}</p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-
-                  {/* المرفقات (Attachments) */}
-                  {attachments.length > 0 && (
-                    <div className="bg-slate-50/50 dark:bg-slate-800/20 border border-slate-100 dark:border-slate-700/50 p-6 rounded-[32px] mt-6">
-                      <h4 className="font-bold text-navy dark:text-white mb-4 flex items-center gap-2">
-                        <FileDigit size={18} /> المرفقات المستلمة
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {attachments.map((att: any, i: number) => (
-                          <a key={i} href={att.url || att.link} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-primary/50 transition-colors group">
-                            <div className="flex items-center gap-2 overflow-hidden">
-                              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                {att.type === 'image' ? <ImageIcon size={14} /> : att.type === 'video' ? <Video size={14} /> : <Paperclip size={14} />}
-                              </div>
-                              <span className="text-sm font-bold text-navy dark:text-white truncate">{att.name || `مرفق ${i + 1}`}</span>
-                            </div>
-                            <ExternalLink size={14} className="text-slate-400 group-hover:text-primary transition-colors shrink-0" />
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-
-              {activeTab === "notes" && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-                  <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700 w-full flex flex-col">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-                        <FileText size={20} />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-navy dark:text-white">ملاحظات داخلية</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">خاصة بفريق التوظيف (سجل الملاحظات)</p>
-                      </div>
-                    </div>
-
-                    <div className="mb-6 space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
-                      {notesList.map((note) => (
-                        <div key={note.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm relative group">
-                          <div className="flex justify-between items-start mb-3">
-                            <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-lg">{note.author}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{new Date(note.date).toLocaleString('ar-SA')}</span>
-                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  onClick={() => {
-                                    setEditingNoteId(note.id);
-                                    setEditNoteText(note.text);
-                                  }}
-                                  className="p-1.5 text-slate-300 hover:text-blue-500 transition-colors bg-white dark:bg-slate-900 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                                  title="تعديل الملاحظة"
-                                >
-                                  <Edit2 size={16} />
-                                </button>
-                                <button
-                                  onClick={() => setNoteToDelete(note.id)}
-                                  className="p-1.5 text-slate-300 hover:text-red-500 transition-colors bg-white dark:bg-slate-900 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30"
-                                  title="حذف الملاحظة"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                          {noteToDelete === note.id ? (
-                            <div className="space-y-3 mt-2 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl">
-                              <p className="text-sm font-bold text-red-600 dark:text-red-400">هل أنت متأكد من حذف هذه الملاحظة نهائياً؟</p>
-                              <div className="flex justify-end gap-2">
-                                <button onClick={() => setNoteToDelete(null)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
-                                <button onClick={() => { handleDeleteNote(note.id); setNoteToDelete(null); }} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition-colors">نعم، احذفها</button>
-                              </div>
-                            </div>
-                          ) : editingNoteId === note.id ? (
-                            <div className="space-y-3 mt-2">
-                              <textarea
-                                value={editNoteText}
-                                onChange={(e) => setEditNoteText(e.target.value)}
-                                rows={3}
-                                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all resize-none"
-                              />
-                              <div className="flex justify-end gap-2">
-                                <button onClick={() => setEditingNoteId(null)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
-                                <button onClick={() => handleUpdateNote(note.id)} disabled={!editNoteText.trim() || editNoteText === note.text} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">حفظ التعديل</button>
-                              </div>
-                            </div>
-                          ) : (
-                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{note.text}</p>
                           )}
                         </div>
-                      ))}
-                      {notesList.length === 0 && (
-                        <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-sm font-bold bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-                          لا توجد ملاحظات مسجلة حتى الآن.
+
+                        <div className="space-y-4">
+                          <div className="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-purple-100 dark:border-purple-800/20">
+                            <h4 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">ملخص المقابلة</h4>
+                            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap">
+                              {applicant?.interview_summary || "لا يوجد ملخص."}
+                            </p>
+                          </div>
+
+                          {applicant?.interview_transcript && (
+                            <div className="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-purple-100 dark:border-purple-800/20 max-h-60 overflow-y-auto custom-scrollbar">
+                              <h4 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">التفريغ النصي للمحادثة (Transcript)</h4>
+                              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium whitespace-pre-wrap">
+                                {applicant.interview_transcript}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border-2 border-b-[6px] border-slate-200 dark:border-slate-700/80 shadow-sm">
+                      <h3 className="text-lg font-bold text-navy dark:text-white mb-6 flex items-center gap-2">
+                        <Sparkles size={20} className="text-primary" /> ملخص المطابقة
+                      </h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                        {actualSummary || applicant?.aiSummary || "لا يوجد ملخص متاح حالياً"}
+                      </p>
+                    </div>
+
+                    {redFlags && redFlags.length > 0 && (
+                      <div className="bg-red-50 dark:bg-red-900/10 border-2 border-b-[6px] border-red-200 dark:border-red-800/50 p-6 rounded-[32px] shadow-sm">
+                        <h4 className="font-bold text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
+                          رادار التحذيرات
+                        </h4>
+                        <ul className="space-y-2">
+                          {redFlags.map((flagObj: any, i: number) => {
+                            const flagText = typeof flagObj === 'string' ? flagObj : (flagObj.point || "");
+                            const evidenceText = typeof flagObj === 'string' ? "" : (flagObj.evidence || "");
+                            if (!flagText) return null;
+                            return (
+                              <li key={i} className="flex gap-3">
+                                <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-2 shrink-0" />
+                                <div>
+                                  <p className="text-sm text-red-800 dark:text-red-300/90 leading-relaxed font-bold">{flagText}</p>
+                                  {evidenceText && (
+                                    <details className="mt-1.5 group cursor-pointer">
+                                      <summary className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-red-500 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                                        <svg className="w-3 h-3 group-open:rotate-90 transition-transform text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                        عرض الدليل
+                                      </summary>
+                                      <p className="text-[13px] text-slate-600 dark:text-slate-300 italic mt-2 font-medium pr-3 border-r-2 border-red-200 dark:border-red-800/50 py-1" dir="ltr text-left">
+                                        {evidenceText.toString().replace(/^["']|["']$/g, '').trim()}
+                                      </p>
+                                    </details>
+                                  )}
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-4">
+                      <div className="bg-[#F0FDF4] dark:bg-green-900/10 border-2 border-b-[6px] border-green-200 dark:border-green-800/50 p-6 rounded-[32px] shadow-sm">
+                        <h4 className="font-bold text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
+                          نقاط القوة
+                        </h4>
+                        <ul className="space-y-4">
+                          {actualStrengths.map((strObj: any, i: number) => {
+                            const strengthText = typeof strObj === 'string' ? strObj : (strObj.point || strObj.strength || "");
+                            const evidenceText = typeof strObj === 'string' ? "" : (strObj.evidence || "");
+                            if (!strengthText) return null;
+                            return (
+                              <li key={i} className="flex gap-3">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 shrink-0" />
+                                <div>
+                                  <p className="text-sm text-green-800 dark:text-green-300/90 leading-relaxed font-bold">{strengthText}</p>
+                                  {evidenceText && (
+                                    <details className="mt-1.5 group cursor-pointer">
+                                      <summary className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-green-500 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                                        <svg className="w-3 h-3 group-open:rotate-90 transition-transform text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                        عرض الدليل
+                                      </summary>
+                                      <p className="text-[13px] text-slate-600 dark:text-slate-300 italic mt-2 font-medium pr-3 border-r-2 border-green-200 dark:border-green-800/50 py-1" dir="ltr text-left">
+                                        {evidenceText.toString().replace(/^["']|["']$/g, '').trim()}
+                                      </p>
+                                    </details>
+                                  )}
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+
+                      <div className="bg-[#FFF7ED] dark:bg-orange-900/10 border-2 border-b-[6px] border-orange-200 dark:border-orange-800/50 p-6 rounded-[32px] shadow-sm">
+                        <h4 className="font-bold text-orange-700 dark:text-orange-400 mb-3 flex items-center gap-2">
+                          نقاط الضعف
+                        </h4>
+                        <ul className="space-y-2">
+                          {actualWeaknesses.map((weakObj: any, i: number) => {
+                            const weakText = typeof weakObj === 'string' ? weakObj : (weakObj.point || "");
+                            const evidenceText = typeof weakObj === 'string' ? "" : (weakObj.evidence || "");
+                            if (!weakText) return null;
+                            return (
+                              <li key={i} className="flex gap-3">
+                                <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-2 shrink-0" />
+                                <div>
+                                  <p className="text-sm text-orange-800 dark:text-orange-300/90 leading-relaxed font-bold">{weakText}</p>
+                                  {evidenceText && (
+                                    <details className="mt-1.5 group cursor-pointer">
+                                      <summary className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-orange-500 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                                        <svg className="w-3 h-3 group-open:rotate-90 transition-transform text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                        عرض الدليل
+                                      </summary>
+                                      <p className="text-[13px] text-slate-600 dark:text-slate-300 italic mt-2 font-medium pr-3 border-r-2 border-orange-200 dark:border-orange-800/50 py-1" dir="ltr text-left">
+                                        {evidenceText.toString().replace(/^["']|["']$/g, '').trim()}
+                                      </p>
+                                    </details>
+                                  )}
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {activeTab === "requirements" && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+
+                    {/* إجابات المتقدم على الأسئلة المخصصة */}
+                    {(() => {
+                      const answers = safeParseArray(applicant?.custom_answers || applicant?.customAnswers);
+                      let regularAnswers = answers.filter((a: any) => !a?.isKnockout && a?.answer && a.answer.toString().trim() !== "");
+
+                      if (candidate.email && !regularAnswers.some(a => a.question === "البريد الإلكتروني")) {
+                        regularAnswers = [{ question: "البريد الإلكتروني", answer: candidate.email }, ...regularAnswers];
+                      }
+                      if (candidate.phone && !regularAnswers.some(a => a.question === "رقم الجوال")) {
+                        let formattedPhone = candidate.phone;
+                        if (formattedPhone.startsWith("5")) {
+                          formattedPhone = "0" + formattedPhone;
+                        }
+                        regularAnswers = [{ question: "رقم الجوال", answer: formattedPhone }, ...regularAnswers];
+                      }
+
+                      const knockoutAnswers = answers.filter((a: any) => a?.isKnockout);
+                      const jobKnockoutQuestions = safeParseArray(job?.knockoutQuestions);
+
+                      return (
+                        <>
+                          {/* أسئلة الاستبعاد المباشر */}
+                          {knockoutAnswers.length > 0 && (
+                            <div className="bg-rose-50/50 dark:bg-rose-900/10 border-2 border-b-[6px] border-rose-200 dark:border-rose-800/50 p-6 rounded-[32px] mt-6 shadow-sm">
+                              <h4 className="font-bold text-rose-700 dark:text-rose-400 mb-4 flex items-center gap-2">
+                                <Ban size={18} /> إجابات أسئلة الاستبعاد المباشر (Knockout)
+                              </h4>
+                              <div className="space-y-4">
+                                {knockoutAnswers.map((ansObj: any, i: number) => (
+                                  <div key={i} className="p-4 rounded-2xl shadow-sm border bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700">
+                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {i + 1}: {ansObj.question}</p>
+                                    <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ansObj.answer}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* أسئلة نموذج التقديم */}
+                          {regularAnswers.length > 0 && (
+                            <div className="bg-primary/5 border-2 border-b-[6px] border-primary/20 p-6 rounded-[32px] mt-6 shadow-sm">
+                              <h4 className="font-bold text-primary mb-4 flex items-center gap-2">
+                                <MessageCircle size={18} /> إجابات أسئلة نموذج التقديم
+                              </h4>
+                              <div className="space-y-4">
+                                {regularAnswers.map((ans: any, i: number) => (
+                                  <div key={i} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">السؤال {i + 1}: {ans.question}</p>
+                                    {typeof ans.answer === 'string' && (ans.answer.startsWith('http://') || ans.answer.startsWith('https://')) && !ans.answer.includes(' ') ? (
+                                      <a href={ans.answer} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 mt-1 px-4 py-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800/50 font-bold rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors shadow-sm">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" /></svg>
+                                        عرض المرفق / الرابط
+                                      </a>
+                                    ) : (
+                                      <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ans.answer}</p>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+
+                    {/* المرفقات (Attachments) */}
+                    {attachments.length > 0 && (
+                      <div className="bg-slate-50/50 dark:bg-slate-800/20 border-2 border-b-[6px] border-slate-200 dark:border-slate-700/80 p-6 rounded-[32px] mt-6 shadow-sm">
+                        <h4 className="font-bold text-navy dark:text-white mb-4 flex items-center gap-2">
+                          <FileDigit size={18} /> المرفقات المستلمة
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {attachments.map((att: any, i: number) => (
+                            <a key={i} href={att.url || att.link} target="_blank" rel="noreferrer" className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-primary/50 transition-colors group">
+                              <div className="flex items-center gap-2 overflow-hidden">
+                                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                                  {att.type === 'image' ? <ImageIcon size={14} /> : att.type === 'video' ? <Video size={14} /> : <Paperclip size={14} />}
+                                </div>
+                                <span className="text-sm font-bold text-navy dark:text-white truncate">{att.name || `مرفق ${i + 1}`}</span>
+                              </div>
+                              <ExternalLink size={14} className="text-slate-400 group-hover:text-primary transition-colors shrink-0" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {activeTab === "notes" && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border-2 border-b-[6px] border-slate-200 dark:border-slate-700/80 w-full flex flex-col shadow-sm">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                          <FileText size={20} />
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-navy dark:text-white">ملاحظات داخلية</h4>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">خاصة بفريق التوظيف (سجل الملاحظات)</p>
+                        </div>
+                      </div>
+
+                      <div className="mb-6 space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                        {notesList.map((note) => (
+                          <div key={note.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm relative group">
+                            <div className="flex justify-between items-start mb-3">
+                              <span className="text-xs font-bold text-primary bg-primary/10 px-3 py-1 rounded-lg">{note.author}</span>
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-bold text-slate-400 dark:text-slate-500">{new Date(note.date).toLocaleString('ar-SA')}</span>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    onClick={() => {
+                                      setEditingNoteId(note.id);
+                                      setEditNoteText(note.text);
+                                    }}
+                                    className="p-1.5 text-slate-300 hover:text-blue-500 transition-colors bg-white dark:bg-slate-900 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                                    title="تعديل الملاحظة"
+                                  >
+                                    <Edit2 size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => setNoteToDelete(note.id)}
+                                    className="p-1.5 text-slate-300 hover:text-red-500 transition-colors bg-white dark:bg-slate-900 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30"
+                                    title="حذف الملاحظة"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                            {noteToDelete === note.id ? (
+                              <div className="space-y-3 mt-2 p-4 bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl">
+                                <p className="text-sm font-bold text-red-600 dark:text-red-400">هل أنت متأكد من حذف هذه الملاحظة نهائياً؟</p>
+                                <div className="flex justify-end gap-2">
+                                  <button onClick={() => setNoteToDelete(null)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
+                                  <button onClick={() => { handleDeleteNote(note.id); setNoteToDelete(null); }} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition-colors">نعم، احذفها</button>
+                                </div>
+                              </div>
+                            ) : editingNoteId === note.id ? (
+                              <div className="space-y-3 mt-2">
+                                <textarea
+                                  value={editNoteText}
+                                  onChange={(e) => setEditNoteText(e.target.value)}
+                                  rows={3}
+                                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl p-3 text-sm font-medium outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all resize-none"
+                                />
+                                <div className="flex justify-end gap-2">
+                                  <button onClick={() => setEditingNoteId(null)} className="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">إلغاء</button>
+                                  <button onClick={() => handleUpdateNote(note.id)} disabled={!editNoteText.trim() || editNoteText === note.text} className="px-4 py-1.5 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">حفظ التعديل</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm font-medium text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">{note.text}</p>
+                            )}
+                          </div>
+                        ))}
+                        {notesList.length === 0 && (
+                          <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-sm font-bold bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+                            لا توجد ملاحظات مسجلة حتى الآن.
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <textarea
+                          value={newNoteText}
+                          onChange={(e) => setNewNoteText(e.target.value)}
+                          placeholder="إضافة ملاحظة جديدة..."
+                          rows={3}
+                          className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm font-medium outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all resize-none mb-4"
+                        />
+
+                        <div className="flex justify-end">
+                          <button
+                            onClick={handleSaveNote}
+                            disabled={isSavingNote || !newNoteText.trim()}
+                            className={`px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:translate-y-[4px] active:border-b-0 active:shadow-none ${isNoteSaved
+                              ? "bg-green-500 text-white border-b-[4px] border-green-700"
+                              : "bg-primary text-white border-b-[4px] border-[#1d827b] hover:bg-primary/90 hover:border-[#15615c] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:border-b-[4px]"
+                              }`}
+                          >
+                            {isSavingNote ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري الحفظ...
+                              </>
+                            ) : isNoteSaved ? (
+                              <>
+                                <CheckCircle size={16} /> تم الحفظ بنجاح
+                              </>
+                            ) : (
+                              <>
+                                إضافة الملاحظة
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {activeTab === "interview" && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
+                    <div className="bg-primary/5 border-2 border-b-[6px] border-primary/20 p-5 rounded-[24px] mb-6 shadow-sm">
+                      <p className="text-sm font-bold text-primary flex items-center gap-3">
+                        <Target size={20} />
+                        أسئلة تكتيكية مصممة للتركيز على الفجوات ونقاط التقييم الحرجة:
+                      </p>
+                    </div>
+                    {(() => {
+                      let questions = interviewQuestions;
+
+                      // Flatten in case safeParseArray returns nested arrays (e.g., [ [{q: "..."}] ])
+                      if (Array.isArray(questions)) {
+                        questions = questions.flat(Infinity);
+                      }
+
+                      if (!questions || questions.length === 0) {
+                        return (
+                          <p className="text-sm font-bold text-slate-400 dark:text-slate-500 text-center py-8">
+                            لا توجد أسئلة مقترحة حالياً.
+                          </p>
+                        );
+                      }
+
+                      return questions.map((item: any, idx: number) => {
+                        const qText = typeof item === 'string' ? item : (item.q || item.question || item.text || item.question_text || item.content || item.title || "");
+                        const rText = typeof item === 'string' ? "" : (item.purpose || item.reason || item.objective || item.justification || item.description || "");
+
+                        if (!qText) return null;
+
+                        return (
+                          <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-[32px] border-2 border-b-[6px] border-slate-200 dark:border-slate-700 shadow-sm hover:-translate-y-1 transition-all">
+                            <h4 className="font-bold text-navy dark:text-white mb-4 text-sm leading-loose flex items-start gap-3">
+                              <span className="w-8 h-8 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
+                                {idx + 1}
+                              </span>
+                              <span className="pt-1">{qText}</span>
+                            </h4>
+                            {rText && (
+                              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 block px-4 py-3 rounded-xl border border-slate-100 dark:border-slate-700 mt-2 leading-loose">
+                                <span className="text-primary mr-1 text-sm bg-primary/10 px-3 py-1.5 rounded-lg ml-2 inline-block">الهدف من السؤال</span>
+                                {rText}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+                  </motion.div>
+                )}
+
+                {activeTab === "ai_settings" && (
+                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-sm">
+                      <h3 className="text-lg font-bold text-navy dark:text-white mb-6 flex items-center gap-2">
+                        <Sparkles size={20} className="text-primary" /> المقابلة بالذكاء الاصطناعي
+                      </h3>
+
+                      {applicant?.decision !== "interview" && applicant?.decision !== "interviewing" && (
+                        <div className="flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+                          <p className="text-sm text-slate-500 dark:text-slate-400 font-bold mb-4">هذا المتقدم غير مرشح للمقابلة حالياً. هل ترغب بترشيحه الآن؟</p>
+                          <button
+                            onClick={() => {
+                              if (!applicant || !onStatusUpdate) return;
+                              setIsScheduling(true);
+                              setTimeout(async () => {
+                                try {
+                                  await supabase.from('applicants').update({ decision: 'interview' }).eq('id', applicant.id);
+                                  applicant.decision = "interview";
+                                  setToastMessage("تم نقل المتقدم إلى قائمة المقابلات بنجاح!");
+                                  setTimeout(() => setToastMessage(null), 3000);
+                                  onStatusUpdate(applicant.id, "interview");
+                                } catch (err) {
+                                  console.error("Failed to nominate to AI interview", err);
+                                } finally {
+                                  setIsScheduling(false);
+                                }
+                              }, 600);
+                            }}
+                            disabled={isScheduling}
+                            className={`px-8 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border ${isScheduling ? "bg-yellow-50 text-yellow-400 border-yellow-100 cursor-wait dark:bg-yellow-900/20 dark:text-yellow-600 dark:border-yellow-900/20" : "bg-yellow-50 text-yellow-600 hover:bg-yellow-500 hover:text-white dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-600 dark:hover:text-white border-yellow-100 dark:border-yellow-900/50 hover:border-transparent"}`}
+                          >
+                            {isScheduling ? (
+                              <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> جاري النقل...</>
+                            ) : (
+                              <><Calendar size={16} /> ترشيح لمقابلة AI</>
+                            )}
+                          </button>
+                        </div>
+                      )}
+
+                      {(applicant?.decision === "interview" || applicant?.decision === "interviewing") && (
+                        <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 w-full shadow-inner">
+                          <div className="flex flex-col gap-6">
+
+                            <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm w-max">
+                              <span className="text-sm font-bold text-slate-500 dark:text-slate-400 px-2">لغة المقابلة:</span>
+                              <select
+                                value={interviewLang}
+                                onChange={(e) => setInterviewLang(e.target.value as 'ar' | 'en')}
+                                className="text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2 outline-none focus:border-primary font-bold text-navy dark:text-white cursor-pointer w-48"
+                              >
+                                <option value="ar">العربية 🇸🇦</option>
+                                <option value="en">English 🇺🇸</option>
+                              </select>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md">
+                              <button
+                                onClick={() => {
+                                  if (interviewsRemaining === 0) {
+                                    setToastMessage("رصيد المقابلات صفر، لا يمكنك إرسال رابط أو إعادة فتح الرابط.");
+                                    setTimeout(() => setToastMessage(null), 3000);
+                                    return;
+                                  }
+                                  setInterviewSendMethod('whatsapp');
+                                  setShowInterviewQuestionsModal(true);
+                                }}
+                                className="bg-[#25D366] text-white hover:bg-[#1DA851] px-5 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 border border-transparent w-full"
+                              >
+                                <WhatsAppIcon size={18} /> إرسال عبر واتساب
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  if (interviewsRemaining === 0) {
+                                    setToastMessage("رصيد المقابلات صفر، لا يمكنك إرسال رابط أو إعادة فتح الرابط.");
+                                    setTimeout(() => setToastMessage(null), 3000);
+                                    return;
+                                  }
+                                  setInterviewSendMethod('email');
+                                  setShowInterviewQuestionsModal(true);
+                                }}
+                                className="bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white dark:bg-blue-900/30 dark:text-blue-400 px-5 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 border border-blue-100 dark:border-blue-900/30 hover:border-transparent w-full"
+                              >
+                                <Mail size={18} /> إرسال بالإيميل
+                              </button>
+
+                              <button
+                                onClick={async () => {
+                                  if (interviewsRemaining === 0) {
+                                    setToastMessage("رصيد المقابلات صفر، لا يمكنك إرسال رابط أو إعادة فتح الرابط.");
+                                    setTimeout(() => setToastMessage(null), 3000);
+                                    return;
+                                  }
+                                  if (!window.confirm("تنبيه: هذا المتقدم قد أجرى المقابلة مسبقاً. هل تريد تأكيد فك القفل وإعادة فتح المقابلة له؟")) return;
+                                  try {
+                                    await supabase.from('applicants').update({ has_started_interview: false, is_interview_completed: false, interview_revoked: false }).eq('id', applicant.id);
+                                    if (applicant) { applicant.has_started_interview = false; applicant.is_interview_completed = false; applicant.interview_revoked = false; }
+                                    if (onStatusUpdate) onStatusUpdate(applicant.id, applicant.decision || 'interview', false);
+                                    alert("تم فك القفل بنجاح، يمكنك الآن إعادة إرسال الرابط.");
+                                  } catch (err) { alert("حدث خطأ أثناء فك القفل."); }
+                                }}
+                                className="bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white dark:bg-amber-900/20 dark:text-amber-400 px-5 py-3 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 border border-amber-100 dark:border-amber-900/30 hover:border-transparent w-full"
+                              >
+                                <RefreshCw size={18} /> إعادة فتح الرابط
+                              </button>
+
+                              {((applicant?.decision === 'interview_sent' || applicant?.interview_sent || applicant?.decision === 'interviewing') && !applicant?.has_started_interview && !applicant?.interview_revoked) && (
+                                <button
+                                  onClick={async () => {
+                                    if (!window.confirm("تم إرسال رابط المقابلة مسبقاً. إذا لم يتجاوب المتقدم، يمكنك سحب الرابط لاسترجاع الحجز.\n\nهل أنت متأكد من سحب وإلغاء الرابط؟")) return;
+                                    try {
+                                      await supabase.from('applicants').update({ interview_revoked: true }).eq('id', applicant.id);
+                                      if (applicant) applicant.interview_revoked = true;
+                                      setPendingInterviewsCount(prev => Math.max(0, prev - 1));
+                                      alert("تم إلغاء الرابط بنجاح.");
+                                    } catch (err) { console.error(err); }
+                                  }}
+                                  className="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white dark:bg-rose-900/20 dark:text-rose-400 dark:hover:bg-rose-600 dark:hover:text-white px-5 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 border border-rose-200 dark:border-rose-800 w-full"
+                                >
+                                  <Ban size={18} /> سحب وإلغاء الرابط
+                                </button>
+                              )}
+                            </div>
+
+                            {applicant?.interview_revoked && (
+                              <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold py-3 px-5 rounded-xl flex items-center gap-2 border border-slate-200 dark:border-slate-700 w-max mt-2">
+                                <Ban size={18} /> تم سحب وإلغاء رابط المقابلة لهذا المتقدم.
+                              </div>
+                            )}
+
+                          </div>
                         </div>
                       )}
                     </div>
-
-                    <div className="relative pt-4 border-t border-slate-200 dark:border-slate-700">
-                      <textarea
-                        value={newNoteText}
-                        onChange={(e) => setNewNoteText(e.target.value)}
-                        placeholder="إضافة ملاحظة جديدة..."
-                        rows={3}
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 text-sm font-medium outline-none focus:border-primary/50 focus:ring-4 focus:ring-primary/10 transition-all resize-none mb-4"
-                      />
-
-                      <div className="flex justify-end">
-                        <button
-                          onClick={handleSaveNote}
-                          disabled={isSavingNote || !newNoteText.trim()}
-                          className={`px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all ${isNoteSaved
-                            ? "bg-green-500 text-white"
-                            : "bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
-                            }`}
-                        >
-                          {isSavingNote ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> جاري الحفظ...
-                            </>
-                          ) : isNoteSaved ? (
-                            <>
-                              <CheckCircle size={16} /> تم الحفظ بنجاح
-                            </>
-                          ) : (
-                            <>
-                              إضافة الملاحظة
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {activeTab === "interview" && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                  <div className="bg-primary/5 border border-primary/20 p-5 rounded-[24px] mb-6">
-                    <p className="text-sm font-bold text-primary flex items-center gap-3">
-                      <Target size={20} />
-                      أسئلة تكتيكية مصممة للتركيز على الفجوات ونقاط التقييم الحرجة:
-                    </p>
-                  </div>
-                  {(() => {
-                    let questions = interviewQuestions;
-                    
-                    // Flatten in case safeParseArray returns nested arrays (e.g., [ [{q: "..."}] ])
-                    if (Array.isArray(questions)) {
-                      questions = questions.flat(Infinity);
-                    }
-
-                    if (!questions || questions.length === 0) {
-                      return (
-                        <p className="text-sm font-bold text-slate-400 dark:text-slate-500 text-center py-8">
-                          لا توجد أسئلة مقترحة حالياً.
-                        </p>
-                      );
-                    }
-
-                    return questions.map((item: any, idx: number) => {
-                      const qText = typeof item === 'string' ? item : (item.q || item.question || item.text || item.question_text || item.content || item.title || "");
-                      const rText = typeof item === 'string' ? "" : (item.purpose || item.reason || item.objective || item.justification || item.description || "");
-
-                      if (!qText) return null;
-
-                      return (
-                        <div key={idx} className="bg-white dark:bg-slate-800 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
-                          <h4 className="font-bold text-navy dark:text-white mb-4 text-sm leading-relaxed flex items-start gap-3">
-                            <span className="w-8 h-8 bg-primary/10 text-primary rounded-xl flex items-center justify-center shrink-0">
-                              {idx + 1}
-                            </span>
-                            <span className="pt-1">{qText}</span>
-                          </h4>
-                          {rText && (
-                            <p className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/80 inline-block px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-700 mt-2">
-                              <span className="text-primary mr-1 text-sm bg-primary/10 px-2 py-0.5 rounded-lg ml-2">الهدف من السؤال</span>
-                              {rText}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    });
-                  })()}
-            </motion.div>
-              )}
+                  </motion.div>
+                )}
               </div>
             </div>{" "}
           </div>{" "}
@@ -1112,7 +1150,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
               {" "}
               <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
                 {" "}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2 rounded-xl border-2 border-slate-200 dark:border-slate-700 border-b-[4px] shadow-sm">
                   {" "}
                   <FileText
                     size={20}
@@ -1122,9 +1160,21 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                     السيرة الذاتية - {applicant?.name || "متقدم"}.pdf
                   </span>{" "}
                 </div>{" "}
-                <button className="text-primary font-bold text-sm hover:underline">
-                  تحميل الملف
-                </button>{" "}
+                {applicant?.cv_file_url ? (
+                  <a 
+                    href={applicant.cv_file_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    download={`CV_${applicant?.name || 'Applicant'}`}
+                    className="text-primary font-bold text-sm hover:underline cursor-pointer"
+                  >
+                    تحميل الملف
+                  </a>
+                ) : (
+                  <span className="text-slate-400 font-bold text-sm">
+                    تحميل الملف
+                  </span>
+                )}{" "}
               </div>{" "}
               <div className="flex-1 bg-slate-100 mx-8 mt-8 mb-4 rounded-[32px] border-2 border-slate-200 dark:border-slate-700 overflow-hidden relative flex flex-col justify-end">
                 {applicant?.cv_file_url ? (
@@ -1141,11 +1191,11 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
               </div>
               <div className="flex justify-center mb-6">
                 {applicant?.cv_file_url ? (
-                  <button onClick={() => setIsFullscreenCV(true)} className="bg-slate-800 dark:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-900 transition-all shadow-md cursor-pointer">
+                  <button onClick={() => setIsFullscreenCV(true)} className="bg-slate-800 dark:bg-slate-700 text-white border-b-[4px] border-slate-950 dark:border-slate-900 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-900 hover:border-black transition-all shadow-md active:translate-y-[4px] active:border-b-0 active:shadow-none cursor-pointer">
                     <FileText size={18} /> عرض المستند بالحجم الكامل
                   </button>
                 ) : (
-                  <button disabled className="bg-slate-300 dark:bg-slate-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-md cursor-not-allowed opacity-50">
+                  <button disabled className="bg-slate-300 dark:bg-slate-700 text-white border-b-[4px] border-slate-400 dark:border-slate-800 px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-md cursor-not-allowed opacity-50">
                     <FileText size={18} /> عرض المستند بالحجم الكامل
                   </button>
                 )}
@@ -1154,24 +1204,24 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
               {/* Contact Icons - Bottom of CV Wrapper */}
               <div className="flex items-center justify-center gap-3 px-8 pb-8">
                 {candidate.linkedin && typeof candidate.linkedin === 'string' && candidate.linkedin.trim() !== "" && candidate.linkedin !== "null" && candidate.linkedin !== "undefined" && (
-                  <a href={candidate.linkedin.startsWith('http') ? candidate.linkedin : `https://${candidate.linkedin}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-[#0A66C2]/10 text-[#0A66C2] rounded-xl flex items-center justify-center hover:bg-[#0A66C2] hover:text-white transition-all shadow-sm" title="لينكد إن">
+                  <a href={candidate.linkedin.startsWith('http') ? candidate.linkedin : `https://${candidate.linkedin}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-[#0A66C2]/10 text-[#0A66C2] border-b-[4px] border-[#0A66C2]/30 rounded-xl flex items-center justify-center hover:bg-[#0A66C2] hover:border-[#0A66C2]/60 hover:text-white transition-all shadow-sm active:translate-y-[4px] active:border-b-0 active:shadow-none" title="لينكد إن">
                     <Linkedin size={20} />
                   </a>
                 )}
                 {candidate.whatsapp && (
-                  <a href={`https://wa.me/${candidate.whatsapp}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 rounded-xl flex items-center justify-center hover:bg-green-500 hover:text-white transition-all shadow-sm" title="واتساب">
+                  <a href={`https://wa.me/${candidate.whatsapp}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-300 border-b-[4px] border-green-200 dark:border-green-800 rounded-xl flex items-center justify-center hover:bg-green-500 hover:border-green-600 hover:text-white transition-all shadow-sm active:translate-y-[4px] active:border-b-0 active:shadow-none" title="واتساب">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.878-.788-1.47-1.761-1.643-2.059-.173-.298-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
                     </svg>
                   </a>
                 )}
                 {candidate.email && (
-                  <a href={`mailto:${candidate.email}`} className="w-10 h-10 bg-navy/5 dark:bg-slate-700/50 text-navy dark:text-slate-200 rounded-xl flex items-center justify-center hover:bg-navy dark:hover:bg-slate-600 hover:text-white transition-all shadow-sm" title="إيميل">
+                  <a href={`mailto:${candidate.email}`} className="w-10 h-10 bg-navy/5 dark:bg-slate-700/50 text-navy dark:text-slate-200 border-b-[4px] border-navy/20 dark:border-slate-800 rounded-xl flex items-center justify-center hover:bg-navy dark:hover:bg-slate-600 hover:border-navy/40 dark:hover:border-slate-900 hover:text-white transition-all shadow-sm active:translate-y-[4px] active:border-b-0 active:shadow-none" title="إيميل">
                     <Mail size={20} />
                   </a>
                 )}
                 {candidate.phone && (
-                  <a href={`tel:${candidate.phone}`} className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-xl flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm" title="اتصال">
+                  <a href={`tel:${candidate.phone}`} className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border-b-[4px] border-blue-200 dark:border-blue-800 rounded-xl flex items-center justify-center hover:bg-blue-500 hover:border-blue-600 hover:text-white transition-all shadow-sm active:translate-y-[4px] active:border-b-0 active:shadow-none" title="اتصال">
                     <Phone size={20} />
                   </a>
                 )}
@@ -1324,22 +1374,54 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
               <h3 className="text-2xl font-bold text-navy dark:text-white mb-2">
                 أسئلة المقابلة الإضافية (اختياري)
               </h3>
-              
+
               {/* Overbooking Warning */}
               {interviewsRemaining === 0 && (
-                <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 p-4 rounded-xl flex gap-3 text-red-800 dark:text-red-300">
-                  <Ban size={20} className="shrink-0 mt-0.5 text-red-500" />
-                  <p className="text-sm font-bold leading-relaxed">
-                    تنبيه: رصيد المقابلات المتاح لديك (صفر). يمكنك إرسال الروابط، لكنها لن تعمل مع المتقدمين ولن يتمكنوا من بدء المقابلة حتى تقوم بترقية الباقة أو شحن الرصيد.
-                  </p>
+                <div className="mb-6 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/40 p-5 rounded-[24px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-rose-850 dark:text-rose-350">
+                  <div className="flex gap-3">
+                    <Ban size={20} className="shrink-0 mt-0.5 text-rose-550" />
+                    <p className="text-sm font-bold leading-relaxed">
+                      تنبيه: رصيد المقابلات المتاح لديك (صفر). يمكنك إرسال الروابط، لكنها لن تعمل مع المتقدمين ولن يتمكنوا من بدء المقابلة حتى تقوم بترقية الباقة أو شحن الرصيد.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (onBack) onBack();
+                      setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('changeTab', { detail: 'الحساب' }));
+                        setTimeout(() => {
+                          window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' }));
+                        }, 50);
+                      }, 50);
+                    }}
+                    className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shrink-0 transition-all shadow-md shadow-rose-550/15"
+                  >
+                    شحن الرصيد / ترقية الباقة
+                  </button>
                 </div>
               )}
               {overbooked && (
-                <div className="mb-6 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 p-4 rounded-xl flex gap-3 text-orange-800 dark:text-orange-300">
-                  <AlertTriangle size={20} className="shrink-0 mt-0.5 text-orange-500" />
-                  <p className="text-sm font-bold leading-relaxed">
-                    تنبيه: رصيدك المتبقي ({interviewsRemaining}) مقابلات، ولديك ({pendingInterviewsCount}) دعوات معلقة لم تُستخدم بعد. أول ({interviewsRemaining}) متقدمين سيدخلون سيتم قبولهم، وسيُعطل الرابط تلقائياً عن البقية.
-                  </p>
+                <div className="mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 p-5 rounded-[24px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-amber-850 dark:text-amber-350">
+                  <div className="flex gap-3">
+                    <AlertTriangle size={20} className="shrink-0 mt-0.5 text-amber-550" />
+                    <p className="text-sm font-bold leading-relaxed">
+                      تنبيه: رصيدك المتبقي ({interviewsRemaining}) مقابلات، ولديك ({pendingInterviewsCount}) دعوات معلقة لم تُستخدم بعد. أول ({interviewsRemaining}) متقدمين سيدخلون سيتم قبولهم، وسيُعطل الرابط تلقائياً عن البقية.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (onBack) onBack();
+                      setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('changeTab', { detail: 'الحساب' }));
+                        setTimeout(() => {
+                          window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' }));
+                        }, 50);
+                      }, 50);
+                    }}
+                    className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black shrink-0 transition-all shadow-md shadow-amber-550/15"
+                  >
+                    ترقية الباقة
+                  </button>
                 </div>
               )}
               <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm leading-relaxed">
@@ -1387,8 +1469,8 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                       if (q.length > 0) {
                         await supabase
                           .from('applicants')
-                          .update({ 
-                            client_interview_questions: q, 
+                          .update({
+                            client_interview_questions: q,
                             interview_sent: true,
                             interview_sent_at: new Date().toISOString(),
                             interview_revoked: false
@@ -1397,7 +1479,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                       } else {
                         await supabase
                           .from('applicants')
-                          .update({ 
+                          .update({
                             interview_sent: true,
                             interview_sent_at: new Date().toISOString(),
                             interview_revoked: false

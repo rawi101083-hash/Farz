@@ -80,6 +80,8 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
             top_percentile: raw.top_percentile,
             red_flags: raw.red_flags,
             interview_questions: raw.interview_questions,
+            interview_plan: raw.interview_plan,
+            suggested_questions: raw.suggested_questions,
             customAnswers: parsedAnswers,
             linkedin: (parsedAnswers.find((a: any) => a.question === "رابط لينكد إن")?.answer) || raw.linkedin || ""
           } as any});
