@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, Target } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 
 const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile, isSharedView = false }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, userProfile?: any, isSharedView?: boolean }) => {
@@ -321,9 +321,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
   const attachments = safeParseArray(applicant?.attachments);
 
   const getMatchColor = (score: number) => {
-    if (score >= 80) return "text-primary";
-    if (score >= 50) return "text-orange-500";
-    return "text-red-500";
+    if (score >= 80) return "text-teal-500";
+    if (score >= 50) return "text-amber-500";
+    return "text-rose-500";
   };
   const matchColorClass = getMatchColor(displayMatch);
 
@@ -531,16 +531,14 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
             {" "}
             <div className="bg-white dark:bg-slate-800 p-10 rounded-[40px] shadow-xl shadow-slate-200/50 border border-white dark:border-slate-700 relative overflow-hidden">
               {" "}
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
-                <div>
-                  <h2 className="text-4xl font-bold text-navy dark:text-white mb-2">
-                    {actualName}
-                  </h2>{" "}
-                  <div className="flex items-center flex-wrap gap-3">
-                    <p className="text-primary font-bold text-lg">
-                      {actualJob}
-                    </p>
-                  </div>
+              <div className="flex flex-col items-center justify-center text-center mb-8">
+                <h2 className="text-4xl font-black text-navy dark:text-white mb-3 tracking-tight">
+                  {actualName}
+                </h2>
+                <div className="flex items-center justify-center gap-3">
+                  <p className="text-primary font-bold text-base px-5 py-2 bg-primary/10 border border-primary/20 rounded-full shadow-sm">
+                    {actualJob}
+                  </p>
                 </div>
               </div>{" "}
               {!isAutoRejected && (
@@ -548,120 +546,130 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                 {/* Subtle Background Glow */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
 
-                <div className="relative w-32 h-32 mb-6">
-                  <svg className="w-full h-full drop-shadow-sm" viewBox="0 0 100 100">
+                <div className="relative w-28 h-28 mb-5 group">
+                  <svg className="w-full h-full drop-shadow-sm transition-transform duration-500 group-hover:scale-105" viewBox="0 0 100 100">
                     <defs>
-                      <linearGradient id="matchGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="currentColor" />
-                        <stop offset="100%" stopColor="currentColor" stopOpacity="0.6" />
+                      <linearGradient id="matchGradient-teal" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#2dd4bf" />
+                        <stop offset="100%" stopColor="#14b8a6" />
+                      </linearGradient>
+                      <linearGradient id="matchGradient-amber" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#fbbf24" />
+                        <stop offset="100%" stopColor="#f59e0b" />
+                      </linearGradient>
+                      <linearGradient id="matchGradient-rose" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#fb7185" />
+                        <stop offset="100%" stopColor="#f43f5e" />
                       </linearGradient>
                     </defs>
                     <circle
-                      className="text-slate-200 dark:text-slate-700/50 stroke-current"
+                      className="text-slate-100 dark:text-slate-800 stroke-current shadow-inner"
                       strokeWidth="6"
                       cx="50"
                       cy="50"
                       r="42"
                       fill="transparent"
+                      style={{ filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.05))" }}
                     />
                     <motion.circle
-                      className={`${matchColorClass} stroke-current`}
                       strokeWidth="6"
                       strokeLinecap="round"
                       cx="50"
                       cy="50"
                       r="42"
                       fill="transparent"
-                      stroke="url(#matchGradient)"
+                      stroke={displayMatch >= 80 ? "url(#matchGradient-teal)" : displayMatch >= 50 ? "url(#matchGradient-amber)" : "url(#matchGradient-rose)"}
+                      style={{ filter: "drop-shadow(0px 1px 2px rgba(0,0,0,0.15))" }}
                       strokeDasharray="263.89"
                       initial={{ strokeDashoffset: 263.89 }}
                       animate={{ strokeDashoffset: 263.89 * (1 - strokeOffsetMatch) }}
                       transition={{ duration: 1.5, ease: "easeOut", delay: 0.2 }}
                     />
                   </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className={`text-3xl font-black ${matchColorClass}`}>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center mt-0.5">
+                    <span className={`text-3xl font-bold ${matchColorClass}`}>
                       {displayMatch}%
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-1">
+                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">
                       مطابقة
                     </span>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-center gap-3 mb-8 w-full z-10">
-                  <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-bold border ${displayMatch >= 80 ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/30' : displayMatch >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/30' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/30'} shadow-sm`}>
+                  <div className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-[20px] text-sm font-bold border ${displayMatch >= 80 ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/30' : displayMatch >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/30' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/30'} shadow-[0_4px_10px_rgba(0,0,0,0.03)]`}>
                     {displayMatch >= 80 ? <CheckCircle size={16} /> : displayMatch >= 50 ? <AlertTriangle size={16} /> : <X size={16} />}
                     {displayMatch >= 80 ? "ملاءمة عالية جداً" : displayMatch >= 50 ? "ملاءمة جزئية" : "غير مطابق"}
                   </div>
 
                   {topPercentile && (
-                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm">
-                      أفضل من <span className="text-primary">{topPercentile}%</span> من المتقدمين
-                    </span>
+                    <div className="relative w-full max-w-[200px] mt-2">
+                      <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div className="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
+                      </div>
+                      <div className="relative flex justify-center">
+                        <span className="bg-white dark:bg-slate-800 px-3 text-[13px] font-bold text-slate-500 dark:text-slate-400">
+                          أفضل من <span className="text-primary font-black">{topPercentile}%</span> من المتقدمين
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                <div className="w-full space-y-3 mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50 relative z-10">
-                  <div className="w-full">
-                    <div className="flex justify-between text-[11px] font-bold mb-1.5 px-6">
-                      <span className="text-slate-600 dark:text-slate-300">تطابق المهارات</span>
-                      <span className="text-navy dark:text-white">{skillsMatch}%</span>
+                <div className="w-full space-y-4 mt-2 pt-6 border-t border-slate-100 dark:border-slate-700/50 relative z-10">
+                  {[
+                    { label: "تطابق المهارات", val: skillsMatch, delay: 0.3 },
+                    { label: "تطابق الخبرة", val: expMatch, delay: 0.4 },
+                    { label: "تطابق التعليم", val: eduMatch, delay: 0.5 },
+                  ].map((item, idx) => (
+                    <div key={idx} className="w-full group">
+                      <div className="flex justify-between items-end mb-2 px-1">
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">{item.label}</span>
+                        <span className="text-sm font-black text-navy dark:text-white">{item.val}%</span>
+                      </div>
+                      <div className="w-full bg-slate-100 dark:bg-slate-800/80 rounded-full h-3 p-[2px] shadow-inner border border-slate-200/50 dark:border-slate-700/50">
+                        <motion.div 
+                          initial={{ width: 0 }} 
+                          animate={{ width: `${item.val}%` }} 
+                          transition={{ duration: 1, delay: item.delay }} 
+                          className={`h-full rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.1)] ${item.val >= 80 ? 'bg-gradient-to-r from-teal-400 to-teal-500' : item.val >= 50 ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-gradient-to-r from-rose-400 to-rose-500'}`} 
+                        />
+                      </div>
                     </div>
-                    <div className="w-[80%] mx-auto bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
-                      <motion.div initial={{ width: 0 }} animate={{ width: `${skillsMatch}%` }} transition={{ duration: 1, delay: 0.3 }} className={`h-full rounded-full ${getBarColor(skillsMatch)}`} />
-                    </div>
-                  </div>
-                  <div className="w-full">
-                    <div className="flex justify-between text-[11px] font-bold mb-1.5 px-6">
-                      <span className="text-slate-600 dark:text-slate-300">تطابق الخبرة</span>
-                      <span className="text-navy dark:text-white">{expMatch}%</span>
-                    </div>
-                    <div className="w-[80%] mx-auto bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
-                      <motion.div initial={{ width: 0 }} animate={{ width: `${expMatch}%` }} transition={{ duration: 1, delay: 0.4 }} className={`h-full rounded-full ${getBarColor(expMatch)}`} />
-                    </div>
-                  </div>
-                  <div className="w-full">
-                    <div className="flex justify-between text-[11px] font-bold mb-1.5 px-6">
-                      <span className="text-slate-600 dark:text-slate-300">تطابق التعليم</span>
-                      <span className="text-navy dark:text-white">{eduMatch}%</span>
-                    </div>
-                    <div className="w-[80%] mx-auto bg-slate-100 dark:bg-slate-700/50 rounded-full h-1.5 overflow-hidden">
-                      <motion.div initial={{ width: 0 }} animate={{ width: `${eduMatch}%` }} transition={{ duration: 1, delay: 0.5 }} className={`h-full rounded-full ${getBarColor(eduMatch)}`} />
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
               )}
-              <div className="flex bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-[20px] mb-8 border border-slate-100 dark:border-slate-700/50 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+              <div className="flex flex-wrap bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-[20px] mb-8 border border-slate-100 dark:border-slate-700/50 gap-1.5">
                 <button
                   onClick={() => setActiveTab("analysis")}
-                  className={`min-w-[120px] flex-1 py-3 px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${activeTab === "analysis" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
+                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all ${activeTab === "analysis" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
                   المطابقة والتحليل
                 </button>
                 <button
                   onClick={() => setActiveTab("requirements")}
-                  className={`min-w-[120px] flex-1 py-3 px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${activeTab === "requirements" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
+                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all ${activeTab === "requirements" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
-                  متطلبات التقديم
+                  نموذج التقديم
                 </button>
                 {!isAutoRejected && (
                 <button
                   onClick={() => setActiveTab("interview")}
-                  className={`min-w-[120px] flex-1 py-3 px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${activeTab === "interview" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
+                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all ${activeTab === "interview" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
                   خطة المقابلة
                 </button>
                 )}
                 <button
                   onClick={() => setActiveTab("notes")}
-                  className={`min-w-[120px] flex-1 py-3 px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all whitespace-nowrap ${activeTab === "notes" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
+                  className={`flex-1 min-w-fit py-3 px-2 sm:px-4 text-xs lg:text-sm font-bold rounded-2xl transition-all ${activeTab === "notes" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80"}`}
                 >
-                  ملاحظات الفريق
+                  ملاحظات
                 </button>
               </div>
 
+              <div className="min-h-[700px] w-full">
               {activeTab === "analysis" && isAILoading && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-20">
                   <div className="w-16 h-16 border-4 border-slate-200 border-t-primary rounded-full animate-spin mb-6"></div>
@@ -741,7 +749,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                   {redFlags && redFlags.length > 0 && (
                     <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30 p-6 rounded-[32px]">
                       <h4 className="font-bold text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
-                        <AlertTriangle size={18} /> رادار التحذيرات (Red Flags 🚩)
+                        رادار التحذيرات
                       </h4>
                       <ul className="space-y-2">
                         {redFlags.map((flagObj: any, i: number) => {
@@ -754,7 +762,15 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                               <div>
                                 <p className="text-sm text-red-800 dark:text-red-300/90 leading-relaxed font-bold">{flagText}</p>
                                 {evidenceText && (
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1 font-medium">"{evidenceText}"</p>
+                                  <details className="mt-1.5 group cursor-pointer">
+                                    <summary className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-red-500 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                                      <svg className="w-3 h-3 group-open:rotate-90 transition-transform text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                      عرض الدليل
+                                    </summary>
+                                    <p className="text-[13px] text-slate-600 dark:text-slate-300 italic mt-2 font-medium pr-3 border-r-2 border-red-200 dark:border-red-800/50 py-1" dir="ltr text-left">
+                                      {evidenceText.toString().replace(/^["']|["']$/g, '').trim()}
+                                    </p>
+                                  </details>
                                 )}
                               </div>
                             </li>
@@ -767,7 +783,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                   <div className="grid grid-cols-1 gap-4">
                     <div className="bg-[#F0FDF4] dark:bg-green-900/10 border border-green-200 dark:border-green-800/30 p-6 rounded-[32px]">
                       <h4 className="font-bold text-green-700 dark:text-green-400 mb-3 flex items-center gap-2">
-                        <CheckCircle size={18} /> أبرز نقاط القوة والأدلة 🔎
+                        نقاط القوة
                       </h4>
                       <ul className="space-y-4">
                         {actualStrengths.map((strObj: any, i: number) => {
@@ -780,7 +796,15 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                               <div>
                                 <p className="text-sm text-green-800 dark:text-green-300/90 leading-relaxed font-bold">{strengthText}</p>
                                 {evidenceText && (
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1 font-medium">"{evidenceText}"</p>
+                                  <details className="mt-1.5 group cursor-pointer">
+                                    <summary className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-green-500 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                                      <svg className="w-3 h-3 group-open:rotate-90 transition-transform text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                      عرض الدليل
+                                    </summary>
+                                    <p className="text-[13px] text-slate-600 dark:text-slate-300 italic mt-2 font-medium pr-3 border-r-2 border-green-200 dark:border-green-800/50 py-1" dir="ltr text-left">
+                                      {evidenceText.toString().replace(/^["']|["']$/g, '').trim()}
+                                    </p>
+                                  </details>
                                 )}
                               </div>
                             </li>
@@ -791,7 +815,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
 
                     <div className="bg-[#FFF7ED] dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800/30 p-6 rounded-[32px]">
                       <h4 className="font-bold text-orange-700 dark:text-orange-400 mb-3 flex items-center gap-2">
-                        <Zap size={18} /> فجوات ونقاط الانتباه
+                        نقاط الضعف
                       </h4>
                       <ul className="space-y-2">
                         {actualWeaknesses.map((weakObj: any, i: number) => {
@@ -804,7 +828,15 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                               <div>
                                 <p className="text-sm text-orange-800 dark:text-orange-300/90 leading-relaxed font-bold">{weakText}</p>
                                 {evidenceText && (
-                                  <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1 font-medium">"{evidenceText}"</p>
+                                  <details className="mt-1.5 group cursor-pointer">
+                                    <summary className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 dark:text-slate-500 hover:text-orange-500 transition-colors list-none [&::-webkit-details-marker]:hidden">
+                                      <svg className="w-3 h-3 group-open:rotate-90 transition-transform text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                      عرض الدليل
+                                    </summary>
+                                    <p className="text-[13px] text-slate-600 dark:text-slate-300 italic mt-2 font-medium pr-3 border-r-2 border-orange-200 dark:border-orange-800/50 py-1" dir="ltr text-left">
+                                      {evidenceText.toString().replace(/^["']|["']$/g, '').trim()}
+                                    </p>
+                                  </details>
                                 )}
                               </div>
                             </li>
@@ -859,8 +891,8 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
 
                         {/* أسئلة نموذج التقديم */}
                         {regularAnswers.length > 0 && (
-                          <div className="bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-800/30 p-6 rounded-[32px] mt-6">
-                            <h4 className="font-bold text-indigo-700 dark:text-indigo-400 mb-4 flex items-center gap-2">
+                          <div className="bg-primary/5 border border-primary/20 p-6 rounded-[32px] mt-6">
+                            <h4 className="font-bold text-primary mb-4 flex items-center gap-2">
                               <MessageCircle size={18} /> إجابات أسئلة نموذج التقديم
                             </h4>
                             <div className="space-y-4">
@@ -912,7 +944,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-100 dark:border-slate-700 w-full flex flex-col">
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                         <FileText size={20} />
                       </div>
                       <div>
@@ -1022,29 +1054,31 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
 
               {activeTab === "interview" && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-                  <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 p-5 rounded-[24px] mb-6">
-                    <p className="text-sm font-bold text-blue-700 dark:text-blue-400 flex items-center gap-3">
-                      <MessageCircle size={20} />
-                      أسئلة هجومية / تكتيكية مصممة للتركيز على الفجوات ونقاط التقييم الحرجة:
+                  <div className="bg-primary/5 border border-primary/20 p-5 rounded-[24px] mb-6">
+                    <p className="text-sm font-bold text-primary flex items-center gap-3">
+                      <Target size={20} />
+                      أسئلة تكتيكية مصممة للتركيز على الفجوات ونقاط التقييم الحرجة:
                     </p>
                   </div>
                   {(() => {
-                    const questions = interviewQuestions;
+                    let questions = interviewQuestions;
+                    
+                    // Flatten in case safeParseArray returns nested arrays (e.g., [ [{q: "..."}] ])
+                    if (Array.isArray(questions)) {
+                      questions = questions.flat(Infinity);
+                    }
+
                     if (!questions || questions.length === 0) {
                       return (
-                        <div className="flex flex-col items-center justify-center py-12 text-center bg-white dark:bg-slate-800/50 rounded-[32px] border border-slate-100 dark:border-slate-700/50 border-dashed">
-                          <MessageCircle size={40} className="text-slate-300 dark:text-slate-600 mb-4" />
-                          <h3 className="text-lg font-bold text-navy dark:text-white mb-2">لا توجد أسئلة مقترحة حالياً</h3>
-                          <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm leading-relaxed">
-                            لم يتم إضافة أسئلة مقترحة لهذا المتقدم حتى الآن.
-                          </p>
-                        </div>
+                        <p className="text-sm font-bold text-slate-400 dark:text-slate-500 text-center py-8">
+                          لا توجد أسئلة مقترحة حالياً.
+                        </p>
                       );
                     }
 
                     return questions.map((item: any, idx: number) => {
-                      const qText = typeof item === 'string' ? item : (item.q || item.question || "");
-                      const rText = typeof item === 'string' ? "" : (item.purpose || item.reason || item.objective || "");
+                      const qText = typeof item === 'string' ? item : (item.q || item.question || item.text || item.question_text || item.content || item.title || "");
+                      const rText = typeof item === 'string' ? "" : (item.purpose || item.reason || item.objective || item.justification || item.description || "");
 
                       if (!qText) return null;
 
@@ -1066,8 +1100,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                       );
                     });
                   })()}
-                </motion.div>
+            </motion.div>
               )}
+              </div>
             </div>{" "}
           </div>{" "}
           {/* Left Column - CV Viewer (7 columns) */}{" "}
@@ -1096,7 +1131,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                   applicant.cv_file_url.match(/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i) ? (
                     <img src={applicant.cv_file_url} className="absolute inset-0 w-full h-full object-contain bg-slate-50/50 dark:bg-slate-800 rounded-[30px] p-4" alt="CV" />
                   ) : (
-                    <iframe src={applicant.cv_file_url + "#toolbar=0"} className="absolute inset-0 w-full h-full border-none bg-white rounded-[30px]" />
+                    <iframe src={applicant.cv_file_url + "#toolbar=0&view=FitH"} className="absolute inset-0 w-full h-full border-none bg-white rounded-[30px]" />
                   )
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center text-slate-400 font-bold bg-white dark:bg-slate-800 rounded-[30px]">
@@ -1170,7 +1205,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
               {applicant.cv_file_url.match(/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i) ? (
                 <img src={applicant.cv_file_url} className="w-full h-full object-contain rounded-2xl bg-transparent" alt="CV" />
               ) : (
-                <iframe src={applicant.cv_file_url} className="w-full h-full rounded-2xl bg-white border-none" />
+                <iframe src={applicant.cv_file_url + "#toolbar=0&view=FitH"} className="w-full h-full rounded-2xl bg-white border-none" />
               )}
             </div>
           </motion.div>

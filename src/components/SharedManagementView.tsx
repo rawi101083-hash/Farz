@@ -77,6 +77,9 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
             skills_match: raw.skills_match || 0,
             top_strengths: raw.strengths || raw.top_strengths,
             top_weaknesses: raw.weaknesses || raw.top_weaknesses,
+            top_percentile: raw.top_percentile,
+            red_flags: raw.red_flags,
+            interview_questions: raw.interview_questions,
             customAnswers: parsedAnswers,
             linkedin: (parsedAnswers.find((a: any) => a.question === "رابط لينكد إن")?.answer) || raw.linkedin || ""
           } as any});
