@@ -2181,6 +2181,8 @@ export default function App() {
               taxNumber: data.tax_number || prev.taxNumber,
               city: data.city || prev.city,
               companyLogo: data.company_logo || prev.companyLogo,
+              contactEmail: data.contact_email || user.email || prev.contactEmail,
+              contactPhone: data.contact_phone || prev.contactPhone,
               subscription_tier: normalizedPlan,
               subscription_end_date: data.subscription_end_date || null,
               subscription_is_yearly: isYearly,

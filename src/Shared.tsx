@@ -2291,6 +2291,8 @@ export const SettingsPage = ({
           city: userProfile.city || null,
           subscription_plan: userProfile.subscription_tier || 'free',
           company_logo: userProfile.companyLogo || null,
+          contact_email: userProfile.contactEmail || null,
+          contact_phone: userProfile.contactPhone || null,
         };
 
         if (!isLocked) {
@@ -2632,6 +2634,38 @@ export const SettingsPage = ({
                         />
                       </>
                     )}
+                  </div>
+
+                  <div className="space-y-2 group">
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">
+                      البريد الإلكتروني (للفواتير والتواصل) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      value={userProfile.contactEmail || ""}
+                      onChange={(e) => setUserProfile({ ...userProfile, contactEmail: e.target.value })}
+                      placeholder="email@company.com"
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
+                      dir="ltr"
+                    />
+                  </div>
+
+                  <div className="space-y-2 group">
+                    <label className="text-sm font-bold text-navy dark:text-slate-300">
+                      رقم جوال المفوض <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={userProfile.contactPhone || ""}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '');
+                        setUserProfile({ ...userProfile, contactPhone: val });
+                      }}
+                      placeholder="05xxxxxxxx"
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
+                      dir="ltr"
+                      maxLength={10}
+                    />
                   </div>
 
                   {userProfile.entityType === "company" ? (

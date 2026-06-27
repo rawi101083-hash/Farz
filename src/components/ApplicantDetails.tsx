@@ -491,7 +491,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                   <div className="flex flex-col items-center gap-3 mb-8 w-full z-10">
                     <div className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-[20px] text-sm font-bold border ${displayMatch >= 80 ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800/30' : displayMatch >= 50 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/30' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-800/30'} shadow-[0_4px_10px_rgba(0,0,0,0.03)]`}>
                       {displayMatch >= 80 ? <CheckCircle size={16} /> : displayMatch >= 50 ? <AlertTriangle size={16} /> : <X size={16} />}
-                      {displayMatch >= 80 ? "ملاءمة عالية جداً" : displayMatch >= 50 ? "ملاءمة جزئية" : "غير مطابق"}
+                      {displayMatch >= 80 ? "توافق عالي جداً" : displayMatch >= 50 ? "توافق جيد" : "توافق منخفض"}
                     </div>
 
                     {topPercentile && (
@@ -599,38 +599,19 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                     )}
 
                     {applicant?.is_interview_completed && (
-                      <div className="bg-purple-50 dark:bg-purple-900/10 border-2 border-b-[6px] border-purple-200 dark:border-purple-800/50 p-6 rounded-[32px] mb-6 shadow-sm">
-                        <h3 className="text-lg font-bold text-purple-700 dark:text-purple-400 mb-4 flex items-center gap-2">
-                          <Mic size={20} /> تقرير المقابلة الصوتية (AI)
+                      <div className="bg-emerald-50 dark:bg-emerald-900/10 border-2 border-b-[6px] border-emerald-200 dark:border-emerald-800/50 p-6 rounded-[32px] mb-6 shadow-md transition-all hover:shadow-lg hover:-translate-y-1">
+                        <h3 className="text-lg font-bold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-2 drop-shadow-sm">
+                          <Mic size={20} className="text-emerald-600 dark:text-emerald-400" /> التسجيل الصوتي للمقابلة
                         </h3>
-                        <div className="flex flex-col gap-4 mb-4">
-                          <div className="bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3 w-fit">
-                            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">التقييم النهائي:</span>
-                            <span className="text-lg font-black text-purple-600 dark:text-purple-400">{applicant?.interview_score || "-"} / 10</span>
-                          </div>
-
-                          {applicant?.voiceEvalUrl && (
-                            <div className="w-full bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                              <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">التسجيل الصوتي للمقابلة:</span>
-                              <audio controls src={applicant.voiceEvalUrl} className="w-full h-10 outline-none" />
+                        <div className="flex flex-col gap-4">
+                          {applicant?.voiceEvalUrl ? (
+                            <div className="w-full bg-white dark:bg-slate-800 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.1)]">
+                              <span className="block text-sm font-bold text-emerald-700 dark:text-emerald-300 mb-3">استمع للمقابلة الصوتية:</span>
+                              <audio controls src={applicant.voiceEvalUrl} className="w-full outline-none rounded-lg drop-shadow-sm" />
                             </div>
-                          )}
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-purple-100 dark:border-purple-800/20">
-                            <h4 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">ملخص المقابلة</h4>
-                            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium whitespace-pre-wrap">
-                              {applicant?.interview_summary || "لا يوجد ملخص."}
-                            </p>
-                          </div>
-
-                          {applicant?.interview_transcript && (
-                            <div className="bg-white dark:bg-slate-800/60 p-4 rounded-xl border border-purple-100 dark:border-purple-800/20 max-h-60 overflow-y-auto custom-scrollbar">
-                              <h4 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-2">التفريغ النصي للمحادثة (Transcript)</h4>
-                              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium whitespace-pre-wrap">
-                                {applicant.interview_transcript}
-                              </p>
+                          ) : (
+                            <div className="w-full bg-slate-100 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-center shadow-inner">
+                              <span className="block text-sm font-medium text-slate-500 dark:text-slate-400">جاري معالجة التسجيل الصوتي، يرجى الانتظار...</span>
                             </div>
                           )}
                         </div>
