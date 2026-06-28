@@ -1729,32 +1729,32 @@ export const CreateJob = ({
             <form className="space-y-6" id="createJobForm" onSubmit={handleSubmit}>
               {/* --- STEPPER UI START --- */}
               {createJobType !== "quick_link" && (
-                <div className="mb-12 w-full max-w-3xl mx-auto px-4 mt-8">
+                <div className="mb-14 w-full max-w-3xl mx-auto px-4 mt-8">
                   <div className="flex items-center justify-between relative">
                     {/* Stepper Lines */}
-                    <div className="absolute top-1/2 left-[28px] right-[28px] h-2 bg-slate-200 dark:bg-slate-700 z-0 rounded-full transform -translate-y-1/2 shadow-inner">
-                      <div className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-primary/90 to-primary z-0 rounded-full transition-all duration-700 shadow-md" style={{ width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%' }} />
+                    <div className="absolute top-6 left-[24px] right-[24px] h-[6px] bg-slate-100 dark:bg-slate-800 z-0 rounded-full shadow-inner border border-slate-200/50 dark:border-slate-700/50">
+                      <div className="absolute top-0 bottom-0 right-0 bg-gradient-to-l from-teal-300 to-teal-600 z-0 rounded-full transition-all duration-700 shadow-[0_0_10px_rgba(13,148,136,0.4)]" style={{ width: currentStep === 1 ? '0%' : currentStep === 2 ? '50%' : '100%' }} />
                     </div>
 
-                    <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => setCurrentStep(1)}>
-                      <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 1 ? 'bg-gradient-to-b from-primary to-primary/80 text-white shadow-[0_8px_15px_-3px_rgba(0,0,0,0.2),0_4px_0_0_rgba(0,0,0,0.15)] scale-110 border-white/50' : currentStep > 1 ? 'bg-primary text-white border-white shadow-[0_4px_0_0_rgba(0,0,0,0.1)]' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
-                        {currentStep > 1 ? <CheckCircle size={24} className="animate-in zoom-in" /> : "1"}
+                    <div className="flex flex-col items-center relative z-10 cursor-pointer group" onClick={() => setCurrentStep(1)}>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg transition-all duration-500 relative z-10 ${currentStep === 1 ? 'bg-gradient-to-b from-teal-400 to-teal-600 text-white shadow-[0_8px_16px_rgba(13,148,136,0.3),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-4px_8px_rgba(0,0,0,0.3)] scale-110 border-2 border-white/20' : currentStep > 1 ? 'bg-teal-600 text-white shadow-[0_4px_8px_rgba(13,148,136,0.2),inset_0_-2px_4px_rgba(0,0,0,0.2)]' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 shadow-inner'}`}>
+                        {currentStep > 1 ? <CheckCircle size={20} className="animate-in zoom-in drop-shadow-md" /> : "1"}
                       </div>
-                      <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 1 ? 'text-primary drop-shadow-sm' : currentStep > 1 ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>تفاصيل الاعلان</span>
+                      <span className={`absolute top-full mt-3 w-max text-[13px] font-black transition-colors ${currentStep === 1 ? 'text-teal-700 dark:text-teal-400 drop-shadow-sm' : currentStep > 1 ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400'}`}>تفاصيل الاعلان</span>
                     </div>
 
-                    <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 1) setCurrentStep(2) }}>
-                      <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 2 ? 'bg-gradient-to-b from-primary to-primary/80 text-white shadow-[0_8px_15px_-3px_rgba(0,0,0,0.2),0_4px_0_0_rgba(0,0,0,0.15)] scale-110 border-white/50' : currentStep > 2 ? 'bg-primary text-white border-white shadow-[0_4px_0_0_rgba(0,0,0,0.1)]' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
-                        {currentStep > 2 ? <CheckCircle size={24} className="animate-in zoom-in" /> : "2"}
+                    <div className="flex flex-col items-center relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 1) setCurrentStep(2) }}>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg transition-all duration-500 relative z-10 ${currentStep === 2 ? 'bg-gradient-to-b from-teal-400 to-teal-600 text-white shadow-[0_8px_16px_rgba(13,148,136,0.3),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-4px_8px_rgba(0,0,0,0.3)] scale-110 border-2 border-white/20' : currentStep > 2 ? 'bg-teal-600 text-white shadow-[0_4px_8px_rgba(13,148,136,0.2),inset_0_-2px_4px_rgba(0,0,0,0.2)]' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 shadow-inner'}`}>
+                        {currentStep > 2 ? <CheckCircle size={20} className="animate-in zoom-in drop-shadow-md" /> : "2"}
                       </div>
-                      <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 2 ? 'text-primary drop-shadow-sm' : currentStep > 2 ? 'text-slate-700 dark:text-slate-200' : 'text-slate-400'}`}>متطلبات التقديم</span>
+                      <span className={`absolute top-full mt-3 w-max text-[13px] font-black transition-colors ${currentStep === 2 ? 'text-teal-700 dark:text-teal-400 drop-shadow-sm' : currentStep > 2 ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400'}`}>متطلبات التقديم</span>
                     </div>
 
-                    <div className="flex flex-col items-center gap-3 relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 2) setCurrentStep(3) }}>
-                      <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl transition-all duration-500 border-4 dark:border-slate-900 ${currentStep === 3 ? 'bg-gradient-to-b from-primary to-primary/80 text-white shadow-[0_8px_15px_-3px_rgba(0,0,0,0.2),0_4px_0_0_rgba(0,0,0,0.15)] scale-110 border-white/50' : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 shadow-sm'}`}>
+                    <div className="flex flex-col items-center relative z-10 cursor-pointer group" onClick={() => { if (currentStep >= 2) setCurrentStep(3) }}>
+                      <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg transition-all duration-500 relative z-10 ${currentStep === 3 ? 'bg-gradient-to-b from-teal-400 to-teal-600 text-white shadow-[0_8px_16px_rgba(13,148,136,0.3),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-4px_8px_rgba(0,0,0,0.3)] scale-110 border-2 border-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 shadow-inner'}`}>
                         3
                       </div>
-                      <span className={`text-sm font-black mt-1 transition-colors ${currentStep === 3 ? 'text-primary drop-shadow-sm' : 'text-slate-400'}`}>توجيهات الفرز والنشر</span>
+                      <span className={`absolute top-full mt-3 w-max text-[13px] font-black transition-colors ${currentStep === 3 ? 'text-teal-700 dark:text-teal-400 drop-shadow-sm' : 'text-slate-400'}`}>توجيهات الفرز والنشر</span>
                     </div>
                   </div>
                 </div>

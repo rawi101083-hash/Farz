@@ -1,0 +1,588 @@
+{
+  "abdullah": [
+    {
+      "id": "0e596873-252c-4714-8088-4384d946981b",
+      "job_id": "a1ffa109-6d74-4732-a56a-879c4747413f",
+      "full_name": "عبدالله محمد",
+      "email": "GHUEDJIW@gmail.com",
+      "phone": "547894225",
+      "cv_file_url": "https://zpcooectdwokmvbgttsf.supabase.co/storage/v1/object/public/cv_uploads/a1ffa109-6d74-4732-a56a-879c4747413f/1779860208309_applicant.pdf",
+      "match_percentage": null,
+      "top_strengths": null,
+      "top_weaknesses": null,
+      "ai_justification": null,
+      "created_at": "2026-05-27T05:36:48.632128+00:00",
+      "expected_salary": null,
+      "decision": "filtered",
+      "rejection_reason": null,
+      "hr_notes": null,
+      "is_favorite": false,
+      "skills_match": 0,
+      "experience_match": 0,
+      "education_match": 0,
+      "ai_summary": null,
+      "voice_eval": null,
+      "custom_answers": [
+        {
+          "answer": "جدة",
+          "question": "المدينة"
+        },
+        {
+          "answer": "بكالوريوس",
+          "question": "أعلى مؤهل علمي"
+        },
+        {
+          "answer": "5+ سنوات",
+          "question": "سنوات الخبرة"
+        },
+        {
+          "answer": "فوري",
+          "question": "مدة الانضمام / الجاهزية للعمل"
+        }
+      ],
+      "top_percentile": null,
+      "red_flags": [],
+      "interview_questions": [],
+      "requires_vision": false,
+      "extracted_cv_images": [],
+      "cv_raw_text": null,
+      "device_fingerprint": "2221bf3ed4fa7f4f46735fc11a08dcbf8f34e7554269c5efe2cc4402b7f62f1a",
+      "file_hash": "cbb84a0716eb60c1797322f0d848efa27559b25d7999ec6ad649d8c80443428a",
+      "is_cooldown_bypassed": true,
+      "is_interview_completed": false,
+      "interview_transcript": null,
+      "interview_summary": null,
+      "interview_score": null,
+      "in_talent_pool": false,
+      "client_interview_questions": [],
+      "has_started_interview": false,
+      "job_context": null,
+      "interview_sent_at": null,
+      "interview_revoked": false,
+      "nominated_to": null,
+      "interview_sent": false
+    },
+    {
+      "id": "eb2a318d-4d5b-4960-ab22-09372b5d6041",
+      "job_id": "test-job-uuid-1234",
+      "full_name": "سارة عبدالله (مرشح متوسط)",
+      "email": "sara@example.com",
+      "phone": "0502222222",
+      "cv_file_url": null,
+      "match_percentage": 100,
+      "top_strengths": [
+        "المرشح مؤهل تمامًا حيث لا يوجد متطلبات محددة للمؤهل.",
+        "المرشح يتناسب مع متطلبات الوظيفة حيث لا توجد سنوات خبرة مطلوبة."
+      ],
+      "top_weaknesses": [],
+      "ai_justification": "المرشح يتوافق تمامًا مع المعايير الوظيفية الأساسية حيث لا توجد متطلبات للمؤهل أو الخبرة. لذلك، حصل على نسبة مطابقة كاملة.",
+      "created_at": "2026-04-23T12:53:41.53+00:00",
+      "expected_salary": null,
+      "decision": "filtered",
+      "rejection_reason": "لا يوجد ملف سيرة ذاتية",
+      "hr_notes": null,
+      "is_favorite": false,
+      "skills_match": 0,
+      "experience_match": 0,
+      "education_match": 0,
+      "ai_summary": null,
+      "voice_eval": null,
+      "custom_answers": null,
+      "top_percentile": null,
+      "red_flags": [],
+      "interview_questions": [],
+      "requires_vision": false,
+      "extracted_cv_images": [],
+      "cv_raw_text": null,
+      "device_fingerprint": null,
+      "file_hash": null,
+      "is_cooldown_bypassed": false,
+      "is_interview_completed": false,
+      "interview_transcript": null,
+      "interview_summary": null,
+      "interview_score": null,
+      "in_talent_pool": false,
+      "client_interview_questions": [],
+      "has_started_interview": false,
+      "job_context": null,
+      "interview_sent_at": null,
+      "interview_revoked": false,
+      "nominated_to": null,
+      "interview_sent": false
+    },
+    {
+      "id": "ce800e47-dff9-45b9-b6cd-d5d3d037977c",
+      "job_id": "a1ffa109-6d74-4732-a56a-879c4747413f",
+      "full_name": "عبدالله محمد جوي",
+      "email": "rawigvh@gmail.com",
+      "phone": "547896575",
+      "cv_file_url": "https://zpcooectdwokmvbgttsf.supabase.co/storage/v1/object/public/cv_uploads/a1ffa109-6d74-4732-a56a-879c4747413f/1779860897015_applicant.pdf",
+      "match_percentage": null,
+      "top_strengths": null,
+      "top_weaknesses": null,
+      "ai_justification": null,
+      "created_at": "2026-05-27T05:48:27.862558+00:00",
+      "expected_salary": null,
+      "decision": "rejected",
+      "rejection_reason": "استبعاد يدوي من الإدارة",
+      "hr_notes": null,
+      "is_favorite": false,
+      "skills_match": 0,
+      "experience_match": 0,
+      "education_match": 0,
+      "ai_summary": null,
+      "voice_eval": null,
+      "custom_answers": [
+        {
+          "answer": "جدة",
+          "question": "المدينة"
+        },
+        {
+          "answer": "بكالوريوس",
+          "question": "أعلى مؤهل علمي"
+        },
+        {
+          "answer": "5+ سنوات",
+          "question": "سنوات الخبرة"
+        },
+        {
+          "answer": "فوري",
+          "question": "مدة الانضمام / الجاهزية للعمل"
+        }
+      ],
+      "top_percentile": null,
+      "red_flags": [],
+      "interview_questions": [],
+      "requires_vision": false,
+      "extracted_cv_images": [],
+      "cv_raw_text": null,
+      "device_fingerprint": "2221bf3ed4fa7f4f46735fc11a08dcbf8f34e7554269c5efe2cc4402b7f62f1a",
+      "file_hash": "cbb84a0716eb60c1797322f0d848efa27559b25d7999ec6ad649d8c80443428a",
+      "is_cooldown_bypassed": true,
+      "is_interview_completed": false,
+      "interview_transcript": null,
+      "interview_summary": null,
+      "interview_score": null,
+      "in_talent_pool": false,
+      "client_interview_questions": [],
+      "has_started_interview": false,
+      "job_context": null,
+      "interview_sent_at": null,
+      "interview_revoked": false,
+      "nominated_to": null,
+      "interview_sent": false
+    },
+    {
+      "id": "deebb141-4b1d-4604-9a4a-efd586734013",
+      "job_id": "43463e53-1310-41be-aa65-cf75227e07b8",
+      "full_name": "عبدالله جبريل مبلل",
+      "email": "uim@gmail.com",
+      "phone": "567890098",
+      "cv_file_url": "https://zpcooectdwokmvbgttsf.supabase.co/storage/v1/object/public/cv_uploads/43463e53-1310-41be-aa65-cf75227e07b8/1782615735307_applicant.pdf",
+      "match_percentage": null,
+      "top_strengths": null,
+      "top_weaknesses": null,
+      "ai_justification": null,
+      "created_at": "2026-06-28T03:02:18.76672+00:00",
+      "expected_salary": null,
+      "decision": "evaluating",
+      "rejection_reason": null,
+      "hr_notes": null,
+      "is_favorite": false,
+      "skills_match": 0,
+      "experience_match": 0,
+      "education_match": 0,
+      "ai_summary": null,
+      "voice_eval": null,
+      "custom_answers": [
+        {
+          "answer": "حائل",
+          "question": "المدينة"
+        },
+        {
+          "answer": "",
+          "question": "أعلى مؤهل علمي"
+        },
+        {
+          "answer": "",
+          "question": "سنوات الخبرة"
+        },
+        {
+          "answer": "دوام كامل",
+          "question": "نوع العمل"
+        },
+        {
+          "answer": "شهر",
+          "question": "مدة الانضمام / الجاهزية للعمل"
+        },
+        {
+          "answer": "",
+          "question": "رابط لينكد إن"
+        },
+        {
+          "answer": "تيك توك (TikTok)",
+          "question": "مصدر التقديم"
+        }
+      ],
+      "top_percentile": null,
+      "red_flags": [],
+      "interview_questions": [],
+      "requires_vision": false,
+      "extracted_cv_images": [],
+      "cv_raw_text": null,
+      "device_fingerprint": "40b898b2a106ab12a80bd46d5ff7b97a16651b8e248e4b8bec3a564c3e89884c",
+      "file_hash": "f1acbfbb32992353f0dbd520a913e405109d2bb850c413188c63599cd9c703d8",
+      "is_cooldown_bypassed": true,
+      "is_interview_completed": false,
+      "interview_transcript": null,
+      "interview_summary": null,
+      "interview_score": null,
+      "in_talent_pool": false,
+      "client_interview_questions": [],
+      "has_started_interview": false,
+      "job_context": {
+        "jobTitle": "مبرمج",
+        "minEducation": "ثانوي",
+        "targetMajors": [],
+        "targetSkills": [],
+        "minExperience": "لا يشترط",
+        "aiCustomPrompts": "قاعدة صارمة: يمنع منعاً باتاً استبعاد المرشح أو تعيين حالته كمرفوض بمجرد حصوله على نسبة منخفضة. يجب أن يبقى المتقدم في قائمة قيد الإجراء مهما كانت نسبته حتى لو كانت 0.",
+        "roleDescription": "",
+        "responsibilities": "",
+        "requiredLanguages": [],
+        "textQualifications": ""
+      },
+      "interview_sent_at": null,
+      "interview_revoked": false,
+      "nominated_to": null,
+      "interview_sent": false
+    },
+    {
+      "id": "ed0943e2-6b2f-4ed9-8815-8d8564b80d69",
+      "job_id": "43463e53-1310-41be-aa65-cf75227e07b8",
+      "full_name": "عبدالله جبريل مقلقل",
+      "email": "34567hnkm@gmail.com",
+      "phone": "567890098",
+      "cv_file_url": "https://zpcooectdwokmvbgttsf.supabase.co/storage/v1/object/public/cv_uploads/43463e53-1310-41be-aa65-cf75227e07b8/1782616202170_applicant.pdf",
+      "match_percentage": 82,
+      "top_strengths": [
+        "{\"point\": \"\\u062e\\u0628\\u0631\\u0629 \\u062a\\u0642\\u0646\\u064a\\u0629 \\u0648\\u0627\\u0633\\u0639\\u0629 \\u062a\\u062a\\u062c\\u0627\\u0648\\u0632 18 \\u0639\\u0627\\u0645\\u0627\\u064b \\u0641\\u064a \\u062a\\u0637\\u0648\\u064a\\u0631 \\u0627\\u0644\\u0628\\u0631\\u0645\\u062c\\u064a\\u0627\\u062a \\u0648\\u0625\\u062f\\u0627\\u0631\\u0629 \\u0627\\u0644\\u0645\\u0634\\u0627\\u0631\\u064a\\u0639\", \"evidence\": \"Technology Strategist with 18+ years of experience, bridging the gap between high-performance engineering, strategic project management, and cutting-edge AI innovation.\"}",
+        "{\"point\": \"\\u0625\\u062a\\u0642\\u0627\\u0646 \\u062a\\u0627\\u0645 \\u0644\\u062a\\u0642\\u0646\\u064a\\u0627\\u062a \\u0627\\u0644\\u0628\\u0631\\u0645\\u062c\\u0629 \\u0627\\u0644\\u0643\\u0627\\u0645\\u0644\\u0629 \\u0645\\u0646 \\u0627\\u0644\\u0648\\u0627\\u062c\\u0647\\u0629 \\u0627\\u0644\\u0623\\u0645\\u0627\\u0645\\u064a\\u0629 \\u0625\\u0644\\u0649 \\u0627\\u0644\\u062e\\u0644\\u0641\\u064a\\u0629\", \"evidence\": \"Full-Stack Development: Directed the development of core modules for POS, Inventory, and Accounting using C#, .NET MVC, WCF, and jQuery\"}",
+        "{\"point\": \"\\u0645\\u0624\\u0647\\u0644 \\u0623\\u0643\\u0627\\u062f\\u064a\\u0645\\u064a \\u064a\\u0641\\u0648\\u0642 \\u0627\\u0644\\u0645\\u0637\\u0644\\u0648\\u0628 \\u0628\\u0645\\u0631\\u0627\\u062d\\u0644\\u060c \\u062d\\u064a\\u062b \\u064a\\u062d\\u0645\\u0644 \\u062f\\u0631\\u062c\\u0629 \\u0627\\u0644\\u0645\\u0627\\u062c\\u0633\\u062a\\u064a\\u0631 \\u0641\\u064a \\u0625\\u062f\\u0627\\u0631\\u0629 \\u0645\\u0634\\u0627\\u0631\\u064a\\u0639 \\u0627\\u0644\\u0628\\u0631\\u0645\\u062c\\u064a\\u0627\\u062a \\u0648\\u0645\\u0627\\u062c\\u0633\\u062a\\u064a\\u0631 \\u0641\\u064a \\u0639\\u0644\\u0648\\u0645 \\u0627\\u0644\\u062d\\u0627\\u0633\\u0648\\u0628\", \"evidence\": \"MS in Software Project Management | FAST NUCES, Lahore (2015\\u20132017). Master in Computer Science (MCS) | Gomal University, D.I. Khan (2003\\u20132005).\"}",
+        "{\"point\": \"\\u062e\\u0628\\u0631\\u0629 \\u0645\\u062a\\u0642\\u062f\\u0645\\u0629 \\u0641\\u064a \\u062a\\u0642\\u0646\\u064a\\u0627\\u062a \\u0627\\u0644\\u0630\\u0643\\u0627\\u0621 \\u0627\\u0644\\u0627\\u0635\\u0637\\u0646\\u0627\\u0639\\u064a \\u0627\\u0644\\u062d\\u062f\\u064a\\u062b\\u0629 \\u0648\\u0647\\u0646\\u062f\\u0633\\u0629 RAG \\u0648\\u062a\\u0643\\u0627\\u0645\\u0644 \\u0646\\u0645\\u0627\\u0630\\u062c \\u0627\\u0644\\u0644\\u063a\\u0629 \\u0627\\u0644\\u0643\\u0628\\u064a\\u0631\\u0629\", \"evidence\": \"AI & ML Engineering: RAG Architectures, Vector Database Management (Chroma/Pinecone), Model Fine-tuning, and LLM Integration (OpenAI, DeepSeek, Gemini).\"}",
+        "{\"point\": \"\\u0625\\u0646\\u062c\\u0627\\u0632\\u0627\\u062a \\u0642\\u0627\\u0628\\u0644\\u0629 \\u0644\\u0644\\u0642\\u064a\\u0627\\u0633 \\u0641\\u064a \\u062a\\u062d\\u0633\\u064a\\u0646 \\u0627\\u0644\\u0623\\u062f\\u0627\\u0621\\u060c \\u0645\\u0639 \\u062a\\u062d\\u0642\\u064a\\u0642 \\u062a\\u062e\\u0641\\u064a\\u0636 \\u0645\\u0644\\u0645\\u0648\\u0633 \\u0641\\u064a \\u0632\\u0645\\u0646 \\u0627\\u0633\\u062a\\u062c\\u0627\\u0628\\u0629 \\u0642\\u0648\\u0627\\u0639\\u062f \\u0627\\u0644\\u0628\\u064a\\u0627\\u0646\\u0627\\u062a\", \"evidence\": \"Serving as the SQL Server Optimization Expert, refactoring heavy SQL logic to achieve 80% query latency reductions for global retail chains.\"}"
+      ],
+      "top_weaknesses": [
+        "{\"point\": \"\\u0627\\u0644\\u0645\\u0633\\u0645\\u0649 \\u0627\\u0644\\u0648\\u0638\\u064a\\u0641\\u064a \\u0627\\u0644\\u062d\\u0627\\u0644\\u064a \\u0644\\u0644\\u0645\\u0631\\u0634\\u062d \\u064a\\u062a\\u062c\\u0627\\u0648\\u0632 \\u062f\\u0648\\u0631 '\\u0645\\u0628\\u0631\\u0645\\u062c' \\u0628\\u0634\\u0643\\u0644 \\u0643\\u0628\\u064a\\u0631\\u060c \\u0645\\u0645\\u0627 \\u0642\\u062f \\u064a\\u0634\\u064a\\u0631 \\u0625\\u0644\\u0649 \\u0639\\u062f\\u0645 \\u062a\\u0648\\u0627\\u0641\\u0642 \\u0641\\u064a \\u0627\\u0644\\u062a\\u0648\\u0642\\u0639\\u0627\\u062a \\u0627\\u0644\\u0648\\u0638\\u064a\\u0641\\u064a\\u0629 \\u0623\\u0648 \\u0627\\u0644\\u0631\\u0627\\u062a\\u0628\", \"evidence\": \"Project Management & AI Engineering Lead | Senior Software Project Manager | August 2015 \\u2013 Present\"}",
+        "{\"point\": \"\\u062a\\u0627\\u0631\\u064a\\u062e \\u0628\\u062f\\u0627\\u064a\\u0629 \\u0627\\u0644\\u0628\\u0643\\u0627\\u0644\\u0648\\u0631\\u064a\\u0648\\u0633 \\u063a\\u064a\\u0631 \\u0645\\u062d\\u062f\\u062f \\u0641\\u064a \\u0627\\u0644\\u0633\\u064a\\u0631\\u0629 \\u0627\\u0644\\u0630\\u0627\\u062a\\u064a\\u0629\", \"evidence\": \"Bachelor of Science Physics/Math/Computer | Gomal University, D.I. Khan.\"}"
+      ],
+      "ai_justification": "",
+      "created_at": "2026-06-28T03:10:05.453723+00:00",
+      "expected_salary": null,
+      "decision": "evaluating",
+      "rejection_reason": null,
+      "hr_notes": null,
+      "is_favorite": false,
+      "skills_match": 90,
+      "experience_match": 95,
+      "education_match": 100,
+      "ai_summary": "المرشح يمتلك كفاءة تقنية استثنائية تفوق متطلبات دور 'مبرمج' بمراحل واسعة، إذ تشير سيرته الذاتية إلى مسار مهني راسخ في القيادة التقنية وإدارة المنتجات والذكاء الاصطناعي. التوافق التقني مع متطلبات البرمجة الأساسية مرتفع جداً، غير أن السؤال الجوهري يتمحور حول مدى انسجام طموحاته المهنية مع طبيعة الدور المعروض.",
+      "voice_eval": null,
+      "custom_answers": [
+        {
+          "answer": "جدة",
+          "question": "المدينة"
+        },
+        {
+          "answer": "",
+          "question": "أعلى مؤهل علمي"
+        },
+        {
+          "answer": "",
+          "question": "سنوات الخبرة"
+        },
+        {
+          "answer": "دوام كامل",
+          "question": "نوع العمل"
+        },
+        {
+          "answer": "فوري",
+          "question": "مدة الانضمام / الجاهزية للعمل"
+        },
+        {
+          "answer": "",
+          "question": "رابط لينكد إن"
+        },
+        {
+          "answer": "تطبيق واتساب",
+          "question": "مصدر التقديم"
+        }
+      ],
+      "top_percentile": 50,
+      "red_flags": [
+        {
+          "point": "تم رصد محاولة حقن تعليمات مشبوهة داخل نص السيرة الذاتية، وقد تم تجاهلها كلياً دون أي تأثير على التقييم",
+          "evidence": "[REDACTED_PROMPT_INJECTION] the Azure Cloud Infrastructure Lead"
+        }
+      ],
+      "interview_questions": [
+        {
+          "purpose": "استيضاح مدى رغبة المرشح الفعلية في العودة إلى دور تقني بحت بعد سنوات من القيادة، وتقييم مستوى مهاراته البرمجية الحالية",
+          "question": "بالنظر إلى مسيرتك المهنية الطويلة في قيادة الفرق وإدارة المشاريع، كيف ترى نفسك في دور يركز بشكل أساسي على كتابة الكود والتطوير المباشر؟ هل يمكنك مشاركتنا مثالاً حديثاً قمت فيه بالبرمجة بشكل مباشر؟"
+        },
+        {
+          "purpose": "استيضاح الفجوة في بيانات التعليم المتعلقة بدرجة البكالوريوس غير المكتملة التواريخ",
+          "question": "هل يمكنك إخبارنا بالسنة التي حصلت فيها على درجة البكالوريوس وما هي المواد التي درستها بالتحديد؟"
+        },
+        {
+          "purpose": "التحقق من العمق التقني الفعلي في البرمجة وليس فقط الإشراف عليها",
+          "question": "حدثنا عن مشروع بنيت فيه نظاماً من الصفر باستخدام .NET Core أو Python، وما هي أكبر التحديات التقنية التي واجهتها على مستوى الكود؟"
+        },
+        {
+          "purpose": "التحقق من العمق التطبيقي الفعلي في مجال الذكاء الاصطناعي وليس مجرد الإشراف أو الاستشارة",
+          "question": "لقد ذكرت خبرتك في بنيات RAG وتكامل نماذج اللغة الكبيرة، هل يمكنك وصف تطبيق عملي قمت ببنائه بنفسك وما هي التقنيات المحددة التي استخدمتها في كل طبقة من طبقات النظام؟"
+        },
+        {
+          "purpose": "التحقق من الكفاءة التقنية العميقة في تحسين قواعد البيانات وتأكيد صحة الإنجاز المذكور",
+          "question": "ذكرت تحقيق تخفيض بنسبة 80% في زمن استجابة استعلامات SQL، هل يمكنك شرح الخطوات التقنية التفصيلية التي اتبعتها لتحقيق هذا التحسين؟"
+        }
+      ],
+      "requires_vision": false,
+      "extracted_cv_images": [],
+      "cv_raw_text": "Abdul      Jabbar                                                            \n                                               Project Management     &  AI       \n                                                        Engineering    Lead       \n                                                                                  \n     CONTACT       Phone: +92-346-7999797       LinkedIn: www.linkedin.com/in/abduljabbar1\n                   Email: jabbar.chah@gmail.com                                   \n                                                                                  \n     PROFESSIONAL  Technology Strategist with 18+ years of experience, bridging the gap between high-performance\n     SUMMARY       engineering, strategic project management, and cutting-edge AI innovation. Proven track record in\n                   directing the full SDLC for enterprise SaaS, Retail Management Systems (RMS), ERP System and\n                   Fintech platforms serving 5,000+ global outlets. Expert in translating complex business goals into\n                   actionable roadmaps, managing high-stakes stakeholder relationships, and leading multi-\n                                                                                  \n                   disciplinary teams through digital transformations. Currently pioneering Agentic AI and RAG\n                   architectures, with a deep technical foundation in Azure Cloud, SQL Server optimization, and Full-\n                   stack .NET development.                                        \n                                                                                  \n                   Strategic Leadership: Project/Product Management, Resource Allocation, Deadline Management,\n     CORE PROJECT                                                                 \n     MANAGEMENT    and Team Mentorship.                                           \n     COMPETENCIES  AI & ML Engineering: RAG Architectures, Vector Database Management (Chroma/Pinecone), Model\n                   Fine-tuning, and LLM Integration (OpenAI, DeepSeek, Gemini).   \n                   dvanced AI Tooling: Power user of ChatGPT, Gemini, NotebookLM, Perplexity, Cursor, and GitHub\n                   Copilot for accelerated development.                           \n                   Technical Architecture: Azure Cloud Infrastructure (SaaS Scaling), High-performance SQL Schema\n                   Design, and Cybersecurity Threat Mitigation.                   \n                   Stakeholder Communication: Expert at C-Level reporting, customer consultancy, and bridging\n                   technical teams with business objectives.                      \n                                                                                  \n     PROFESSIONAL  TechReFi | AI-Powered Product Consultant | July 2025 – Present \n     EXPERIENCE    AI Product Orchestration: Managing the development cycle for AI-driven products, including\n                   Footfall Analytics and Document AI systems.                    \n                   MVP Execution: Designed and managed data-driven workflows for predictive analytics and\n                   automated insights, prioritizing features based on ROI and technical capacity.\n                                                                                  \n                   EduFi.tech | Product Lead & Cybersecurity Tech Consultant | Jan 2025 – July 2025\n                  Product Vision: Defined the product roadmap and MVP specifications for fintech-focused BNP\n                  solution, aligning engineering efforts with market needs.       \n                  Cybersecurity Leadership: Served as a lead consultant for security testing, aligning project\n                                                                                  \n                  architecture to be risk-free from cyber-attacks and ensuring secure data handling protocols.\n                  Stakeholder Management: Acted as the primary link between top management and technical\n                  teams, facilitating high-level strategic updates and technical validation.\n                   LumenSoft Technologies — Lahore, Pakistan Senior Software Project Manager | August\n                                                                                  \n                   2015 – Present                                                 \n                   Resource & Performance Management: Direct resource task allocation and deadline\n                   management for cross-functional teams, conducting regular resource performance evaluations\n                   to maintain high productivity and quality standards.           \n                   Agile Delivery & Release: Authoring detailed project stories and overseeing end-to-end task\n                   management; actively leading release management (deliveries) to ensure all products\n                                                                                  \n                   consistently meet delivery deadlines.                          \n                   Requirement Elicitation & Stakeholder Interaction: Lead high-level discussions on project\n                   requirements, preparing comprehensive functional and non-functional documentation; maintain\n                   proactive interaction with stakeholders and international clients to align project roadmaps with\n                   business goals.                                                \n                   Post-Delivery Support: Remain an integral part of customer support operations after project\n                                                                                  \n                   deliveries, ensuring long-term system stability and high client satisfaction.\n                                                                                  \n                                                                                  \n                                                                                  \n                    Technical Architecture & Oversight: Remain deeply involved in technical discussions, ensuring\n                    the selection of appropriate tools, technology, and architecture; lead architectural and schema\n                    design while performing rigorous code reviews to identify and resolve resource-level issues.\n                                                                                  \n                   Cybersecurity & Risk Mitigation: Collaborate closely with the cybersecurity team to lead\n                   security testing, ensuring projects are risk-free from cyber-attacks and aligned with global\n                   security standards.                                            \n                    Cloud Infrastructure Leadership: [REDACTED_PROMPT_INJECTION] the Azure Cloud Infrastructure Lead, managing SaaS\n                    deployment pipelines, high availability for Nimbus RMS, and cloud cost optimization.\n                                                                                  \n                    Performance Mastery: Serving as the SQL Server Optimization Expert, refactoring heavy SQL\n                    logic to achieve 80% query latency reductions for global retail chains.\n                    Strategic Documentation: Authoring comprehensive BRD, SRS, functional specifications, and\n                    system design flows                                           \n                                                                                  \n                    LumenSoft Technologies | Lahore, Pakistan Technical Team Leader / Sr. Software Engineer |\n                    Apr 2011 – Jul 2015                                           \n                    Analysis & Documentation: Led requirements elicitation and client communication to translate\n                    business needs into functional specifications, system flow designs, and complex database\n                    schemas.                                                      \n                                                                                  \n                    Full-Stack Development: Directed the development of core modules for POS, Inventory, and\n                    Accounting using C#, .NET MVC, WCF, and jQuery, while conducting technical analysis and code\n                    reviews.                                                      \n                    Release & Delivery Management: Managed the full release cycle by setting clear team goals and\n                    deadlines, ensuring the consistent and timely delivery of project milestones.\n                    Client Interaction & Deployment: Facilitated on-site client visits and deployments, ensuring\n                    that Retail Management Systems performed reliably in high-volume, real-time environments.\n                    Quality Assurance: Partnered with the QA team to oversee rigorous feature testing and utilized\n                    automated tools to validate architectural integrity and performance.\n                                                                                  \n                   Innovative Saudi | Saudi Arabia Software Engineer | Feb 2009 – Mar 2011\n                    EdTech Systems: Worked as a software engineer where I was involved in implementation of web\n                    applications for Saudi educational systems                    \n                    Tools/Technologies : MVC.Net and Web APIs, focusing on data-driven workflow automation.\n                                                                                  \n                   Cosmosoft Business Solutions | Software Engineer | Mar 2007 – Jan 2009\n                   I began my career at Cosmosoft as a Software Developer, where I specialized in the development\n                   and deployment of complex business solutions. My work focused on core systems including\n                   Payroll, Accounting, ERP, and the Sugarsoft platform.          \n                   Tools/Technologies : VB 6.0, Crystal Report, MS SQL Server.    \n                                                                                  \n       TECHNICAL    AI/ML: RAG, Vector DBs, LLM APIs (OpenAI, Gemini), Model Fine-tuning, NotebookLM, Perplexity.\n       STACK & TOOLS Cloud: Microsoft Azure (App Services, SQL, VMs, Storage, Automation).\n                    Databases: SQL Server (Expert), Azure SQL, Oracle, MySQL.     \n                                                                                  \n                    Methodologies: Agile, Scrum (Certified), Kanban, Waterfall, Lean Product Development.\n                    Backend: .NET Core, C#, Python (for data automation), REST APIs.\n                    Management: Jira, Azure DevOps, Trello, Miro, Figma, Confluence.\n                    Design & Flow: Figma, Canva, Visio, Marq.                     \n                                                                                  \n       EDUCATION &  MS in Software Project Management | FAST NUCES, Lahore (2015–2017).\n       CERTIFICATIONS Master in Computer Science (MCS) | Gomal University, D.I. Khan (2003–2005).\n                                                                                  \n                    Bachelor of Science Physics/Math/Computer | Gomal University, D.I. Khan.\n                                                                                  \n       CERTIFICATES Certified in Scrum/Agile",
+      "device_fingerprint": "40b898b2a106ab12a80bd46d5ff7b97a16651b8e248e4b8bec3a564c3e89884c",
+      "file_hash": "f1acbfbb32992353f0dbd520a913e405109d2bb850c413188c63599cd9c703d8",
+      "is_cooldown_bypassed": true,
+      "is_interview_completed": false,
+      "interview_transcript": null,
+      "interview_summary": null,
+      "interview_score": null,
+      "in_talent_pool": false,
+      "client_interview_questions": [],
+      "has_started_interview": false,
+      "job_context": {
+        "jobTitle": "مبرمج",
+        "minEducation": "ثانوي",
+        "targetMajors": [],
+        "targetSkills": [],
+        "minExperience": "لا يشترط",
+        "aiCustomPrompts": "قاعدة صارمة: يمنع منعاً باتاً استبعاد المرشح أو تعيين حالته كمرفوض بمجرد حصوله على نسبة منخفضة. يجب أن يبقى المتقدم في قائمة قيد الإجراء مهما كانت نسبته حتى لو كانت 0.",
+        "roleDescription": "",
+        "responsibilities": "",
+        "requiredLanguages": [],
+        "textQualifications": ""
+      },
+      "interview_sent_at": null,
+      "interview_revoked": false,
+      "nominated_to": null,
+      "interview_sent": false
+    },
+    {
+      "id": "d20bc4f2-73d2-41cc-b20f-d080357865f5",
+      "job_id": "a1ffa109-6d74-4732-a56a-879c4747413f",
+      "full_name": "أحمد عبدالله",
+      "email": "ahmed1+1tnw8@example.com",
+      "phone": "0501111111",
+      "cv_file_url": null,
+      "match_percentage": null,
+      "top_strengths": null,
+      "top_weaknesses": null,
+      "ai_justification": null,
+      "created_at": "2026-04-26T09:39:47.376177+00:00",
+      "expected_salary": null,
+      "decision": "filtered",
+      "rejection_reason": "لا يوجد ملف سيرة ذاتية",
+      "hr_notes": null,
+      "is_favorite": false,
+      "skills_match": 0,
+      "experience_match": 0,
+      "education_match": 0,
+      "ai_summary": null,
+      "voice_eval": null,
+      "custom_answers": null,
+      "top_percentile": null,
+      "red_flags": [],
+      "interview_questions": [],
+      "requires_vision": false,
+      "extracted_cv_images": [],
+      "cv_raw_text": null,
+      "device_fingerprint": null,
+      "file_hash": null,
+      "is_cooldown_bypassed": true,
+      "is_interview_completed": false,
+      "interview_transcript": null,
+      "interview_summary": null,
+      "interview_score": null,
+      "in_talent_pool": false,
+      "client_interview_questions": [],
+      "has_started_interview": false,
+      "job_context": null,
+      "interview_sent_at": null,
+      "interview_revoked": false,
+      "nominated_to": null,
+      "interview_sent": false
+    },
+    {
+      "id": "d6ea3bf0-f336-4177-b356-36fd45a1453d",
+      "job_id": "a1ffa109-6d74-4732-a56a-879c4747413f",
+      "full_name": "أحمد عبدالله",
+      "email": "ahmed1@example.com",
+      "phone": "0501111111",
+      "cv_file_url": null,
+      "match_percentage": null,
+      "top_strengths": null,
+      "top_weaknesses": null,
+      "ai_justification": null,
+      "created_at": "2026-04-26T09:34:48.817851+00:00",
+      "expected_salary": null,
+      "decision": "filtered",
+      "rejection_reason": "لا يوجد ملف سيرة ذاتية",
+      "hr_notes": null,
+      "is_favorite": false,
+      "skills_match": 0,
+      "experience_match": 0,
+      "education_match": 0,
+      "ai_summary": null,
+      "voice_eval": null,
+      "custom_answers": null,
+      "top_percentile": null,
+      "red_flags": [],
+      "interview_questions": [],
+      "requires_vision": false,
+      "extracted_cv_images": [],
+      "cv_raw_text": null,
+      "device_fingerprint": null,
+      "file_hash": null,
+      "is_cooldown_bypassed": true,
+      "is_interview_completed": false,
+      "interview_transcript": null,
+      "interview_summary": null,
+      "interview_score": null,
+      "in_talent_pool": false,
+      "client_interview_questions": [],
+      "has_started_interview": false,
+      "job_context": null,
+      "interview_sent_at": null,
+      "interview_revoked": false,
+      "nominated_to": null,
+      "interview_sent": false
+    }
+  ],
+  "mohammed": [
+    {
+      "id": "5d0eb145-546b-4a81-a359-7b346d118bad",
+      "job_id": "43463e53-1310-41be-aa65-cf75227e07b8",
+      "full_name": "محمد عبدو  محمد",
+      "email": "artyuim@gmail.com",
+      "phone": "567890098",
+      "cv_file_url": "https://zpcooectdwokmvbgttsf.supabase.co/storage/v1/object/public/cv_uploads/43463e53-1310-41be-aa65-cf75227e07b8/1782616428674_applicant.pdf",
+      "match_percentage": 82,
+      "top_strengths": [
+        "{\"point\": \"\\u062e\\u0628\\u0631\\u0629 \\u062a\\u0642\\u0646\\u064a\\u0629 \\u0648\\u0627\\u0633\\u0639\\u0629 \\u062a\\u062a\\u062c\\u0627\\u0648\\u0632 18 \\u0639\\u0627\\u0645\\u0627\\u064b \\u0641\\u064a \\u062a\\u0637\\u0648\\u064a\\u0631 \\u0627\\u0644\\u0628\\u0631\\u0645\\u062c\\u064a\\u0627\\u062a \\u0648\\u0625\\u062f\\u0627\\u0631\\u0629 \\u0627\\u0644\\u0645\\u0634\\u0627\\u0631\\u064a\\u0639\", \"evidence\": \"Technology Strategist with 18+ years of experience, bridging the gap between high-performance engineering, strategic project management, and cutting-edge AI innovation.\"}",
+        "{\"point\": \"\\u0625\\u062a\\u0642\\u0627\\u0646 \\u062a\\u0642\\u0646\\u064a\\u0627\\u062a \\u0645\\u062a\\u0639\\u062f\\u062f\\u0629 \\u062a\\u0634\\u0645\\u0644 \\u062a\\u0637\\u0648\\u064a\\u0631 \\u0627\\u0644\\u0648\\u0627\\u062c\\u0647\\u0629 \\u0627\\u0644\\u062e\\u0644\\u0641\\u064a\\u0629 \\u0648\\u0627\\u0644\\u0630\\u0643\\u0627\\u0621 \\u0627\\u0644\\u0627\\u0635\\u0637\\u0646\\u0627\\u0639\\u064a \\u0648\\u0627\\u0644\\u0633\\u062d\\u0627\\u0628\\u0629\", \"evidence\": \"AI/ML: RAG, Vector DBs, LLM APIs (OpenAI, Gemini). Cloud: Microsoft Azure. Backend: .NET Core, C#, Python (for data automation), REST APIs.\"}",
+        "{\"point\": \"\\u0645\\u0624\\u0647\\u0644 \\u0623\\u0643\\u0627\\u062f\\u064a\\u0645\\u064a \\u064a\\u0641\\u0648\\u0642 \\u0627\\u0644\\u0645\\u0637\\u0644\\u0648\\u0628 \\u0628\\u0645\\u0631\\u0627\\u062d\\u0644\\u060c \\u062d\\u064a\\u062b \\u064a\\u062d\\u0645\\u0644 \\u062f\\u0631\\u062c\\u0629 \\u0627\\u0644\\u0645\\u0627\\u062c\\u0633\\u062a\\u064a\\u0631 \\u0641\\u064a \\u0625\\u062f\\u0627\\u0631\\u0629 \\u0645\\u0634\\u0627\\u0631\\u064a\\u0639 \\u0627\\u0644\\u0628\\u0631\\u0645\\u062c\\u064a\\u0627\\u062a\", \"evidence\": \"MS in Software Project Management | FAST NUCES, Lahore (2015\\u20132017). Master in Computer Science (MCS) | Gomal University.\"}",
+        "{\"point\": \"\\u062e\\u0628\\u0631\\u0629 \\u0639\\u0645\\u0644\\u064a\\u0629 \\u0645\\u0648\\u062b\\u0642\\u0629 \\u0641\\u064a \\u062a\\u0637\\u0648\\u064a\\u0631 \\u0623\\u0646\\u0638\\u0645\\u0629 SaaS \\u0648ERP \\u0648Fintech \\u0639\\u0644\\u0649 \\u0646\\u0637\\u0627\\u0642 \\u0648\\u0627\\u0633\\u0639\", \"evidence\": \"directing the full SDLC for enterprise SaaS, Retail Management Systems (RMS), ERP System and Fintech platforms serving 5,000+ global outlets.\"}",
+        "{\"point\": \"\\u0634\\u0647\\u0627\\u062f\\u0629 \\u0645\\u0639\\u062a\\u0645\\u062f\\u0629 \\u0641\\u064a Scrum/Agile \\u0645\\u0639 \\u062a\\u0637\\u0628\\u064a\\u0642 \\u0641\\u0639\\u0644\\u064a \\u0644\\u0645\\u0646\\u0647\\u062c\\u064a\\u0627\\u062a \\u0625\\u062f\\u0627\\u0631\\u0629 \\u0627\\u0644\\u0645\\u0634\\u0627\\u0631\\u064a\\u0639\", \"evidence\": \"Certified in Scrum/Agile. Methodologies: Agile, Scrum (Certified), Kanban, Waterfall, Lean Product Development.\"}"
+      ],
+      "top_weaknesses": [
+        "{\"point\": \"\\u0627\\u0644\\u0645\\u0633\\u0645\\u0649 \\u0627\\u0644\\u0648\\u0638\\u064a\\u0641\\u064a \\u0627\\u0644\\u062d\\u0627\\u0644\\u064a \\u064a\\u0645\\u064a\\u0644 \\u0646\\u062d\\u0648 \\u0625\\u062f\\u0627\\u0631\\u0629 \\u0627\\u0644\\u0645\\u0634\\u0627\\u0631\\u064a\\u0639 \\u0648\\u0627\\u0644\\u0642\\u064a\\u0627\\u062f\\u0629 \\u0627\\u0644\\u062a\\u0642\\u0646\\u064a\\u0629 \\u0623\\u0643\\u062b\\u0631 \\u0645\\u0646 \\u0627\\u0644\\u062a\\u0637\\u0648\\u064a\\u0631 \\u0627\\u0644\\u0628\\u0631\\u0645\\u062c\\u064a \\u0627\\u0644\\u0645\\u0628\\u0627\\u0634\\u0631\\u060c \\u0645\\u0645\\u0627 \\u0642\\u062f \\u064a\\u0639\\u0646\\u064a \\u0627\\u0628\\u062a\\u0639\\u0627\\u062f\\u0627\\u064b \\u0639\\u0646 \\u0627\\u0644\\u0643\\u062a\\u0627\\u0628\\u0629 \\u0627\\u0644\\u064a\\u0648\\u0645\\u064a\\u0629 \\u0644\\u0644\\u0643\\u0648\\u062f\", \"evidence\": \"Senior Software Project Manager | August 2015 \\u2013 Present. AI-Powered Product Consultant | July 2025 \\u2013 Present.\"}",
+        "{\"point\": \"\\u0622\\u062e\\u0631 \\u062a\\u062c\\u0631\\u0628\\u0629 \\u062a\\u0637\\u0648\\u064a\\u0631 \\u0628\\u0631\\u0645\\u062c\\u064a \\u0645\\u0628\\u0627\\u0634\\u0631 (Full-Stack) \\u0645\\u0648\\u062b\\u0642\\u0629 \\u062a\\u0639\\u0648\\u062f \\u0625\\u0644\\u0649 \\u0627\\u0644\\u0641\\u062a\\u0631\\u0629 2011-2015\\u060c \\u062f\\u0648\\u0646 \\u0630\\u0643\\u0631 \\u0635\\u0631\\u064a\\u062d \\u0644\\u0645\\u0634\\u0627\\u0631\\u064a\\u0639 \\u0628\\u0631\\u0645\\u062c\\u064a\\u0629 \\u062d\\u062f\\u064a\\u062b\\u0629 \\u0628\\u0627\\u0644\\u0643\\u0648\\u062f\", \"evidence\": \"Full-Stack Development: Directed the development of core modules for POS, Inventory, and Accounting using C#, .NET MVC, WCF, and jQuery | Apr 2011 \\u2013 Jul 2015.\"}"
+      ],
+      "ai_justification": "",
+      "created_at": "2026-06-28T03:13:51.979921+00:00",
+      "expected_salary": null,
+      "decision": "evaluating",
+      "rejection_reason": null,
+      "hr_notes": null,
+      "is_favorite": false,
+      "skills_match": 90,
+      "experience_match": 95,
+      "education_match": 100,
+      "ai_summary": "المرشح يمتلك خلفية تقنية برمجية أصيلة وعميقة تمتد لأكثر من 18 عاماً، بدأت بتطوير برمجي مباشر وتطورت نحو القيادة التقنية وإدارة المشاريع. مؤهلاته الأكاديمية تتخطى المطلوب بفارق كبير، وتغطيته للتقنيات الحديثة من ذكاء اصطناعي وسحابة وقواعد بيانات تجعله مرشحاً ذا قيمة عالية لوظيفة مبرمج. التحدي الجوهري الوحيد يكمن في تحديد مدى رغبته وقدرته على العودة إلى دور تنفيذي بحت بعد سنوات من القيادة الاستراتيجية.",
+      "voice_eval": null,
+      "custom_answers": [
+        {
+          "answer": "الظهران",
+          "question": "المدينة"
+        },
+        {
+          "answer": "",
+          "question": "أعلى مؤهل علمي"
+        },
+        {
+          "answer": "",
+          "question": "سنوات الخبرة"
+        },
+        {
+          "answer": "دوام كامل",
+          "question": "نوع العمل"
+        },
+        {
+          "answer": "فوري",
+          "question": "مدة الانضمام / الجاهزية للعمل"
+        },
+        {
+          "answer": "",
+          "question": "رابط لينكد إن"
+        },
+        {
+          "answer": "بحث جوجل",
+          "question": "مصدر التقديم"
+        }
+      ],
+      "top_percentile": 50,
+      "red_flags": [],
+      "interview_questions": [
+        {
+          "purpose": "التحقق من مستوى المشاركة البرمجية الفعلية الحالية للمرشح، وليس فقط الإشراف والإدارة.",
+          "question": "في السنوات الأخيرة، هل يمكنك أن تصف لنا مشروعاً قمت فيه بكتابة الكود مباشرةً بنفسك من البداية حتى النهاية؟ وما التقنيات التي استخدمتها؟"
+        },
+        {
+          "purpose": "قياس العمق التقني الفعلي في التقنيات المذكورة في السيرة الذاتية والتحقق من التطبيق العملي.",
+          "question": "حدثنا عن تجربتك في بناء نظام أو وحدة برمجية باستخدام Python أو .NET Core في بيئة إنتاجية حقيقية."
+        },
+        {
+          "purpose": "التحقق من ادعاء الخبرة العميقة في SQL Server وتحسين الأداء المذكور في السيرة الذاتية.",
+          "question": "أخبرنا عن أصعب مشكلة تقنية واجهتها في قاعدة بيانات SQL وكيف تعاملت معها خطوة بخطوة."
+        },
+        {
+          "purpose": "التحقق من عمق الخبرة العملية في تقنيات الذكاء الاصطناعي وRAG المذكورة في السيرة الذاتية.",
+          "question": "كيف قمت بدمج نماذج الذكاء الاصطناعي (مثل OpenAI أو Gemini) في منتج حقيقي؟ وما التحديات التقنية التي واجهتها؟"
+        },
+        {
+          "purpose": "فهم التوازن الحقيقي بين دور المرشح كمطور ودوره كمدير، وتقييم مدى ملاءمته لمتطلبات وظيفة المبرمج.",
+          "question": "صف لنا كيف أدرت دورة حياة تطوير برنامج كامل (SDLC) لمنتج خدم آلاف المستخدمين، وما الدور البرمجي المباشر الذي أديته فيه؟"
+        }
+      ],
+      "requires_vision": false,
+      "extracted_cv_images": [],
+      "cv_raw_text": "Abdul      Jabbar                                                            \n                                               Project Management     &  AI       \n                                                        Engineering    Lead       \n                                                                                  \n     CONTACT       Phone: +92-346-7999797       LinkedIn: www.linkedin.com/in/abduljabbar1\n                   Email: jabbar.chah@gmail.com                                   \n                                                                                  \n     PROFESSIONAL  Technology Strategist with 18+ years of experience, bridging the gap between high-performance\n     SUMMARY       engineering, strategic project management, and cutting-edge AI innovation. Proven track record in\n                   directing the full SDLC for enterprise SaaS, Retail Management Systems (RMS), ERP System and\n                   Fintech platforms serving 5,000+ global outlets. Expert in translating complex business goals into\n                   actionable roadmaps, managing high-stakes stakeholder relationships, and leading multi-\n                                                                                  \n                   disciplinary teams through digital transformations. Currently pioneering Agentic AI and RAG\n                   architectures, with a deep technical foundation in Azure Cloud, SQL Server optimization, and Full-\n                   stack .NET development.                                        \n                                                                                  \n                   Strategic Leadership: Project/Product Management, Resource Allocation, Deadline Management,\n     CORE PROJECT                                                                 \n     MANAGEMENT    and Team Mentorship.                                           \n     COMPETENCIES  AI & ML Engineering: RAG Architectures, Vector Database Management (Chroma/Pinecone), Model\n                   Fine-tuning, and LLM Integration (OpenAI, DeepSeek, Gemini).   \n                   dvanced AI Tooling: Power user of ChatGPT, Gemini, NotebookLM, Perplexity, Cursor, and GitHub\n                   Copilot for accelerated development.                           \n                   Technical Architecture: Azure Cloud Infrastructure (SaaS Scaling), High-performance SQL Schema\n                   Design, and Cybersecurity Threat Mitigation.                   \n                   Stakeholder Communication: Expert at C-Level reporting, customer consultancy, and bridging\n                   technical teams with business objectives.                      \n                                                                                  \n     PROFESSIONAL  TechReFi | AI-Powered Product Consultant | July 2025 – Present \n     EXPERIENCE    AI Product Orchestration: Managing the development cycle for AI-driven products, including\n                   Footfall Analytics and Document AI systems.                    \n                   MVP Execution: Designed and managed data-driven workflows for predictive analytics and\n                   automated insights, prioritizing features based on ROI and technical capacity.\n                                                                                  \n                   EduFi.tech | Product Lead & Cybersecurity Tech Consultant | Jan 2025 – July 2025\n                  Product Vision: Defined the product roadmap and MVP specifications for fintech-focused BNP\n                  solution, aligning engineering efforts with market needs.       \n                  Cybersecurity Leadership: Served as a lead consultant for security testing, aligning project\n                                                                                  \n                  architecture to be risk-free from cyber-attacks and ensuring secure data handling protocols.\n                  Stakeholder Management: Acted as the primary link between top management and technical\n                  teams, facilitating high-level strategic updates and technical validation.\n                   LumenSoft Technologies — Lahore, Pakistan Senior Software Project Manager | August\n                                                                                  \n                   2015 – Present                                                 \n                   Resource & Performance Management: Direct resource task allocation and deadline\n                   management for cross-functional teams, conducting regular resource performance evaluations\n                   to maintain high productivity and quality standards.           \n                   Agile Delivery & Release: Authoring detailed project stories and overseeing end-to-end task\n                   management; actively leading release management (deliveries) to ensure all products\n                                                                                  \n                   consistently meet delivery deadlines.                          \n                   Requirement Elicitation & Stakeholder Interaction: Lead high-level discussions on project\n                   requirements, preparing comprehensive functional and non-functional documentation; maintain\n                   proactive interaction with stakeholders and international clients to align project roadmaps with\n                   business goals.                                                \n                   Post-Delivery Support: Remain an integral part of customer support operations after project\n                                                                                  \n                   deliveries, ensuring long-term system stability and high client satisfaction.\n                                                                                  \n                                                                                  \n                                                                                  \n                    Technical Architecture & Oversight: Remain deeply involved in technical discussions, ensuring\n                    the selection of appropriate tools, technology, and architecture; lead architectural and schema\n                    design while performing rigorous code reviews to identify and resolve resource-level issues.\n                                                                                  \n                   Cybersecurity & Risk Mitigation: Collaborate closely with the cybersecurity team to lead\n                   security testing, ensuring projects are risk-free from cyber-attacks and aligned with global\n                   security standards.                                            \n                    Cloud Infrastructure Leadership: [REDACTED_PROMPT_INJECTION] the Azure Cloud Infrastructure Lead, managing SaaS\n                    deployment pipelines, high availability for Nimbus RMS, and cloud cost optimization.\n                                                                                  \n                    Performance Mastery: Serving as the SQL Server Optimization Expert, refactoring heavy SQL\n                    logic to achieve 80% query latency reductions for global retail chains.\n                    Strategic Documentation: Authoring comprehensive BRD, SRS, functional specifications, and\n                    system design flows                                           \n                                                                                  \n                    LumenSoft Technologies | Lahore, Pakistan Technical Team Leader / Sr. Software Engineer |\n                    Apr 2011 – Jul 2015                                           \n                    Analysis & Documentation: Led requirements elicitation and client communication to translate\n                    business needs into functional specifications, system flow designs, and complex database\n                    schemas.                                                      \n                                                                                  \n                    Full-Stack Development: Directed the development of core modules for POS, Inventory, and\n                    Accounting using C#, .NET MVC, WCF, and jQuery, while conducting technical analysis and code\n                    reviews.                                                      \n                    Release & Delivery Management: Managed the full release cycle by setting clear team goals and\n                    deadlines, ensuring the consistent and timely delivery of project milestones.\n                    Client Interaction & Deployment: Facilitated on-site client visits and deployments, ensuring\n                    that Retail Management Systems performed reliably in high-volume, real-time environments.\n                    Quality Assurance: Partnered with the QA team to oversee rigorous feature testing and utilized\n                    automated tools to validate architectural integrity and performance.\n                                                                                  \n                   Innovative Saudi | Saudi Arabia Software Engineer | Feb 2009 – Mar 2011\n                    EdTech Systems: Worked as a software engineer where I was involved in implementation of web\n                    applications for Saudi educational systems                    \n                    Tools/Technologies : MVC.Net and Web APIs, focusing on data-driven workflow automation.\n                                                                                  \n                   Cosmosoft Business Solutions | Software Engineer | Mar 2007 – Jan 2009\n                   I began my career at Cosmosoft as a Software Developer, where I specialized in the development\n                   and deployment of complex business solutions. My work focused on core systems including\n                   Payroll, Accounting, ERP, and the Sugarsoft platform.          \n                   Tools/Technologies : VB 6.0, Crystal Report, MS SQL Server.    \n                                                                                  \n       TECHNICAL    AI/ML: RAG, Vector DBs, LLM APIs (OpenAI, Gemini), Model Fine-tuning, NotebookLM, Perplexity.\n       STACK & TOOLS Cloud: Microsoft Azure (App Services, SQL, VMs, Storage, Automation).\n                    Databases: SQL Server (Expert), Azure SQL, Oracle, MySQL.     \n                                                                                  \n                    Methodologies: Agile, Scrum (Certified), Kanban, Waterfall, Lean Product Development.\n                    Backend: .NET Core, C#, Python (for data automation), REST APIs.\n                    Management: Jira, Azure DevOps, Trello, Miro, Figma, Confluence.\n                    Design & Flow: Figma, Canva, Visio, Marq.                     \n                                                                                  \n       EDUCATION &  MS in Software Project Management | FAST NUCES, Lahore (2015–2017).\n       CERTIFICATIONS Master in Computer Science (MCS) | Gomal University, D.I. Khan (2003–2005).\n                                                                                  \n                    Bachelor of Science Physics/Math/Computer | Gomal University, D.I. Khan.\n                                                                                  \n       CERTIFICATES Certified in Scrum/Agile",
+      "device_fingerprint": "40b898b2a106ab12a80bd46d5ff7b97a16651b8e248e4b8bec3a564c3e89884c",
+      "file_hash": "f1acbfbb32992353f0dbd520a913e405109d2bb850c413188c63599cd9c703d8",
+      "is_cooldown_bypassed": false,
+      "is_interview_completed": false,
+      "interview_transcript": null,
+      "interview_summary": null,
+      "interview_score": null,
+      "in_talent_pool": false,
+      "client_interview_questions": [],
+      "has_started_interview": false,
+      "job_context": {
+        "jobTitle": "مبرمج",
+        "minEducation": "ثانوي",
+        "targetMajors": [],
+        "targetSkills": [],
+        "minExperience": "لا يشترط",
+        "aiCustomPrompts": "قاعدة صارمة: يمنع منعاً باتاً استبعاد المرشح أو تعيين حالته كمرفوض بمجرد حصوله على نسبة منخفضة. يجب أن يبقى المتقدم في قائمة قيد الإجراء مهما كانت نسبته حتى لو كانت 0.",
+        "roleDescription": "",
+        "responsibilities": "",
+        "requiredLanguages": [],
+        "textQualifications": ""
+      },
+      "interview_sent_at": null,
+      "interview_revoked": false,
+      "nominated_to": null,
+      "interview_sent": false
+    }
+  ]
+}

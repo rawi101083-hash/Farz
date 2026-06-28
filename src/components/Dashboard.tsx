@@ -78,7 +78,7 @@ import {
 } from "recharts";
 import * as pdfjsLib from "pdfjs-dist";
 import { supabase } from "../lib/supabaseClient";
-import React, { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from "react";
+import React, { useState, useEffect, useRef, Component, ErrorInfo, ReactNode, useTransition } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import skillsDictionaryRaw from "../skillsDictionary.json";
 import { FEATURE_FLAGS } from "../config";
@@ -154,7 +154,7 @@ const CompactJobSelector = ({
   return (
     <div className="relative z-[60]" ref={ref}>
       <div
-        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-md transition-all shadow-sm h-[42px] min-w-[200px]"
+        className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-[2px] border-slate-200 border-b-[4px] border-b-slate-300 dark:border-slate-700 dark:border-b-slate-900 px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-2 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-[2px] active:mb-[2px] transition-all shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] h-[42px] min-w-[200px]"
         onClick={() => setIsOpen(!isOpen)}
       >
         <span className="font-bold text-sm text-navy dark:text-white truncate">
@@ -184,7 +184,7 @@ const CompactJobSelector = ({
             </div>
             <div className="max-h-64 overflow-y-auto p-2 hide-scrollbar">
               <div
-                className={`flex items-center gap-2 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === "all" ? "bg-primary/10 text-primary font-bold" : "hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300"}`}
+                className={`flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all border-[2px] border-b-[4px] mb-2 active:translate-y-[2px] active:border-b-[2px] active:mb-[4px] hover:-translate-y-0.5 ${selectedFilter === "all" ? "bg-gradient-to-b from-primary/10 to-primary/20 text-primary font-bold border-primary/30 border-b-primary/40 shadow-[0_4px_10px_rgba(13,148,136,0.15)]" : "bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300 border-slate-200 border-b-slate-300 dark:border-slate-700 dark:border-b-slate-900 shadow-sm"}`}
                 onClick={() => { onFilterChange("all"); setIsOpen(false); setSearch(""); }}
               >
                 <div className="w-4 shrink-0">
@@ -195,7 +195,7 @@ const CompactJobSelector = ({
               {filteredJobs.map(job => (
                 <div
                   key={job.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedFilter === job.id ? "bg-primary/5 dark:bg-primary/10" : "hover:bg-slate-50 dark:hover:bg-slate-700/50"}`}
+                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border-[2px] border-b-[4px] mb-2 active:translate-y-[2px] active:border-b-[2px] active:mb-[4px] hover:-translate-y-0.5 ${selectedFilter === job.id ? "bg-gradient-to-b from-primary/5 to-primary/15 dark:from-primary/10 dark:to-primary/20 border-primary/30 border-b-primary/40 shadow-[0_4px_10px_rgba(13,148,136,0.15)]" : "bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-slate-200 border-b-slate-300 dark:border-slate-700 dark:border-b-slate-900 shadow-sm"}`}
                   onClick={() => { onFilterChange(job.id); setIsOpen(false); setSearch(""); }}
                 >
                   <div className="w-4 shrink-0">
@@ -268,6 +268,7 @@ export const Dashboard = ({
   pendingAction?: { id: string; decision: string; isOffer?: boolean } | null;
   clearPendingAction?: () => void;
 }) => {
+  const [isPending, startTransition] = useTransition();
   const markInterviewSent = async (id: string) => {
     setApplicants(prev => prev.map(a => a.id === id ? { ...a, interview_sent: true } : a));
     const { error } = await supabase.from('applicants').update({ interview_sent: true }).eq('id', id);
@@ -619,7 +620,7 @@ export const Dashboard = ({
               color: "emerald",
               phone: raw.phone || "0500000000",
               email: raw.email || "applicant@example.com",
-              source: raw.source || "غير محدد",
+              source: raw.source || parsedAnswers.find((a: any) => a.question === "مصدر التقديم")?.answer || "غير محدد",
               skills: Array.isArray(raw.skills) ? raw.skills : [],
               aiSummary: raw.ai_summary || raw.ai_justification || "قيد التحليل أو تعذر الاستخراج...",
               voiceEval: raw.voice_eval || "",
@@ -930,7 +931,9 @@ export const Dashboard = ({
     }
 
     // 1. Optimistic UI update
-    setApplicants(prev => prev.map(a => a.id === id ? { ...a, ...updatePayload } : a));
+    startTransition(() => {
+      setApplicants(prev => prev.map(a => a.id === id ? { ...a, ...updatePayload } : a));
+    });
 
     // 2. Backend synchronization (Supabase)
     if (!id.startsWith("mock-")) {
@@ -967,7 +970,9 @@ export const Dashboard = ({
     const updatePayload: any = { decision: "filtered", rejection_reason: "استبعاد يدوي من الإدارة" };
 
     // Optimistic UI Update
-    setApplicants(prev => prev.map(a => idsToFilter.includes(a.id) ? { ...a, ...updatePayload } : a));
+    startTransition(() => {
+      setApplicants(prev => prev.map(a => idsToFilter.includes(a.id) ? { ...a, ...updatePayload } : a));
+    });
 
     // Backend Sync
     const realIds = idsToFilter.filter(id => !id.startsWith("mock-"));
@@ -1004,7 +1009,9 @@ export const Dashboard = ({
     const idsToRestore = Array.isArray(id) ? id : [id];
 
     // UI Update
-    setApplicants(prev => prev.map(a => idsToRestore.includes(a.id) ? { ...a, decision: prevDecision as any, rejection_reason: "" } : a));
+    startTransition(() => {
+      setApplicants(prev => prev.map(a => idsToRestore.includes(a.id) ? { ...a, decision: prevDecision as any, rejection_reason: "" } : a));
+    });
 
     // Backend Sync
     const realIds = idsToRestore.filter(i => !i.startsWith("mock-"));
@@ -1343,7 +1350,7 @@ export const Dashboard = ({
                         setIsSelectionMode(true);
                       }
                     }}
-                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm flex items-center gap-2 hover:-translate-y-0.5 hover:shadow-md ${isSelectionMode ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border border-transparent' : 'bg-white text-navy border border-slate-200 dark:bg-slate-800 dark:text-white dark:border-slate-700'}`}
+                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] border-[2px] border-b-[4px] active:translate-y-[2px] active:border-b-[2px] active:mb-[2px] hover:-translate-y-0.5 ${isSelectionMode ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border-slate-300 border-b-slate-400 dark:border-slate-600 dark:border-b-slate-800' : 'bg-gradient-to-b from-white to-slate-50 text-navy border-slate-200 border-b-slate-300 dark:from-slate-800 dark:to-slate-900 dark:text-white dark:border-slate-700 dark:border-b-slate-900'}`}
                   >
                     <CheckSquare size={18} />
                     <span className="whitespace-nowrap w-[85px] text-center">{isSelectionMode ? "إلغاء التصفية" : "تصفية"}</span>
@@ -1374,7 +1381,7 @@ export const Dashboard = ({
                       return (
                         <button
                           key={tab.id}
-                          onClick={() => setDecisionFilter(tab.id as any)}
+                          onClick={() => startTransition(() => setDecisionFilter(tab.id as any))}
                           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${isActive ? `bg-white dark:bg-slate-700 shadow-md border border-slate-100 dark:border-slate-600 transform -translate-y-0.5 text-slate-800 dark:text-slate-200` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 border border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                         >
                           <span className={`w-2 h-2 rounded-full border transition-all duration-300 ${isActive ? tab.dotActive + ' scale-110' : tab.dotInactive}`}></span>
@@ -2141,7 +2148,7 @@ export const Dashboard = ({
                     <Trash2 size={18} /> مسح جميع المسودات
                   </button>
                 )}
-                
+
                 <div className="w-full sm:w-auto relative min-w-[250px] lg:min-w-[300px]">
                   <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={18} />
                   <input
