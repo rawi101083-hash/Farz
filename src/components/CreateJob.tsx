@@ -109,7 +109,6 @@ export const CreateJob = ({
 }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
-  const [showCompanyDataModal, setShowCompanyDataModal] = useState(false);
 
   const handleBackAttempt = () => {
     const hasChanges = () => {
@@ -1412,7 +1411,8 @@ export const CreateJob = ({
 
     const isCompanyDataIncomplete = userProfile?.isLoaded && (!userProfile?.commercialRegistration && !userProfile?.freelanceDocument);
     if (isCompanyDataIncomplete && initialData?.status !== "مسودة") {
-      setShowCompanyDataModal(true);
+      handleSaveAsDraft();
+      window.dispatchEvent(new CustomEvent('showOnboardingGlobal'));
       return;
     }
 
@@ -1600,47 +1600,6 @@ export const CreateJob = ({
             </motion.div>
           </div>
         )}
-        {showCompanyDataModal && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative text-center"
-            >
-              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <ShieldCheck size={32} />
-              </div>
-              <h2 className="text-2xl font-black text-navy dark:text-white mb-4">
-                خطوة أخيرة لنشر إعلانك!
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 mb-8 font-medium leading-relaxed">
-                إعلانك الوظيفي أصبح جاهزاً. لتتمكن من نشره للباحثين عن عمل فوراً، يرجى استكمال بيانات كيانك القانوني (السجل التجاري أو وثيقة العمل الحر).
-              </p>
-              <div className="flex gap-4">
-                <button
-                  type="button"
-                  onClick={() => setShowCompanyDataModal(false)}
-                  className="flex-1 px-4 py-3 rounded-xl font-bold border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-                >
-                  تراجع
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCompanyDataModal(false);
-                    handleSaveAsDraft();
-                    if (onGoToSettings) onGoToSettings();
-                    else window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'إعدادات الشركة' }));
-                  }}
-                  className="flex-[2] bg-primary text-white px-4 py-3 rounded-xl font-bold hover:shadow-lg hover:shadow-primary/30 transition-all"
-                >
-                  استكمال البيانات الآن
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
       </AnimatePresence>
 
       {/* Subtle Banner For Incomplete Company Data */}
@@ -1652,8 +1611,7 @@ export const CreateJob = ({
             <button 
               onClick={() => {
                 handleSaveAsDraft();
-                if (onGoToSettings) onGoToSettings();
-                else window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'إعدادات الشركة' }));
+                window.dispatchEvent(new CustomEvent('showOnboardingGlobal'));
               }} 
               className="mr-2 font-bold underline hover:text-blue-600 dark:hover:text-blue-200 transition-colors"
             >

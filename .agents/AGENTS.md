@@ -62,6 +62,15 @@
 - **Never guess file locations (لا تخمن أماكن الملفات):** Even if a structure is common (like `App.tsx` handling routing), you MUST use `grep_search` to confirm the exact file containing the code you want to modify before using any editing tools.
 - **Verify tool output (تحقق من نتيجة الأداة):** If a replacement tool (like `multi_replace_file_content`) reports "We did our best... despite inaccuracies", you MUST stop and double-check if you targeted the right file. Do not assume the edit was successful.
 
+### 13. STRICT DB SCHEMA SYNCHRONIZATION (التحقق الإلزامي من تطابق قاعدة البيانات)
+- **يُمنع منعاً باتاً** إضافة أي حقل إدخال جديد (Input Field) أو متغير في واجهة المستخدم (Frontend) وإرساله برمجياً في دوال الإدخال (`insert` / `update`) إلى قاعدة البيانات، دون التحقق المسبق والمؤكد 100% من وجود هذا العمود (Column) في بنية الجدول (Schema).
+- إذا طلب المستخدم إضافة حقل جديد للواجهة، **يجب عليك أولاً** تزويد المستخدم بكود الـ SQL (`ALTER TABLE`) لإنشاء العمود في قاعدة البيانات، والانتظار حتى يؤكد لك أنه قام بتشغيله، قبل أن تقوم بتعديل كود الـ Frontend لإرسال هذه القيمة.
+
+### 14. ARCHITECTURE AWARENESS & NO BLIND RESTORES (الوعي بالبنية المعمارية ومنع الاسترجاع الأعمى)
+- **لا تستنتج الفشل من أخطاء الكونسول (Don't assume failure from Console Errors):** إذا رأيت خطأ مثل `401 Unauthorized` في الاتصال بـ API خارجي (مثل سيرفر تحليل السير الذاتية)، **يُمنع منعاً باتاً** التسرع بتخمين أن الكود معطل ومحاولة استرجاع (Restore) أكواد قديمة محذوفة أو مفاتيح سرية (API Keys).
+- **تأكد من هندسة النظام (Verify System Architecture):** الأنظمة المتقدمة تستخدم (Background Sweepers) تعمل في الخلفية من السيرفر. قد يكون مسح مفتاح الـ API من الواجهة خطوة أمنية مقصودة وليست خطأ.
+- **إياك أن تقوم بإرجاع مفاتيح أمنية محذوفة** بمجرد أن تجدها في الـ (Git Log) لتصحيح خطأ ظاهري، قبل أن تتأكد 100% أن النظام لا يعتمد على طرق خلفية (Backend) لتنفيذ نفس المهمة.
+
 ---
 
 *This file acts as the ultimate constitution for AI agents operating on this codebase. Read it, understand it, and never violate it.*

@@ -9,7 +9,7 @@ const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
-const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile, isSharedView = false }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, userProfile?: any, isSharedView?: boolean }) => {
+const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateApplicant, userProfile, isSharedView = false }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, onUpdateApplicant?: (id: string, updates: any) => void, userProfile?: any, isSharedView?: boolean }) => {
   const [activeTab, setActiveTab] = useState<"analysis" | "requirements" | "interview" | "notes" | "ai_settings">("analysis");
   const [isAILoading, setIsAILoading] = useState(false);
   const [isFullscreenCV, setIsFullscreenCV] = useState(false);
@@ -115,7 +115,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [applicant?.id]);
 
+  useEffect(() => {
     if (applicant?.id) {
       if (applicant.hr_notes) {
         if (Array.isArray(applicant.hr_notes)) {
@@ -154,6 +156,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
 
     // Backend Sync
     try {
+      if (applicant) {
+        applicant.hr_notes = JSON.stringify(updatedNotes);
+      }
       const { error } = await supabase
         .from('applicants')
         .update({ hr_notes: JSON.stringify(updatedNotes) })
@@ -167,7 +172,15 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
     } finally {
       setIsSavingNote(false);
       setIsNoteSaved(true);
-      setTimeout(() => setIsNoteSaved(false), 3000);
+      setTimeout(() => {
+        setIsNoteSaved(false);
+      }, 3000);
+      setTimeout(() => {
+        const container = document.getElementById('notes-container');
+        if (container) {
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        }
+      }, 50);
     }
   };
 
@@ -179,6 +192,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
 
     // Backend Sync
     try {
+      if (applicant) {
+        applicant.hr_notes = JSON.stringify(updatedNotes);
+      }
       const { error } = await supabase
         .from('applicants')
         .update({ hr_notes: JSON.stringify(updatedNotes) })
@@ -269,6 +285,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
     // Optimistic UI Update
     applicant.decision = newDecision as any;
     if (reason) applicant.rejection_reason = reason;
+    if (onUpdateApplicant) {
+      onUpdateApplicant(applicant.id, { decision: newDecision, rejection_reason: reason });
+    }
     setIsFullscreenCV(prev => prev); // force re-render
 
     let decisionText = newDecision;
@@ -400,10 +419,23 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                 </button>
 
                 <button
-                  onClick={handleReject}
-                  className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border border-red-100 dark:border-red-900/30 hover:border-transparent"
+                  onClick={() => {
+                    if (!applicant || !onStatusUpdate) return;
+                    // Optimistic UI update instantly
+                    applicant.decision = "interview";
+                    if (onUpdateApplicant) onUpdateApplicant(applicant.id, { decision: "interview" });
+                    setToastMessage("تم نقل المتقدم إلى قائمة المقابلات بنجاح!");
+                    setTimeout(() => setToastMessage(null), 3000);
+                    onStatusUpdate(applicant.id, "interview");
+
+                    // Background Database Sync
+                    supabase.from('applicants').update({ decision: 'interview' }).eq('id', applicant.id).then(({ error }) => {
+                      if (error) console.error("Failed to nominate to AI interview", error);
+                    });
+                  }}
+                  className="bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white dark:bg-amber-900/30 dark:text-amber-500 dark:hover:bg-amber-600 dark:hover:text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border border-amber-100 dark:border-amber-900/50 hover:border-transparent"
                 >
-                  <X size={16} /> رفض
+                  مقابلة
                 </button>
 
                 <button
@@ -411,6 +443,13 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                   className="bg-teal-50 text-teal-600 hover:bg-teal-600 hover:text-white dark:bg-teal-900/20 dark:text-teal-400 dark:hover:bg-teal-600 dark:hover:text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border border-teal-100 dark:border-teal-900/30 hover:border-transparent"
                 >
                   <CheckCircle size={16} /> قبول
+                </button>
+
+                <button
+                  onClick={handleReject}
+                  className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-600 dark:hover:text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border border-red-100 dark:border-red-900/30 hover:border-transparent"
+                >
+                  <X size={16} /> رفض
                 </button>
               </div>
             )}
@@ -834,7 +873,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                         </div>
                       </div>
 
-                      <div className="mb-6 space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
+                      <div id="notes-container" className="mb-6 space-y-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                         {notesList.map((note) => (
                           <div key={note.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm relative group">
                             <div className="flex justify-between items-start mb-3">
@@ -897,6 +936,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
 
                       <div className="relative pt-4 border-t border-slate-200 dark:border-slate-700">
                         <textarea
+                          id="add-note-textarea"
                           value={newNoteText}
                           onChange={(e) => setNewNoteText(e.target.value)}
                           placeholder="إضافة ملاحظة جديدة..."
@@ -906,12 +946,10 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
 
                         <div className="flex justify-end">
                           <button
+                            type="button"
                             onClick={handleSaveNote}
                             disabled={isSavingNote || !newNoteText.trim()}
-                            className={`px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:translate-y-[4px] active:border-b-0 active:shadow-none ${isNoteSaved
-                              ? "bg-green-500 text-white border-b-[4px] border-green-700"
-                              : "bg-primary text-white border-b-[4px] border-[#1d827b] hover:bg-primary/90 hover:border-[#15615c] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:border-b-[4px]"
-                              }`}
+                            className="px-6 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-all active:translate-y-[4px] active:border-b-0 active:shadow-none bg-primary text-white border-b-[4px] border-[#1d827b] hover:bg-primary/90 hover:border-[#15615c] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:border-b-[4px]"
                           >
                             {isSavingNote ? (
                               <>
@@ -997,29 +1035,21 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                           <button
                             onClick={() => {
                               if (!applicant || !onStatusUpdate) return;
-                              setIsScheduling(true);
-                              setTimeout(async () => {
-                                try {
-                                  await supabase.from('applicants').update({ decision: 'interview' }).eq('id', applicant.id);
-                                  applicant.decision = "interview";
-                                  setToastMessage("تم نقل المتقدم إلى قائمة المقابلات بنجاح!");
-                                  setTimeout(() => setToastMessage(null), 3000);
-                                  onStatusUpdate(applicant.id, "interview");
-                                } catch (err) {
-                                  console.error("Failed to nominate to AI interview", err);
-                                } finally {
-                                  setIsScheduling(false);
-                                }
-                              }, 600);
+                              // Optimistic UI update instantly
+                              applicant.decision = "interview";
+                              if (onUpdateApplicant) onUpdateApplicant(applicant.id, { decision: "interview" });
+                              setToastMessage("تم نقل المتقدم إلى قائمة المقابلات بنجاح!");
+                              setTimeout(() => setToastMessage(null), 3000);
+                              onStatusUpdate(applicant.id, "interview");
+
+                              // Background Database Sync
+                              supabase.from('applicants').update({ decision: 'interview' }).eq('id', applicant.id).then(({ error }) => {
+                                if (error) console.error("Failed to nominate to AI interview", error);
+                              });
                             }}
-                            disabled={isScheduling}
-                            className={`px-8 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border ${isScheduling ? "bg-yellow-50 text-yellow-400 border-yellow-100 cursor-wait dark:bg-yellow-900/20 dark:text-yellow-600 dark:border-yellow-900/20" : "bg-yellow-50 text-yellow-600 hover:bg-yellow-500 hover:text-white dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-600 dark:hover:text-white border-yellow-100 dark:border-yellow-900/50 hover:border-transparent"}`}
+                            className="px-8 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border bg-yellow-50 text-yellow-600 hover:bg-yellow-500 hover:text-white dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-600 dark:hover:text-white border-yellow-100 dark:border-yellow-900/50 hover:border-transparent"
                           >
-                            {isScheduling ? (
-                              <><div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> جاري النقل...</>
-                            ) : (
-                              <><Calendar size={16} /> ترشيح لمقابلة AI</>
-                            )}
+                            <Calendar size={16} /> مقابلة AI
                           </button>
                         </div>
                       )}
@@ -1142,10 +1172,10 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, userProfile,
                   </span>{" "}
                 </div>{" "}
                 {applicant?.cv_file_url ? (
-                  <a 
-                    href={applicant.cv_file_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <a
+                    href={applicant.cv_file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     download={`CV_${applicant?.name || 'Applicant'}`}
                     className="text-primary font-bold text-sm hover:underline cursor-pointer"
                   >

@@ -64,6 +64,32 @@ import { getVoiceInterviewFeatureEnabled } from '../config';
 import { MultiSearchableSelect } from './MultiSearchableSelect';
 import { countriesList } from '../data/countries';
 
+let cachedProfile: any = undefined;
+let isProfileFetched = false;
+let profileFetchPromise: Promise<any> | null = null;
+
+export const prefetchApplicantProfile = () => {
+  if (isProfileFetched || profileFetchPromise) return profileFetchPromise;
+  profileFetchPromise = (async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        isProfileFetched = true;
+        return null;
+      }
+      const { data, error } = await supabase.from('job_seekers').select('*').eq('user_id', session.user.id).single();
+      cachedProfile = data && !error ? { ...data, _sessionEmail: session.user.email } : null;
+      isProfileFetched = true;
+      return cachedProfile;
+    } catch (err) {
+      console.error(err);
+      isProfileFetched = true;
+      return null;
+    }
+  })();
+  return profileFetchPromise;
+};
+
 export const ApplicantForm = ({
   job,
   selectedRoleId,
@@ -121,42 +147,39 @@ export const ApplicantForm = ({
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
+        const data = await prefetchApplicantProfile();
+        if (!data) {
           setIsLoadingProfile(false);
           return;
         }
-        
-        const { data, error } = await supabase.from('job_seekers').select('*').eq('user_id', session.user.id).single();
-        if (data && !error) {
-          setUserProfile(data);
-        
+
+        setUserProfile(data);
+
         if (applyMode === 'fast') {
           setFormDataState(prev => ({
             ...prev,
             fullName: data.full_name || prev.fullName,
             phone: data.phone || prev.phone,
-            email: session.user.email || prev.email,
+            email: data._sessionEmail || prev.email,
             city: data.profile_data?.city || prev.city,
-            nationality: data.profile_data?.nationality || prev.nationality,
-            education: data.profile_data?.qualification?.[0] || prev.education,
-            experience: data.profile_data?.notice_period || prev.experience,
-            linkedin: data.profile_data?.linkedin_url || prev.linkedin,
-            cvUrl: data.cv_file_url || '',
-          }));
-          
-          if (data.profile_data?.portfolio_url) {
-            setPortfolioLinksState([data.profile_data.portfolio_url]);
+              nationality: data.profile_data?.nationality || prev.nationality,
+              education: data.profile_data?.qualification?.[0] || prev.education,
+              experience: data.profile_data?.notice_period || prev.experience,
+              linkedin: data.profile_data?.linkedin_url || prev.linkedin,
+              cvUrl: data.cv_file_url || '',
+            }));
+
+            if (data.profile_data?.portfolio_url) {
+              setPortfolioLinksState([data.profile_data.portfolio_url]);
+            }
+            if (data.cv_file_url) {
+              setIsParsed(true);
+              setResumeFileName("السيرة الذاتية المرفوعة مسبقاً");
+            }
+            if (data.profile_data?.personal_photo_url) {
+              setPhotoPreview(data.profile_data.personal_photo_url);
+            }
           }
-          if (data.cv_file_url) {
-            setIsParsed(true);
-            setResumeFileName("السيرة الذاتية المرفوعة مسبقاً");
-          }
-          if (data.profile_data?.personal_photo_url) {
-            setPhotoPreview(data.profile_data.personal_photo_url);
-          }
-        }
-        }
       } catch (err) {
         console.error("Error fetching profile", err);
       } finally {
@@ -182,7 +205,7 @@ export const ApplicantForm = ({
       else if (src.includes('referral')) mappedSource = 'توصية من صديق';
       else if (src.includes('ad')) mappedSource = 'إعلان ممول';
       else if (src.includes('موقع الشركة') || src.includes('website')) mappedSource = 'موقع الشركة';
-      
+
       setFormDataState(prev => ({ ...prev, source: mappedSource }));
     }
   }, []);
@@ -257,17 +280,17 @@ export const ApplicantForm = ({
   const shouldShowPhotoUpload = photoReq !== "hidden" && showUploadStep;
   const isRequireVoiceInterview = getVoiceInterviewFeatureEnabled() && (activeRole?.requireVoiceInterview ?? job?.requireVoiceInterview ?? false);
   const activeDirectUpload = activeRole?.directUpload ?? job?.directUpload ?? false;
-  
+
   const hasCustomQuestions = customQuestions.length > 0;
   const hasKnockoutQuestions = (activeRole?.knockoutQuestions?.length || 0) > 0 || (job?.knockoutQuestions?.length || 0) > 0;
-  
+
   const coreFieldsFilled = !!(
-    formDataState.fullName && 
-    formDataState.phone && 
-    formDataState.email && 
-    formDataState.nationality && 
-    formDataState.city && 
-    formDataState.education && 
+    formDataState.fullName &&
+    formDataState.phone &&
+    formDataState.email &&
+    formDataState.nationality &&
+    formDataState.city &&
+    formDataState.education &&
     formDataState.experience
   );
 
@@ -503,6 +526,7 @@ export const ApplicantForm = ({
       ...((formDataState.type || submitData.type) ? [{ question: "نوع العمل", answer: submitData.type || formDataState.type }] : []),
       { question: "مدة الانضمام / الجاهزية للعمل", answer: submitData.availability || (formDataState as any).availability || "" },
       { question: "رابط لينكد إن", answer: submitData.linkedin || formDataState.linkedin || "" },
+      { question: "مصدر التقديم", answer: submitData.source || formDataState.source || "غير محدد" },
       ...(Array.isArray(customQuestions) ? customQuestions.map((q: any, idx: number) => ({
         question: q.text,
         answer: submitData[`customQuestion_${idx}`],
@@ -589,7 +613,7 @@ export const ApplicantForm = ({
           else if (ans.includes("1-3")) ansYearsMax = 3;
           else if (ans.includes("3-5")) ansYearsMax = 5;
           else if (ans.includes("5+")) ansYearsMax = 10;
-          
+
           if (ansYearsMax < Number(kq.requiredAnswer)) return true;
           return false;
         }
@@ -707,9 +731,9 @@ export const ApplicantForm = ({
         for (let i = 0; i < customAttachmentsDef.length; i++) {
           const attDef = customAttachmentsDef[i];
           const attVal = submitData[`customAttachment_${i}`];
-          
+
           if (!attVal) continue;
-          
+
           if (attDef.attachment_type === "link") {
             customAnswers.push({ question: attDef.attachment_name, answer: attVal as string });
           } else {
@@ -727,13 +751,13 @@ export const ApplicantForm = ({
                 const { data: publicUrlData } = supabase.storage
                   .from("cv_uploads")
                   .getPublicUrl(uploadData.path);
-                
+
                 customAnswers.push({ question: attDef.attachment_name, answer: publicUrlData.publicUrl });
               }
             }
           }
         }
-        
+
         // Clean up from submitData now that they are processed
         customAttachmentsDef.forEach((_: any, idx: number) => delete submitData[`customAttachment_${idx}`]);
       } catch (err) {
@@ -798,7 +822,6 @@ export const ApplicantForm = ({
             cv_file_url: cv_file_url || null,
             decision: isAutoRejected ? "filtered" : "processing",
             rejection_reason: isAutoRejected ? `مرفوض آلياً (${autoRejectReason})` : null,
-            source: submitData.source || formDataState.source || null,
             custom_answers: customAnswers,
             expected_salary: submitData.expectedSalary || (formDataState as any).expectedSalary || null,
             device_fingerprint: submitData._deviceFingerprint || null,
@@ -968,14 +991,14 @@ export const ApplicantForm = ({
         <div className="text-center mb-12">
           {formStep === "details" && (
             <div className="flex flex-col items-center gap-2 mb-8 relative">
-                <div className="absolute top-0 right-0">
-                  <a
-                    href="/profile"
-                    className="flex items-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm"
-                  >
-                    <User size={14} /> {userProfile ? "ملفي المهني" : "تسجيل دخول"}
-                  </a>
-                </div>
+              <div className="absolute top-0 right-0">
+                <a
+                  href="/profile"
+                  className="flex items-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm"
+                >
+                  <User size={14} /> {userProfile ? "ملفي المهني" : "تسجيل دخول"}
+                </a>
+              </div>
               {job?.companyLogo && (
                 <div className="w-20 h-20 p-0 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center overflow-hidden">
                   <img
@@ -1026,987 +1049,987 @@ export const ApplicantForm = ({
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
         ) : (
-        <>
-        <form
-          ref={formRef}
-          className={`grid grid-cols-1 md:grid-cols-2 gap-8 ${formStep === "details" ? "block" : "hidden"}`}
-          onSubmit={handleNextStep}
-        >
-          {(activeRole || job) && !activeDirectUpload && (() => {
-            const displayRole = {
-              title: activeRole?.title || job.title,
-              location: activeRole?.location || job.location,
-              type: activeRole?.type || job.type,
-              experience: activeRole?.experience || job.experience,
-              qualification: activeRole?.qualification || job.qualification,
-              salaryMin: activeRole?.salaryMin || job.salaryMin,
-              salaryMax: activeRole?.salaryMax || job.salaryMax,
-              isSalaryHidden: activeRole?.isSalaryHidden ?? job.isSalaryHidden,
-            };
-            return (
-              <div className="md:col-span-2 space-y-4 bg-primary/5 p-6 rounded-[32px] border border-primary/10 mb-2">
-                <div className="text-center space-y-1">
-                  <h3 className="text-2xl md:text-3xl font-bold text-primary">
-                    {displayRole.title}
-                  </h3>
-                </div>
-                <div className="pt-4 border-t border-primary/10 flex flex-wrap justify-center gap-2 text-xs font-bold font-medium text-navy dark:text-white/80">
-                  {displayRole.location && (
-                    <span className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
-                      <MapPin size={14} className="text-primary opacity-70" /> {displayRole.location}
-                    </span>
-                  )}
-                  {displayRole.type && (
-                    <span className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
-                      <Clock size={14} className="text-primary opacity-70" /> {displayRole.type}
-                    </span>
-                  )}
-                  {displayRole.experience && (
-                    <span className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
-                      <Briefcase size={14} className="text-primary opacity-70" /> {displayRole.experience}
-                    </span>
-                  )}
-                  {displayRole.qualification && (
-                    <span className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
-                      <FileText size={14} className="text-primary opacity-70" /> {displayRole.qualification}
-                    </span>
-                  )}
-                  {!displayRole.isSalaryHidden && displayRole.salaryMin && (
-                    <span className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-800/30 shadow-sm">
-                      <CreditCard size={14} /> {displayRole.salaryMin} {displayRole.salaryMax && `- ${displayRole.salaryMax}`} ريال
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-
-          {applyMode === 'fast' && !isLoadingProfile && !userProfile && (
-            <div className="md:col-span-2 bg-amber-50 border border-amber-200 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="bg-amber-100 text-amber-600 p-1.5 rounded-lg shrink-0">
-                  <AlertTriangle size={20} />
-                </div>
-                <div className="text-right">
-                  <h4 className="font-bold text-amber-900 text-sm">التقديم السريع يتطلب تسجيل الدخول</h4>
-                  <p className="text-amber-800 text-xs mt-0.5">يرجى تسجيل الدخول وإكمال ملفك لتتمكن من التقديم بضغطة زر.</p>
-                </div>
-              </div>
-              <a href="/profile" className="mt-3 sm:mt-0 whitespace-nowrap px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-bold shadow-sm transition-all flex items-center gap-2">
-                <User size={14} /> تسجيل الدخول
-              </a>
-            </div>
-          )}
-
-          {applyMode === 'fast' && !isLoadingProfile && userProfile && !canOneClickApply && (
-            <div className="md:col-span-2 bg-orange-50 border border-orange-200 p-5 rounded-2xl flex items-center gap-3 shadow-sm">
-                <div className="bg-orange-100 text-orange-600 p-2 rounded-xl shrink-0">
-                  <AlertTriangle size={24} />
-                </div>
-                <div className="text-right">
-                  <h4 className="font-bold text-orange-900 text-base">التقديم السريع غير متاح</h4>
-                  <p className="text-orange-800 text-sm mt-1">يُرجى إكمال التقديم يدوياً بسبب وجود متطلبات إضافية من الشركة، أو لوجود نقص في بيانات ملفك.</p>
-                </div>
-            </div>
-          )}
-
-          {canOneClickApply && (
-            <div className="md:col-span-2 text-center text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800 rounded-xl py-3 px-4 flex items-center justify-center gap-2 mb-4 font-bold text-sm">
-              <Zap size={18} className="fill-teal-600 dark:fill-teal-400 shrink-0" />
-              تم جلب بياناتك وسيرتك الذاتية من ملفك الشخصي لتسهيل التقديم.
-            </div>
-          )}
-
-          {showUploadStep && hasResumeOption && (
-            <div className="md:col-span-2 space-y-3">
-              {!isParsed && (
-                <div className="flex justify-start mb-2">
-                  <p className="text-slate-500 dark:text-slate-400 text-sm font-bold">
-                    يرجى إرفاق سيرتك الذاتية
-                  </p>
-                </div>
-              )}
-              {!isParsed ? (
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleFileUpload}
-                  className={`relative border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer overflow-hidden group ${isDragging ? "border-primary bg-primary/5" : "border-slate-200 dark:border-slate-700 hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50"}`}
-                >
-                  <input
-                    type="file"
-                    accept=".pdf, .docx"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  {!isParsing ? (
-                    <>
-                      <div
-                        className={`w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center transition-all ${isDragging ? "bg-primary text-white scale-110" : "bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10"}`}
-                      >
-                        <Upload size={32} />
-                      </div>
-                      <p className="text-navy dark:text-white font-bold text-lg mb-2">
-                        ملف السيرة الذاتية
-                      </p>
-                      <p className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">
-                        (يُقبل ملفات PDF و DOCX فقط)
-                      </p>
-                    </>
-                  ) : (
-                    <div className="py-6 space-y-4">
-                      <div className="w-16 h-16 mx-auto border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                      <p className="text-primary font-bold animate-pulse">
-                        جاري استخراج البيانات...
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="flex items-center justify-between p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800/50 shadow-sm mt-4">
-                  <div className="flex items-center gap-4">
-                    <a
-                      href={resumeFile ? URL.createObjectURL(resumeFile) : "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="عرض الملف"
-                      className="w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
-                    >
-                      <FileText size={24} />
-                    </a>
-                    <div>
-                      <a
-                        href={resumeFile ? URL.createObjectURL(resumeFile) : "#"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-bold text-primary hover:underline hover:text-teal-600 mb-1 flex items-center gap-1.5 cursor-pointer transition-colors"
-                        title={resumeFileName || "عرض الملف"}
-                      >
-                        {resumeFileName ? (resumeFileName.length > 25 ? resumeFileName.substring(0, 25) + "..." : resumeFileName) : "السيرة الذاتية المرفقة"}
-                        <ExternalLink size={14} className="opacity-70" />
-                      </a>
-                      <p className="text-xs font-medium text-green-600 dark:text-green-400">تم الرفع بنجاح</p>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept=".pdf, .docx"
-                      onChange={handleFileUpload}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                    />
-                    <button type="button" className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 border-0 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2">
-                      <Upload size={16} /> إعادة الرفع
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}{" "}
-          {showUploadStep && shouldShowFormInputs && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8"
+          <>
+            <form
+              ref={formRef}
+              className={`grid grid-cols-1 md:grid-cols-2 gap-8 ${formStep === "details" ? "block" : "hidden"}`}
+              onSubmit={handleNextStep}
             >
+              {(activeRole || job) && !activeDirectUpload && (() => {
+                const displayRole = {
+                  title: activeRole?.title || job.title,
+                  location: activeRole?.location || job.location,
+                  type: activeRole?.type || job.type,
+                  experience: activeRole?.experience || job.experience,
+                  qualification: activeRole?.qualification || job.qualification,
+                  salaryMin: activeRole?.salaryMin || job.salaryMin,
+                  salaryMax: activeRole?.salaryMax || job.salaryMax,
+                  isSalaryHidden: activeRole?.isSalaryHidden ?? job.isSalaryHidden,
+                };
+                return (
+                  <div className="md:col-span-2 space-y-4 bg-primary/5 p-6 rounded-[32px] border border-primary/10 mb-2">
+                    <div className="text-center space-y-1">
+                      <h3 className="text-2xl md:text-3xl font-bold text-primary">
+                        {displayRole.title}
+                      </h3>
+                    </div>
+                    <div className="pt-4 border-t border-primary/10 flex flex-wrap justify-center gap-2 text-xs font-bold font-medium text-navy dark:text-white/80">
+                      {displayRole.location && (
+                        <span className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
+                          <MapPin size={14} className="text-primary opacity-70" /> {displayRole.location}
+                        </span>
+                      )}
+                      {displayRole.type && (
+                        <span className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
+                          <Clock size={14} className="text-primary opacity-70" /> {displayRole.type}
+                        </span>
+                      )}
+                      {displayRole.experience && (
+                        <span className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
+                          <Briefcase size={14} className="text-primary opacity-70" /> {displayRole.experience}
+                        </span>
+                      )}
+                      {displayRole.qualification && (
+                        <span className="flex items-center gap-1.5 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-100 dark:border-slate-700 shadow-sm">
+                          <FileText size={14} className="text-primary opacity-70" /> {displayRole.qualification}
+                        </span>
+                      )}
+                      {!displayRole.isSalaryHidden && displayRole.salaryMin && (
+                        <span className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-800/30 shadow-sm">
+                          <CreditCard size={14} /> {displayRole.salaryMin} {displayRole.salaryMax && `- ${displayRole.salaryMax}`} ريال
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                  الاسم الثلاثي <span className="text-red-500">*</span>
-                </label>
-                <input
-                  required
-                  name="fullName"
-                  type="text"
-                  value={formDataState.fullName}
-                  onChange={handleInputChange}
-                  placeholder="مثال: عبدالله خالد محمد"
-                  className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                  البريد الإلكتروني <span className="text-red-500">*</span>
-                </label>
-                <input
-                  required
-                  name="email"
-                  type="email"
-                  value={formDataState.email}
-                  onChange={handleInputChange}
-                  placeholder="ahmed@example.com"
-                  dir="ltr"
-                  className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium"
-                />
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                  رقم الجوال <span className="text-red-500">*</span>
-                </label>
-                <div className="relative flex" dir="ltr">
-                  <span className="inline-flex items-center px-4 rounded-l-2xl border border-r-0 border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold">
-                    +966
-                  </span>
-                  <input
-                    required
-                    name="phone"
-                    type="tel"
-                    value={formDataState.phone}
-                    onChange={(e) => {
-                      let val = e.target.value.replace(/\D/g, '');
-
-                      // Restrict starting digits
-                      if (val.length === 1 && val !== '0' && val !== '5') val = '';
-                      if (val.length >= 2 && val.startsWith('0') && val[1] !== '5') val = '0';
-
-                      // Dynamic max length
-                      if (val.startsWith('5') && val.length > 9) {
-                        val = val.slice(0, 9);
-                      } else if (val.startsWith('05') && val.length > 10) {
-                        val = val.slice(0, 10);
-                      } else if (val.length > 10) {
-                        val = val.slice(0, 10);
-                      }
-
-                      setFormDataState((prev) => ({ ...prev, phone: val }));
-                    }}
-                    placeholder="5xxxxxxxx"
-                    dir="ltr"
-                    pattern="^(05[0-9]{8}|5[0-9]{8})$"
-                    title="رقم الجوال يجب أن يكون 9 أرقام ويبدأ بـ 5، أو 10 أرقام ويبدأ بـ 05"
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-r-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium"
-                  />
+              {applyMode === 'fast' && !isLoadingProfile && !userProfile && (
+                <div className="md:col-span-2 bg-amber-50 border border-amber-200 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-amber-100 text-amber-600 p-1.5 rounded-lg shrink-0">
+                      <AlertTriangle size={20} />
+                    </div>
+                    <div className="text-right">
+                      <h4 className="font-bold text-amber-900 text-sm">التقديم السريع يتطلب تسجيل الدخول</h4>
+                      <p className="text-amber-800 text-xs mt-0.5">يرجى تسجيل الدخول وإكمال ملفك لتتمكن من التقديم بضغطة زر.</p>
+                    </div>
+                  </div>
+                  <a href="/profile" className="mt-3 sm:mt-0 whitespace-nowrap px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-bold shadow-sm transition-all flex items-center gap-2">
+                    <User size={14} /> تسجيل الدخول
+                  </a>
                 </div>
-              </div>
+              )}
 
-
-
-              {(hasKnockout("nationality") || (activeRole?.askNationality ?? job?.askNationality)) && (
-                <div className="space-y-3">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                    الجنسية <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <MultiSearchableSelect
-                      options={countriesList}
-                      value={formDataState.nationality}
-                      onChange={(val) => setFormDataState(prev => ({ ...prev, nationality: val as string }))}
-                      multiple={false}
-                      placeholder="اختر الجنسية..."
-                      className="w-full"
-                    />
+              {applyMode === 'fast' && !isLoadingProfile && userProfile && !canOneClickApply && (
+                <div className="md:col-span-2 bg-orange-50 border border-orange-200 p-5 rounded-2xl flex items-center gap-3 shadow-sm">
+                  <div className="bg-orange-100 text-orange-600 p-2 rounded-xl shrink-0">
+                    <AlertTriangle size={24} />
+                  </div>
+                  <div className="text-right">
+                    <h4 className="font-bold text-orange-900 text-base">التقديم السريع غير متاح</h4>
+                    <p className="text-orange-800 text-sm mt-1">يُرجى إكمال التقديم يدوياً بسبب وجود متطلبات إضافية من الشركة، أو لوجود نقص في بيانات ملفك.</p>
                   </div>
                 </div>
               )}
 
-
-
-                <div className="space-y-3">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                    المدينة <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      required
-                      name="city"
-                      value={formDataState.city}
-                      onChange={handleInputChange}
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                    >
-                      <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المدينة</option>
-                      {SAUDI_CITIES.filter(city => city !== "لا يشترط / كافة المدن").map(city => (
-                        <option key={city} value={city} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{city}</option>
-                      ))}
-                      <option value="أخرى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مدينة أخرى</option>
-                    </select>
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                      <ArrowLeft size={18} className="-rotate-90" />
-                    </div>
-                  </div>
-                </div>
-
-              {(hasKnockout("education") || (activeRole?.askEducation ?? job?.askEducation)) && (
-                <div className="space-y-3">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                    أعلى مؤهل علمي <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      required
-                      name="education"
-                      value={formDataState.education}
-                      onChange={handleInputChange}
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                    >
-                      <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المؤهل</option>
-                      <option value="ثانوية عامة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوية عامة</option>
-                      <option value="دبلوم" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
-                      <option value="بكالوريوس" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
-                      <option value="ماجستير" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
-                      <option value="دكتوراه" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دكتوراه</option>
-                    </select>
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                      <ChevronDown size={18} />
-                    </div>
-                  </div>
+              {canOneClickApply && (
+                <div className="md:col-span-2 text-center text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800 rounded-xl py-3 px-4 flex items-center justify-center gap-2 mb-4 font-bold text-sm">
+                  <Zap size={18} className="fill-teal-600 dark:fill-teal-400 shrink-0" />
+                  تم جلب بياناتك وسيرتك الذاتية من ملفك الشخصي لتسهيل التقديم.
                 </div>
               )}
 
-              {(hasKnockout("experience") || (activeRole?.askExperience ?? job?.askExperience)) && (
-                <div className="space-y-3">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                    سنوات الخبرة <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      required
-                      name="experience"
-                      value={formDataState.experience}
-                      onChange={handleInputChange}
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                    >
-                      <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر سنوات الخبرة</option>
-                      <option value="لا يشترط خبرة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط خبرة</option>
-                      <option value="أقل من سنة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أقل من سنة</option>
-                      <option value="1-3 سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">1-3 سنوات</option>
-                      <option value="3-5 سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">3-5 سنوات</option>
-                      <option value="5+ سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
-                    </select>
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                      <ChevronDown size={18} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {((activeRole?.types?.length || 0) > 1 || (!activeRole?.types && (job?.types?.length || 0) > 1)) && (
-                <div className="space-y-3">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                    نوع العمل <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      required
-                      name="type"
-                      value={formDataState.type}
-                      onChange={handleInputChange}
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                    >
-                      <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر نوع العمل</option>
-                      {(activeRole?.types || job?.types || []).map((t: string) => (
-                        <option key={t} value={t} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{t}</option>
-                      ))}
-                    </select>
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                      <ChevronDown size={18} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-
-
-
-              <div className="space-y-3">
-                <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                  مدة الانضمام / الجاهزية للعمل <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <select
-                    required
-                    name="availability"
-                    value={(formDataState as any).availability || ""}
-                    onChange={handleInputChange}
-                    className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                  >
-                    <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المدة</option>
-                    <option value="فوري" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فوري</option>
-                    <option value="أسبوع" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوع</option>
-                    <option value="أسبوعين" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوعين</option>
-                    <option value="شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شهر</option>
-                    <option value="أكثر من شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أكثر من شهر</option>
-                  </select>
-                  <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                    <ChevronDown size={18} />
-                  </div>
-                </div>
-              </div>
-
-              {(activeRole?.askExpectedSalary === "open" || activeRole?.askExpectedSalary === "ranges" || (!activeRole?.askExpectedSalary && (job?.askExpectedSalary === "open" || job?.askExpectedSalary === "ranges"))) && (
-                <div className="space-y-3 md:col-span-2 mt-2">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1">
-                    الراتب المتوقع (ريال) <span className="text-red-500">*</span>
-                  </label>
-                  {((activeRole?.askExpectedSalary || (!activeRole?.askExpectedSalary && job?.askExpectedSalary)) === "ranges") ? (
-                    <div className="relative">
-                      <select
-                        required
-                        name="expectedSalary"
-                        value={formDataState.expectedSalary}
-                        onChange={handleInputChange}
-                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                      >
-
-                        {((activeRole?.expectedSalaryRanges && activeRole.expectedSalaryRanges.length > 0) ? activeRole.expectedSalaryRanges : (job?.expectedSalaryRanges || [])).map((range, idx) => (
-                          <option key={idx} value={range} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{range}</option>
-                        ))}
-                        {(!activeRole?.expectedSalaryRanges?.length && !job?.expectedSalaryRanges?.length) && (
-                          <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white text-slate-400">لا توجد خيارات متاحة</option>
-                        )}
-                      </select>
-                      <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                        <ChevronDown size={18} />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="relative">
-                      <input
-                        required
-                        name="expectedSalary"
-                        type="number"
-                        min="0"
-                        value={formDataState.expectedSalary}
-                        onChange={handleInputChange}
-                        placeholder="مثال: 5000"
-                        className="w-full pr-12 pl-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
-                      />
-                      <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
+              {showUploadStep && hasResumeOption && (
+                <div className="md:col-span-2 space-y-3">
+                  {!isParsed && (
+                    <div className="flex justify-start mb-2">
+                      <p className="text-slate-500 dark:text-slate-400 text-sm font-bold">
+                        يرجى إرفاق سيرتك الذاتية
+                      </p>
                     </div>
                   )}
-                </div>
-              )}
-              {shouldShowPhotoUpload && (
-                <div className="md:col-span-2 space-y-3 pt-4 border-t border-slate-100 dark:border-slate-700">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                    <User size={16} className="text-primary" /> الصورة الشخصية {photoReq === "required" ? <span className="text-red-500">*</span> : <span className="text-slate-400">(اختياري)</span>}
-                  </label>
-                  <div className="flex items-center gap-6 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-200 dark:border-slate-700 w-fit">
-                    <div className="relative w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-dashed border-slate-400 dark:border-slate-500 flex flex-col items-center justify-center overflow-hidden shrink-0">
-                      {photoPreview ? (
-                        <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
-                      ) : (
-                        <User size={32} className="text-slate-400" />
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        title="Upload Photo"
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            setPhotoFile(file);
-                            setPhotoPreview(URL.createObjectURL(file));
-                          }
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <p className="text-navy dark:text-white font-bold mb-1">حمّل صورتك الشخصية</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">الصيغ المدعومة: JPG, PNG (حد أقصى ٣ ميجابايت)</p>
-                      {photoFile && (
-                        <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null); }} className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors">إزالة الصورة</button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}{" "}
-              {activeRole?.knockoutQuestions?.map((q: any, idx: number) => {
-                if (["nationality", "education", "experience", "city", "availability"].includes(q.type)) return null;
-                const options = q.type === "options" && Array.isArray(q.options) && q.options.length > 0 ? q.options : ["نعم", "لا"];
-                const qText = q.type === "age_condition" ? "العمر" : q.text;
-                const isLong = qText && qText.length > 40;
-                return (
-                  <div key={`kq_${idx}`} className={`space-y-3 ${isLong ? "md:col-span-2" : "md:col-span-1"}`}>
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                      {qText} <span className="text-red-500">*</span>
-                    </label>
-                    {q.type === "age_condition" ? (
-                      <div className="relative">
-                        <input
-                          required
-                          type="number"
-                          min="0"
-                          value={formDataState.knockoutAnswers[idx] || ""}
-                          onChange={(e) => setFormDataState((prev) => ({
-                            ...prev,
-                            knockoutAnswers: { ...prev.knockoutAnswers, [idx]: e.target.value }
-                          }))}
-                          placeholder="أدخل عمرك (مثال: 25)"
-                          className="w-full pr-12 pl-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
-                        />
-                        <User className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        <select
-                          required
-                          value={formDataState.knockoutAnswers[idx] || ""}
-                          onChange={(e) => setFormDataState((prev) => ({
-                            ...prev,
-                            knockoutAnswers: { ...prev.knockoutAnswers, [idx]: e.target.value }
-                          }))}
-                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all appearance-none cursor-pointer font-medium"
-                        >
-                          <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800">اختر إجابة...</option>
-                          {options.map((opt: string, i: number) => (
-                            <option key={i} value={opt} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{opt}</option>
-                          ))}
-                        </select>
-                        <ChevronDown
-                          className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-                          size={20}
-                        />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-
-              {customQuestions.map((q: any, idx: number) => {
-                const options =
-                  Array.isArray(q.options) && q.options.length > 0
-                    ? q.options
-                    : ["نعم", "لا"];
-                const errorMsg = customQuestionErrors[`customQuestion_${idx}`];
-                const isLong = q.text && q.text.length > 40;
-                return (
-                  <div key={idx} className={`space-y-3 ${isLong ? "md:col-span-2" : "md:col-span-1"}`}>
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                      {q.text}
-                      {q.required || q.isRequired ? (
-                        <span className="text-red-500">*</span>
-                      ) : (
-                        <span className="text-slate-400 text-xs font-normal">(اختياري)</span>
-                      )}
-                    </label>{" "}
-                    {q.type === "نص طويل" ? (
-                      <textarea
-                        name={`customQuestion_${idx}`}
-                        rows={4}
-                        placeholder="اكتب إجابتك هنا..."
-                        className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${errorMsg ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium resize-none`}
-                      />
-                    ) : q.type === "خيارات متعددة" || q.type === "نعم / لا" ? (
-                      <div className="relative">
-                        <select
-                          name={`customQuestion_${idx}`}
-                          className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${errorMsg ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all appearance-none cursor-pointer font-medium`}
-                        >
-                          <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر إجابة</option>{" "}
-                          {options.map((opt: string, i: number) => (
-                            <option key={i} value={opt} className="bg-white text-navy dark:bg-slate-800 dark:text-white">
-                              {opt}
-                            </option>
-                          ))}{" "}
-                        </select>{" "}
-                        <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                          <ArrowLeft size={18} className="-rotate-90" />{" "}
-                        </div>{" "}
-                      </div>
-                    ) : (
-                      <input
-                        name={`customQuestion_${idx}`}
-                        type="text"
-                        placeholder="إجابة قصيرة..."
-                        className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${errorMsg ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium`}
-                      />
-                    )}{" "}
-                    {errorMsg && (
-                      <p className="text-red-500 text-xs font-bold mt-1">
-                        {errorMsg}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}{" "}
-              {customAttachments.map((att: any, idx: number) => {
-                const errorMsg = customQuestionErrors[`customAttachment_${idx}`];
-                return (
-                  <div key={`att_${idx}`} className="md:col-span-2 space-y-3">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                      {att.attachment_name}{" "}
-                      {att.required || att.isRequired ? (
-                        <span className="text-red-500">*</span>
-                      ) : (
-                        <span className="text-slate-400 text-xs font-normal">(اختياري)</span>
-                      )}
-                    </label>{" "}
-                    {att.attachment_type === "link" ? (
-                      <input
-                        required={att.required}
-                        name={`customAttachment_${idx}`}
-                        type="url"
-                        placeholder="https://..."
-                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium text-left"
-                        dir="ltr"
-                      />
-                    ) : att.attachment_type === "image" ? (
-                      <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
-                        <input
-                          required={att.required}
-                          type="file"
-                          name={`customAttachment_${idx}`}
-                          accept="image/jpeg, image/png"
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        />{" "}
-                        <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
-                          <Upload size={24} />{" "}
-                        </div>{" "}
-                        <p className="text-sm font-bold text-navy dark:text-white">
-                          اختر صورة (JPG/PNG)
-                        </p>{" "}
-                      </div>
-                    ) : att.attachment_type === "video" ? (
-                      <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
-                        <input
-                          required={att.required}
-                          type="file"
-                          name={`customAttachment_${idx}`}
-                          accept="video/mp4"
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        />{" "}
-                        <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
-                          <Upload size={24} />{" "}
-                        </div>{" "}
-                        <p className="text-sm font-bold text-navy dark:text-white">
-                          اختر فيديو (MP4)
-                        </p>{" "}
-                      </div>
-                    ) : att.attachment_type === "document" ? (
-                      <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
-                        <input
-                          required={att.required}
-                          type="file"
-                          name={`customAttachment_${idx}`}
-                          accept=".doc,.docx,.xls,.xlsx"
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        />{" "}
-                        <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
-                          <Upload size={24} />{" "}
-                        </div>{" "}
-                        <p className="text-sm font-bold text-navy dark:text-white">
-                          اختر مستند (Word/Excel)
-                        </p>{" "}
-                      </div>
-                    ) : (
-                      <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
-                        <input
-                          required={att.required}
-                          type="file"
-                          name={`customAttachment_${idx}`}
-                          accept=".pdf"
-                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                        />{" "}
-                        <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
-                          <Upload size={24} />{" "}
-                        </div>{" "}
-                        <p className="text-sm font-bold text-navy dark:text-white">
-                          اختر ملف PDF
-                        </p>{" "}
-                      </div>
-                    )}{" "}
-                    {errorMsg && (
-                      <p className="text-red-500 text-xs font-bold mt-1">
-                        {errorMsg}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}{" "}
-              {requiredAttachments.includes("رابط معرض أعمال/Portfolio") && (
-                <div className="md:col-span-2 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                      روابط معرض الأعمال / Portfolio
-                      {job?.portfolioRequirement === "required" ? <span className="text-red-500">*</span> : <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>}
-                    </label>
-                  </div>
-                  {portfolioLinksState.map((link, idx) => (
-                    <div key={`portfolio_${idx}`} className="relative">
-                      <input
-                        required={job?.portfolioRequirement === "required" && idx === 0}
-                        name={`portfolio_${idx}`}
-                        type="url"
-                        value={link}
-                        onChange={(e) => {
-                          const newLinks = [...portfolioLinksState];
-                          newLinks[idx] = e.target.value;
-                          setPortfolioLinksState(newLinks);
-                        }}
-                        placeholder="https://..."
-                        dir="ltr"
-                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium"
-                      />
-                      {portfolioLinksState.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newLinks = portfolioLinksState.filter((_, i) => i !== idx);
-                            setPortfolioLinksState(newLinks);
-                          }}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
-                        >
-                          <X size={20} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setPortfolioLinksState([...portfolioLinksState, ""])}
-                    className="text-primary font-bold text-sm hover:underline flex items-center gap-1"
-                  >
-                    <Plus size={16} /> إضافة رابط آخر
-                  </button>
-                </div>
-              )}
-              {!hasResumeOption &&
-                requiredAttachments.filter((a) => a !== "لا يتطلب مرفقات" && a !== "رابط معرض أعمال/Portfolio")
-                  .length > 0 && (
-                  <div className="md:col-span-2 space-y-3">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1">
-                      {requiredAttachments
-                        .filter((a) => a !== "لا يتطلب مرفقات" && a !== "رابط معرض أعمال/Portfolio")
-                        .join(" و ")}
-                    </label>{" "}
+                  {!isParsed ? (
                     <div
                       onDragOver={(e) => {
                         e.preventDefault();
                         setIsDragging(true);
                       }}
                       onDragLeave={() => setIsDragging(false)}
-                      className={`border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer group ${isDragging ? "border-primary bg-primary/5" : "border-slate-200 dark:border-slate-700 hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50"}`}
+                      onDrop={handleFileUpload}
+                      className={`relative border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer overflow-hidden group ${isDragging ? "border-primary bg-primary/5" : "border-slate-200 dark:border-slate-700 hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50"}`}
                     >
-                      <div
-                        className={`w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center transition-all ${isDragging ? "bg-primary text-white scale-110" : "bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10"}`}
-                      >
-                        <Upload size={32} />{" "}
-                      </div>{" "}
-                      <p className="text-navy dark:text-white font-bold text-lg mb-2">
-                        اسحب المرفق الخاص المتطلب هنا
-                      </p>{" "}
-                      <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
-                        أو انقر لاختيار ملف من جهازك
-                      </p>{" "}
-                    </div>{" "}
-                  </div>
-                )}{" "}
-              { !hasUrlSource && (
-                <div className="space-y-3 md:col-span-1">
-                  <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                    كيف عرفت عن هذه الوظيفة؟
-                    <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>
-                  </label>
-                  <div className="relative">
-                    <select
-                      name="source"
-                      value={formDataState.source}
-                      onChange={handleInputChange}
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                    >
-                      <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المصدر...</option>
-                      <option value="LinkedIn" className="bg-white text-navy dark:bg-slate-800 dark:text-white">LinkedIn</option>
-                      <option value="منصة X / تويتر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">منصة X / تويتر</option>
-                      <option value="تيك توك (TikTok)" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تيك توك (TikTok)</option>
-                      <option value="تطبيق واتساب" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تطبيق واتساب</option>
-                      <option value="تطبيق تيليجرام" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تطبيق تيليجرام</option>
-                      <option value="بحث جوجل" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بحث جوجل</option>
-                      <option value="توصية من صديق" className="bg-white text-navy dark:bg-slate-800 dark:text-white">توصية من صديق</option>
-                      <option value="إعلان ممول" className="bg-white text-navy dark:bg-slate-800 dark:text-white">إعلان ممول</option>
-                      <option value="أخرى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أخرى</option>
-                      {formDataState.source && !["LinkedIn", "منصة X / تويتر", "تيك توك (TikTok)", "تطبيق واتساب", "تطبيق تيليجرام", "بحث جوجل", "توصية من صديق", "إعلان ممول", "أخرى"].includes(formDataState.source) && (
-                        <option value={formDataState.source} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{formDataState.source}</option>
+                      <input
+                        type="file"
+                        accept=".pdf, .docx"
+                        onChange={handleFileUpload}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      {!isParsing ? (
+                        <>
+                          <div
+                            className={`w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center transition-all ${isDragging ? "bg-primary text-white scale-110" : "bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10"}`}
+                          >
+                            <Upload size={32} />
+                          </div>
+                          <p className="text-navy dark:text-white font-bold text-lg mb-2">
+                            ملف السيرة الذاتية
+                          </p>
+                          <p className="text-xs font-medium text-red-600 dark:text-red-400 mt-1">
+                            (يُقبل ملفات PDF و DOCX فقط)
+                          </p>
+                        </>
+                      ) : (
+                        <div className="py-6 space-y-4">
+                          <div className="w-16 h-16 mx-auto border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                          <p className="text-primary font-bold animate-pulse">
+                            جاري استخراج البيانات...
+                          </p>
+                        </div>
                       )}
-                    </select>
-                    <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                      <ArrowLeft size={18} className="-rotate-90" />
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-5 border border-slate-200 dark:border-slate-700 rounded-2xl bg-white dark:bg-slate-800/50 shadow-sm mt-4">
+                      <div className="flex items-center gap-4">
+                        <a
+                          href={resumeFile ? URL.createObjectURL(resumeFile) : "#"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="عرض الملف"
+                          className="w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors cursor-pointer"
+                        >
+                          <FileText size={24} />
+                        </a>
+                        <div>
+                          <a
+                            href={resumeFile ? URL.createObjectURL(resumeFile) : "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-bold text-primary hover:underline hover:text-teal-600 mb-1 flex items-center gap-1.5 cursor-pointer transition-colors"
+                            title={resumeFileName || "عرض الملف"}
+                          >
+                            {resumeFileName ? (resumeFileName.length > 25 ? resumeFileName.substring(0, 25) + "..." : resumeFileName) : "السيرة الذاتية المرفقة"}
+                            <ExternalLink size={14} className="opacity-70" />
+                          </a>
+                          <p className="text-xs font-medium text-green-600 dark:text-green-400">تم الرفع بنجاح</p>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          accept=".pdf, .docx"
+                          onChange={handleFileUpload}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        />
+                        <button type="button" className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 border-0 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-white rounded-xl text-sm font-bold transition-all flex items-center gap-2">
+                          <Upload size={16} /> إعادة الرفع
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              )}{" "}
+              {showUploadStep && shouldShowFormInputs && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-8"
+                >
 
-              <div className="space-y-3 md:col-span-2 mt-4 pt-6 border-t border-slate-100 dark:border-slate-700 text-center">
-                {!showLinkedinInput ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowLinkedinInput(true)}
-                    className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-all text-sm font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-5 py-4 rounded-xl border-none cursor-pointer w-full md:w-1/2 mx-auto"
-                  >
-                    + إضافة رابط لينكد إن <span className="font-normal text-slate-400 text-xs">(اختياري)</span>
-                  </button>
-                ) : (
-                  <>
-                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2 justify-center">
-                      رابط لينكد إن (LinkedIn)
-                      <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>
+                  <div className="space-y-3">
+                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                      الاسم الثلاثي <span className="text-red-500">*</span>
                     </label>
                     <input
-                      name="linkedin"
-                      type="url"
-                      value={formDataState.linkedin}
+                      required
+                      name="fullName"
+                      type="text"
+                      value={formDataState.fullName}
                       onChange={handleInputChange}
-                      placeholder="https://linkedin.com/in/..."
-                      dir="ltr"
-                      className={`w-full md:w-1/2 mx-auto block px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${linkedinError ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium`}
+                      placeholder="مثال: عبدالله خالد محمد"
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
                     />
-                    {linkedinError && (
-                      <p className="text-red-500 text-xs font-bold mt-1 text-center w-full md:w-1/2 mx-auto">
-                        {linkedinError}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                      البريد الإلكتروني <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      required
+                      name="email"
+                      type="email"
+                      value={formDataState.email}
+                      onChange={handleInputChange}
+                      placeholder="ahmed@example.com"
+                      dir="ltr"
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                      رقم الجوال <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative flex" dir="ltr">
+                      <span className="inline-flex items-center px-4 rounded-l-2xl border border-r-0 border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold">
+                        +966
+                      </span>
+                      <input
+                        required
+                        name="phone"
+                        type="tel"
+                        value={formDataState.phone}
+                        onChange={(e) => {
+                          let val = e.target.value.replace(/\D/g, '');
+
+                          // Restrict starting digits
+                          if (val.length === 1 && val !== '0' && val !== '5') val = '';
+                          if (val.length >= 2 && val.startsWith('0') && val[1] !== '5') val = '0';
+
+                          // Dynamic max length
+                          if (val.startsWith('5') && val.length > 9) {
+                            val = val.slice(0, 9);
+                          } else if (val.startsWith('05') && val.length > 10) {
+                            val = val.slice(0, 10);
+                          } else if (val.length > 10) {
+                            val = val.slice(0, 10);
+                          }
+
+                          setFormDataState((prev) => ({ ...prev, phone: val }));
+                        }}
+                        placeholder="5xxxxxxxx"
+                        dir="ltr"
+                        pattern="^(05[0-9]{8}|5[0-9]{8})$"
+                        title="رقم الجوال يجب أن يكون 9 أرقام ويبدأ بـ 5، أو 10 أرقام ويبدأ بـ 05"
+                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-r-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium"
+                      />
+                    </div>
+                  </div>
 
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`md:col-span-2 text-white py-5 rounded-2xl text-lg font-bold transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-3 disabled:opacity-70 disabled:grayscale ${canOneClickApply ? 'bg-teal-600 hover:bg-teal-700 hover:shadow-2xl hover:shadow-teal-600/40' : 'bg-primary hover:shadow-2xl hover:shadow-primary/40'}`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white dark:border-slate-700/30 border-t-white rounded-full animate-spin" />{" "}
-                    جاري الإرسال...{" "}
-                  </>
-                ) : isRequireVoiceInterview ? (
-                  <>التالي: المقابلة الصوتية <Mic size={20} /></>
-                ) : canOneClickApply ? (
-                  <><Zap size={20} className="fill-white" /> تقديم سريع الآن</>
-                ) : (
-                  <>إرسال الطلب</>
-                )}
-              </button>{" "}
-            </motion.div>
-          )}{" "}
-        </form>{" "}
-        {formStep === "audio" && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-8"
-          >
-            <div className="bg-slate-50 dark:bg-slate-800/50 p-8 rounded-[32px] border border-slate-100 dark:border-slate-700">
-              <h3 className="text-xl font-bold text-navy dark:text-white mb-4">
-                أسئلة المقابلة:
-              </h3>{" "}
-              <ul className="space-y-4">
-                {(() => {
-                  const template = activeRole?.voiceInterviewTemplate ?? job?.voiceInterviewTemplate ?? "general";
-                  const customQ = activeRole?.voiceInterviewQuestions ?? job?.voiceInterviewQuestions ?? [];
 
-                  let questionsToAsk = [];
-                  if (template === "sales") {
-                    questionsToAsk = [
-                      "كيف تتعامل مع عميل يبدي انزعاجاً شديداً من الخدمة؟",
-                      "صف موقفاً مستعصياً تمكنت فيه من استخدام مهاراتك الإقناعية لتحقيق هدف بيعي أو تغيير قناعة شخص."
-                    ];
-                  } else if (template === "custom" && customQ.length > 0 && customQ.some(q => q.trim() !== "")) {
-                    questionsToAsk = customQ.filter(q => q.trim() !== "");
-                  } else {
-                    questionsToAsk = [
-                      "تحدث عن نفسك وخبراتك السابقة التي تجعلك مناسباً لهذا الدور المتقدم عليه.",
-                      "ما هو أكبر تحدي واجهته في عملك السابق وكيف قمت بحله؟"
-                    ];
-                  }
+                  {(hasKnockout("nationality") || (activeRole?.askNationality ?? job?.askNationality)) && (
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                        الجنسية <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <MultiSearchableSelect
+                          options={countriesList}
+                          value={formDataState.nationality}
+                          onChange={(val) => setFormDataState(prev => ({ ...prev, nationality: val as string }))}
+                          multiple={false}
+                          placeholder="اختر الجنسية..."
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  )}
 
-                  return questionsToAsk.map((q, idx) => (
-                    <li key={idx} className="flex gap-3 text-slate-600 dark:text-slate-300 font-medium">
-                      <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
-                      {q}
-                    </li>
-                  ));
-                })()}
-              </ul>{" "}
-            </div>{" "}
-            <div className="bg-white dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[32px] p-8 text-center flex flex-col items-center">
-              {audioUrl ? (
-                <div className="w-full space-y-6">
-                  <p className="font-bold text-green-600 flex items-center justify-center gap-2">
-                    <CheckCircle size={20} /> تم تسجيل المقطع بنجاح (
-                    {formatTime(recordingTime)}){" "}
-                  </p>{" "}
-                  <audio controls src={audioUrl} className="w-full" />{" "}
-                  <button
-                    type="button"
-                    onClick={retryRecording}
-                    className="text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-red-500 font-bold flex items-center justify-center gap-2 w-full transition-colors"
-                  >
-                    <RotateCcw size={18} /> إعادة التسجيل{" "}
-                  </button>{" "}
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div
-                    className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center transition-all ${isRecording ? "bg-red-50 text-red-500 animate-pulse scale-110 shadow-lg shadow-red-500/20" : "bg-slate-100 text-slate-400 dark:text-slate-500"}`}
-                  >
-                    {isRecording ? <Mic size={40} /> : <Mic size={40} />}{" "}
-                  </div>{" "}
-                  {isRecording ? (
-                    <div className="space-y-4">
-                      <p className="text-2xl font-bold text-red-500 font-mono">
-                        {formatTime(recordingTime)}
-                      </p>{" "}
+
+
+                  <div className="space-y-3">
+                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                      المدينة <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        required
+                        name="city"
+                        value={formDataState.city}
+                        onChange={handleInputChange}
+                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                      >
+                        <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المدينة</option>
+                        {SAUDI_CITIES.filter(city => city !== "لا يشترط / كافة المدن").map(city => (
+                          <option key={city} value={city} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{city}</option>
+                        ))}
+                        <option value="أخرى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">مدينة أخرى</option>
+                      </select>
+                      <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                        <ArrowLeft size={18} className="-rotate-90" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {(hasKnockout("education") || (activeRole?.askEducation ?? job?.askEducation)) && (
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                        أعلى مؤهل علمي <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          required
+                          name="education"
+                          value={formDataState.education}
+                          onChange={handleInputChange}
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                        >
+                          <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المؤهل</option>
+                          <option value="ثانوية عامة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوية عامة</option>
+                          <option value="دبلوم" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
+                          <option value="بكالوريوس" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
+                          <option value="ماجستير" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
+                          <option value="دكتوراه" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دكتوراه</option>
+                        </select>
+                        <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {(hasKnockout("experience") || (activeRole?.askExperience ?? job?.askExperience)) && (
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                        سنوات الخبرة <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          required
+                          name="experience"
+                          value={formDataState.experience}
+                          onChange={handleInputChange}
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                        >
+                          <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر سنوات الخبرة</option>
+                          <option value="لا يشترط خبرة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط خبرة</option>
+                          <option value="أقل من سنة" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أقل من سنة</option>
+                          <option value="1-3 سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">1-3 سنوات</option>
+                          <option value="3-5 سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">3-5 سنوات</option>
+                          <option value="5+ سنوات" className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
+                        </select>
+                        <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {((activeRole?.types?.length || 0) > 1 || (!activeRole?.types && (job?.types?.length || 0) > 1)) && (
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                        نوع العمل <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          required
+                          name="type"
+                          value={formDataState.type}
+                          onChange={handleInputChange}
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                        >
+                          <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر نوع العمل</option>
+                          {(activeRole?.types || job?.types || []).map((t: string) => (
+                            <option key={t} value={t} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{t}</option>
+                          ))}
+                        </select>
+                        <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                          <ChevronDown size={18} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+
+
+
+                  <div className="space-y-3">
+                    <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                      مدة الانضمام / الجاهزية للعمل <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        required
+                        name="availability"
+                        value={(formDataState as any).availability || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                      >
+                        <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المدة</option>
+                        <option value="فوري" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فوري</option>
+                        <option value="أسبوع" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوع</option>
+                        <option value="أسبوعين" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوعين</option>
+                        <option value="شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شهر</option>
+                        <option value="أكثر من شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أكثر من شهر</option>
+                      </select>
+                      <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                        <ChevronDown size={18} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {(activeRole?.askExpectedSalary === "open" || activeRole?.askExpectedSalary === "ranges" || (!activeRole?.askExpectedSalary && (job?.askExpectedSalary === "open" || job?.askExpectedSalary === "ranges"))) && (
+                    <div className="space-y-3 md:col-span-2 mt-2">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1">
+                        الراتب المتوقع (ريال) <span className="text-red-500">*</span>
+                      </label>
+                      {((activeRole?.askExpectedSalary || (!activeRole?.askExpectedSalary && job?.askExpectedSalary)) === "ranges") ? (
+                        <div className="relative">
+                          <select
+                            required
+                            name="expectedSalary"
+                            value={formDataState.expectedSalary}
+                            onChange={handleInputChange}
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                          >
+
+                            {((activeRole?.expectedSalaryRanges && activeRole.expectedSalaryRanges.length > 0) ? activeRole.expectedSalaryRanges : (job?.expectedSalaryRanges || [])).map((range, idx) => (
+                              <option key={idx} value={range} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{range}</option>
+                            ))}
+                            {(!activeRole?.expectedSalaryRanges?.length && !job?.expectedSalaryRanges?.length) && (
+                              <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white text-slate-400">لا توجد خيارات متاحة</option>
+                            )}
+                          </select>
+                          <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                            <ChevronDown size={18} />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <input
+                            required
+                            name="expectedSalary"
+                            type="number"
+                            min="0"
+                            value={formDataState.expectedSalary}
+                            onChange={handleInputChange}
+                            placeholder="مثال: 5000"
+                            className="w-full pr-12 pl-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
+                          />
+                          <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {shouldShowPhotoUpload && (
+                    <div className="md:col-span-2 space-y-3 pt-4 border-t border-slate-100 dark:border-slate-700">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
+                        <User size={16} className="text-primary" /> الصورة الشخصية {photoReq === "required" ? <span className="text-red-500">*</span> : <span className="text-slate-400">(اختياري)</span>}
+                      </label>
+                      <div className="flex items-center gap-6 bg-slate-50 dark:bg-slate-800/50 p-6 rounded-[32px] border border-slate-200 dark:border-slate-700 w-fit">
+                        <div className="relative w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-dashed border-slate-400 dark:border-slate-500 flex flex-col items-center justify-center overflow-hidden shrink-0">
+                          {photoPreview ? (
+                            <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                          ) : (
+                            <User size={32} className="text-slate-400" />
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            title="Upload Photo"
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                setPhotoFile(file);
+                                setPhotoPreview(URL.createObjectURL(file));
+                              }
+                            }}
+                          />
+                        </div>
+                        <div>
+                          <p className="text-navy dark:text-white font-bold mb-1">حمّل صورتك الشخصية</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">الصيغ المدعومة: JPG, PNG (حد أقصى ٣ ميجابايت)</p>
+                          {photoFile && (
+                            <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null); }} className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors">إزالة الصورة</button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}{" "}
+                  {activeRole?.knockoutQuestions?.map((q: any, idx: number) => {
+                    if (["nationality", "education", "experience", "city", "availability"].includes(q.type)) return null;
+                    const options = q.type === "options" && Array.isArray(q.options) && q.options.length > 0 ? q.options : ["نعم", "لا"];
+                    const qText = q.type === "age_condition" ? "العمر" : q.text;
+                    const isLong = qText && qText.length > 40;
+                    return (
+                      <div key={`kq_${idx}`} className={`space-y-3 ${isLong ? "md:col-span-2" : "md:col-span-1"}`}>
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
+                          {qText} <span className="text-red-500">*</span>
+                        </label>
+                        {q.type === "age_condition" ? (
+                          <div className="relative">
+                            <input
+                              required
+                              type="number"
+                              min="0"
+                              value={formDataState.knockoutAnswers[idx] || ""}
+                              onChange={(e) => setFormDataState((prev) => ({
+                                ...prev,
+                                knockoutAnswers: { ...prev.knockoutAnswers, [idx]: e.target.value }
+                              }))}
+                              placeholder="أدخل عمرك (مثال: 25)"
+                              className="w-full pr-12 pl-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium"
+                            />
+                            <User className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={20} />
+                          </div>
+                        ) : (
+                          <div className="relative">
+                            <select
+                              required
+                              value={formDataState.knockoutAnswers[idx] || ""}
+                              onChange={(e) => setFormDataState((prev) => ({
+                                ...prev,
+                                knockoutAnswers: { ...prev.knockoutAnswers, [idx]: e.target.value }
+                              }))}
+                              className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all appearance-none cursor-pointer font-medium"
+                            >
+                              <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800">اختر إجابة...</option>
+                              {options.map((opt: string, i: number) => (
+                                <option key={i} value={opt} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{opt}</option>
+                              ))}
+                            </select>
+                            <ChevronDown
+                              className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                              size={20}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {customQuestions.map((q: any, idx: number) => {
+                    const options =
+                      Array.isArray(q.options) && q.options.length > 0
+                        ? q.options
+                        : ["نعم", "لا"];
+                    const errorMsg = customQuestionErrors[`customQuestion_${idx}`];
+                    const isLong = q.text && q.text.length > 40;
+                    return (
+                      <div key={idx} className={`space-y-3 ${isLong ? "md:col-span-2" : "md:col-span-1"}`}>
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
+                          {q.text}
+                          {q.required || q.isRequired ? (
+                            <span className="text-red-500">*</span>
+                          ) : (
+                            <span className="text-slate-400 text-xs font-normal">(اختياري)</span>
+                          )}
+                        </label>{" "}
+                        {q.type === "نص طويل" ? (
+                          <textarea
+                            name={`customQuestion_${idx}`}
+                            rows={4}
+                            placeholder="اكتب إجابتك هنا..."
+                            className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${errorMsg ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium resize-none`}
+                          />
+                        ) : q.type === "خيارات متعددة" || q.type === "نعم / لا" ? (
+                          <div className="relative">
+                            <select
+                              name={`customQuestion_${idx}`}
+                              className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${errorMsg ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all appearance-none cursor-pointer font-medium`}
+                            >
+                              <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر إجابة</option>{" "}
+                              {options.map((opt: string, i: number) => (
+                                <option key={i} value={opt} className="bg-white text-navy dark:bg-slate-800 dark:text-white">
+                                  {opt}
+                                </option>
+                              ))}{" "}
+                            </select>{" "}
+                            <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                              <ArrowLeft size={18} className="-rotate-90" />{" "}
+                            </div>{" "}
+                          </div>
+                        ) : (
+                          <input
+                            name={`customQuestion_${idx}`}
+                            type="text"
+                            placeholder="إجابة قصيرة..."
+                            className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${errorMsg ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium`}
+                          />
+                        )}{" "}
+                        {errorMsg && (
+                          <p className="text-red-500 text-xs font-bold mt-1">
+                            {errorMsg}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}{" "}
+                  {customAttachments.map((att: any, idx: number) => {
+                    const errorMsg = customQuestionErrors[`customAttachment_${idx}`];
+                    return (
+                      <div key={`att_${idx}`} className="md:col-span-2 space-y-3">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
+                          {att.attachment_name}{" "}
+                          {att.required || att.isRequired ? (
+                            <span className="text-red-500">*</span>
+                          ) : (
+                            <span className="text-slate-400 text-xs font-normal">(اختياري)</span>
+                          )}
+                        </label>{" "}
+                        {att.attachment_type === "link" ? (
+                          <input
+                            required={att.required}
+                            name={`customAttachment_${idx}`}
+                            type="url"
+                            placeholder="https://..."
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium text-left"
+                            dir="ltr"
+                          />
+                        ) : att.attachment_type === "image" ? (
+                          <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
+                            <input
+                              required={att.required}
+                              type="file"
+                              name={`customAttachment_${idx}`}
+                              accept="image/jpeg, image/png"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />{" "}
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
+                              <Upload size={24} />{" "}
+                            </div>{" "}
+                            <p className="text-sm font-bold text-navy dark:text-white">
+                              اختر صورة (JPG/PNG)
+                            </p>{" "}
+                          </div>
+                        ) : att.attachment_type === "video" ? (
+                          <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
+                            <input
+                              required={att.required}
+                              type="file"
+                              name={`customAttachment_${idx}`}
+                              accept="video/mp4"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />{" "}
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
+                              <Upload size={24} />{" "}
+                            </div>{" "}
+                            <p className="text-sm font-bold text-navy dark:text-white">
+                              اختر فيديو (MP4)
+                            </p>{" "}
+                          </div>
+                        ) : att.attachment_type === "document" ? (
+                          <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
+                            <input
+                              required={att.required}
+                              type="file"
+                              name={`customAttachment_${idx}`}
+                              accept=".doc,.docx,.xls,.xlsx"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />{" "}
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
+                              <Upload size={24} />{" "}
+                            </div>{" "}
+                            <p className="text-sm font-bold text-navy dark:text-white">
+                              اختر مستند (Word/Excel)
+                            </p>{" "}
+                          </div>
+                        ) : (
+                          <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
+                            <input
+                              required={att.required}
+                              type="file"
+                              name={`customAttachment_${idx}`}
+                              accept=".pdf"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />{" "}
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
+                              <Upload size={24} />{" "}
+                            </div>{" "}
+                            <p className="text-sm font-bold text-navy dark:text-white">
+                              اختر ملف PDF
+                            </p>{" "}
+                          </div>
+                        )}{" "}
+                        {errorMsg && (
+                          <p className="text-red-500 text-xs font-bold mt-1">
+                            {errorMsg}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}{" "}
+                  {requiredAttachments.includes("رابط معرض أعمال/Portfolio") && (
+                    <div className="md:col-span-2 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
+                          روابط معرض الأعمال / Portfolio
+                          {job?.portfolioRequirement === "required" ? <span className="text-red-500">*</span> : <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>}
+                        </label>
+                      </div>
+                      {portfolioLinksState.map((link, idx) => (
+                        <div key={`portfolio_${idx}`} className="relative">
+                          <input
+                            required={job?.portfolioRequirement === "required" && idx === 0}
+                            name={`portfolio_${idx}`}
+                            type="url"
+                            value={link}
+                            onChange={(e) => {
+                              const newLinks = [...portfolioLinksState];
+                              newLinks[idx] = e.target.value;
+                              setPortfolioLinksState(newLinks);
+                            }}
+                            placeholder="https://..."
+                            dir="ltr"
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium"
+                          />
+                          {portfolioLinksState.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newLinks = portfolioLinksState.filter((_, i) => i !== idx);
+                                setPortfolioLinksState(newLinks);
+                              }}
+                              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
+                            >
+                              <X size={20} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
                       <button
                         type="button"
-                        onClick={stopRecording}
-                        className="bg-red-500 text-white px-8 py-3 rounded-2xl font-bold hover:bg-red-600 transition-colors flex items-center justify-center gap-2 mx-auto shadow-lg shadow-red-500/20"
+                        onClick={() => setPortfolioLinksState([...portfolioLinksState, ""])}
+                        className="text-primary font-bold text-sm hover:underline flex items-center gap-1"
                       >
-                        <Square size={18} fill="currentColor" /> إيقاف
-                        التسجيل{" "}
+                        <Plus size={16} /> إضافة رابط آخر
+                      </button>
+                    </div>
+                  )}
+                  {!hasResumeOption &&
+                    requiredAttachments.filter((a) => a !== "لا يتطلب مرفقات" && a !== "رابط معرض أعمال/Portfolio")
+                      .length > 0 && (
+                      <div className="md:col-span-2 space-y-3">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1">
+                          {requiredAttachments
+                            .filter((a) => a !== "لا يتطلب مرفقات" && a !== "رابط معرض أعمال/Portfolio")
+                            .join(" و ")}
+                        </label>{" "}
+                        <div
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsDragging(true);
+                          }}
+                          onDragLeave={() => setIsDragging(false)}
+                          className={`border-2 border-dashed rounded-[32px] p-12 text-center transition-all cursor-pointer group ${isDragging ? "border-primary bg-primary/5" : "border-slate-200 dark:border-slate-700 hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50"}`}
+                        >
+                          <div
+                            className={`w-20 h-20 mx-auto mb-6 rounded-3xl flex items-center justify-center transition-all ${isDragging ? "bg-primary text-white scale-110" : "bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10"}`}
+                          >
+                            <Upload size={32} />{" "}
+                          </div>{" "}
+                          <p className="text-navy dark:text-white font-bold text-lg mb-2">
+                            اسحب المرفق الخاص المتطلب هنا
+                          </p>{" "}
+                          <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
+                            أو انقر لاختيار ملف من جهازك
+                          </p>{" "}
+                        </div>{" "}
+                      </div>
+                    )}{" "}
+                  {!hasUrlSource && (
+                    <div className="space-y-3 md:col-span-1">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
+                        كيف عرفت عن هذه الوظيفة؟
+                        <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>
+                      </label>
+                      <div className="relative">
+                        <select
+                          name="source"
+                          value={formDataState.source}
+                          onChange={handleInputChange}
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
+                        >
+                          <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر المصدر...</option>
+                          <option value="LinkedIn" className="bg-white text-navy dark:bg-slate-800 dark:text-white">LinkedIn</option>
+                          <option value="منصة X / تويتر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">منصة X / تويتر</option>
+                          <option value="تيك توك (TikTok)" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تيك توك (TikTok)</option>
+                          <option value="تطبيق واتساب" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تطبيق واتساب</option>
+                          <option value="تطبيق تيليجرام" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تطبيق تيليجرام</option>
+                          <option value="بحث جوجل" className="bg-white text-navy dark:bg-slate-800 dark:text-white">بحث جوجل</option>
+                          <option value="توصية من صديق" className="bg-white text-navy dark:bg-slate-800 dark:text-white">توصية من صديق</option>
+                          <option value="إعلان ممول" className="bg-white text-navy dark:bg-slate-800 dark:text-white">إعلان ممول</option>
+                          <option value="أخرى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أخرى</option>
+                          {formDataState.source && !["LinkedIn", "منصة X / تويتر", "تيك توك (TikTok)", "تطبيق واتساب", "تطبيق تيليجرام", "بحث جوجل", "توصية من صديق", "إعلان ممول", "أخرى"].includes(formDataState.source) && (
+                            <option value={formDataState.source} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{formDataState.source}</option>
+                          )}
+                        </select>
+                        <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                          <ArrowLeft size={18} className="-rotate-90" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-3 md:col-span-2 mt-4 pt-6 border-t border-slate-100 dark:border-slate-700 text-center">
+                    {!showLinkedinInput ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowLinkedinInput(true)}
+                        className="flex items-center justify-center gap-2 text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-all text-sm font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 px-5 py-4 rounded-xl border-none cursor-pointer w-full md:w-1/2 mx-auto"
+                      >
+                        + إضافة رابط لينكد إن <span className="font-normal text-slate-400 text-xs">(اختياري)</span>
+                      </button>
+                    ) : (
+                      <>
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2 justify-center">
+                          رابط لينكد إن (LinkedIn)
+                          <span className="text-slate-400 dark:text-slate-500 text-xs font-normal"> (اختياري)</span>
+                        </label>
+                        <input
+                          name="linkedin"
+                          type="url"
+                          value={formDataState.linkedin}
+                          onChange={handleInputChange}
+                          placeholder="https://linkedin.com/in/..."
+                          dir="ltr"
+                          className={`w-full md:w-1/2 mx-auto block px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${linkedinError ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-left font-medium`}
+                        />
+                        {linkedinError && (
+                          <p className="text-red-500 text-xs font-bold mt-1 text-center w-full md:w-1/2 mx-auto">
+                            {linkedinError}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`md:col-span-2 text-white py-5 rounded-2xl text-lg font-bold transition-all active:scale-[0.98] mt-4 flex items-center justify-center gap-3 disabled:opacity-70 disabled:grayscale ${canOneClickApply ? 'bg-teal-600 hover:bg-teal-700 hover:shadow-2xl hover:shadow-teal-600/40' : 'bg-primary hover:shadow-2xl hover:shadow-primary/40'}`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white dark:border-slate-700/30 border-t-white rounded-full animate-spin" />{" "}
+                        جاري الإرسال...{" "}
+                      </>
+                    ) : isRequireVoiceInterview ? (
+                      <>التالي: المقابلة الصوتية <Mic size={20} /></>
+                    ) : canOneClickApply ? (
+                      <><Zap size={20} className="fill-white" /> تقديم سريع الآن</>
+                    ) : (
+                      <>إرسال الطلب</>
+                    )}
+                  </button>{" "}
+                </motion.div>
+              )}{" "}
+            </form>{" "}
+            {formStep === "audio" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-8"
+              >
+                <div className="bg-slate-50 dark:bg-slate-800/50 p-8 rounded-[32px] border border-slate-100 dark:border-slate-700">
+                  <h3 className="text-xl font-bold text-navy dark:text-white mb-4">
+                    أسئلة المقابلة:
+                  </h3>{" "}
+                  <ul className="space-y-4">
+                    {(() => {
+                      const template = activeRole?.voiceInterviewTemplate ?? job?.voiceInterviewTemplate ?? "general";
+                      const customQ = activeRole?.voiceInterviewQuestions ?? job?.voiceInterviewQuestions ?? [];
+
+                      let questionsToAsk = [];
+                      if (template === "sales") {
+                        questionsToAsk = [
+                          "كيف تتعامل مع عميل يبدي انزعاجاً شديداً من الخدمة؟",
+                          "صف موقفاً مستعصياً تمكنت فيه من استخدام مهاراتك الإقناعية لتحقيق هدف بيعي أو تغيير قناعة شخص."
+                        ];
+                      } else if (template === "custom" && customQ.length > 0 && customQ.some(q => q.trim() !== "")) {
+                        questionsToAsk = customQ.filter(q => q.trim() !== "");
+                      } else {
+                        questionsToAsk = [
+                          "تحدث عن نفسك وخبراتك السابقة التي تجعلك مناسباً لهذا الدور المتقدم عليه.",
+                          "ما هو أكبر تحدي واجهته في عملك السابق وكيف قمت بحله؟"
+                        ];
+                      }
+
+                      return questionsToAsk.map((q, idx) => (
+                        <li key={idx} className="flex gap-3 text-slate-600 dark:text-slate-300 font-medium">
+                          <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0" />
+                          {q}
+                        </li>
+                      ));
+                    })()}
+                  </ul>{" "}
+                </div>{" "}
+                <div className="bg-white dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[32px] p-8 text-center flex flex-col items-center">
+                  {audioUrl ? (
+                    <div className="w-full space-y-6">
+                      <p className="font-bold text-green-600 flex items-center justify-center gap-2">
+                        <CheckCircle size={20} /> تم تسجيل المقطع بنجاح (
+                        {formatTime(recordingTime)}){" "}
+                      </p>{" "}
+                      <audio controls src={audioUrl} className="w-full" />{" "}
+                      <button
+                        type="button"
+                        onClick={retryRecording}
+                        className="text-slate-500 dark:text-slate-400 dark:text-slate-500 hover:text-red-500 font-bold flex items-center justify-center gap-2 w-full transition-colors"
+                      >
+                        <RotateCcw size={18} /> إعادة التسجيل{" "}
                       </button>{" "}
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
-                        انقر للبدء بتسجيل إجابتك (يجب السماح للمتصفح بالوصول
-                        للمايكروفون)
-                      </p>{" "}
-                      <button
-                        type="button"
-                        onClick={startRecording}
-                        className="bg-navy text-white px-8 py-3 rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 mx-auto active:scale-95 shadow-lg shadow-navy/20"
+                    <div className="space-y-6">
+                      <div
+                        className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center transition-all ${isRecording ? "bg-red-50 text-red-500 animate-pulse scale-110 shadow-lg shadow-red-500/20" : "bg-slate-100 text-slate-400 dark:text-slate-500"}`}
                       >
-                        <Mic size={18} /> بدء التسجيل{" "}
-                      </button>{" "}
+                        {isRecording ? <Mic size={40} /> : <Mic size={40} />}{" "}
+                      </div>{" "}
+                      {isRecording ? (
+                        <div className="space-y-4">
+                          <p className="text-2xl font-bold text-red-500 font-mono">
+                            {formatTime(recordingTime)}
+                          </p>{" "}
+                          <button
+                            type="button"
+                            onClick={stopRecording}
+                            className="bg-red-500 text-white px-8 py-3 rounded-2xl font-bold hover:bg-red-600 transition-colors flex items-center justify-center gap-2 mx-auto shadow-lg shadow-red-500/20"
+                          >
+                            <Square size={18} fill="currentColor" /> إيقاف
+                            التسجيل{" "}
+                          </button>{" "}
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
+                            انقر للبدء بتسجيل إجابتك (يجب السماح للمتصفح بالوصول
+                            للمايكروفون)
+                          </p>{" "}
+                          <button
+                            type="button"
+                            onClick={startRecording}
+                            className="bg-navy text-white px-8 py-3 rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 mx-auto active:scale-95 shadow-lg shadow-navy/20"
+                          >
+                            <Mic size={18} /> بدء التسجيل{" "}
+                          </button>{" "}
+                        </div>
+                      )}{" "}
                     </div>
                   )}{" "}
-                </div>
-              )}{" "}
-            </div>{" "}
-            <div className="flex gap-4 pt-4">
-              <button
-                type="button"
-                onClick={() => setFormStep("details")}
-                className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 text-slate-600 dark:text-slate-300 py-5 rounded-2xl text-lg font-bold hover:bg-slate-50 dark:bg-slate-800/50 transition-all"
-              >
-                رجوع{" "}
-              </button>{" "}
-              <button
-                type="button"
-                onClick={handleFinalSubmit}
-                disabled={isSubmitting || !audioBlob}
-                className="flex-[2] bg-primary text-white py-5 rounded-2xl text-lg font-bold hover:shadow-2xl hover:shadow-primary/40 transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-70 disabled:grayscale"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white dark:border-slate-700/30 border-t-white rounded-full animate-spin" />{" "}
-                    جاري الإرسال...{" "}
-                  </>
-                ) : (
-                  "اعتماد وإرسال الطلب"
-                )}{" "}
-              </button>{" "}
-            </div>{" "}
-          </motion.div>
-        )}{" "}
-        </>
+                </div>{" "}
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setFormStep("details")}
+                    className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 text-slate-600 dark:text-slate-300 py-5 rounded-2xl text-lg font-bold hover:bg-slate-50 dark:bg-slate-800/50 transition-all"
+                  >
+                    رجوع{" "}
+                  </button>{" "}
+                  <button
+                    type="button"
+                    onClick={handleFinalSubmit}
+                    disabled={isSubmitting || !audioBlob}
+                    className="flex-[2] bg-primary text-white py-5 rounded-2xl text-lg font-bold hover:shadow-2xl hover:shadow-primary/40 transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-70 disabled:grayscale"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white dark:border-slate-700/30 border-t-white rounded-full animate-spin" />{" "}
+                        جاري الإرسال...{" "}
+                      </>
+                    ) : (
+                      "اعتماد وإرسال الطلب"
+                    )}{" "}
+                  </button>{" "}
+                </div>{" "}
+              </motion.div>
+            )}{" "}
+          </>
         )}
       </motion.div>{" "}
     </div>

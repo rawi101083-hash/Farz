@@ -52,7 +52,6 @@ export const setGlobalApplicantsCache = (data: Applicant[], jobsStr: string) => 
       interview_transcript, 
       interview_summary, 
       customAnswers, 
-      interview_questions,
       ...rest 
     } = app as any;
     const lightWeightApp = { ...rest };

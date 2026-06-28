@@ -858,9 +858,9 @@ export const ManageJob = ({
               <button
                 type="button"
                 onClick={handleRefreshDate}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-blue-50 to-blue-100/50 dark:from-blue-900/30 dark:to-blue-900/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 py-3 px-4 rounded-2xl font-bold text-sm hover:shadow-[0_8px_24px_-4px_rgba(59,130,246,0.25),inset_0_2px_0_rgba(255,255,255,1)] hover:-translate-y-1 active:translate-y-0 transition-all mb-4 relative overflow-hidden group shadow-[0_4px_12px_-2px_rgba(59,130,246,0.15),inset_0_2px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_12px_-2px_rgba(59,130,246,0.15),inset_0_2px_0_rgba(255,255,255,0.05)]"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-blue-50 to-blue-100/50 dark:from-slate-700 dark:to-slate-800 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-slate-600 py-3 px-4 rounded-2xl font-bold text-sm hover:shadow-[0_8px_24px_-4px_rgba(59,130,246,0.25),inset_0_2px_0_rgba(255,255,255,1)] dark:hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.4),inset_0_2px_0_rgba(255,255,255,0.1)] hover:-translate-y-1 active:translate-y-0 transition-all mb-4 relative overflow-hidden group shadow-[0_4px_12px_-2px_rgba(59,130,246,0.15),inset_0_2px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.05)]"
               >
-                <div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div>
+                <div className="absolute inset-0 bg-white/20 dark:bg-transparent group-hover:bg-transparent dark:group-hover:bg-white/5 transition-colors"></div>
                 <RefreshCw size={18} className="relative z-10" /> 
                 <span className="relative z-10">تحديث تاريخ النشر</span>
               </button>
@@ -873,12 +873,12 @@ export const ManageJob = ({
                   setSelectedLockedIds([]);
                   setSearchLocked("");
                 }}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-900/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 py-3 px-4 rounded-2xl font-bold text-sm hover:shadow-[0_8px_24px_-4px_rgba(16,185,129,0.25),inset_0_2px_0_rgba(255,255,255,1)] hover:-translate-y-1 active:translate-y-0 transition-all mb-4 relative overflow-hidden group shadow-[0_4px_12px_-2px_rgba(16,185,129,0.15),inset_0_2px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_12px_-2px_rgba(16,185,129,0.15),inset_0_2px_0_rgba(255,255,255,0.05)]"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-emerald-50 to-emerald-100/50 dark:from-slate-700 dark:to-slate-800 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-slate-600 py-3 px-4 rounded-2xl font-bold text-sm hover:shadow-[0_8px_24px_-4px_rgba(16,185,129,0.25),inset_0_2px_0_rgba(255,255,255,1)] dark:hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.4),inset_0_2px_0_rgba(255,255,255,0.1)] hover:-translate-y-1 active:translate-y-0 transition-all mb-4 relative overflow-hidden group shadow-[0_4px_12px_-2px_rgba(16,185,129,0.15),inset_0_2px_0_rgba(255,255,255,0.9)] dark:shadow-[0_4px_12px_-2px_rgba(0,0,0,0.3),inset_0_2px_0_rgba(255,255,255,0.05)]"
               >
-                <div className="absolute inset-0 bg-white/20 group-hover:bg-transparent transition-colors"></div>
+                <div className="absolute inset-0 bg-white/20 dark:bg-transparent group-hover:bg-transparent dark:group-hover:bg-white/5 transition-colors"></div>
                 <RotateCcw size={18} className="relative z-10" /> 
                 <span className="relative z-10">فتح التقديم يدوياً</span>
-                <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-800/50 dark:text-emerald-300 px-2 py-0.5 rounded-lg relative z-10 shadow-sm border border-emerald-200 dark:border-emerald-700">فك حظر 90 يوم</span>
+                <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-slate-900/50 dark:text-emerald-300 px-2 py-0.5 rounded-lg relative z-10 shadow-sm border border-emerald-200 dark:border-slate-700">فك حظر 90 يوم</span>
               </button>
 
               {onClone && (

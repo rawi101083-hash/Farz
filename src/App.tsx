@@ -224,6 +224,8 @@ const JobSuccess = ({
     </>
   );
 };
+import { prefetchApplicantProfile } from './components/JobApplication';
+
 const PublicJobPage = ({
   job,
   selectedRoleId,
@@ -243,6 +245,9 @@ const PublicJobPage = ({
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setIsLoggedIn(!!session);
+      if (session) {
+        prefetchApplicantProfile();
+      }
     };
 
     checkSession();
@@ -2012,8 +2017,13 @@ export default function App() {
 
   useEffect(() => {
     const handler = () => setShowBookingModal(true);
+    const onboardingHandler = () => setShowOnboardingGlobal(true);
     window.addEventListener("openBookingModal", handler);
-    return () => window.removeEventListener("openBookingModal", handler);
+    window.addEventListener("showOnboardingGlobal", onboardingHandler);
+    return () => {
+      window.removeEventListener("openBookingModal", handler);
+      window.removeEventListener("showOnboardingGlobal", onboardingHandler);
+    };
   }, []);
   const [selectedJob, setSelectedJob] = useState<Job | null>(() => {
     const saved = sessionStorage.getItem("sahab_selected_job");

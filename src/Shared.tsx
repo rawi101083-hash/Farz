@@ -2630,7 +2630,7 @@ export const SettingsPage = ({
                           value={userProfile.companyName || ""}
                           onChange={(e) => setUserProfile({ ...userProfile, companyName: e.target.value })}
                           placeholder=""
-                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                         />
                       </>
                     )}
@@ -2638,21 +2638,21 @@ export const SettingsPage = ({
 
                   <div className="space-y-2 group">
                     <label className="text-sm font-bold text-navy dark:text-slate-300">
-                      البريد الإلكتروني (للفواتير والتواصل) <span className="text-red-500">*</span>
+                      البريد الإلكتروني للفواتير <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
                       value={userProfile.contactEmail || ""}
                       onChange={(e) => setUserProfile({ ...userProfile, contactEmail: e.target.value })}
                       placeholder="email@company.com"
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
                       dir="ltr"
                     />
                   </div>
 
                   <div className="space-y-2 group">
                     <label className="text-sm font-bold text-navy dark:text-slate-300">
-                      رقم جوال المفوض <span className="text-red-500">*</span>
+                      {userProfile.entityType === "company" ? "رقم جوال المنشأة" : "رقم الجوال"} <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
@@ -2662,7 +2662,7 @@ export const SettingsPage = ({
                         setUserProfile({ ...userProfile, contactPhone: val });
                       }}
                       placeholder="05xxxxxxxx"
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
                       dir="ltr"
                       maxLength={10}
                     />
@@ -2687,7 +2687,7 @@ export const SettingsPage = ({
                               }
                             }}
                             placeholder=""
-                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                             dir="ltr"
                           />
                           {errors.cr && errors.cr !== "هذا الحقل مطلوب" && <p className="text-red-500 text-xs mt-1 font-bold">{errors.cr}</p>}
@@ -2708,7 +2708,7 @@ export const SettingsPage = ({
                             value={userProfile.freelanceDocument || ""}
                             onChange={(e) => setUserProfile({ ...userProfile, freelanceDocument: e.target.value })}
                             placeholder="FL-xxxxxxxx"
-                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                             dir="ltr"
                           />
                         </>
@@ -2727,7 +2727,7 @@ export const SettingsPage = ({
                           value={userProfile.city || ""}
                           onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
                           placeholder=""
-                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                         />
                       </>
                     )}
@@ -2751,7 +2751,7 @@ export const SettingsPage = ({
                             }
                           }}
                           placeholder=""
-                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:bg-slate-900 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                           dir="ltr"
                           maxLength={15}
                         />
