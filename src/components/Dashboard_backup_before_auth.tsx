@@ -725,12 +725,10 @@ export const Dashboard = ({
         processingIdsRef.current.add(app.id);
 
         try {
-            console.log("Sending API Key starting with:", import.meta.env.VITE_FARZ_API_KEY ? import.meta.env.VITE_FARZ_API_KEY.substring(0, 3) + "***" : "undefined");
-            await fetch("https://farz-cv-processo-1.onrender.com/api/v1/extract-cv", {
-              method: "POST",
+          await fetch("https://farz-cv-processo-1.onrender.com/api/v1/extract-cv", {
+            method: "POST",
             headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${import.meta.env.VITE_FARZ_API_KEY}`
+              "Content-Type": "application/json"
             },
             body: JSON.stringify({
               applicant_id: app.id,
@@ -1858,7 +1856,7 @@ export const Dashboard = ({
                                         >
                                           <RotateCcw size={14} /> استعادة
                                         </button>
-                                      ) : ["accepted", "rejected", "interview"].includes(row.decision || "") || decisionFilter === "interview" || decisionFilter === "accepted" || decisionFilter === "rejected" ? (
+                                      ) : (row.decision && row.decision !== "pending") || decisionFilter === "interview" || decisionFilter === "accepted" || decisionFilter === "rejected" ? (
                                         <>
                                           <button
                                             onClick={(e) => {
@@ -1877,24 +1875,21 @@ export const Dashboard = ({
                                         <>
                                           <button
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "accepted"); }}
-                                            disabled={isEvaluating}
-                                            className={`flex items-center justify-center gap-1 bg-teal-50 text-teal-600 hover:bg-teal-100 hover:text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 dark:hover:text-teal-300 border-b-[3px] border-teal-200 dark:border-teal-800 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
+                                            className="flex items-center justify-center gap-1 bg-teal-50 text-teal-600 hover:bg-teal-100 hover:text-teal-700 dark:bg-teal-900/30 dark:text-teal-400 dark:hover:bg-teal-900/50 dark:hover:text-teal-300 border-b-[3px] border-teal-200 dark:border-teal-800 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
                                             title="قبول"
                                           >
                                             <CheckCircle size={14} /> قبول
                                           </button>
                                           <button
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "interview"); }}
-                                            disabled={isEvaluating}
-                                            className={`flex items-center justify-center gap-1 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 dark:hover:bg-amber-900/50 dark:hover:text-amber-400 border-b-[3px] border-amber-200 dark:border-amber-800 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
+                                            className="flex items-center justify-center gap-1 bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 dark:hover:bg-amber-900/50 dark:hover:text-amber-400 border-b-[3px] border-amber-200 dark:border-amber-800 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
                                             title="مقابلة"
                                           >
                                             مقابلة
                                           </button>
                                           <button
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDecision(row.id, "rejected"); }}
-                                            disabled={isEvaluating}
-                                            className={`flex items-center justify-center gap-1 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-500 dark:hover:bg-rose-900/50 dark:hover:text-rose-400 border-b-[3px] border-rose-200 dark:border-rose-800 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm ${isEvaluating ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
+                                            className="flex items-center justify-center gap-1 bg-rose-50 text-rose-600 hover:bg-rose-100 hover:text-rose-700 dark:bg-rose-900/30 dark:text-rose-500 dark:hover:bg-rose-900/50 dark:hover:text-rose-400 border-b-[3px] border-rose-200 dark:border-rose-800 px-3 py-2 rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
                                             title="رفض"
                                           >
                                             <X size={14} /> رفض

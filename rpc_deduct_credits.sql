@@ -20,7 +20,8 @@ BEGIN
     v_actual_limit := COALESCE(v_company.cv_limit, 0);
     
     IF v_actual_limit = 0 THEN
-        IF v_company.subscription_plan = 'immediate' THEN v_actual_limit := 500;
+        IF v_company.subscription_plan = 'free' THEN v_actual_limit := 50;
+        ELSIF v_company.subscription_plan = 'immediate' THEN v_actual_limit := 500;
         ELSIF v_company.subscription_plan = 'startup' OR v_company.subscription_plan = 'growth' THEN v_actual_limit := 1000;
         ELSIF v_company.subscription_plan = 'business' THEN v_actual_limit := 5000;
         ELSIF v_company.subscription_plan = 'enterprise' THEN v_actual_limit := 15000;
@@ -68,7 +69,8 @@ BEGIN
     v_actual_limit := COALESCE(v_company.interviews_limit, 0);
     
     IF v_actual_limit = 0 THEN
-        IF v_company.subscription_plan = 'immediate' THEN v_actual_limit := 1;
+        IF v_company.subscription_plan = 'free' THEN v_actual_limit := 1;
+        ELSIF v_company.subscription_plan = 'immediate' THEN v_actual_limit := 1;
         ELSIF v_company.subscription_plan = 'startup' OR v_company.subscription_plan = 'growth' THEN v_actual_limit := 5;
         ELSIF v_company.subscription_plan = 'business' THEN v_actual_limit := 15;
         ELSIF v_company.subscription_plan = 'enterprise' THEN v_actual_limit := 40;

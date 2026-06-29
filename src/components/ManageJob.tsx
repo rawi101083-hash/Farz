@@ -15,12 +15,14 @@ export const ManageJob = ({
   onUpdate,
   onDelete,
   onClone,
+  selectedRoleId,
 }: {
   job: Job;
   onBack: () => void;
   onUpdate: (job: Job, stayOnPage?: boolean) => void;
   onDelete: (id: string) => void;
   onClone?: (job: Job) => void;
+  selectedRoleId?: string | null;
 }) => {
   const [activeTab, setActiveTab] = useState<"أرشيف الوصف الوظيفي" | "إعدادات الوظيفة" | "متطلبات التقديم">("أرشيف الوصف الوظيفي");
   const [toast, setToast] = useState<{message: string, type: 'success' | 'warning' | 'error'} | null>(null);
@@ -46,23 +48,23 @@ export const ManageJob = ({
   const isLocked = job.status === "نشط" && job.applicants > 0;
 
   // Archive Fields (Read-Only)
-  const title = job.title || job.campaignTitle || "";
+  const singleRole = selectedRoleId ? job.roles?.find(r => r.id === selectedRoleId) : job.roles?.[0];
+  const title = singleRole?.title || job.title || job.campaignTitle || "";
   const company = job.company || "";
-  const singleRole = job.roles?.[0];
-  const description = job.description || job.campaignDescription || singleRole?.description || "";
-  const roleSummary = job.roleSummary || singleRole?.roleSummary || description;
-  const responsibilities = job.responsibilities || singleRole?.responsibilities || "";
-  const qualificationsText = job.qualifications || singleRole?.qualifications || "";
-  const benefits = job.benefits || singleRole?.benefits || "";
-  const jobType = job.type || singleRole?.type || "دوام كامل";
-  const jobLocation = job.location || job.city || singleRole?.location || "لم تُحدد";
-  const experience = job.experience || singleRole?.experience || "لا يشترط خبرة";
-  const qualification = job.qualification || "ثانوي";
-  const rawSkills = (job.skills && job.skills.length > 0) ? job.skills : (singleRole?.skills || []);
+  const description = singleRole?.description || job.description || job.campaignDescription || "";
+  const roleSummary = singleRole?.roleSummary || job.roleSummary || description;
+  const responsibilities = singleRole?.responsibilities || job.responsibilities || "";
+  const qualificationsText = singleRole?.qualifications || job.qualifications || "";
+  const benefits = singleRole?.benefits || job.benefits || "";
+  const jobType = singleRole?.type || job.type || "دوام كامل";
+  const jobLocation = singleRole?.location || job.location || job.city || "لم تُحدد";
+  const experience = singleRole?.experience || job.experience || "لا يشترط خبرة";
+  const qualification = singleRole?.qualification || job.qualification || "ثانوي";
+  const rawSkills = (singleRole?.skills && singleRole.skills.length > 0) ? singleRole.skills : (job.skills || []);
   const selectedSkills = Array.isArray(rawSkills) ? rawSkills : (typeof rawSkills === 'string' ? [rawSkills] : []);
-  const rawLanguages = (job.languages && job.languages.length > 0) ? job.languages : (singleRole?.languages || []);
+  const rawLanguages = (singleRole?.languages && singleRole.languages.length > 0) ? singleRole.languages : (job.languages || []);
   const selectedLanguages = Array.isArray(rawLanguages) ? rawLanguages : (typeof rawLanguages === 'string' ? [rawLanguages] : []);
-  const rawMajors = (job.targetMajors && job.targetMajors.length > 0) ? job.targetMajors : (singleRole?.targetMajors || []);
+  const rawMajors = (singleRole?.targetMajors && singleRole.targetMajors.length > 0) ? singleRole.targetMajors : (job.targetMajors || []);
   const targetMajors = Array.isArray(rawMajors) ? rawMajors : [];
 
   // Settings Fields (Editable)
@@ -431,7 +433,7 @@ export const ManageJob = ({
                       <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">مقر العمل</p>
                       <p className="font-bold text-navy dark:text-white">{jobLocation}</p>
                     </div>
-                    {(job.salaryMin || job.salaryMax) && (
+                    {(job.salaryMin || job.salaryMax) ? (
                       <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 md:col-span-2 text-center flex flex-col items-center justify-center">
                         <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الراتب</p>
                         <p className="font-bold text-navy dark:text-white">
@@ -442,7 +444,7 @@ export const ManageJob = ({
                               : `${job.salaryMax} ريال`}
                         </p>
                       </div>
-                    )}
+                    ) : null}
                   </div>
 
                   {roleSummary && (

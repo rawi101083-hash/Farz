@@ -52,11 +52,25 @@ import featureTalentPoolImg from './assets/feature_talent_pool.png';
 import featureQuickApplyImg from './assets/feature_quick_apply.png';
 ;
 const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPublishDraft }: { isOpen: boolean; onClose: () => void; userProfile: any; setUserProfile: any; onPublishDraft?: () => void; }) => {
-  const [entityType, setEntityType] = useState<"company" | "freelance">(userProfile.entityType || "company");
+  const [entityType, setEntityType] = useState<"company" | "freelance">(
+    userProfile?.freelanceDocument ? "freelance" : (userProfile?.commercialRegistration ? "company" : (userProfile?.entityType || "company"))
+  );
   const [companyName, setCompanyName] = useState(userProfile.companyName || "");
   const [crNumber, setCrNumber] = useState(userProfile.commercialRegistration || "");
   const [freelanceDoc, setFreelanceDoc] = useState(userProfile.freelanceDocument || "");
   const [city, setCity] = useState(userProfile.city || "");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setEntityType(userProfile?.freelanceDocument ? "freelance" : (userProfile?.commercialRegistration ? "company" : (userProfile?.entityType || "company")));
+      setCompanyName(userProfile?.companyName || userProfile?.name || "");
+      setCrNumber(userProfile?.commercialRegistration || "");
+      setFreelanceDoc(userProfile?.freelanceDocument || "");
+      setCity(userProfile?.city || "");
+      setError("");
+    }
+  }, [isOpen, userProfile]);
 
   if (!isOpen) return null;
 
@@ -70,13 +84,31 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
           <ShieldCheck size={40} />
         </div>
         <h3 className="text-2xl font-bold text-center text-navy dark:text-white mb-3">خطوة أخيرة لنشر إعلانك!</h3>
-        <p className="text-slate-500 dark:text-slate-400 text-center mb-8 text-sm leading-relaxed">
+        <p className="text-slate-500 dark:text-slate-400 text-center mb-6 text-sm leading-relaxed">
           يرجى استكمال بيانات الكيان الخاص بك لنتمكن من عرضها للمتقدمين ونشر تفاصيل الشواغر الخاصة بك.
         </p>
+
+        {error && (
+          <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-900/50 rounded-xl text-red-600 dark:text-red-400 text-sm font-bold text-center">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={(e) => {
           e.preventDefault();
-          if (entityType === "company" && (!companyName || !crNumber)) return;
-          if (entityType === "freelance" && (!companyName || !freelanceDoc)) return;
+          setError("");
+
+          if (entityType === "company") {
+            if (!companyName.trim()) return setError("يرجى إدخال اسم المنشأة");
+            if (!crNumber.trim()) return setError("يرجى إدخال رقم السجل التجاري");
+            if (crNumber.trim().length !== 10) return setError("رقم السجل التجاري يجب أن يتكون من 10 أرقام");
+          } else {
+            const nameParts = companyName.trim().split(/\s+/);
+            if (!companyName.trim()) return setError("يرجى إدخال الاسم");
+            if (nameParts.length < 3) return setError("يجب إدخال الاسم الثلاثي على الأقل");
+            if (!freelanceDoc.trim()) return setError("يرجى إدخال رقم وثيقة العمل الحر");
+            if (!/^FL-\d{6,15}$/i.test(freelanceDoc.trim())) return setError("رقم الوثيقة يجب أن يبدأ بـ FL- يليه أرقام");
+          }
 
           setUserProfile({
             ...userProfile,
@@ -93,10 +125,12 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
           onClose();
         }} className="space-y-4">
 
-          <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 gap-1.5 rounded-2xl w-full mb-4">
-            <button type="button" onClick={() => setEntityType("company")} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${entityType === "company" ? "bg-white dark:bg-slate-700 text-navy dark:text-white shadow-sm" : "text-slate-500"}`}>جهة اعتبارية</button>
-            <button type="button" onClick={() => setEntityType("freelance")} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${entityType === "freelance" ? "bg-white dark:bg-slate-700 text-navy dark:text-white shadow-sm" : "text-slate-500"}`}>عمل حر (مستقل)</button>
-          </div>
+          {(!userProfile?.hasExplicitEntityType && !userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
+            <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 gap-1.5 rounded-2xl w-full mb-4">
+              <button type="button" onClick={() => setEntityType("company")} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${entityType === "company" ? "bg-white dark:bg-slate-700 text-navy dark:text-white shadow-sm" : "text-slate-500"}`}>جهة اعتبارية</button>
+              <button type="button" onClick={() => setEntityType("freelance")} className={`flex-1 py-2.5 rounded-xl text-sm font-bold transition-all ${entityType === "freelance" ? "bg-white dark:bg-slate-700 text-navy dark:text-white shadow-sm" : "text-slate-500"}`}>عمل حر (مستقل)</button>
+            </div>
+          )}
 
           <div>
             <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2 mr-1">{entityType === "company" ? "اسم المنشأة المعتمد" : "الاسم الثلاثي المعتمد"}</label>
@@ -111,7 +145,13 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
           ) : (
             <div>
               <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2 mr-1">رقم وثيقة العمل الحر</label>
-              <input required type="text" value={freelanceDoc} onChange={e => setFreelanceDoc(e.target.value)} placeholder="FL-XXXXXX" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-primary font-medium dark:text-white text-left" dir="ltr" />
+              <input required type="text" value={freelanceDoc} onChange={e => {
+                let val = e.target.value.toUpperCase();
+                if (val.length > 0 && !val.startsWith('FL-')) {
+                  val = 'FL-' + val.replace(/^FL-?/i, '');
+                }
+                setFreelanceDoc(val);
+              }} placeholder="FL-XXXXXX" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-primary font-medium dark:text-white text-left" dir="ltr" />
             </div>
           )}
 
@@ -120,9 +160,8 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
             <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="الرياض، جدة..." className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-primary font-medium dark:text-white" />
           </div>
 
-          <button type="submit" className="w-full py-5 mt-4 bg-primary text-white rounded-2xl font-bold text-lg hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-            <CheckCircle size={20} />
-            حفظ ومتابعة
+          <button type="submit" className="w-full py-4 mt-6 bg-gradient-to-l from-primary to-primary/90 text-white rounded-2xl font-bold text-lg shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15),inset_0_2px_0_rgba(255,255,255,0.2)] hover:-translate-y-0.5 hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.3)] active:translate-y-0 transition-all flex items-center justify-center">
+            حفظ
           </button>
         </form>
       </motion.div>
@@ -231,15 +270,17 @@ const PublicJobPage = ({
   selectedRoleId,
   onSelectRole,
   onApply,
-  onBackToCampaign
+  onBackToCampaign,
+  initialIsLoggedIn = false
 }: {
   job: Job;
   selectedRoleId?: string | null;
   onSelectRole?: (roleId: string) => void;
   onApply: (mode: "fast" | "normal") => void;
   onBackToCampaign?: () => void;
+  initialIsLoggedIn?: boolean;
 }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(initialIsLoggedIn);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -429,11 +470,11 @@ const PublicJobPage = ({
                             <Clock size={14} /> {role.type}
                           </span>
                         )}
-                        {!role.isSalaryHidden && role.salaryMin && (
+                        {!role.isSalaryHidden && Boolean(role.salaryMin) && String(role.salaryMin) !== "0" ? (
                           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                             <CreditCard size={14} /> {role.salaryMin} {role.salaryMax ? `- ${role.salaryMax}` : ''} ريال
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       <div className="w-full pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-sm">
                         <span className="font-bold text-primary">التقديم على هذه الوظيفة</span>
@@ -1574,7 +1615,7 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                   <div className="flex flex-col md:flex-row items-center gap-12">
                     <div className="flex-1 space-y-6 text-right w-full">
                       <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
-                         <Mic size={32} />
+                        <Mic size={32} />
                       </div>
                       <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">تقييم آلي ومقابلات صوتية ذكية</h3>
                       <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
@@ -1583,14 +1624,14 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                     </div>
                     <div className="flex-1 w-full relative">
                       <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 group">
-                         <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
-                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                         </div>
-                         <div className="relative">
-                           <img src={featureAiInterviewImg} alt="المقابلات الذكية" className="w-full h-auto object-cover" />
-                         </div>
+                        <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                        </div>
+                        <div className="relative">
+                          <img src={featureAiInterviewImg} alt="المقابلات الذكية" className="w-full h-auto object-cover" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1599,7 +1640,7 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                   <div className="flex flex-col md:flex-row-reverse items-center gap-12">
                     <div className="flex-1 space-y-6 text-right w-full">
                       <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
-                         <BarChart2 size={32} />
+                        <BarChart2 size={32} />
                       </div>
                       <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">لوحة قيادة متكاملة لقرارات أذكى</h3>
                       <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
@@ -1608,12 +1649,12 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                     </div>
                     <div className="flex-1 w-full">
                       <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800">
-                         <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
-                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                         </div>
-                         <img src={featureDashboardImg} alt="لوحة التحكم" className="w-full h-auto object-cover" />
+                        <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                        </div>
+                        <img src={featureDashboardImg} alt="لوحة التحكم" className="w-full h-auto object-cover" />
                       </div>
                     </div>
                   </div>
@@ -1622,7 +1663,7 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                   <div className="flex flex-col md:flex-row items-center gap-12">
                     <div className="flex-1 space-y-6 text-right w-full">
                       <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
-                         <Briefcase size={32} />
+                        <Briefcase size={32} />
                       </div>
                       <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">إدارة مرنة للوظائف ومسار التوظيف</h3>
                       <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
@@ -1631,12 +1672,12 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                     </div>
                     <div className="flex-1 w-full">
                       <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800">
-                         <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
-                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                         </div>
-                         <img src={featureJobsImg} alt="إدارة الوظائف" className="w-full h-auto object-cover" />
+                        <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                        </div>
+                        <img src={featureJobsImg} alt="إدارة الوظائف" className="w-full h-auto object-cover" />
                       </div>
                     </div>
                   </div>
@@ -1645,7 +1686,7 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                   <div className="flex flex-col md:flex-row-reverse items-center gap-12">
                     <div className="flex-1 space-y-6 text-right w-full">
                       <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
-                         <BrainCircuit size={32} />
+                        <BrainCircuit size={32} />
                       </div>
                       <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">بنك الكفاءات لحفظ المواهب</h3>
                       <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
@@ -1654,16 +1695,16 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                     </div>
                     <div className="flex-1 w-full relative">
                       <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800 group">
-                         <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
-                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                         </div>
-                         <div className="relative">
-                           <img src={featureTalentPoolImg} alt="بنك الكفاءات" className="w-full h-auto object-cover" />
-                           {/* Blur Overlay for privacy */}
-                           <div className="absolute inset-0 backdrop-blur-[2px] bg-white/5 dark:bg-black/5 pointer-events-none transition-all duration-500 group-hover:backdrop-blur-0"></div>
-                         </div>
+                        <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                        </div>
+                        <div className="relative">
+                          <img src={featureTalentPoolImg} alt="بنك الكفاءات" className="w-full h-auto object-cover" />
+                          {/* Blur Overlay for privacy */}
+                          <div className="absolute inset-0 backdrop-blur-[2px] bg-white/5 dark:bg-black/5 pointer-events-none transition-all duration-500 group-hover:backdrop-blur-0"></div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1672,7 +1713,7 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                   <div className="flex flex-col md:flex-row items-center gap-12">
                     <div className="flex-1 space-y-6 text-right w-full">
                       <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary mb-6 mx-auto md:mx-0">
-                         <Zap size={32} />
+                        <Zap size={32} />
                       </div>
                       <h3 className="text-2xl md:text-3xl font-bold text-navy dark:text-white text-center md:text-right">تقديم سريع يقلص تسرب المتقدمين</h3>
                       <p className="text-slate-600 dark:text-slate-400 text-lg leading-relaxed text-center md:text-right">
@@ -1681,14 +1722,14 @@ const LandingPage = ({ onStart, onOpenBookingModal }: { onStart: () => void; onO
                     </div>
                     <div className="flex-1 w-full relative">
                       <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-200/80 dark:border-slate-700/80 bg-white dark:bg-slate-800">
-                         <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
-                            <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                            <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                            <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                         </div>
-                         <div className="relative">
-                           <img src={featureQuickApplyImg} alt="تقديم سريع" className="w-full h-auto object-cover" />
-                         </div>
+                        <div className="h-8 bg-slate-100 dark:bg-slate-800 border-b border-slate-200/80 dark:border-slate-700/80 flex items-center px-4 gap-2">
+                          <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                          <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                        </div>
+                        <div className="relative">
+                          <img src={featureQuickApplyImg} alt="تقديم سريع" className="w-full h-auto object-cover" />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1915,9 +1956,12 @@ export default function App() {
     subscription_is_yearly: false,
     entityType: "company",
     city: "",
-    cvs_processed_count: 0,
+    used_cvs: 0,
+    cv_limit: 0,
+    extra_cv_credits: 0,
     fields_locked: false,
     isLoaded: false,
+    hasExplicitEntityType: false,
   });
 
   const verifyCompanySession = async (currentSession: any, isInitial: boolean = false) => {
@@ -2145,7 +2189,7 @@ export default function App() {
             subscription_tier: "free",
             subscription_end_date: null,
             subscription_is_yearly: false,
-            cvs_processed_count: 0,
+            used_cvs: 0,
             fields_locked: false,
             cv_limit: 0,
             jobs_limit: 0,
@@ -2185,7 +2229,8 @@ export default function App() {
               name: user.user_metadata?.full_name || prev.name,
               title: user.user_metadata?.job_title || prev.title,
               companyName: data.company_name || prev.name,
-              entityType: data.entity_type || prev.entityType,
+              entityType: data.entity_type || user.user_metadata?.entity_type || prev.entityType,
+              hasExplicitEntityType: !!(data.entity_type || user.user_metadata?.entity_type),
               commercialRegistration: data.commercial_registration || prev.commercialRegistration,
               freelanceDocument: data.freelance_document || prev.freelanceDocument,
               taxNumber: data.tax_number || prev.taxNumber,
@@ -2197,7 +2242,7 @@ export default function App() {
               subscription_end_date: data.subscription_end_date || null,
               subscription_is_yearly: isYearly,
               is_auto_renew: data.is_auto_renew || false,
-              cvs_processed_count: data.cvs_processed_count || 0,
+              used_cvs: data.used_cvs || 0,
               fields_locked: data.fields_locked || false,
               cv_limit: data.cv_limit || 0,
               jobs_limit: data.jobs_limit || 0,
@@ -2226,15 +2271,16 @@ export default function App() {
               id: user.id,
               name: user.user_metadata?.full_name || prev.name,
               entityType: user.user_metadata?.entity_type || prev.entityType,
+              hasExplicitEntityType: !!user.user_metadata?.entity_type,
               isLoaded: true
             }));
-            
+
             // Welcome Slides Logic (ONLY for brand new accounts)
             const hasSeenWelcome = localStorage.getItem(`welcome_slides_seen_${user.id}`);
             if (!hasSeenWelcome) {
               setShowWelcomeSlides(true);
             }
-            
+
             setDashboardTab("الحساب");
           }
         } catch (err: any) {
@@ -2329,6 +2375,7 @@ export default function App() {
             title: data.title,
             recordType: data.record_type || 'single',
             company: data.department || data.company_name || "",
+            companyLogo: data.company_logo || null,
             department: data.department || "",
             location: data.location || "",
             type: data.type || "",
@@ -2720,8 +2767,13 @@ export default function App() {
                     setClonedJob(null);
                     startJobCreation("single");
                   }}
-                  onManageJob={(job) => {
+                  onManageJob={(job, selectedRoleId) => {
                     setSelectedJob(job);
+                    if (selectedRoleId) {
+                      setApplicantSelectedRoleId(selectedRoleId);
+                    } else {
+                      setApplicantSelectedRoleId(null);
+                    }
                     setStep("manageJob");
                   }}
                   onCloneJob={(job) =>

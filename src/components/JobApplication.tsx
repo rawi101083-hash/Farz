@@ -162,24 +162,24 @@ export const ApplicantForm = ({
             phone: data.phone || prev.phone,
             email: data._sessionEmail || prev.email,
             city: data.profile_data?.city || prev.city,
-              nationality: data.profile_data?.nationality || prev.nationality,
-              education: data.profile_data?.qualification?.[0] || prev.education,
-              experience: data.profile_data?.notice_period || prev.experience,
-              linkedin: data.profile_data?.linkedin_url || prev.linkedin,
-              cvUrl: data.cv_file_url || '',
-            }));
+            nationality: data.profile_data?.nationality || prev.nationality,
+            education: data.profile_data?.qualification?.[0] || prev.education,
+            experience: data.profile_data?.notice_period || prev.experience,
+            linkedin: data.profile_data?.linkedin_url || prev.linkedin,
+            cvUrl: data.cv_file_url || '',
+          }));
 
-            if (data.profile_data?.portfolio_url) {
-              setPortfolioLinksState([data.profile_data.portfolio_url]);
-            }
-            if (data.cv_file_url) {
-              setIsParsed(true);
-              setResumeFileName("السيرة الذاتية المرفوعة مسبقاً");
-            }
-            if (data.profile_data?.personal_photo_url) {
-              setPhotoPreview(data.profile_data.personal_photo_url);
-            }
+          if (data.profile_data?.portfolio_url) {
+            setPortfolioLinksState([data.profile_data.portfolio_url]);
           }
+          if (data.cv_file_url) {
+            setIsParsed(true);
+            setResumeFileName("السيرة الذاتية المرفوعة مسبقاً");
+          }
+          if (data.profile_data?.personal_photo_url) {
+            setPhotoPreview(data.profile_data.personal_photo_url);
+          }
+        }
       } catch (err) {
         console.error("Error fetching profile", err);
       } finally {
@@ -571,8 +571,14 @@ export const ApplicantForm = ({
         if (!ans) return false;
 
         if (kq.type === "age_condition") {
-          const age = Number(ans);
-          if (isNaN(age)) return true;
+          const dob = new Date(ans);
+          if (isNaN(dob.getTime())) return true;
+          const today = new Date();
+          let age = today.getFullYear() - dob.getFullYear();
+          const m = today.getMonth() - dob.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+          }
           if (kq.minAge !== undefined && kq.minAge !== null && age < kq.minAge) return true;
           if (kq.maxAge !== undefined && kq.maxAge !== null && age > kq.maxAge) return true;
           return false;
@@ -768,20 +774,25 @@ export const ApplicantForm = ({
       let skipWebhook = false;
       if (job?.company_id) {
         try {
-          const { data: companyData } = await supabase.from('companies').select('subscription_plan, cvs_processed_count').eq('id', job.company_id).single();
+          const { data: companyData } = await supabase.from('companies').select('subscription_plan, used_cvs, cv_limit, extra_cv_credits').eq('id', job.company_id).single();
           if (companyData) {
             const companyPlan = companyData.subscription_plan || 'free';
-            const cvsCount = companyData.cvs_processed_count || 0;
-            let limit = 0;
-            if (companyPlan === 'free') limit = 50;
-            else if (companyPlan === 'one-time') limit = 500;
-            else if (companyPlan === 'growth') limit = 1000;
-            else if (companyPlan === 'business') limit = 5000;
-            else if (companyPlan === 'enterprise') limit = 15000;
+            const cvsUsed = companyData.used_cvs || 0;
+            const extraCvs = companyData.extra_cv_credits || 0;
 
-            if (limit > 0 && cvsCount >= limit) {
+            let limit = companyData.cv_limit || 0;
+            if (limit === 0) {
+              if (companyPlan === 'free') limit = 50;
+              else if (companyPlan === 'one-time') limit = 500;
+              else if (companyPlan === 'growth') limit = 1000;
+              else if (companyPlan === 'business') limit = 5000;
+              else if (companyPlan === 'enterprise') limit = 15000;
+            }
+
+            // If they used all their plan limits AND they have no extra credits, lock them
+            if (limit > 0 && cvsUsed >= limit && extraCvs <= 0 && companyPlan !== 'enterprise') {
               skipWebhook = true;
-            } else if (limit === 0) {
+            } else if (limit === 0 && extraCvs <= 0) {
               skipWebhook = true;
             }
           }
@@ -846,7 +857,14 @@ export const ApplicantForm = ({
       }
 
       if (skipWebhook) {
-        console.log("Company limit reached. Webhook skipped and applicant set to pending.");
+        console.log("Company limit reached. Webhook skipped and applicant set to locked_fomo.");
+        if (applicant_db_id) {
+          try {
+            await supabase.from("applicants").update({ decision: "locked_fomo" }).eq("id", applicant_db_id);
+          } catch (e) {
+            console.error("Failed to update applicant to pending:", e);
+          }
+        }
         return;
       }
 
@@ -866,7 +884,8 @@ export const ApplicantForm = ({
           {
             method: "POST",
             headers: {
-              "Content-Type": "application/json"
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${import.meta.env.VITE_FARZ_API_KEY}`
             },
             body: JSON.stringify(pythonPayload)
           }
@@ -1094,11 +1113,11 @@ export const ApplicantForm = ({
                           <FileText size={14} className="text-primary opacity-70" /> {displayRole.qualification}
                         </span>
                       )}
-                      {!displayRole.isSalaryHidden && displayRole.salaryMin && (
+                      {!displayRole.isSalaryHidden && Boolean(displayRole.salaryMin) && String(displayRole.salaryMin) !== "0" ? (
                         <span className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-800/30 shadow-sm">
                           <CreditCard size={14} /> {displayRole.salaryMin} {displayRole.salaryMax && `- ${displayRole.salaryMax}`} ريال
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 );
@@ -1542,7 +1561,7 @@ export const ApplicantForm = ({
                   {activeRole?.knockoutQuestions?.map((q: any, idx: number) => {
                     if (["nationality", "education", "experience", "city", "availability"].includes(q.type)) return null;
                     const options = q.type === "options" && Array.isArray(q.options) && q.options.length > 0 ? q.options : ["نعم", "لا"];
-                    const qText = q.type === "age_condition" ? "العمر" : q.text;
+                    const qText = q.type === "age_condition" ? "تاريخ الميلاد" : q.text;
                     const isLong = qText && qText.length > 40;
                     return (
                       <div key={`kq_${idx}`} className={`space-y-3 ${isLong ? "md:col-span-2" : "md:col-span-1"}`}>
@@ -1553,8 +1572,8 @@ export const ApplicantForm = ({
                           <div className="relative">
                             <input
                               required
-                              type="number"
-                              min="0"
+                              type="date"
+                              max={new Date().toISOString().split("T")[0]}
                               value={formDataState.knockoutAnswers[idx] || ""}
                               onChange={(e) => setFormDataState((prev) => ({
                                 ...prev,

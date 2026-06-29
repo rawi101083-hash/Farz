@@ -20,6 +20,7 @@ import {
   Zap,
   ArrowLeft,
   ArrowRight,
+  ArrowDown,
   Briefcase,
   LogOut,
   Lock,
@@ -324,7 +325,7 @@ export const CreateJob = ({
   // Common
   const [company, setCompany] = useState(() => {
     if (initialData?.company) return initialData.company;
-    return userProfile?.companyName || "";
+    return localStorage.getItem("last_used_company") || userProfile?.companyName || "";
   });
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => {
     if (initialData?.companyLogo && !initialData.companyLogo.startsWith("blob:")) return initialData.companyLogo;
@@ -395,6 +396,8 @@ export const CreateJob = ({
   const [aiTargetMajors, setAiTargetMajors] = useState<string[]>(baseRole?.aiOverrideFields?.targetMajors || initialData?.aiOverrideFields?.targetMajors || []);
   const [aiTargetSkills, setAiTargetSkills] = useState<string[]>(baseRole?.aiOverrideFields?.targetSkills || initialData?.aiOverrideFields?.targetSkills || []);
   const [aiLanguages, setAiLanguages] = useState<string[]>(baseRole?.aiOverrideFields?.languages || initialData?.aiOverrideFields?.languages || []);
+  const [aiCustomMajor, setAiCustomMajor] = useState("");
+  const [aiCustomSkill, setAiCustomSkill] = useState("");
 
   const [selectedSkills, setSelectedSkills] = useState<string[]>(
     baseRole?.skills || [],
@@ -424,11 +427,11 @@ export const CreateJob = ({
   }, []);
 
   const [knockoutQuestions, setKnockoutQuestions] = useState<
-    { text: string; type: "yes_no" | "options" | "age_condition"; options?: string[]; requiredAnswer: string; minAge?: number; maxAge?: number }[]
+    { text: string; type: "yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience" | "availability" | "languages"; options?: string[]; requiredAnswer: string; minAge?: number; maxAge?: number }[]
   >(baseRole?.knockoutQuestions || []);
   const [isKnockoutExpanded, setIsKnockoutExpanded] = useState(true);
   const [newKqText, setNewKqText] = useState("");
-  const [newKqType, setNewKqType] = useState<"yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience">("yes_no");
+  const [newKqType, setNewKqType] = useState<"yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience" | "availability" | "languages">("yes_no");
   const [newKqMinAge, setNewKqMinAge] = useState<number | "">("");
   const [newKqMaxAge, setNewKqMaxAge] = useState<number | "">("");
   const [newKqOptions, setNewKqOptions] = useState<string[]>(["نعم", "لا"]);
@@ -983,11 +986,18 @@ export const CreateJob = ({
     setHideBenefits(role.hideBenefits || false);
     setHideTargetMajors(role.hideTargetMajors || false);
     setHideSkillsAndLanguages(role.hideSkillsAndLanguages || false);
+    
+    // Ensure we go back to step 1 and scroll to the form
+    setCurrentStep(1);
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
 
   const handleSaveRole = () => {
-    if (!roleTitle.trim()) {
-      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "يرجى تعبئة المسمى الوظيفي أولاً.", type: "warning" } }));
+    const isRoleFormEmpty = !roleTitle.trim() || !type.trim() || type.includes("اختر") || (!location.trim() && locations.length === 0) || !experience.trim() || experience.includes("اختر") || !qualification.trim() || qualification.includes("اختر");
+    if (isRoleFormEmpty) {
+      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "يرجى التأكد من تعبئة الحقول الإلزامية: (المسمى الوظيفي، نوع العمل، مقر العمل، الحد الأدنى للمؤهل، وسنوات الخبرة).", type: "warning" } }));
       return;
     }
 
@@ -1117,10 +1127,16 @@ export const CreateJob = ({
     setHideBenefits(false);
     setHideTargetMajors(false);
     setHideSkillsAndLanguages(false);
-    setIsAddingRole(false);
+    setIsAddingRole(true); // Keep the form open for the next role
+    setCurrentStep(1); // Go back to Step 1 for the new role
 
     setRoleToastMessage(editingRoleId ? "تم حفظ التعديلات بنجاح" : "تمت إضافة الدور بنجاح");
     setTimeout(() => setRoleToastMessage(null), 3500);
+
+    // Scroll back to the top of the form smoothly
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
   };
   const handleRemoveRole = (id: string) => {
     setRoles(roles.filter((r) => r.id !== id));
@@ -1132,9 +1148,9 @@ export const CreateJob = ({
     let currentCampaignTitle = enableWelcomeUI ? campaignTitle : "";
     let currentCampaignDesc = enableWelcomeUI ? campaignDescription : "";
 
-    if (adType === "campaign" && finalRoles.length === 0 && roleTitle.trim()) {
-      finalRoles.push({
-        id: Math.random().toString(36).substr(2, 9),
+    if (adType === "campaign" && roleTitle.trim()) {
+      const activeRoleData = {
+        id: editingRoleId || Math.random().toString(36).substr(2, 9),
         title: roleTitle.trim(),
         description: "",
         roleSummary: roleSummary.trim(),
@@ -1172,7 +1188,14 @@ export const CreateJob = ({
           targetSkills: aiTargetSkills,
           languages: aiLanguages
         } : undefined,
-      });
+      };
+
+      if (editingRoleId) {
+        const index = finalRoles.findIndex(r => r.id === editingRoleId);
+        if (index >= 0) finalRoles[index] = { ...finalRoles[index], ...activeRoleData };
+      } else {
+        finalRoles.push(activeRoleData as any);
+      }
     }
 
     if (adType === "single" || createJobType === "quick_link") {
@@ -1218,6 +1241,10 @@ export const CreateJob = ({
         currentCampaignDesc = roleDesc.trim();
       }
     }
+    
+    if (adType === "campaign" && !enableWelcomeUI && finalRoles.length > 0) {
+      currentCampaignTitle = finalRoles[0].title;
+    }
     const currentDateStr = new Date().toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' });
     const defaultTitle = `إعلان غير مسمى - ${currentDateStr}`;
     const mainTitle = (adType === "campaign" ? currentCampaignTitle : roleTitle) || defaultTitle;
@@ -1227,6 +1254,7 @@ export const CreateJob = ({
       recordType: adType === "single" && createJobType === "quick_link" ? "quick_link" : adType,
       campaignTitle: enableWelcomeUI ? campaignTitle : undefined,
       campaignDescription: enableWelcomeUI ? campaignDescription : undefined,
+      title: mainTitle,
       roleSummary: roleSummary.trim(),
       responsibilities: responsibilities.trim(),
       qualifications: qualifications.trim(),
@@ -1256,7 +1284,6 @@ export const CreateJob = ({
       autoRejectQualification: createJobType === "quick_link" ? false : autoRejectQualification,
       autoRejectExperience: createJobType === "quick_link" ? false : autoRejectExperience,
       aiInstructions: createJobType === "quick_link" ? "" : aiInstructions.trim(),
-      title: mainTitle,
       companyLogo: companyLogo || undefined,
       skills: createJobType === "quick_link" ? [] : selectedSkills,
       languages: selectedLanguages,
@@ -1293,60 +1320,67 @@ export const CreateJob = ({
   };
 
 
-  const handleSaveAsDraft = () => {
+  const handleSaveAsDraft = (preventRedirect = false) => {
 
-    const finalRoles =
-      adType === "single"
-        ? [
-          {
-            id: editingRoleId || Math.random().toString(36).substr(2, 9),
-            title: roleTitle.trim() || "شاغر جديد",
-            description: "",
-            roleSummary: roleSummary.trim(),
-            responsibilities: responsibilities.trim(),
-            qualifications: qualifications.trim(),
-            benefits: benefits.trim(),
-            aiInstructions,
-            skills: selectedSkills,
-            languages: selectedLanguages,
-            customQuestions,
-            requiredAttachments,
-            customAttachments,
-            location,
-            locations,
-            targetMajors,
-            type,
-            types: [...types],
-            autoRejectCity,
-            autoRejectQualification,
-            autoRejectExperience,
-            experience,
-            qualification,
-            salaryMin,
-            salaryMax,
-            isSalaryHidden,
-            knockoutQuestions,
-            hideRoleSummary,
-            hideResponsibilities,
-            hideQualifications,
-            hideBenefits,
-            hideSkillsAndLanguages,
-            aiOverrideFields: useAiOverride ? {
-              roleSummary: aiRoleSummary,
-              responsibilities: aiResponsibilities,
-              qualifications: aiQualifications,
-              targetMajors: aiTargetMajors,
-              targetSkills: aiTargetSkills,
-              languages: aiLanguages
-            } : undefined,
-            directUpload,
-            requireVoiceInterview: isVoiceEnabled,
-            voiceInterviewTemplate,
-            voiceInterviewQuestions,
-            photoRequirement,
-          },
-        ]
-        : roles.length > 0 ? roles : [];
+    let finalRoles = [...roles];
+    
+    if (adType === "single" || (adType === "campaign" && roleTitle.trim())) {
+      const activeRoleData = {
+        id: editingRoleId || Math.random().toString(36).substr(2, 9),
+        title: roleTitle.trim() || "شاغر جديد",
+        description: "",
+        roleSummary: roleSummary.trim(),
+        responsibilities: responsibilities.trim(),
+        qualifications: qualifications.trim(),
+        benefits: benefits.trim(),
+        aiInstructions,
+        skills: selectedSkills,
+        languages: selectedLanguages,
+        customQuestions,
+        requiredAttachments,
+        customAttachments,
+        location,
+        locations,
+        targetMajors,
+        type,
+        types: [...types],
+        autoRejectCity,
+        autoRejectQualification,
+        autoRejectExperience,
+        experience,
+        qualification,
+        salaryMin,
+        salaryMax,
+        isSalaryHidden,
+        knockoutQuestions,
+        hideRoleSummary,
+        hideResponsibilities,
+        hideQualifications,
+        hideBenefits,
+        hideSkillsAndLanguages,
+        aiOverrideFields: useAiOverride ? {
+          roleSummary: aiRoleSummary,
+          responsibilities: aiResponsibilities,
+          qualifications: aiQualifications,
+          targetMajors: aiTargetMajors,
+          targetSkills: aiTargetSkills,
+          languages: aiLanguages
+        } : undefined,
+        directUpload,
+        requireVoiceInterview: isVoiceEnabled,
+        voiceInterviewTemplate,
+        voiceInterviewQuestions,
+        photoRequirement,
+      };
+
+      if (editingRoleId) {
+        const index = finalRoles.findIndex(r => r.id === editingRoleId);
+        if (index >= 0) finalRoles[index] = { ...finalRoles[index], ...activeRoleData };
+      } else {
+        if (adType === "single") finalRoles = [activeRoleData as any];
+        else finalRoles.push(activeRoleData as any);
+      }
+    }
 
     if (finalRoles.length === 0) return;
 
@@ -1402,7 +1436,7 @@ export const CreateJob = ({
     if (onSubmit) {
       onSubmit({ ...draftData, status: "مسودة" } as any, currentDraftId || undefined);
       window.dispatchEvent(new CustomEvent("showToast", { detail: "تم حفظ المسودة بنجاح" }));
-      if (typeof onBack === "function") onBack();
+      if (!preventRedirect && typeof onBack === "function") onBack();
     }
   };
 
@@ -1411,21 +1445,21 @@ export const CreateJob = ({
 
     const isCompanyDataIncomplete = userProfile?.isLoaded && (!userProfile?.commercialRegistration && !userProfile?.freelanceDocument);
     if (isCompanyDataIncomplete && initialData?.status !== "مسودة") {
-      handleSaveAsDraft();
+      handleSaveAsDraft(true);
       window.dispatchEvent(new CustomEvent('showOnboardingGlobal'));
       return;
     }
 
-    const isMainFormEmpty = !roleTitle.trim() || !type.trim() || (!location.trim() && locations.length === 0) || !experience.trim();
+    const isMainFormEmpty = !company.trim() || !roleTitle.trim() || !type.trim() || type.includes("اختر") || (!location.trim() && locations.length === 0) || !experience.trim() || experience.includes("اختر") || !qualification.trim() || qualification.includes("اختر");
 
     if ((adType === "single" || createJobType === "quick_link") && isMainFormEmpty) {
-      alert("يرجى التأكد من تعبئة الحقول الإلزامية: (المسمى الوظيفي، نوع العمل، مقر العمل، وسنوات الخبرة).");
+      alert("يرجى التأكد من تعبئة الحقول الإلزامية: (اسم الشركة، المسمى الوظيفي، نوع العمل، مقر العمل، الحد الأدنى للمؤهل، وسنوات الخبرة).");
       return;
     }
 
     if (adType === "campaign" && roles.length === 0) {
       if (isMainFormEmpty) {
-        alert("يرجى التأكد من تعبئة الحقول الإلزامية: (المسمى الوظيفي، نوع العمل، مقر العمل، وسنوات الخبرة) للدور الوظيفي الأول على الأقل.");
+        alert("يرجى التأكد من تعبئة الحقول الإلزامية: (اسم الشركة، المسمى الوظيفي، نوع العمل، مقر العمل، الحد الأدنى للمؤهل، وسنوات الخبرة) للدور الوظيفي الأول على الأقل.");
         return;
       }
       if (enableWelcomeUI && !campaignTitle.trim()) {
@@ -1453,7 +1487,7 @@ export const CreateJob = ({
 
     setShowConfirmModal(true);
   };
-  const showRoleForm = adType === "single" || createJobType === "quick_link" || isAddingRole || editingRoleId !== null || roles.length === 0;
+  const showRoleForm = true;
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 p-8 pt-24 lg:pt-10">
@@ -1604,20 +1638,22 @@ export const CreateJob = ({
 
       {/* Subtle Banner For Incomplete Company Data */}
       {userProfile?.isLoaded && (!userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
-        <div className="w-full bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-900/50 px-4 py-3 text-center">
-          <p className="text-blue-800 dark:text-blue-300 text-sm md:text-base font-medium flex items-center justify-center gap-2">
-            <Info size={18} className="shrink-0" />
-            <span className="font-bold">نصيحة:</span> يمكنك صياغة إعلانك الوظيفي الآن بكل أريحية. ولتتمكن من نشره لاحقاً، يرجى استكمال بيانات الكيان القانوني.
-            <button 
-              onClick={() => {
-                handleSaveAsDraft();
-                window.dispatchEvent(new CustomEvent('showOnboardingGlobal'));
-              }} 
-              className="mr-2 font-bold underline hover:text-blue-600 dark:hover:text-blue-200 transition-colors"
-            >
-              (استكمال الآن)
-            </button>
-          </p>
+        <div className="w-full max-w-[1400px] mx-auto px-4 mt-8 mb-4">
+          <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50 px-4 py-3 rounded-2xl text-center">
+            <p className="text-emerald-800 dark:text-emerald-300 text-sm md:text-base font-medium flex flex-wrap items-center justify-center gap-2">
+              <Info size={18} className="shrink-0" />
+              يمكنك صياغة إعلانك الوظيفي الآن بكل أريحية. ولتتمكن من نشره لاحقاً، يرجى استكمال بيانات الكيان القانوني.
+              <button
+                onClick={() => {
+                  handleSaveAsDraft(true);
+                  window.dispatchEvent(new CustomEvent('showOnboardingGlobal'));
+                }}
+                className="font-bold underline hover:text-emerald-600 dark:hover:text-emerald-200 transition-colors"
+              >
+                (استكمال الآن)
+              </button>
+            </p>
+          </div>
         </div>
       )}
 
@@ -1786,43 +1822,25 @@ export const CreateJob = ({
               {createJobType !== "quick_link" && (
                 <div className={currentStep === 1 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
                   <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
-                    <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3 mb-6">
-                      <Briefcase className="text-primary" size={24} /> المعلومات الأساسية
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div className="flex items-center gap-6 md:col-span-2 mb-2 p-5 bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
-                        <div
-                          className={`relative overflow-hidden w-20 h-20 p-0 rounded-2xl bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex items-center justify-center border-2 ${companyLogo ? "border-solid border-primary/20 cursor-pointer hover:border-primary/50" : "border-dashed"} transition-colors shrink-0 shadow-sm`}
-                          onClick={() => { if (companyLogo) setLightboxPhoto(companyLogo); }}
-                        >
-                          {!companyLogo && (
-                            <label className="absolute inset-0 flex items-center justify-center cursor-pointer group">
-                              <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                                if (e.target.files && e.target.files[0]) {
-                                  const file = e.target.files[0];
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    const base64Url = reader.result as string;
-                                    setCompanyLogo(base64Url);
-                                  };
-                                  reader.readAsDataURL(file);
-                                }
-                              }} />
-                              <Upload className="text-slate-400 group-hover:text-primary transition-colors" />
-                            </label>
-                          )}
-                          {companyLogo && (
-                            <img src={companyLogo} className="w-full h-full object-cover rounded-[inherit] drop-shadow-sm" alt="Company Logo" />
-                          )}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-navy dark:text-white mb-1">شعار جهة التوظيف</h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">يرفق هذا الشعار في صفحة تفاصيل الوظيفة (اختياري)</p>
-
-                          <div className="flex items-center gap-4">
-                            {companyLogo && (
-                              <label className="text-xs font-bold text-primary hover:text-primary/80 cursor-pointer transition-colors">
-                                تغيير الشعار
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3">
+                        <Briefcase className="text-primary" size={24} /> المعلومات الأساسية
+                      </h3>
+                      {adType === "campaign" && (
+                        <span className="bg-primary/10 text-primary font-bold px-4 py-1.5 rounded-xl text-sm">
+                          الشاغر رقم {roles.length + 1}
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center gap-6">
+                          <div
+                            className={`relative overflow-hidden w-20 h-20 p-0 rounded-2xl bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex items-center justify-center border-2 ${companyLogo ? "border-solid border-primary/20 cursor-pointer hover:border-primary/50" : "border-dashed"} transition-colors shrink-0 shadow-sm`}
+                            onClick={() => { if (companyLogo) setLightboxPhoto(companyLogo); }}
+                          >
+                            {!companyLogo && (
+                              <label className="absolute inset-0 flex items-center justify-center cursor-pointer group">
                                 <input type="file" className="hidden" accept="image/*" onChange={(e) => {
                                   if (e.target.files && e.target.files[0]) {
                                     const file = e.target.files[0];
@@ -1830,134 +1848,371 @@ export const CreateJob = ({
                                     reader.onloadend = () => {
                                       const base64Url = reader.result as string;
                                       setCompanyLogo(base64Url);
-                                      localStorage.setItem("savedCompanyLogo", base64Url);
+                                      localStorage.setItem("last_used_logo", base64Url);
                                     };
                                     reader.readAsDataURL(file);
                                   }
                                 }} />
+                                <Upload className="text-slate-400 group-hover:text-primary transition-colors" />
                               </label>
                             )}
                             {companyLogo && (
-                              <button type="button" onClick={() => { setCompanyLogo(null); localStorage.removeItem("last_used_logo"); localStorage.removeItem("savedCompanyLogo"); }} className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors">إزالة الشعار</button>
+                              <img src={companyLogo} className="w-full h-full object-cover rounded-[inherit] drop-shadow-sm" alt="Company Logo" />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-navy dark:text-white mb-1">شعار جهة التوظيف</h4>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">يرفق هذا الشعار في صفحة تفاصيل الوظيفة</p>
+                            <div className="flex items-center gap-4">
+                              {companyLogo && (
+                                <label className="text-xs font-bold text-primary hover:text-primary/80 cursor-pointer transition-colors">
+                                  تغيير الشعار
+                                  <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                                    if (e.target.files && e.target.files[0]) {
+                                      const file = e.target.files[0];
+                                      const reader = new FileReader();
+                                      reader.onloadend = () => {
+                                        const base64Url = reader.result as string;
+                                        setCompanyLogo(base64Url);
+                                        localStorage.setItem("last_used_logo", base64Url);
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }} />
+                                </label>
+                              )}
+                              {companyLogo && (
+                                <button type="button" onClick={() => { setCompanyLogo(null); localStorage.removeItem("last_used_logo"); localStorage.removeItem("savedCompanyLogo"); }} className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors">إزالة الشعار</button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-3 flex flex-col justify-center">
+                          <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                            اسم الشركة / الفرع <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            required
+                            type="text"
+                            value={company}
+                            onChange={(e) => {
+                              setCompany(e.target.value);
+                              localStorage.setItem("last_used_company", e.target.value);
+                            }}
+                            placeholder="مثال: شركة الحلول الذكية..."
+                            className="w-full px-6 py-4 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2 space-y-3">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                          المسمى الوظيفي (Role) <Sparkles size={14} className="text-primary/70" /> <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={roleTitle}
+                          onChange={(e) => setRoleTitle(e.target.value)}
+                          placeholder="مثال: مندوب مبيعات"
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                        />
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                          مقر العمل / المدن <Sparkles size={14} className="text-primary/70" /> <span className="text-red-500">*</span>
+                        </label>
+                        <SearchableSelect
+                          options={SAUDI_CITIES.filter((c) => !locations.includes(c))}
+                          value={""}
+                          onChange={(val) => {
+                            if (val && !locations.includes(val)) {
+                              setLocations([...locations, val]);
+                              setLocation(val);
+                            }
+                          }}
+                          placeholder="اختر المدن..."
+                        />
+                        {locations.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                            <AnimatePresence>
+                              {locations.map((loc) => (
+                                <motion.span
+                                  initial={{ scale: 0.8, opacity: 0 }}
+                                  animate={{ scale: 1, opacity: 1 }}
+                                  exit={{ scale: 0.8, opacity: 0 }}
+                                  key={loc}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
+                                >
+                                  {loc}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const newLocs = locations.filter((l) => l !== loc);
+                                      setLocations(newLocs);
+                                      if (newLocs.length > 0) setLocation(newLocs[0]); else setLocation("");
+                                    }}
+                                    className="hover:text-red-500 transition-colors p-0.5"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </motion.span>
+                              ))}
+                            </AnimatePresence>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                          نوع العمل <Sparkles size={14} className="text-primary/70" /> <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <SearchableSelect
+                            options={["دوام كامل", "دوام جزئي", "عن بعد", "تدريب"].filter((c) => !types.includes(c))}
+                            value={""}
+                            onChange={(val) => {
+                              if (val && !types.includes(val)) {
+                                setTypes([...types, val]);
+                                setType(val); // fallback for older clients if needed
+                                if (val === "عن بعد" && !locations.includes("لا يشترط / كافة المدن")) {
+                                  setLocations([...locations, "لا يشترط / كافة المدن"]);
+                                }
+                              }
+                            }}
+                            placeholder="اختر نوع العمل..."
+                          />
+                          {types.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                              <AnimatePresence>
+                                {types.map((t) => (
+                                  <motion.span
+                                    initial={{ scale: 0.8, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    exit={{ scale: 0.8, opacity: 0 }}
+                                    key={t}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
+                                  >
+                                    {t}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const newTypes = types.filter((l) => l !== t);
+                                        setTypes(newTypes.length > 0 ? newTypes : ["دوام كامل"]);
+                                        if (newTypes.length > 0) setType(newTypes[0]); else setType("دوام كامل");
+                                      }}
+                                      className="hover:text-red-500 transition-colors p-0.5"
+                                    >
+                                      <X size={14} />
+                                    </button>
+                                  </motion.span>
+                                ))}
+                              </AnimatePresence>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                          الحد الأدنى للمؤهل <Sparkles size={14} className="text-primary/70" /> <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={qualification}
+                            onChange={(e) => setQualification(e.target.value)}
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none font-medium"
+                          >
+                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط مؤهل</option>
+                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوي</option>
+                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
+                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
+                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                          سنوات الخبرة المطلوبة <Sparkles size={14} className="text-primary/70" /> <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={experience}
+                            onChange={(e) => setExperience(e.target.value)}
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none font-medium"
+                          >
+                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط خبرة</option>
+                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">1-3 سنوات</option>
+                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">3-5 سنوات</option>
+                            <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="md:col-span-2 space-y-6 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+                        <div className="mt-6 space-y-3">
+                          <label className="text-sm font-bold text-navy dark:text-white mr-1 block">
+                            ميزانية الوظيفة / الراتب <span className="text-slate-400 dark:text-slate-500 text-xs font-normal mr-1">(اختياري)</span>
+                          </label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                            <div className="space-y-3">
+                              <span className="text-xs text-slate-500 font-bold block">الحد الأدنى</span>
+                              <input
+                                required={false}
+                                type="number"
+                                value={salaryMin}
+                                onChange={(e) => setSalaryMin(e.target.value)}
+                                placeholder="مثال: 5000"
+                                className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                              />
+                            </div>
+
+                            <div className="space-y-3">
+                              <span className="text-xs text-slate-500 font-bold block">الحد الأعلى</span>
+                              <input
+                                type="number"
+                                value={salaryMax}
+                                onChange={(e) => setSalaryMax(e.target.value)}
+                                placeholder="مثال: 8000"
+                                className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
+                              />
+                            </div>
+                          </div>
+                          <div className="relative mt-2 flex items-center">
+                            <label className="relative inline-flex items-center cursor-pointer select-none">
+                              <input type="checkbox" className="sr-only peer" checked={isSalaryHidden} onChange={(e) => setIsSalaryHidden(e.target.checked)} />
+                              <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.4rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary shrink-0"></div>
+                              <span className="mr-3 text-sm font-bold text-slate-700 dark:text-slate-300">إخفاء الراتب عن المتقدمين</span>
+                            </label>
+                          </div>
+                          <div className="mt-5 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-700/80">
+                            <div className="flex items-center justify-between flex-wrap gap-4">
+                              <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
+                                <Settings size={18} className="text-slate-400" />
+                                <span className="text-sm font-bold">سؤال المتقدم عن الراتب المتوقع</span>
+                              </div>
+                              <div className="relative min-w-[220px]">
+                                <select
+                                  value={askExpectedSalary}
+                                  onChange={(e) => setAskExpectedSalary(e.target.value as any)}
+                                  className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all font-bold appearance-none cursor-pointer text-slate-700 dark:text-slate-300"
+                                >
+                                  <option value="hidden">عدم السؤال</option>
+                                  <option value="open">سؤال مفتوح</option>
+                                  <option value="ranges">خيارات محددة</option>
+                                </select>
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                  <ChevronDown size={16} />
+                                </div>
+                              </div>
+                            </div>
+
+                            {askExpectedSalary === "ranges" && (
+                              <div className="mt-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">نطاقات الراتب (اضغط Enter للإضافة)</label>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                  <AnimatePresence>
+                                    {expectedSalaryRanges.map((range, idx) => (
+                                      <motion.span
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.8 }}
+                                        key={idx}
+                                        className="bg-primary/10 text-primary px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2"
+                                      >
+                                        {range}
+                                        <button
+                                          type="button"
+                                          onClick={() => setExpectedSalaryRanges(prev => prev.filter((_, i) => i !== idx))}
+                                          className="hover:text-red-500 transition-colors"
+                                        >
+                                          <X size={14} />
+                                        </button>
+                                      </motion.span>
+                                    ))}
+                                  </AnimatePresence>
+                                  {expectedSalaryRanges.length === 0 && (
+                                    <span className="text-sm text-slate-400 font-medium py-1.5">لم يتم إضافة أي نطاقات بعد...</span>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <input
+                                    type="number"
+                                    value={salaryRangeMinInput}
+                                    onChange={(e) => setSalaryRangeMinInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        let rangeStr = "";
+                                        const min = salaryRangeMinInput.trim();
+                                        const max = salaryRangeMaxInput.trim();
+                                        if (min && max) rangeStr = `${min} - ${max}`;
+                                        else if (min) rangeStr = `${min}`;
+                                        else if (max) rangeStr = `حتى ${max}`;
+
+                                        if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
+                                          setExpectedSalaryRanges(prev => [...prev, rangeStr]);
+                                          setSalaryRangeMinInput('');
+                                          setSalaryRangeMaxInput('');
+                                        }
+                                      }
+                                    }}
+                                    placeholder="الحد الأدنى (مثال: 4000)"
+                                    className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:border-primary outline-none text-sm transition-all"
+                                  />
+                                  <input
+                                    type="number"
+                                    value={salaryRangeMaxInput}
+                                    onChange={(e) => setSalaryRangeMaxInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        let rangeStr = "";
+                                        const min = salaryRangeMinInput.trim();
+                                        const max = salaryRangeMaxInput.trim();
+                                        if (min && max) rangeStr = `${min} - ${max}`;
+                                        else if (min) rangeStr = `${min}`;
+                                        else if (max) rangeStr = `حتى ${max}`;
+
+                                        if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
+                                          setExpectedSalaryRanges(prev => [...prev, rangeStr]);
+                                          setSalaryRangeMinInput('');
+                                          setSalaryRangeMaxInput('');
+                                        }
+                                      }
+                                    }}
+                                    placeholder="الحد الأعلى (مثال: 6000)"
+                                    className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:border-primary outline-none text-sm transition-all"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      let rangeStr = "";
+                                      const min = salaryRangeMinInput.trim();
+                                      const max = salaryRangeMaxInput.trim();
+                                      if (min && max) rangeStr = `${min} - ${max}`;
+                                      else if (min) rangeStr = `${min}`;
+                                      else if (max) rangeStr = `حتى ${max}`;
+
+                                      if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
+                                        setExpectedSalaryRanges(prev => [...prev, rangeStr]);
+                                        setSalaryRangeMinInput('');
+                                        setSalaryRangeMaxInput('');
+                                      }
+                                    }}
+                                    className="px-4 bg-primary text-white font-bold rounded-xl text-sm hover:bg-primary/90 transition-colors whitespace-nowrap"
+                                  >
+                                    إضافة
+                                  </button>
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
                       </div>
-                      {" "}
-                      <div className="space-y-3">
-                        {" "}
-                        <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                          اسم الشركة / الفرع <span className="text-red-500">*</span>
-                        </label>{" "}
-                        <input
-                          required
-                          type="text"
-                          value={company}
-                          onChange={(e) => {
-                            setCompany(e.target.value);
-                          }}
-                          placeholder="مثال: شركة الحلول الذكية..."
-                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
-                        />{" "}
-                      </div>{" "}
                     </div>
                   </div>
-                  {adType === "campaign" && roles.length > 0 && (
-                    <div className="mt-8 space-y-4">
-                      <div className="flex items-center justify-between font-bold text-navy dark:text-white">
-                        <h3>الشواغر المطلوبة ({roles.length}):</h3>
-                        <AnimatePresence>
-                          {roleToastMessage && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg"
-                            >
-                              <CheckCircle size={16} />
-                              {roleToastMessage}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {roles.map((r) => (
-                          <div
-                            key={r.id}
-                            className="group relative bg-white dark:bg-slate-800 p-5 rounded-[24px] border border-slate-200 dark:border-slate-700 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between gap-4 overflow-hidden"
-                          >
-                            <div className="absolute top-0 right-0 w-2 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
-                            <div className="pr-3 flex-1 flex flex-col">
-                              <h4 className="text-lg font-bold text-navy dark:text-white group-hover:text-primary transition-colors truncate">
-                                {r.title}
-                              </h4>
-                              {r.description && (
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">
-                                  {r.description}
-                                </p>
-                              )}
-                              <div className="flex flex-wrap gap-2.5 pt-4 mt-auto">
-                                {r.location && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.location}</span>}
-                                {r.type && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.type}</span>}
-                                {r.salaryMin && <span className="text-[11px] flex items-center gap-1.5 font-medium bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/30 px-2.5 py-1 rounded-lg"><CreditCard size={14} className="ml-1.5" /> {r.salaryMin} {r.salaryMax && `- ${r.salaryMax}`} ريال</span>}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center gap-2 pr-3 pt-3 mt-2 border-t border-slate-100 dark:border-slate-700/50 justify-end">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  handleEditRole(r as any);
-                                }}
-                                className="bg-white text-primary border border-primary/20 hover:bg-primary/5 dark:bg-slate-800 dark:text-primary px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
-                                title="تعديل الشاغر"
-                              >
-                                <Pencil size={14} className="ml-1" /> تعديل
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setRoleToDelete(r.id)}
-                                className="bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
-                                title="حذف الشاغر"
-                              >
-                                <Trash2 size={14} className="ml-1" /> حذف
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      {!showRoleForm && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsAddingRole(true);
-                            setIsAdvancedSettingsOpen(true);
-                            setEditingRoleId(null);
-                            setType("دوام كامل");
-                            setLocation("");
-                            setExperience("لا يشترط خبرة");
-                            setQualification("ثانوي");
-                            setSalaryMin("");
-                            setSalaryMax("");
-                            setRoleTitle("");
-                            setRoleDesc("");
-                            setRoleSummary("");
-                            setResponsibilities("");
-                            setQualifications("");
-                            setBenefits("");
-                            setAiInstructions("");
-                            setSelectedSkills([]);
-                            setCustomQuestions([]);
-                            setRequiredAttachments(["سيرة ذاتية PDF"]);
-                            setCustomAttachments([]);
-                          }}
-                          className="mt-6 border-2 border-dashed border-primary/30 text-primary hover:bg-primary hover:text-white font-bold py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 w-full shadow-sm"
-                        >
-                          <Plus size={20} /> إضافة دور وظيفي جديد
-                        </button>
-                      )}
-                    </div>
-                  )}{" "}
                 </div>
               )}
 
@@ -1983,15 +2238,17 @@ export const CreateJob = ({
                           </p>
                         )}
                         {/* Main Section Heading */}
+                        <h3 className="text-xl font-bold text-navy dark:text-white mb-6 mt-8">تفاصيل الاعلان</h3>
+
                         {/* AI Override Fields Toggle - Moved to Step 1 */}
-                        <div className="bg-primary/5 dark:bg-primary/10 p-8 rounded-[32px] border-2 border-primary/20 shadow-inner mt-8 mb-8">
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div className="bg-primary/5 dark:bg-primary/10 p-5 rounded-2xl border border-primary/20 shadow-sm mb-8">
+                          <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2`}>
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                                <Sparkles size={20} />
+                              <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                                <Sparkles size={16} />
                               </div>
                               <div>
-                                <h3 className="text-lg font-bold text-primary">معايير مخصصة لمحرك الفرز</h3>
+                                <h3 className="text-sm font-bold text-primary">معايير مخصصة لمحرك الفرز</h3>
                               </div>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer shrink-0">
@@ -2001,7 +2258,7 @@ export const CreateJob = ({
                                 checked={useAiOverride}
                                 onChange={(e) => setUseAiOverride(e.target.checked)}
                               />
-                              <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
                             </label>
                           </div>
 
@@ -2015,7 +2272,7 @@ export const CreateJob = ({
                               >
                                 <div className="bg-amber-50 dark:bg-amber-500/10 border-r-4 border-amber-500 p-4 rounded-xl mt-4 mb-2">
                                   <p className="text-sm font-bold text-amber-700 dark:text-amber-400 leading-relaxed flex items-center gap-2">
-                                    <span>⚠️</span> استخدم هذه الحقول فقط إذا كان لديك شروط دقيقة أو معقدة لا ترغب أن يراها المتقدمون للوظيفة. إذا تركتها فارغة، سيعتمد النظام على الوصف العام أدناه.
+                                    <span>⚠️</span> استخدم هذه الحقول فقط إذا كان لديك شروط لا ترغب أن يراها المتقدمون للوظيفة. إذا تركتها فارغة، سيعتمد النظام على الوصف العام أدناه.
                                   </p>
                                 </div>
                                 <div className="space-y-6 border-t border-primary/20 pt-6 mt-2">
@@ -2051,81 +2308,51 @@ export const CreateJob = ({
                                   </div>
                                   <div>
                                     <label className="block text-sm font-bold text-navy dark:text-white mb-2">التخصصات المستهدفة (للذكاء الاصطناعي)</label>
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                      {aiTargetMajors.map((major, i) => (
-                                        <span key={i} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold flex items-center gap-1">
-                                          {major}
-                                          <button type="button" onClick={() => setAiTargetMajors(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
-                                        </span>
-                                      ))}
+                                    <div className="relative">
+                                      <input type="text" value={aiCustomMajor} onChange={(e) => setAiCustomMajor(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } } }} placeholder="أضف تخصص..." className="w-full pr-4 pl-12 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:border-primary transition-all font-medium" />
+                                      <button type="button" onClick={() => { if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Plus size={18} /></button>
                                     </div>
-                                    <input
-                                      type="text"
-                                      placeholder="أضف تخصص واضغط Enter"
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          const val = e.currentTarget.value.trim();
-                                          if (val && !aiTargetMajors.includes(val)) {
-                                            setAiTargetMajors(prev => [...prev, val]);
-                                            e.currentTarget.value = "";
-                                          }
-                                        }
-                                      }}
-                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
-                                    />
+                                    {aiTargetMajors.length > 0 && (
+                                      <div className="flex flex-wrap gap-2 mt-2">
+                                        {aiTargetMajors.map((major) => (
+                                          <button key={major} type="button" onClick={() => setAiTargetMajors(aiTargetMajors.filter(m => m !== major))} className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-all">{major} <X size={14} /></button>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                   <div>
                                     <label className="block text-sm font-bold text-navy dark:text-white mb-2">المهارات المستهدفة (للذكاء الاصطناعي)</label>
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                      {aiTargetSkills.map((skill, i) => (
-                                        <span key={i} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold flex items-center gap-1">
-                                          {skill}
-                                          <button type="button" onClick={() => setAiTargetSkills(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
-                                        </span>
+                                    <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl mb-2">
+                                      {aiTargetSkills.length === 0 && <span className="text-sm text-slate-400 dark:text-slate-500 py-2">لم يتم اختيار مهارات بعد...</span>}
+                                      {aiTargetSkills.map((skill) => (
+                                        <button key={skill} type="button" onClick={() => setAiTargetSkills(aiTargetSkills.filter(s => s !== skill))} className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-primary/90 transition-all">{skill} <X size={14} /></button>
                                       ))}
                                     </div>
-                                    <input
-                                      type="text"
-                                      placeholder="أضف مهارة واضغط Enter"
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          const val = e.currentTarget.value.trim();
-                                          if (val && !aiTargetSkills.includes(val)) {
-                                            setAiTargetSkills(prev => [...prev, val]);
-                                            e.currentTarget.value = "";
-                                          }
-                                        }
-                                      }}
-                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
-                                    />
+                                    <div className="relative">
+                                      <input type="text" value={aiCustomSkill} onChange={(e) => setAiCustomSkill(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (aiCustomSkill.trim() && !aiTargetSkills.includes(aiCustomSkill.trim())) { setAiTargetSkills([...aiTargetSkills, aiCustomSkill.trim()]); setAiCustomSkill(""); } } }} placeholder="أضف مهارة..." className="w-full pr-6 pl-14 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
+                                      <button type="button" onClick={() => { if (aiCustomSkill.trim() && !aiTargetSkills.includes(aiCustomSkill.trim())) { setAiTargetSkills([...aiTargetSkills, aiCustomSkill.trim()]); setAiCustomSkill(""); } }} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-primary transition-all"><Plus size={20} /></button>
+                                    </div>
                                   </div>
                                   <div>
                                     <label className="block text-sm font-bold text-navy dark:text-white mb-2">اللغات المطلوبة (للذكاء الاصطناعي)</label>
                                     <div className="flex flex-wrap gap-2 mb-2">
-                                      {aiLanguages.map((lang, i) => (
-                                        <span key={i} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold flex items-center gap-1">
-                                          {lang}
-                                          <button type="button" onClick={() => setAiLanguages(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>
+                                      {aiLanguages.map((lang) => (
+                                        <span key={lang} className="bg-primary text-white px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm">{lang}
+                                          <button type="button" onClick={() => setAiLanguages(aiLanguages.filter(l => l !== lang))}><X size={12} /></button>
                                         </span>
                                       ))}
                                     </div>
-                                    <input
-                                      type="text"
-                                      placeholder="أضف لغة واضغط Enter"
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          const val = e.currentTarget.value.trim();
-                                          if (val && !aiLanguages.includes(val)) {
-                                            setAiLanguages(prev => [...prev, val]);
-                                            e.currentTarget.value = "";
-                                          }
-                                        }
-                                      }}
-                                      className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
-                                    />
+                                    <div className="relative">
+                                      <select value="" onChange={(e) => { const val = e.target.value; if (val && !aiLanguages.includes(val)) setAiLanguages([...aiLanguages, val]); }} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary transition-all font-medium appearance-none cursor-pointer">
+                                        <option value="" disabled className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر لغة لإضافتها...</option>
+                                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="العربية">العربية</option>
+                                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الإنجليزية">الإنجليزية</option>
+                                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الفرنسية">الفرنسية</option>
+                                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الإسبانية">الإسبانية</option>
+                                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الهندية">الهندية</option>
+                                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الأوردو">الأوردو</option>
+                                      </select>
+                                    </div>
                                   </div>
                                 </div>
                               </motion.div>
@@ -2133,177 +2360,23 @@ export const CreateJob = ({
                           </AnimatePresence>
                         </div>
 
-                        <h3 className="text-xl font-bold text-navy dark:text-white mb-2">تفاصيل الاعلان</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">💡 سيقوم محرك الفرز بقراءة هذا الوصف وفرز السير الذاتية بناءً عليه تلقائياً.</p>
-
-                        {createJobType !== "quick_link" && (
-                          <div className="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-8 mt-2">
-                            <div className="flex items-center justify-between gap-4">
-                              <div>
-                                <h4 className="font-bold text-navy dark:text-white text-sm flex items-center gap-2">
-                                  <Settings size={18} className="text-primary" />
-                                  تخطي صفحة الوصف (إعداد عام)
-                                </h4>
-                                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 max-w-2xl leading-relaxed">عند تفعيل هذا الخيار، سيتم توجيه المتقدمين مباشرة لصفحة التقديم ورفع السيرة الذاتية بدلاً من عرض تفاصيل الوظيفة.</p>
-                              </div>
-                              <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                                <input type="checkbox" className="sr-only peer" checked={directUpload} onChange={(e) => setDirectUpload(e.target.checked)} />
-                                <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.3rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
-                              </label>
-                            </div>
-                          </div>
+                        {useAiOverride ? (
+                          <p className="text-sm text-amber-600 dark:text-amber-500 mb-6 font-bold">
+                            سيقوم محرك الفرز بتحليل المرشحين بناءً على <span className="text-primary">معايير محرك الفرز المخصصة</span> التي تم تفعيلها، وسيتجاهل المعلومات بالأسفل.
+                          </p>
+                        ) : (
+                          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">
+                            💡 سيقوم محرك الفرز بقراءة الوصف العام أدناه وفرز السير الذاتية بناءً عليه تلقائياً
+                          </p>
                         )}
 
                         {/* Welcome UI removed as requested */}
 
-                        <div className="space-y-3">
-                          <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                            المسمى الوظيفي (Role) <span className="text-red-500">*</span>
-                          </label>
-                          <input
-
-                            type="text"
-                            value={roleTitle}
-                            onChange={(e) => setRoleTitle(e.target.value)}
-                            placeholder="مثال: مندوب مبيعات"
-                            className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none font-medium"
-                          />{" "}
-                        </div>{" "}
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
-                          <div className="space-y-3">
-                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                              نوع العمل <span className="text-red-500">*</span>
-                            </label>
-                            <div className="relative">
-                              <SearchableSelect
-                                options={["دوام كامل", "دوام جزئي", "عن بعد", "تدريب"].filter((c) => !types.includes(c))}
-                                value={""}
-                                onChange={(val) => {
-                                  if (val && !types.includes(val)) {
-                                    setTypes([...types, val]);
-                                    setType(val); // fallback for older clients if needed
-                                    if (val === "عن بعد" && !locations.includes("لا يشترط / كافة المدن")) {
-                                      setLocations([...locations, "لا يشترط / كافة المدن"]);
-                                    }
-                                  }
-                                }}
-                                placeholder="اختر نوع العمل..."
-                              />
-                              {types.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                                  <AnimatePresence>
-                                    {types.map((t) => (
-                                      <motion.span
-                                        initial={{ scale: 0.8, opacity: 0 }}
-                                        animate={{ scale: 1, opacity: 1 }}
-                                        exit={{ scale: 0.8, opacity: 0 }}
-                                        key={t}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
-                                      >
-                                        {t}
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            const newTypes = types.filter((l) => l !== t);
-                                            setTypes(newTypes.length > 0 ? newTypes : ["دوام كامل"]);
-                                            if (newTypes.length > 0) setType(newTypes[0]); else setType("دوام كامل");
-                                          }}
-                                          className="hover:text-red-500 transition-colors p-0.5"
-                                        >
-                                          <X size={14} />
-                                        </button>
-                                      </motion.span>
-                                    ))}
-                                  </AnimatePresence>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="space-y-3">
-                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                              مقر العمل / المدن <span className="text-red-500">*</span>
-                            </label>
-                            <SearchableSelect
-                              options={SAUDI_CITIES.filter((c) => !locations.includes(c))}
-                              value={""}
-                              onChange={(val) => {
-                                if (val && !locations.includes(val)) {
-                                  setLocations([...locations, val]);
-                                  setLocation(val);
-                                }
-                              }}
-                              placeholder="اختر المدن..."
-                            />
-                            {locations.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                                <AnimatePresence>
-                                  {locations.map((loc) => (
-                                    <motion.span
-                                      initial={{ scale: 0.8, opacity: 0 }}
-                                      animate={{ scale: 1, opacity: 1 }}
-                                      exit={{ scale: 0.8, opacity: 0 }}
-                                      key={loc}
-                                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
-                                    >
-                                      {loc}
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const newLocs = locations.filter((l) => l !== loc);
-                                          setLocations(newLocs);
-                                          if (newLocs.length > 0) setLocation(newLocs[0]); else setLocation("");
-                                        }}
-                                        className="hover:text-red-500 transition-colors p-0.5"
-                                      >
-                                        <X size={14} />
-                                      </button>
-                                    </motion.span>
-                                  ))}
-                                </AnimatePresence>
-                              </div>
-                            )}
-                          </div>
-                          <div className="space-y-3">
-                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                              سنوات الخبرة المطلوبة <span className="text-red-500">*</span>
-                            </label>
-                            <div className="relative">
-                              <select
-                                value={experience}
-                                onChange={(e) => setExperience(e.target.value)}
-                                className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none font-medium"
-                              >
-                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط خبرة</option>
-                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">1-3 سنوات</option>
-                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">3-5 سنوات</option>
-                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">5+ سنوات</option>
-                              </select>
-                            </div>
-                          </div>
-                          <div className="space-y-3">
-                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                              الحد الأدنى للمؤهل <span className="text-red-500">*</span>
-                            </label>
-                            <div className="relative">
-                              <select
-                                value={qualification}
-                                onChange={(e) => setQualification(e.target.value)}
-                                className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all appearance-none font-medium"
-                              >
-                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">لا يشترط مؤهل</option>
-                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">ثانوي</option>
-                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دبلوم</option>
-                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">بكالوريوس</option>
-                                <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">ماجستير</option>
-                              </select>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Fields moved to Basic Information section */}
 
                         <div className="mt-6 space-y-3">
                           <div className="flex items-center justify-between mb-2">
-                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">التخصصات المستهدفة <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span>
+                            <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">التخصصات المستهدفة {!useAiOverride && <Sparkles size={14} className="text-primary/70" />} <span className="text-slate-400 font-normal ml-1 text-xs">(اختياري)</span>
                               <span className="relative group inline-flex items-center ml-1">
                                 <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
                                 <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
@@ -2391,7 +2464,7 @@ export const CreateJob = ({
                             <div className="space-y-3">
                               <div className="flex items-center justify-between mb-2">
                                 <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                                  نبذة عن الدور
+                                  نبذة عن الدور {!useAiOverride && <Sparkles size={14} className="text-primary/70" />}
                                   <span className="relative group inline-flex items-center ml-1">
                                     <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
                                     <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
@@ -2416,7 +2489,7 @@ export const CreateJob = ({
                           <div className="space-y-3">
                             <div className="flex items-center justify-between mb-2">
                               <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                                المهام والمسؤوليات
+                                المهام والمسؤوليات {!useAiOverride && <Sparkles size={14} className="text-primary/70" />}
                                 <span className="relative group inline-flex items-center ml-1">
                                   <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
                                   <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
@@ -2439,7 +2512,7 @@ export const CreateJob = ({
                           <div className="space-y-3">
                             <div className="flex items-center justify-between mb-2">
                               <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                                المؤهلات والمتطلبات
+                                المؤهلات والمتطلبات {!useAiOverride && <Sparkles size={14} className="text-primary/70" />}
                                 <span className="relative group inline-flex items-center ml-1">
                                   <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
                                   <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
@@ -2465,7 +2538,7 @@ export const CreateJob = ({
                                 {" "}
                                 <div className="flex items-center justify-between mb-2">
                                   <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
-                                    المهارات المستهدفة
+                                    المهارات المستهدفة {!useAiOverride && <Sparkles size={14} className="text-primary/70" />}
                                     <span className="relative group inline-flex items-center ml-1">
                                       <Info size={14} className="text-slate-400 group-hover:text-primary transition-colors cursor-help" />
                                       <div className="absolute right-0 bottom-full mb-2 w-72 p-3 bg-slate-800 dark:bg-slate-700 text-white text-[12px] font-medium leading-relaxed rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
@@ -2566,7 +2639,7 @@ export const CreateJob = ({
                                 <div className="space-y-3">
                                   <div className="flex items-center justify-between mb-2">
                                     <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                                      اللغات المطلوبة <span className="text-slate-400 font-normal ml-1">(اختياري)</span>
+                                      اللغات المطلوبة {!useAiOverride && <Sparkles size={14} className="text-primary/70" />} <span className="text-slate-400 font-normal ml-1">(اختياري)</span>
                                     </label>
                                   </div>
                                   <div className="flex flex-wrap gap-2 mb-2">
@@ -2619,168 +2692,6 @@ export const CreateJob = ({
                             />
                           </div>
                         </div>
-                        <div className="space-y-6 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-                          <div className="mt-6 space-y-3">
-                            <label className="text-sm font-bold text-navy dark:text-white mr-1 block">
-                              ميزانية الوظيفة / الراتب <span className="text-slate-400 dark:text-slate-500 text-xs font-normal mr-1">(اختياري)</span>
-                            </label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                              <div className="space-y-3">
-                                <span className="text-xs text-slate-500 font-bold block">الحد الأدنى</span>
-                                <input
-                                  required={false}
-                                  type="number"
-                                  value={salaryMin}
-                                  onChange={(e) => setSalaryMin(e.target.value)}
-                                  placeholder="مثال: 5000"
-                                  className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
-                                />
-                              </div>
-
-                              <div className="space-y-3">
-                                <span className="text-xs text-slate-500 font-bold block">الحد الأعلى</span>
-                                <input
-                                  type="number"
-                                  value={salaryMax}
-                                  onChange={(e) => setSalaryMax(e.target.value)}
-                                  placeholder="مثال: 8000"
-                                  className="w-full px-6 py-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium"
-                                />
-                              </div>
-                            </div>
-                            <div className="relative mt-2 flex items-center">
-                              <label className="relative inline-flex items-center cursor-pointer select-none">
-                                <input type="checkbox" className="sr-only peer" checked={isSalaryHidden} onChange={(e) => setIsSalaryHidden(e.target.checked)} />
-                                <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.4rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary shrink-0"></div>
-                                <span className="mr-3 text-sm font-bold text-slate-700 dark:text-slate-300">إخفاء الراتب عن المتقدمين</span>
-                              </label>
-                            </div>
-                            <div className="mt-5 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-700/80">
-                              <div className="flex items-center justify-between flex-wrap gap-4">
-                                <div className="flex items-center gap-2.5 text-slate-600 dark:text-slate-300">
-                                  <Settings size={18} className="text-slate-400" />
-                                  <span className="text-sm font-bold">سؤال المتقدم عن الراتب المتوقع</span>
-                                </div>
-                                <div className="relative min-w-[220px]">
-                                  <select
-                                    value={askExpectedSalary}
-                                    onChange={(e) => setAskExpectedSalary(e.target.value as any)}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all font-bold appearance-none cursor-pointer text-slate-700 dark:text-slate-300"
-                                  >
-                                    <option value="hidden">عدم السؤال</option>
-                                    <option value="open">سؤال مفتوح</option>
-                                    <option value="ranges">خيارات محددة</option>
-                                  </select>
-                                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                    <ChevronDown size={16} />
-                                  </div>
-                                </div>
-                              </div>
-
-                              {askExpectedSalary === "ranges" && (
-                                <div className="mt-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 block">نطاقات الراتب (اضغط Enter للإضافة)</label>
-                                  <div className="flex flex-wrap gap-2 mb-3">
-                                    <AnimatePresence>
-                                      {expectedSalaryRanges.map((range, idx) => (
-                                        <motion.span
-                                          initial={{ opacity: 0, scale: 0.8 }}
-                                          animate={{ opacity: 1, scale: 1 }}
-                                          exit={{ opacity: 0, scale: 0.8 }}
-                                          key={idx}
-                                          className="bg-primary/10 text-primary px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2"
-                                        >
-                                          {range}
-                                          <button
-                                            type="button"
-                                            onClick={() => setExpectedSalaryRanges(prev => prev.filter((_, i) => i !== idx))}
-                                            className="hover:text-red-500 transition-colors"
-                                          >
-                                            <X size={14} />
-                                          </button>
-                                        </motion.span>
-                                      ))}
-                                    </AnimatePresence>
-                                    {expectedSalaryRanges.length === 0 && (
-                                      <span className="text-sm text-slate-400 font-medium py-1.5">لم يتم إضافة أي نطاقات بعد...</span>
-                                    )}
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <input
-                                      type="number"
-                                      value={salaryRangeMinInput}
-                                      onChange={(e) => setSalaryRangeMinInput(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          let rangeStr = "";
-                                          const min = salaryRangeMinInput.trim();
-                                          const max = salaryRangeMaxInput.trim();
-                                          if (min && max) rangeStr = `${min} - ${max}`;
-                                          else if (min) rangeStr = `${min}`;
-                                          else if (max) rangeStr = `حتى ${max}`;
-
-                                          if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
-                                            setExpectedSalaryRanges(prev => [...prev, rangeStr]);
-                                            setSalaryRangeMinInput('');
-                                            setSalaryRangeMaxInput('');
-                                          }
-                                        }
-                                      }}
-                                      placeholder="الحد الأدنى (مثال: 4000)"
-                                      className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:border-primary outline-none text-sm transition-all"
-                                    />
-                                    <input
-                                      type="number"
-                                      value={salaryRangeMaxInput}
-                                      onChange={(e) => setSalaryRangeMaxInput(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                          e.preventDefault();
-                                          let rangeStr = "";
-                                          const min = salaryRangeMinInput.trim();
-                                          const max = salaryRangeMaxInput.trim();
-                                          if (min && max) rangeStr = `${min} - ${max}`;
-                                          else if (min) rangeStr = `${min}`;
-                                          else if (max) rangeStr = `حتى ${max}`;
-
-                                          if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
-                                            setExpectedSalaryRanges(prev => [...prev, rangeStr]);
-                                            setSalaryRangeMinInput('');
-                                            setSalaryRangeMaxInput('');
-                                          }
-                                        }
-                                      }}
-                                      placeholder="الحد الأعلى (مثال: 6000)"
-                                      className="flex-1 px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl focus:border-primary outline-none text-sm transition-all"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        let rangeStr = "";
-                                        const min = salaryRangeMinInput.trim();
-                                        const max = salaryRangeMaxInput.trim();
-                                        if (min && max) rangeStr = `${min} - ${max}`;
-                                        else if (min) rangeStr = `${min}`;
-                                        else if (max) rangeStr = `حتى ${max}`;
-
-                                        if (rangeStr && !expectedSalaryRanges.includes(rangeStr)) {
-                                          setExpectedSalaryRanges(prev => [...prev, rangeStr]);
-                                          setSalaryRangeMinInput('');
-                                          setSalaryRangeMaxInput('');
-                                        }
-                                      }}
-                                      className="px-4 bg-primary text-white font-bold rounded-xl text-sm hover:bg-primary/90 transition-colors whitespace-nowrap"
-                                    >
-                                      إضافة
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
 
                         {createJobType !== "quick_link" && (
                           <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
@@ -2792,6 +2703,13 @@ export const CreateJob = ({
 
                     {currentStep === 2 && (
                       <>
+                        {adType === "campaign" && (
+                          <div className="flex items-center justify-end mb-2">
+                            <span className="bg-primary/10 text-primary font-bold px-4 py-1.5 rounded-xl text-sm">
+                              الشاغر رقم {editingRoleId ? roles.findIndex(r => r.id === editingRoleId) + 1 : roles.length + 1}
+                            </span>
+                          </div>
+                        )}
                         <div className="pt-6 mt-6 border-t border-slate-200 dark:border-slate-700/60 flex flex-col gap-6">
 
                           {/* Basic Attachments Section */}
@@ -2799,15 +2717,14 @@ export const CreateJob = ({
                             <label className="text-sm font-bold text-navy dark:text-white mb-4 block flex items-center gap-2">
                               المرفقات الأساسية المطلوبة
                             </label>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4">
                               {" "}
                               {[
-                                { id: "سيرة ذاتية PDF", title: "ملف السيرة الذاتية", subtitle: "(يُقبل ملفات PDF و DOCX فقط)" },
-                                { id: "رابط معرض أعمال/Portfolio", title: "رابط معرض أعمال/Portfolio" }
+                                { id: "سيرة ذاتية PDF", title: "ملف السيرة الذاتية", subtitle: "(يُقبل ملفات PDF و DOCX فقط)" }
                               ].map((opt) => (
                                 <div key={opt.id} className="relative">
                                   <label
-                                    className={`flex flex-col items-center justify-center text-center gap-1 ${opt.id === "رابط معرض أعمال/Portfolio" && requiredAttachments.includes(opt.id) ? "pt-4 pb-12" : "p-4"} h-full rounded-2xl border cursor-pointer transition-all ${requiredAttachments.includes(opt.id) ? "bg-primary/5 border-primary text-primary" : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-navy dark:text-white dark:bg-slate-800/50 dark:hover:bg-slate-700 dark:border-slate-700"}`}
+                                    className={`flex flex-col items-center justify-center text-center gap-1 p-4 h-full rounded-2xl border cursor-pointer transition-all ${requiredAttachments.includes(opt.id) ? "bg-primary/5 border-primary text-primary" : "bg-slate-50 hover:bg-slate-100 border-slate-200 text-navy dark:text-white dark:bg-slate-800/50 dark:hover:bg-slate-700 dark:border-slate-700"}`}
                                   >
                                     {" "}
                                     <input
@@ -2819,21 +2736,6 @@ export const CreateJob = ({
                                     <span className="font-bold text-sm">{opt.title}</span>{" "}
                                     {opt.subtitle && <span className="text-[10px] sm:text-xs text-slate-400 font-medium">{opt.subtitle}</span>}
                                   </label>
-                                  {opt.id === "رابط معرض أعمال/Portfolio" && requiredAttachments.includes(opt.id) && (
-                                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[90%]">
-                                      <select
-                                        value={portfolioRequirement}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          setPortfolioRequirement(e.target.value as "required" | "optional");
-                                        }}
-                                        className="w-full text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg py-1 px-2 text-navy dark:text-white outline-none cursor-pointer"
-                                      >
-                                        <option value="optional" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختياري</option>
-                                        <option value="required" className="bg-white text-navy dark:bg-slate-800 dark:text-white">إلزامي</option>
-                                      </select>
-                                    </div>
-                                  )}
                                 </div>
                               ))}{" "}
                             </div>{" "}
@@ -2924,6 +2826,7 @@ export const CreateJob = ({
                                           <button type="button" onClick={() => { setNewAttachmentName("الصورة الشخصية"); setNewAttachmentType("image"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> الصورة الشخصية</button>
                                           <button type="button" onClick={() => { setNewAttachmentName("رخصة القيادة"); setNewAttachmentType("mixed_file"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رخصة القيادة</button>
                                           <button type="button" onClick={() => { setNewAttachmentName("صورة الهوية"); setNewAttachmentType("mixed_file"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> صورة الهوية</button>
+                                          <button type="button" onClick={() => { setNewAttachmentName("رابط معرض الأعمال"); setNewAttachmentType("link"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رابط معرض الأعمال</button>
                                         </div>
                                         <div className="flex flex-col md:flex-row items-center gap-4 w-full">
                                           {" "}
@@ -2994,7 +2897,7 @@ export const CreateJob = ({
 
 
                             {/* Knockout Questions Accordion */}
-                            <div className="border-2 border-red-100 dark:border-red-900/30 rounded-2xl bg-red-50/50 dark:bg-red-900/10 overflow-hidden mb-6">
+                            <div className={`border-2 border-red-100 dark:border-red-900/30 rounded-2xl bg-red-50/50 dark:bg-red-900/10 mb-6 ${isKnockoutExpanded ? 'overflow-visible' : 'overflow-hidden'}`}>
                               <button
                                 type="button"
                                 onClick={() => setIsKnockoutExpanded(!isKnockoutExpanded)}
@@ -3027,7 +2930,7 @@ export const CreateJob = ({
                                         </label>
                                       </div>
                                       <div className="space-y-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                                        {!["nationality", "city", "education", "experience"].includes(newKqType) && (
+                                        {!["nationality", "city", "education", "experience", "availability", "languages", "age_condition"].includes(newKqType) && (
                                           <input
                                             type="text"
                                             value={newKqText}
@@ -3036,11 +2939,11 @@ export const CreateJob = ({
                                             className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:border-red-400 transition-all font-medium text-sm"
                                           />
                                         )}
-                                        <div className={`grid ${["nationality", "city", "education", "experience"].includes(newKqType) ? "grid-cols-1 md:grid-cols-3" : "grid-cols-2"} gap-4`}>
+                                        <div className={`grid ${["nationality", "city", "education", "experience", "availability", "languages", "age_condition"].includes(newKqType) ? "grid-cols-1 md:grid-cols-3" : "grid-cols-2"} gap-4`}>
                                           <select
                                             value={newKqType}
                                             onChange={(e) => {
-                                              const val = e.target.value as "yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience";
+                                              const val = e.target.value as "yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience" | "availability" | "languages";
                                               setNewKqType(val);
                                               if (val === "yes_no") {
                                                 setNewKqRequiredAnswer("نعم");
@@ -3050,7 +2953,7 @@ export const CreateJob = ({
                                                 setNewKqRequiredAnswer("");
                                               } else if (val === "education" || val === "experience") {
                                                 setNewKqRequiredAnswer("");
-                                              } else if (val === "availability") {
+                                              } else if (val === "availability" || val === "languages") {
                                                 setNewKqRequiredAnswer("");
                                               } else {
                                                 setNewKqRequiredAnswer(newKqOptions[0] || "");
@@ -3066,10 +2969,11 @@ export const CreateJob = ({
                                             <option value="education" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى للمؤهل</option>
                                             <option value="experience" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى لسنوات الخبرة</option>
                                             <option value="availability" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأقصى لمدة الانضمام</option>
+                                            <option value="languages" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اللغات المطلوبة</option>
                                           </select>
 
                                           {newKqType === "age_condition" ? (
-                                            <div className="flex items-center gap-4">
+                                            <div className="md:col-span-2 flex items-center gap-4">
                                               <input
                                                 type="number"
                                                 placeholder="الحد الأدنى (مطلوب)"
@@ -3140,12 +3044,22 @@ export const CreateJob = ({
                                               className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
                                             >
                                               <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر أقصى مدة مقبولة...</option>
-                                              <option value="فوري" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فوري (مقبول المتاح فوراً فقط)</option>
-                                              <option value="أسبوع" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوع (مقبول المتاح فوراً أو خلال أسبوع)</option>
-                                              <option value="أسبوعين" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوعين (كحد أقصى)</option>
-                                              <option value="شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شهر (كحد أقصى)</option>
-                                              <option value="أكثر من شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أكثر من شهر (قبول الجميع)</option>
+                                              <option value="فوري" className="bg-white text-navy dark:bg-slate-800 dark:text-white">فوري</option>
+                                              <option value="أسبوع" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوع</option>
+                                              <option value="أسبوعين" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أسبوعين</option>
+                                              <option value="شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">شهر</option>
+                                              <option value="أكثر من شهر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أكثر من شهر</option>
                                             </select>
+                                          ) : newKqType === "languages" ? (
+                                            <div className="md:col-span-2">
+                                              <MultiSearchableSelect
+                                                options={["العربية", "الإنجليزية", "الفرنسية", "الإسبانية", "الأوردو", "الهندية", "البنغالية", "الفلبينية", "أخرى"]}
+                                                value={newKqRequiredAnswer}
+                                                onChange={(val) => setNewKqRequiredAnswer(val as string)}
+                                                multiple={true}
+                                                placeholder="اختر اللغات المطلوبة..."
+                                              />
+                                            </div>
                                           ) : newKqType === "yes_no" ? (
                                             <select
                                               value={newKqRequiredAnswer}
@@ -3231,8 +3145,18 @@ export const CreateJob = ({
                                         <button
                                           type="button"
                                           onClick={() => {
-                                            if (!newKqText.trim() || !newKqRequiredAnswer.trim()) {
-                                              alert("يرجى إدخال نص السؤال وتحديد الإجابة المطلوبة للقبول!");
+                                            const autoTexts: Record<string, string> = {
+                                              nationality: "الجنسيات المقبولة",
+                                              city: "المدن المقبولة",
+                                              education: "الحد الأدنى للمؤهل",
+                                              experience: "الحد الأدنى لسنوات الخبرة",
+                                              availability: "الحد الأقصى لمدة الانضمام",
+                                              languages: "اللغات المطلوبة",
+                                              age_condition: "تاريخ الميلاد"
+                                            };
+                                            const finalKqText = autoTexts[newKqType] || newKqText.trim();
+                                            if (!finalKqText || (newKqType !== "age_condition" && !newKqRequiredAnswer.trim()) || (newKqType === "age_condition" && newKqMinAge === "")) {
+                                              alert("يرجى إدخال الحقول المطلوبة!");
                                               return;
                                             }
                                             if (newKqType === "options" && newKqOptions.length < 2) {
@@ -3240,7 +3164,7 @@ export const CreateJob = ({
                                               return;
                                             }
                                             setKnockoutQuestions([...knockoutQuestions, {
-                                              text: newKqText.trim(),
+                                              text: finalKqText,
                                               type: newKqType,
                                               options: newKqType === "options" ? newKqOptions : undefined,
                                               requiredAnswer: newKqType === "age_condition" ? "" : newKqRequiredAnswer,
@@ -3446,20 +3370,27 @@ export const CreateJob = ({
 
                     {currentStep === 3 && (
                       <>
+                        {adType === "campaign" && (
+                          <div className="flex items-center justify-end mb-2">
+                            <span className="bg-primary/10 text-primary font-bold px-4 py-1.5 rounded-xl text-sm">
+                              الشاغر رقم {editingRoleId ? roles.findIndex(r => r.id === editingRoleId) + 1 : roles.length + 1}
+                            </span>
+                          </div>
+                        )}
                         {createJobType !== "quick_link" && (
                           <>
-                            <div className="bg-gradient-to-br from-indigo-50/80 to-purple-50/80 dark:from-indigo-900/20 dark:to-purple-900/20 p-8 rounded-[32px] border-2 border-indigo-100 dark:border-indigo-800/30 shadow-inner mt-8 mb-8">
+                            <div className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 p-8 rounded-[32px] border-2 border-primary/20 dark:border-primary/30 shadow-inner mt-8 mb-8">
                               <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
+                                <div className="w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
                                   <Zap size={20} />
                                 </div>
                                 <div>
-                                  <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-2 group relative cursor-help w-max">
+                                  <h3 className="text-lg font-bold text-navy dark:text-white flex items-center gap-2 group relative cursor-help w-max">
                                     توجيهات إضافية لمحرك الفرز
-                                    <div className="w-[18px] h-[18px] rounded-full bg-[#1d4ed8] dark:bg-indigo-400 text-white flex items-center justify-center text-[12px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
+                                    <div className="w-[18px] h-[18px] rounded-full bg-primary text-white flex items-center justify-center text-[12px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
                                       i
                                     </div>
-                                    <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-indigo-900/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
+                                    <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-primary/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
                                       نظام الفرز يقوم بتحليل السير الذاتية ومطابقتها تلقائياً. استخدم هذا الحقل للتركيز على مهارة نادرة أو شروط خاصة جداً خارج الوصف المعتاد.
                                     </div>
                                   </h3>
@@ -3471,7 +3402,7 @@ export const CreateJob = ({
                                 value={aiInstructions}
                                 onChange={(e) => setAiInstructions(e.target.value)}
                                 placeholder="(اكتب توجيهاتك الدقيقة لمحرك الفرز هنا...)"
-                                className="w-full px-6 py-5 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100/50 dark:border-indigo-800/30 text-navy dark:text-white dark:placeholder-slate-500 rounded-2xl outline-none font-medium resize-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900/20 transition-all placeholder:text-[13px] leading-relaxed relative z-10"
+                                className="w-full px-6 py-5 bg-white/80 dark:bg-slate-800/80 border-2 border-primary/20 dark:border-primary/30 text-navy dark:text-white dark:placeholder-slate-500 rounded-2xl outline-none font-medium resize-none focus:border-primary focus:ring-4 focus:ring-primary/10 dark:focus:ring-primary/20 transition-all placeholder:text-[13px] leading-relaxed relative z-10"
                               />
                               <div className="mt-3 flex flex-wrap gap-2 relative z-10">
                                 {[
@@ -3488,7 +3419,7 @@ export const CreateJob = ({
                                         return prev ? `${prev}\n${textToAdd}` : textToAdd;
                                       });
                                     }}
-                                    className="text-[11px] px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors border border-indigo-100 dark:border-indigo-800/50"
+                                    className="text-[11px] px-3 py-1.5 rounded-full bg-primary/5 dark:bg-primary/10 text-primary font-bold hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors border border-primary/20 dark:border-primary/30"
                                   >
                                     {suggestion.label}
                                   </button>
@@ -3496,12 +3427,29 @@ export const CreateJob = ({
                               </div>
                             </div>
 
+                            <div className="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-8 mt-2">
+                              <div className="flex items-center justify-between gap-4">
+                                <div>
+                                  <h4 className="font-bold text-navy dark:text-white text-sm flex items-center gap-2">
+                                    <Settings size={18} className="text-primary" />
+                                    تخطي صفحة الوصف (إعداد عام)
+                                  </h4>
+                                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 max-w-2xl leading-relaxed">عند تفعيل هذا الخيار، سيتم توجيه المتقدمين مباشرة لصفحة التقديم ورفع السيرة الذاتية بدلاً من عرض تفاصيل الوظيفة.</p>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                                  <input type="checkbox" className="sr-only peer" checked={directUpload} onChange={(e) => setDirectUpload(e.target.checked)} />
+                                  <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.3rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
+                                </label>
+                              </div>
+                            </div>
+
+
 
 
                             <details
                               open={isAdvancedSettingsOpen}
                               onToggle={(e) => setIsAdvancedSettingsOpen(e.currentTarget.open)}
-                              className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm mt-6 mb-6 group cursor-pointer"
+                              className="hidden bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm mt-6 mb-6 group cursor-pointer"
                             >
                               <summary className="p-8 text-xl font-bold text-navy dark:text-white flex items-center gap-3 select-none outline-none">
                                 <Settings size={22} className="text-primary" />
@@ -3617,7 +3565,7 @@ export const CreateJob = ({
                             <button
                               type="button"
                               onClick={handleSaveRole}
-                              className="bg-mint dark:bg-[#065f46] text-employer-green dark:text-[#a7f3d0] px-8 py-4 rounded-2xl font-bold shadow-lg hover:shadow-xl flex items-center gap-2 transition-all shrink-0"
+                              className="bg-primary text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-primary/90 flex items-center gap-2 transition-colors shrink-0"
                             >
                               {" "}
                               {editingRoleId ? (
@@ -3626,7 +3574,7 @@ export const CreateJob = ({
                                 </>
                               ) : (
                                 <>
-                                  <Plus size={20} /> إضافة الدور{" "}
+                                  <Plus size={20} /> حفظ الشاغر وإضافة شاغر آخر{" "}
                                 </>
                               )}
                             </button>{" "}
@@ -3650,6 +3598,7 @@ export const CreateJob = ({
               )}
 
               <div className={currentStep === 3 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
+                <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm p-8 mt-6 mb-6">
                 {/* Card: Schedule */}
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                   <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3">
@@ -3702,7 +3651,7 @@ export const CreateJob = ({
                     (سيبقى هذا الإعلان متاحاً للمتقدمين حتى تقوم بإغلاقه يدوياً من لوحة التحكم)
                   </p>
                 )}
-
+                </div>
 
               </div>
 
@@ -3711,6 +3660,72 @@ export const CreateJob = ({
                   <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">السابق <ArrowLeft size={18} className="rotate-180" /></button>
                 </div>
               )}
+                  {adType === "campaign" && roles.length > 0 && (
+                    <div className="mt-8 space-y-4">
+                      <div className="flex items-center justify-between font-bold text-navy dark:text-white">
+                        <h3>الشواغر المطلوبة ({roles.length}):</h3>
+                        <AnimatePresence>
+                          {roleToastMessage && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg"
+                            >
+                              <CheckCircle size={16} />
+                              {roleToastMessage}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {roles.map((r) => (
+                          <div
+                            key={r.id}
+                            className="group relative bg-white dark:bg-slate-800 p-5 rounded-[24px] border border-slate-200 dark:border-slate-700 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between gap-4 overflow-hidden"
+                          >
+                            <div className="absolute top-0 right-0 w-2 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
+                            <div className="pr-3 flex-1 flex flex-col">
+                              <h4 className="text-lg font-bold text-navy dark:text-white group-hover:text-primary transition-colors truncate">
+                                {r.title}
+                              </h4>
+                              {r.description && (
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">
+                                  {r.description}
+                                </p>
+                              )}
+                              <div className="flex flex-wrap gap-2.5 pt-4 mt-auto">
+                                {r.location && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.location}</span>}
+                                {r.type && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.type}</span>}
+                                {Boolean(r.salaryMin) && String(r.salaryMin) !== "0" ? <span className="text-[11px] flex items-center gap-1.5 font-medium bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/30 px-2.5 py-1 rounded-lg"><CreditCard size={14} className="ml-1.5" /> {r.salaryMin} {r.salaryMax && `- ${r.salaryMax}`} ريال</span> : null}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 pr-3 pt-3 mt-2 border-t border-slate-100 dark:border-slate-700/50 justify-end">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleEditRole(r as any);
+                                }}
+                                className="bg-white text-primary border border-primary/20 hover:bg-primary/5 dark:bg-slate-800 dark:text-primary px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
+                                title="تعديل الشاغر"
+                              >
+                                <Pencil size={14} className="ml-1" /> تعديل
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setRoleToDelete(r.id)}
+                                className="bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
+                                title="حذف الشاغر"
+                              >
+                                <Trash2 size={14} className="ml-1" /> حذف
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}{" "}
               <div className="flex flex-col md:flex-row items-center justify-end gap-3 mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
                 <button
                   type="button"
@@ -4249,11 +4264,11 @@ export const PublicJobPage = ({
                             <Clock size={14} /> {role.type}
                           </span>
                         )}
-                        {!role.isSalaryHidden && role.salaryMin && (
+                        {!role.isSalaryHidden && Boolean(role.salaryMin) && String(role.salaryMin) !== "0" ? (
                           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                             <CreditCard size={14} /> {role.salaryMin} {role.salaryMax ? `- ${role.salaryMax}` : ''} ريال
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       <div className="w-full pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-sm">
                         <span className="font-bold text-primary">التقديم على هذه الوظيفة</span>
@@ -4777,81 +4792,51 @@ const ManageJob = ({
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">التخصصات المستهدفة (للذكاء الاصطناعي)</label>
-                              <div className="flex flex-wrap gap-2 mb-2">
-                                {aiTargetMajors.map((major, i) => (
-                                  <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
-                                    {major}
-                                    {!isLocked && <button type="button" onClick={() => setAiTargetMajors(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>}
-                                  </span>
-                                ))}
+                              <div className="relative">
+                                <input type="text" disabled={isLocked} value={aiCustomMajor} onChange={(e) => setAiCustomMajor(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } } }} placeholder="أضف تخصص..." className="w-full pr-4 pl-12 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm" />
+                                <button type="button" disabled={isLocked} onClick={() => { if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-all"><Plus size={18} /></button>
                               </div>
-                              {!isLocked && <input
-                                type="text"
-                                placeholder="أضف تخصص واضغط Enter"
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    const val = e.currentTarget.value.trim();
-                                    if (val && !aiTargetMajors.includes(val)) {
-                                      setAiTargetMajors(prev => [...prev, val]);
-                                      e.currentTarget.value = "";
-                                    }
-                                  }
-                                }}
-                                className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                              />}
+                              {aiTargetMajors.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {aiTargetMajors.map((major) => (
+                                    <button key={major} type="button" disabled={isLocked} onClick={() => setAiTargetMajors(aiTargetMajors.filter(m => m !== major))} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-700 transition-all">{major} <X size={14} /></button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المهارات المستهدفة (للذكاء الاصطناعي)</label>
-                              <div className="flex flex-wrap gap-2 mb-2">
-                                {aiTargetSkills.map((skill, i) => (
-                                  <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
-                                    {skill}
-                                    {!isLocked && <button type="button" onClick={() => setAiTargetSkills(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>}
-                                  </span>
+                              <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-white/50 dark:bg-slate-800/50 border-2 border-indigo-100 dark:border-indigo-800/30 rounded-2xl mb-2">
+                                {aiTargetSkills.length === 0 && <span className="text-sm text-slate-400 dark:text-slate-500 py-2">لم يتم اختيار مهارات بعد...</span>}
+                                {aiTargetSkills.map((skill) => (
+                                  <button key={skill} type="button" disabled={isLocked} onClick={() => setAiTargetSkills(aiTargetSkills.filter(s => s !== skill))} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-700 transition-all">{skill} <X size={14} /></button>
                                 ))}
                               </div>
-                              {!isLocked && <input
-                                type="text"
-                                placeholder="أضف مهارة واضغط Enter"
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    const val = e.currentTarget.value.trim();
-                                    if (val && !aiTargetSkills.includes(val)) {
-                                      setAiTargetSkills(prev => [...prev, val]);
-                                      e.currentTarget.value = "";
-                                    }
-                                  }
-                                }}
-                                className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                              />}
+                              <div className="relative">
+                                <input type="text" disabled={isLocked} value={aiCustomSkill} onChange={(e) => setAiCustomSkill(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (aiCustomSkill.trim() && !aiTargetSkills.includes(aiCustomSkill.trim())) { setAiTargetSkills([...aiTargetSkills, aiCustomSkill.trim()]); setAiCustomSkill(""); } } }} placeholder="أضف مهارة..." className="w-full pr-6 pl-14 py-4 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm" />
+                                <button type="button" disabled={isLocked} onClick={() => { if (aiCustomSkill.trim() && !aiTargetSkills.includes(aiCustomSkill.trim())) { setAiTargetSkills([...aiTargetSkills, aiCustomSkill.trim()]); setAiCustomSkill(""); } }} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white dark:bg-slate-800 border-2 border-indigo-100 dark:border-indigo-800/30 text-slate-400 rounded-xl flex items-center justify-center hover:text-indigo-600 transition-all"><Plus size={20} /></button>
+                              </div>
                             </div>
                             <div>
                               <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">اللغات المطلوبة (للذكاء الاصطناعي)</label>
                               <div className="flex flex-wrap gap-2 mb-2">
-                                {aiLanguages.map((lang, i) => (
-                                  <span key={i} className="px-3 py-1 bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full text-xs font-bold flex items-center gap-1">
-                                    {lang}
-                                    {!isLocked && <button type="button" onClick={() => setAiLanguages(prev => prev.filter((_, idx) => idx !== i))}><X size={12} /></button>}
+                                {aiLanguages.map((lang) => (
+                                  <span key={lang} className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm">{lang}
+                                    <button type="button" disabled={isLocked} onClick={() => setAiLanguages(aiLanguages.filter(l => l !== lang))}><X size={12} /></button>
                                   </span>
                                 ))}
                               </div>
-                              {!isLocked && <input
-                                type="text"
-                                placeholder="أضف لغة واضغط Enter"
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    const val = e.currentTarget.value.trim();
-                                    if (val && !aiLanguages.includes(val)) {
-                                      setAiLanguages(prev => [...prev, val]);
-                                      e.currentTarget.value = "";
-                                    }
-                                  }
-                                }}
-                                className="w-full px-4 py-2 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm"
-                              />}
+                              <div className="relative">
+                                <select disabled={isLocked} value="" onChange={(e) => { const val = e.target.value; if (val && !aiLanguages.includes(val)) setAiLanguages([...aiLanguages, val]); }} className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm appearance-none cursor-pointer">
+                                  <option value="" disabled className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر لغة لإضافتها...</option>
+                                  <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="العربية">العربية</option>
+                                  <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الإنجليزية">الإنجليزية</option>
+                                  <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الفرنسية">الفرنسية</option>
+                                  <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الإسبانية">الإسبانية</option>
+                                  <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الهندية">الهندية</option>
+                                  <option className="bg-white text-navy dark:bg-slate-800 dark:text-white" value="الأوردو">الأوردو</option>
+                                </select>
+                              </div>
                             </div>
                           </div>
                         </motion.div>

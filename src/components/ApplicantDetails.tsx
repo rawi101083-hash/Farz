@@ -533,7 +533,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                       {displayMatch >= 80 ? "توافق عالي جداً" : displayMatch >= 50 ? "توافق جيد" : "توافق منخفض"}
                     </div>
 
-                    {topPercentile && (
+                    {topPercentile != null && (
                       <div className="relative w-full max-w-[200px] mt-2">
                         <div className="absolute inset-0 flex items-center" aria-hidden="true">
                           <div className="w-full border-t border-slate-200/60 dark:border-slate-700/60"></div>
@@ -626,7 +626,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                 {activeTab === "analysis" && !isAILoading && !isAutoRejected && (
                   <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
 
-                    {applicant?.expectedSalary && (applicant?.askExpectedSalary === "open" || applicant?.askExpectedSalary === "ranges") && (
+                    {!!applicant?.expectedSalary && (applicant?.askExpectedSalary === "open" || applicant?.askExpectedSalary === "ranges") && (
                       <div className="bg-slate-50/80 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 p-3.5 rounded-2xl flex items-center gap-3 shadow-sm mb-4">
                         <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-800/30">
                           <DollarSign size={16} />

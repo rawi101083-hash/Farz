@@ -10,18 +10,18 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function checkSchema() {
   // Try to insert a job without a title to see if it fails
   const { data, error } = await supabase
-    .from('companies')
+    .from('jobs')
     .select('*')
     .limit(1);
 
   if (error) {
-    console.error('Error fetching companies:', error);
+    console.error('Error fetching jobs:', error);
   } else {
     console.log('Sample job:', JSON.stringify(data, null, 2));
     
     // Log the keys to understand the columns
     if (data && data.length > 0) {
-      console.log('Columns in companies table:', Object.keys(data[0]));
+      console.log('Columns in jobs table:', Object.keys(data[0]));
     }
   }
 }

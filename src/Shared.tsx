@@ -523,6 +523,7 @@ export const PreviewModal = ({ job, onClose }: { job: Job; onClose: () => void }
             onSelectRole={(id) => setSelectedRoleId(id)}
             onBackToCampaign={() => setSelectedRoleId(null)}
             onApply={() => setStep("form")}
+            initialIsLoggedIn={true}
           />
         ) : (
           <ApplicantForm
@@ -604,7 +605,7 @@ export const TalentPoolModal = ({
                   </span>
                 </>
               )}
-              {talent.expectedSalary && (talent.askExpectedSalary === "open" || talent.askExpectedSalary === "ranges") && (
+              {!!talent.expectedSalary && (talent.askExpectedSalary === "open" || talent.askExpectedSalary === "ranges") && (
                 <>
                   <span className="text-slate-400 dark:text-slate-500">•</span>
                   <span className="text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-lg text-sm flex items-center gap-1">
@@ -1954,6 +1955,12 @@ export const SettingsPage = ({
   }, [isLocked]);
 
   useEffect(() => {
+    if (userEmail && typeof userProfile.contactEmail === 'undefined') {
+      setUserProfile((prev: any) => ({ ...prev, contactEmail: userEmail }));
+    }
+  }, [userEmail, userProfile.contactEmail, setUserProfile]);
+
+  useEffect(() => {
     const fetchPlans = async () => {
       try {
         const { supabase: sb } = await import('./lib/supabaseClient');
@@ -1986,16 +1993,37 @@ export const SettingsPage = ({
         }
         if (!userProfile.city?.trim()) newErrors.city = "هذا الحقل مطلوب";
       } else {
-        if (!userProfile.companyName?.trim()) newErrors.companyName = "هذا الحقل مطلوب";
-        if (!userProfile.freelanceDocument?.trim()) newErrors.freelance = "هذا الحقل مطلوب";
+        const nameParts = userProfile.companyName?.trim().split(/\s+/) || [];
+        if (!userProfile.companyName?.trim()) {
+          newErrors.companyName = "هذا الحقل مطلوب";
+        } else if (nameParts.length < 3) {
+          newErrors.companyName = "يجب إدخال الاسم الثلاثي على الأقل";
+        }
+        if (!userProfile.freelanceDocument?.trim()) {
+          newErrors.freelance = "هذا الحقل مطلوب";
+        } else if (!/^FL-\d{6,15}$/i.test(userProfile.freelanceDocument.trim())) {
+          newErrors.freelance = "يجب أن يبدأ بـ FL- يليه أرقام";
+        }
         if (!userProfile.city?.trim()) newErrors.city = "هذا الحقل مطلوب";
+      }
+
+      if (!userProfile.contactEmail?.trim()) {
+        newErrors.contactEmail = "هذا الحقل مطلوب";
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userProfile.contactEmail.trim())) {
+        newErrors.contactEmail = "صيغة البريد الإلكتروني غير صحيحة";
+      }
+
+      if (!userProfile.contactPhone?.trim()) {
+        newErrors.contactPhone = "هذا الحقل مطلوب";
+      } else if (!/^(05\d{8}|9665\d{8})$/.test(userProfile.contactPhone.trim())) {
+        newErrors.contactPhone = "يجب أن يبدأ بـ 05 (10 أرقام) أو 9665 (12 رقم)";
       }
     }
     if (!taxLocked && userProfile.taxNumber?.trim() && userProfile.taxNumber.length !== 15) {
       newErrors.tax = "يجب أن يتكون من 15 رقم";
     }
     setErrors(newErrors);
-  }, [userProfile.companyName, userProfile.commercialRegistration, userProfile.taxNumber, userProfile.freelanceDocument, userProfile.city, userProfile.entityType, isLocked]);
+  }, [userProfile.companyName, userProfile.commercialRegistration, userProfile.taxNumber, userProfile.freelanceDocument, userProfile.city, userProfile.entityType, userProfile.contactEmail, userProfile.contactPhone, isLocked]);
 
   const [activeTab, setActiveTab] = useState(initialTab);
 
@@ -2015,6 +2043,7 @@ export const SettingsPage = ({
   }, []);
 
   const [isSaving, setIsSaving] = useState(false);
+  const [hasSubmittedWorkData, setHasSubmittedWorkData] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [showLockModal, setShowLockModal] = useState(false);
   const [lockConfirmed, setLockConfirmed] = useState(false);
@@ -2086,7 +2115,7 @@ export const SettingsPage = ({
     const val4 = utf8Encode.encode(totalAmount);
     const tag5 = new Uint8Array([5, utf8Encode.encode(vatAmount).length]);
     const val5 = utf8Encode.encode(vatAmount);
-    
+
     const combined = new Uint8Array(
       tag1.length + val1.length +
       tag2.length + val2.length +
@@ -2104,7 +2133,7 @@ export const SettingsPage = ({
     add(tag3, val3);
     add(tag4, val4);
     add(tag5, val5);
-    
+
     let binStr = "";
     for (let i = 0; i < combined.length; i++) {
       binStr += String.fromCharCode(combined[i]);
@@ -2215,7 +2244,7 @@ export const SettingsPage = ({
       }
 
       const isYearlyPlan = packageId.endsWith('yearly');
-      const endDate = isYearlyPlan 
+      const endDate = isYearlyPlan
         ? new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString()
         : new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString();
 
@@ -2330,6 +2359,13 @@ export const SettingsPage = ({
   };
 
   const handleSaveProfile = () => {
+    if (activeTab === "بيانات المنشأة / المستقل") {
+      setHasSubmittedWorkData(true);
+      if (Object.keys(errors).length > 0) {
+        alert("يوجد أخطاء في البيانات أو حقول مطلوبة غير مكتملة، يرجى التحقق من الحقول باللون الأحمر.");
+        return;
+      }
+    }
     // If fields are not locked yet and CR or Freelance doc is filled → show legal modal
     const willLock = !isLocked &&
       (!!userProfile.commercialRegistration?.trim() || !!userProfile.freelanceDocument?.trim());
@@ -2582,11 +2618,11 @@ export const SettingsPage = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-navy dark:text-slate-300">الاسم:</label>
-                    <input type="text" value={userProfile.name} onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
+                    <input type="text" value={userProfile.name || ""} onChange={(e) => setUserProfile({ ...userProfile, name: e.target.value })} placeholder="مثال: عبدالله محمد..." className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-navy dark:text-slate-300">المسمى الوظيفي:</label>
-                    <input type="text" value={userProfile.title} onChange={(e) => setUserProfile({ ...userProfile, title: e.target.value })} className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
+                    <input type="text" value={userProfile.title || ""} onChange={(e) => setUserProfile({ ...userProfile, title: e.target.value })} placeholder="مثال: مدير موارد بشرية..." className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 dark:text-white border rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <label className="text-sm font-bold text-navy dark:text-slate-300">البريد الإلكتروني:</label>
@@ -2629,9 +2665,10 @@ export const SettingsPage = ({
                           type="text"
                           value={userProfile.companyName || ""}
                           onChange={(e) => setUserProfile({ ...userProfile, companyName: e.target.value })}
-                          placeholder=""
+                          placeholder={userProfile.entityType === "company" ? "مؤسسة التقنية البسيطة..." : "مثال: عبدالله محمد..."}
                           className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                         />
+                        {hasSubmittedWorkData && errors.companyName && <p className="text-red-500 text-xs mt-1 font-bold">{errors.companyName}</p>}
                       </>
                     )}
                   </div>
@@ -2648,25 +2685,31 @@ export const SettingsPage = ({
                       className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
                       dir="ltr"
                     />
+                    {hasSubmittedWorkData && errors.contactEmail && <p className="text-red-500 text-xs mt-1 font-bold">{errors.contactEmail}</p>}
                   </div>
 
                   <div className="space-y-2 group">
                     <label className="text-sm font-bold text-navy dark:text-slate-300">
                       {userProfile.entityType === "company" ? "رقم جوال المنشأة" : "رقم الجوال"} <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="tel"
-                      value={userProfile.contactPhone || ""}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '');
-                        setUserProfile({ ...userProfile, contactPhone: val });
-                      }}
-                      placeholder="05xxxxxxxx"
-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
-                      dir="ltr"
-                      maxLength={10}
-                    />
-                  </div>
+                        <input
+                          type="tel"
+                          value={userProfile.contactPhone || ""}
+                          onChange={(e) => {
+                            let val = e.target.value.replace(/\D/g, '');
+                            if (val.startsWith('9665')) {
+                              if (val.length > 12) val = val.substring(0, 12);
+                            } else {
+                              if (val.length > 10) val = val.substring(0, 10);
+                            }
+                            setUserProfile({ ...userProfile, contactPhone: val });
+                          }}
+                          placeholder="05xxxxxxxx"
+                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
+                          dir="ltr"
+                        />
+                        {hasSubmittedWorkData && errors.contactPhone && <p className="text-red-500 text-xs mt-1 font-bold">{errors.contactPhone}</p>}
+                    </div>
 
                   {userProfile.entityType === "company" ? (
                     <div className="space-y-2">
@@ -2686,11 +2729,11 @@ export const SettingsPage = ({
                                 setUserProfile({ ...userProfile, commercialRegistration: val });
                               }
                             }}
-                            placeholder=""
+                            placeholder="1010XXXXXX"
                             className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                             dir="ltr"
                           />
-                          {errors.cr && errors.cr !== "هذا الحقل مطلوب" && <p className="text-red-500 text-xs mt-1 font-bold">{errors.cr}</p>}
+                          {hasSubmittedWorkData && errors.cr && errors.cr !== "هذا الحقل مطلوب" && <p className="text-red-500 text-xs mt-1 font-bold">{errors.cr}</p>}
                         </>
                       )}
                     </div>
@@ -2706,11 +2749,18 @@ export const SettingsPage = ({
                           <input
                             type="text"
                             value={userProfile.freelanceDocument || ""}
-                            onChange={(e) => setUserProfile({ ...userProfile, freelanceDocument: e.target.value })}
+                            onChange={(e) => {
+                              let val = e.target.value.toUpperCase();
+                              if (val.length > 0 && !val.startsWith('FL-')) {
+                                val = 'FL-' + val.replace(/^FL-?/i, '');
+                              }
+                              setUserProfile({ ...userProfile, freelanceDocument: val });
+                            }}
                             placeholder="FL-xxxxxxxx"
                             className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                             dir="ltr"
                           />
+                          {hasSubmittedWorkData && errors.freelance && <p className="text-red-500 text-xs mt-1 font-bold">{errors.freelance}</p>}
                         </>
                       )}
                     </div>
@@ -2726,9 +2776,10 @@ export const SettingsPage = ({
                           type="text"
                           value={userProfile.city || ""}
                           onChange={(e) => setUserProfile({ ...userProfile, city: e.target.value })}
-                          placeholder=""
+                          placeholder="الرياض، جدة..."
                           className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                         />
+                        {hasSubmittedWorkData && errors.city && <p className="text-red-500 text-xs mt-1 font-bold">{errors.city}</p>}
                       </>
                     )}
                   </div>
@@ -2750,12 +2801,12 @@ export const SettingsPage = ({
                               setUserProfile({ ...userProfile, taxNumber: val });
                             }
                           }}
-                          placeholder=""
+                          placeholder="30xxxxxxxxxxxxx"
                           className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium"
                           dir="ltr"
                           maxLength={15}
                         />
-                        {errors.tax && <p className="text-red-500 text-xs mt-1 font-bold">{errors.tax}</p>}
+                        {hasSubmittedWorkData && errors.tax && <p className="text-red-500 text-xs mt-1 font-bold">{errors.tax}</p>}
                       </>
                     )}
                   </div>
@@ -2771,8 +2822,8 @@ export const SettingsPage = ({
                 </div>{" "}
                 <button
                   onClick={handleSaveProfile}
-                  disabled={Object.keys(errors).length > 0 || isSaving}
-                  className={`px-10 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 shadow-[0_4px_10px_-2px_rgba(13,148,136,0.5)] border-b-[4px] hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mt-[4px] ${Object.keys(errors).length > 0 ? 'bg-slate-200 text-slate-400 border-slate-300 dark:bg-slate-700 dark:border-slate-800 dark:text-slate-500 cursor-not-allowed active:translate-y-0 active:border-b-[4px] active:mt-0 hover:translate-y-0 shadow-none' : saveSuccess ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 border-emerald-600 text-white shadow-emerald-500/30' : 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] hover:to-[#0a6f66] border-[#075952] text-white'}`}
+                  disabled={isSaving}
+                  className={`px-10 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 mt-4 shadow-[0_4px_10px_-2px_rgba(13,148,136,0.5)] border-b-[4px] hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mt-[20px] mb-4 ${saveSuccess ? 'bg-gradient-to-b from-emerald-400 to-emerald-500 border-emerald-600 text-white shadow-emerald-500/30' : 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] hover:to-[#0a6f66] border-[#075952] text-white disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:border-b-[4px] disabled:mt-4 disabled:active:mt-4'}`}
                 >
                   {isSaving ? (
                     <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />جاري الحفظ...</>
@@ -3457,7 +3508,7 @@ export const SettingsPage = ({
                 }
               }
             `}</style>
-            
+
             <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col animate-in fade-in zoom-in duration-200 font-sans">
               {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 print:hidden">
@@ -3609,7 +3660,7 @@ export const SettingsPage = ({
               {/* Payment Selector */}
               <div className="space-y-3">
                 <p className="text-xs font-black text-slate-400 uppercase tracking-wider">اختر طريقة الدفع</p>
-                
+
                 {/* Wallet option */}
                 <button
                   onClick={() => handlePayWithWallet(checkoutPlan.price, checkoutPlan.id)}
@@ -3676,6 +3727,17 @@ export const ActiveJobs = ({
 }) => {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [selectedCampaignForRoles, setSelectedCampaignForRoles] = useState<Job | null>(null);
+
+  const handleManageClick = (job: Job) => {
+    if (job.status === "مسودة") {
+      onClone?.(job);
+    } else if (job.recordType === "campaign" && job.roles && job.roles.length > 1) {
+      setSelectedCampaignForRoles(job);
+    } else {
+      onManage(job);
+    }
+  };
 
   const isMockState = jobs.length === 0;
   const targetStatus = subTab === "inactive" ? "مغلق" : subTab === "paused" ? "مغلق مؤقتاً" : subTab === "drafts" ? "مسودة" : "نشط";
@@ -3766,7 +3828,7 @@ export const ActiveJobs = ({
                 transition={{ duration: 0.4, delay: Math.min(index * 0.05, 0.3) }}
                 style={{ zIndex: openDropdownId === job.id ? 20 : 1 }}
                 whileHover={{ y: -4 }}
-                onClick={() => job.status === "مسودة" ? onClone(job) : onManage(job)}
+                onClick={() => handleManageClick(job)}
                 className="bg-white relative cursor-pointer dark:bg-slate-800 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/40 dark:hover:border-primary/40 group flex flex-col justify-between transition-all duration-300 min-h-[270px]"
               >
                 {/* Top Row: Status badge & Action menu */}
@@ -3913,6 +3975,20 @@ export const ActiveJobs = ({
                   <p className="text-slate-400 dark:text-slate-500 text-[10.5px] font-semibold truncate w-full px-2" title={job.company}>
                     {job.company || "جهة غير محددة"}
                   </p>
+                  {job.recordType === "campaign" && job.roles && job.roles.length > 0 && (
+                    <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border ${
+                      job.status === "نشط" 
+                        ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30" 
+                        : job.status === "مغلق" 
+                        ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30" 
+                        : job.status === "مغلق مؤقتاً" || job.status === "إغلاق مؤقت" 
+                        ? "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/30" 
+                        : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30"
+                    }`}>
+                      <Briefcase size={12} />
+                      <span className="text-[10px] font-bold">حملة: {job.roles.length} شواغر</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Boxy Subcards styled exactly like Talent Bank progress grid */}
@@ -3944,6 +4020,52 @@ export const ActiveJobs = ({
           })}
         </motion.div>
       </AnimatePresence>
+      {selectedCampaignForRoles && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedCampaignForRoles(null)} />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-2xl max-w-md w-full relative z-10 border border-slate-100 dark:border-slate-700"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-2">
+                <Briefcase className="text-primary" />
+                اختر الشاغر المطلوب
+              </h3>
+              <button
+                onClick={() => setSelectedCampaignForRoles(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pl-2 custom-scrollbar">
+              {selectedCampaignForRoles.roles?.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => {
+                    onManage(selectedCampaignForRoles, role.id);
+                    setSelectedCampaignForRoles(null);
+                  }}
+                  className="w-full text-right p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary dark:hover:border-primary bg-slate-50 dark:bg-slate-900/50 hover:bg-primary/5 transition-all group flex items-center justify-between"
+                >
+                  <div>
+                    <h4 className="font-bold text-navy dark:text-white mb-1">{role.title}</h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      {[role.type, role.location].filter(Boolean).join(" • ")}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0">
+                    <ArrowLeft size={16} />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
