@@ -1115,14 +1115,6 @@ export const CreateJob = ({
           hideBenefits,
           hideTargetMajors,
           hideSkillsAndLanguages,
-          aiOverrideFields: useAiOverride ? {
-            roleSummary: aiRoleSummary,
-            responsibilities: aiResponsibilities,
-            qualifications: aiQualifications,
-            targetMajors: aiTargetMajors,
-            targetSkills: aiTargetSkills,
-            languages: aiLanguages
-          } : undefined,
         },
       ]);
     }
@@ -1155,13 +1147,6 @@ export const CreateJob = ({
     setHideBenefits(false);
     setHideTargetMajors(false);
     setHideSkillsAndLanguages(false);
-    setUseAiOverride(false);
-    setAiRoleSummary("");
-    setAiResponsibilities("");
-    setAiQualifications("");
-    setAiTargetMajors([]);
-    setAiTargetSkills([]);
-    setAiLanguages([]);
     setIsAddingRole(true); // Keep the form open for the next role
     setCurrentStep(1); // Go back to Step 1 for the new role
 
@@ -1269,14 +1254,6 @@ export const CreateJob = ({
           hideBenefits,
           hideTargetMajors,
           hideSkillsAndLanguages,
-          aiOverrideFields: useAiOverride ? {
-            roleSummary: aiRoleSummary,
-            responsibilities: aiResponsibilities,
-            qualifications: aiQualifications,
-            targetMajors: aiTargetMajors,
-            targetSkills: aiTargetSkills,
-            languages: aiLanguages
-          } : undefined,
         },
       ];
       if (!enableWelcomeUI && adType === "single" && createJobType !== "quick_link") {
@@ -1795,7 +1772,7 @@ export const CreateJob = ({
           >
 
             {createJobType !== "quick_link" && (
-              <div className="mb-1">
+              <div className="mb-1 hidden">
                 <div className="flex bg-white dark:bg-slate-800 p-1.5 gap-1.5 rounded-2xl w-full shadow-sm border border-slate-200 dark:border-slate-700">
                   <button
                     type="button"
@@ -2272,7 +2249,7 @@ export const CreateJob = ({
 
               <div className={currentStep === 1 || currentStep === 2 || currentStep === 3 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6" : "hidden"}>
                 {showRoleForm && (
-                  <div className={`bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6 ${currentStep === 3 ? 'hidden' : ''}`}>
+                  <div className="bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6">
                     {currentStep === 1 && (
                       <>
                         {adType === "campaign" && (
@@ -2410,20 +2387,20 @@ export const CreateJob = ({
 
                                   {/* AI Instructions inside useAiOverride */}
                                   <div className="bg-gradient-to-br from-white to-primary/5 dark:from-slate-800 dark:to-primary/10 p-5 rounded-2xl border border-primary/20 border-b-4 dark:border-primary/30 shadow-md shadow-primary/10 mt-8 mb-4">
-                                    <div className="flex items-center gap-3 mb-4 group relative cursor-help w-max">
-                                      <h3 className="text-base font-bold text-navy dark:text-white">
-                                        توجيهات إضافية لمحرك الفرز
-                                      </h3>
-                                      <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                                          <Sparkles size={16} />
-                                        </div>
-                                        <div className="w-[16px] h-[16px] rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
-                                          i
-                                        </div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                      <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                                        <Sparkles size={16} />
                                       </div>
-                                      <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-primary/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
-                                        نظام الفرز يقوم بتحليل السير الذاتية ومطابقتها تلقائياً. استخدم هذا الحقل للتركيز على مهارة نادرة أو شروط خاصة جداً خارج الوصف المعتاد.
+                                      <div>
+                                        <h3 className="text-base font-bold text-navy dark:text-white flex items-center gap-2 group relative cursor-help w-max">
+                                          توجيهات إضافية لمحرك الفرز
+                                          <div className="w-[16px] h-[16px] rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
+                                            i
+                                          </div>
+                                          <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-primary/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
+                                            نظام الفرز يقوم بتحليل السير الذاتية ومطابقتها تلقائياً. استخدم هذا الحقل للتركيز على مهارة نادرة أو شروط خاصة جداً خارج الوصف المعتاد.
+                                          </div>
+                                        </h3>
                                       </div>
                                     </div>
                                     <textarea
@@ -2798,20 +2775,20 @@ export const CreateJob = ({
 
                         {createJobType !== "quick_link" && !useAiOverride && (
                           <div className="bg-gradient-to-br from-white to-primary/5 dark:from-slate-800 dark:to-primary/10 p-5 rounded-2xl border border-primary/20 border-b-4 dark:border-primary/30 shadow-md shadow-primary/10 mt-8 mb-4">
-                            <div className="flex items-center gap-3 mb-4 group relative cursor-help w-max">
-                              <h3 className="text-base font-bold text-navy dark:text-white">
-                                توجيهات إضافية لمحرك الفرز
-                              </h3>
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                                  <Sparkles size={16} />
-                                </div>
-                                <div className="w-[16px] h-[16px] rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
-                                  i
-                                </div>
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                                <Sparkles size={16} />
                               </div>
-                              <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-primary/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
-                                نظام الفرز يقوم بتحليل السير الذاتية ومطابقتها تلقائياً. استخدم هذا الحقل للتركيز على مهارة نادرة أو شروط خاصة جداً خارج الوصف المعتاد.
+                              <div>
+                                <h3 className="text-base font-bold text-navy dark:text-white flex items-center gap-2 group relative cursor-help w-max">
+                                  توجيهات إضافية لمحرك الفرز
+                                  <div className="w-[16px] h-[16px] rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
+                                    i
+                                  </div>
+                                  <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-primary/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
+                                    نظام الفرز يقوم بتحليل السير الذاتية ومطابقتها تلقائياً. استخدم هذا الحقل للتركيز على مهارة نادرة أو شروط خاصة جداً خارج الوصف المعتاد.
+                                  </div>
+                                </h3>
                               </div>
                             </div>
                             <textarea
@@ -3525,7 +3502,20 @@ export const CreateJob = ({
 
                     {currentStep === 3 && (
                       <>
-
+                        {adType === "campaign" && (
+                          <div className="flex items-center justify-end mb-2">
+                            <span className="bg-primary/10 text-primary font-bold px-4 py-1.5 rounded-xl text-sm">
+                              الشاغر رقم {editingRoleId ? roles.findIndex(r => r.id === editingRoleId) + 1 : roles.length + 1}
+                            </span>
+                          </div>
+                        )}
+                        {adType === "campaign" && (
+                          <div className="flex items-center justify-end mb-2">
+                            <span className="bg-primary/10 text-primary font-bold px-4 py-1.5 rounded-xl text-sm">
+                              الشاغر رقم {editingRoleId ? roles.findIndex(r => r.id === editingRoleId) + 1 : roles.length + 1}
+                            </span>
+                          </div>
+                        )}
                         {createJobType !== "quick_link" && (
                           <>
 
@@ -3622,7 +3612,53 @@ export const CreateJob = ({
                           </>
                         )}
 
-
+                        {adType === "campaign" && (
+                          <div className="pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-end items-center gap-3">
+                            {/* Toast message moved to the top of the roles list */}
+                            {roles.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setIsAddingRole(false);
+                                  setEditingRoleId(null);
+                                  setRoleTitle("");
+                                  setRoleDesc("");
+                                  setRoleSummary("");
+                                  setResponsibilities("");
+                                  setQualifications("");
+                                  setBenefits("");
+                                  setAiInstructions("");
+                                  setSelectedSkills([]);
+                                  setCustomQuestions([]);
+                                  setRequiredAttachments(["سيرة ذاتية PDF"]);
+                                  setCustomAttachments([]);
+                                  setKnockoutQuestions([]);
+                                  setIsVoiceEnabled(true);
+                                  setPhotoRequirement("hidden");
+                                }}
+                                className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-8 py-4 rounded-2xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center gap-2 transition-all shrink-0"
+                              >
+                                <X size={20} /> إلغاء
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={handleSaveRole}
+                              className="bg-primary text-white px-8 py-4 rounded-2xl font-bold shadow-md hover:bg-primary/90 flex items-center gap-2 transition-colors shrink-0"
+                            >
+                              {" "}
+                              {editingRoleId ? (
+                                <>
+                                  <Pencil size={20} /> حفظ التعديلات{" "}
+                                </>
+                              ) : (
+                                <>
+                                  <Plus size={20} /> حفظ الشاغر وإضافة شاغر آخر{" "}
+                                </>
+                              )}
+                            </button>{" "}
+                          </div>
+                        )}{" "}
                       </>
                     )}
                   </div>
@@ -3641,14 +3677,7 @@ export const CreateJob = ({
               )}
 
               <div className={currentStep === 3 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
-                <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm p-8 mt-6 mb-6 relative">
-                  {adType === "campaign" && (
-                    <div className="absolute top-0 left-8 -translate-y-1/2 bg-white dark:bg-slate-800 px-2">
-                      <span className="bg-primary/10 text-primary font-bold px-4 py-1.5 rounded-xl text-sm">
-                        الشاغر رقم {editingRoleId ? roles.findIndex(r => r.id === editingRoleId) + 1 : roles.length + 1}
-                      </span>
-                    </div>
-                  )}
+                <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm p-8 mt-6 mb-6">
                   {/* Card: Schedule and Options */}
                   {createJobType !== "quick_link" && (
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-100 dark:border-slate-700">
@@ -3721,53 +3750,8 @@ export const CreateJob = ({
               </div>
 
               {createJobType !== "quick_link" && currentStep === 3 && (
-                <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
-                  <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors w-full md:w-auto shrink-0">السابق <ArrowLeft size={18} className="rotate-180" /></button>
-                  {adType === "campaign" && (
-                    <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
-                      {roles.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsAddingRole(false);
-                            setEditingRoleId(null);
-                            setRoleTitle("");
-                            setRoleDesc("");
-                            setRoleSummary("");
-                            setResponsibilities("");
-                            setQualifications("");
-                            setBenefits("");
-                            setAiInstructions("");
-                            setSelectedSkills([]);
-                            setCustomQuestions([]);
-                            setRequiredAttachments(["سيرة ذاتية PDF"]);
-                            setCustomAttachments([]);
-                            setKnockoutQuestions([]);
-                            setIsVoiceEnabled(true);
-                            setPhotoRequirement("hidden");
-                          }}
-                          className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-8 py-3.5 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center gap-2 transition-all w-full md:w-auto shrink-0"
-                        >
-                          <X size={18} /> إلغاء
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={handleSaveRole}
-                        className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold shadow-md hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors w-full md:w-auto shrink-0"
-                      >
-                        {editingRoleId ? (
-                          <>
-                            <Pencil size={18} /> حفظ التعديلات
-                          </>
-                        ) : (
-                          <>
-                            <Plus size={18} /> حفظ الشاغر وإضافة شاغر آخر
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
+                <div className="mt-8 flex justify-start gap-3 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
+                  <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">السابق <ArrowLeft size={18} className="rotate-180" /></button>
                 </div>
               )}
               {adType === "campaign" && roles.length > 0 && (

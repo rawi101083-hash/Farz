@@ -1,0 +1,264 @@
+﻿diff --git a/src/components/CreateJob.tsx b/src/components/CreateJob.tsx
+index 28c5816..7a2f6e7 100644
+--- a/src/components/CreateJob.tsx
++++ b/src/components/CreateJob.tsx
+@@ -986,7 +986,7 @@ export const CreateJob = ({
+     setHideBenefits(role.hideBenefits || false);
+     setHideTargetMajors(role.hideTargetMajors || false);
+     setHideSkillsAndLanguages(role.hideSkillsAndLanguages || false);
+-    
++
+     // Ensure we go back to step 1 and scroll to the form
+     setCurrentStep(1);
+     setTimeout(() => {
+@@ -1241,7 +1241,7 @@ export const CreateJob = ({
+         currentCampaignDesc = roleDesc.trim();
+       }
+     }
+-    
++
+     if (adType === "campaign" && !enableWelcomeUI && finalRoles.length > 0) {
+       currentCampaignTitle = finalRoles[0].title;
+     }
+@@ -1323,7 +1323,7 @@ export const CreateJob = ({
+   const handleSaveAsDraft = (preventRedirect = false) => {
+ 
+     let finalRoles = [...roles];
+-    
++
+     if (adType === "single" || (adType === "campaign" && roleTitle.trim())) {
+       const activeRoleData = {
+         id: editingRoleId || Math.random().toString(36).substr(2, 9),
+@@ -3600,58 +3600,58 @@ export const CreateJob = ({
+ 
+               <div className={currentStep === 3 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
+                 <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm p-8 mt-6 mb-6">
+-                {/* Card: Schedule */}
+-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+-                  <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3">
+-                    <Calendar className="text-primary" size={24} /> ╪د┘╪ز┘ê╪د╪▒┘è╪« ┘ê╪د┘╪ش╪»┘ê┘╪ر
+-                  </h3>
+-                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+-                    <span className="ml-3 font-bold text-navy dark:text-white ml-3">╪ح╪╣┘╪د┘ ┘à╪│╪ز┘à╪▒ (┘à┘╪ز┘ê╪ص ╪»╪د╪خ┘à╪د┘ï)</span>
+-                    <input type="checkbox" className="sr-only peer" checked={isOpenEnded} onChange={(e) => setIsOpenEnded(e.target.checked)} />
+-                    <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
+-                  </label>
+-                </div>
+-
+-                <div className={`grid grid-cols-1 ${isOpenEnded ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-8`}>
+-                  <div className="space-y-3">
+-                    <label className="text-sm font-bold text-navy dark:text-white mr-1">
+-                      ╪ز╪د╪▒┘è╪« ┘ê┘ê┘é╪ز ╪ذ╪»╪ة ╪د┘╪ز┘é╪»┘è┘à
++                  {/* Card: Schedule */}
++                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
++                    <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3">
++                      <Calendar className="text-primary" size={24} /> ╪د┘╪ز┘ê╪د╪▒┘è╪« ┘ê╪د┘╪ش╪»┘ê┘╪ر
++                    </h3>
++                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
++                      <span className="ml-3 font-bold text-navy dark:text-white ml-3">╪ح╪╣┘╪د┘ ┘à╪│╪ز┘à╪▒ (┘à┘╪ز┘ê╪ص ╪»╪د╪خ┘à╪د┘ï)</span>
++                      <input type="checkbox" className="sr-only peer" checked={isOpenEnded} onChange={(e) => setIsOpenEnded(e.target.checked)} />
++                      <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
+                     </label>
+-                    <input
+-                      required
+-                      lang="en"
+-                      style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+-                      type="datetime-local"
+-                      value={startDate}
+-                      onChange={(e) => setStartDate(e.target.value)}
+-                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium text-left"
+-                      dir="ltr"
+-                    />
+                   </div>
+-                  {!isOpenEnded && (
++
++                  <div className={`grid grid-cols-1 ${isOpenEnded ? 'md:grid-cols-1' : 'md:grid-cols-2'} gap-8`}>
+                     <div className="space-y-3">
+                       <label className="text-sm font-bold text-navy dark:text-white mr-1">
+-                        ╪ز╪د╪▒┘è╪« ┘ê┘ê┘é╪ز ╪د┘╪ز┘ç╪د╪ة ╪د┘╪ز┘é╪»┘è┘à
++                        ╪ز╪د╪▒┘è╪« ┘ê┘ê┘é╪ز ╪ذ╪»╪ة ╪د┘╪ز┘é╪»┘è┘à
+                       </label>
+                       <input
+                         required
+                         lang="en"
+                         style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                         type="datetime-local"
+-                        value={endDate}
+-                        onChange={(e) => setEndDate(e.target.value)}
+-                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium text-left"
++                        value={startDate}
++                        onChange={(e) => setStartDate(e.target.value)}
++                        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium text-left"
+                         dir="ltr"
+                       />
+                     </div>
+-                  )}
+-                </div>
++                    {!isOpenEnded && (
++                      <div className="space-y-3">
++                        <label className="text-sm font-bold text-navy dark:text-white mr-1">
++                          ╪ز╪د╪▒┘è╪« ┘ê┘ê┘é╪ز ╪د┘╪ز┘ç╪د╪ة ╪د┘╪ز┘é╪»┘è┘à
++                        </label>
++                        <input
++                          required
++                          lang="en"
++                          style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
++                          type="datetime-local"
++                          value={endDate}
++                          onChange={(e) => setEndDate(e.target.value)}
++                          className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium text-left"
++                          dir="ltr"
++                        />
++                      </div>
++                    )}
++                  </div>
+ 
+-                {isOpenEnded && (
+-                  <p className="text-sm text-slate-500 font-medium bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
+-                    (╪│┘è╪ذ┘é┘ë ┘ç╪░╪د ╪د┘╪ح╪╣┘╪د┘ ┘à╪ز╪د╪ص╪د┘ï ┘┘┘à╪ز┘é╪»┘à┘è┘ ╪ص╪ز┘ë ╪ز┘é┘ê┘à ╪ذ╪ح╪║┘╪د┘é┘ç ┘è╪»┘ê┘è╪د┘ï ┘à┘ ┘┘ê╪ص╪ر ╪د┘╪ز╪ص┘â┘à)
+-                  </p>
+-                )}
++                  {isOpenEnded && (
++                    <p className="text-sm text-slate-500 font-medium bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-700">
++                      (╪│┘è╪ذ┘é┘ë ┘ç╪░╪د ╪د┘╪ح╪╣┘╪د┘ ┘à╪ز╪د╪ص╪د┘ï ┘┘┘à╪ز┘é╪»┘à┘è┘ ╪ص╪ز┘ë ╪ز┘é┘ê┘à ╪ذ╪ح╪║┘╪د┘é┘ç ┘è╪»┘ê┘è╪د┘ï ┘à┘ ┘┘ê╪ص╪ر ╪د┘╪ز╪ص┘â┘à)
++                    </p>
++                  )}
+                 </div>
+ 
+               </div>
+@@ -3661,72 +3661,72 @@ export const CreateJob = ({
+                   <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">╪د┘╪│╪د╪ذ┘é <ArrowLeft size={18} className="rotate-180" /></button>
+                 </div>
+               )}
+-                  {adType === "campaign" && roles.length > 0 && (
+-                    <div className="mt-8 space-y-4">
+-                      <div className="flex items-center justify-between font-bold text-navy dark:text-white">
+-                        <h3>╪د┘╪┤┘ê╪د╪║╪▒ ╪د┘┘à╪╖┘┘ê╪ذ╪ر ({roles.length}):</h3>
+-                        <AnimatePresence>
+-                          {roleToastMessage && (
+-                            <motion.div
+-                              initial={{ opacity: 0, y: 10 }}
+-                              animate={{ opacity: 1, y: 0 }}
+-                              exit={{ opacity: 0, scale: 0.95 }}
+-                              className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg"
+-                            >
+-                              <CheckCircle size={16} />
+-                              {roleToastMessage}
+-                            </motion.div>
++              {adType === "campaign" && roles.length > 0 && (
++                <div className="mt-8 space-y-4">
++                  <div className="flex items-center justify-between font-bold text-navy dark:text-white">
++                    <h3>╪د┘╪┤┘ê╪د╪║╪▒ ╪د┘┘à╪╖┘┘ê╪ذ╪ر ({roles.length}):</h3>
++                    <AnimatePresence>
++                      {roleToastMessage && (
++                        <motion.div
++                          initial={{ opacity: 0, y: 10 }}
++                          animate={{ opacity: 1, y: 0 }}
++                          exit={{ opacity: 0, scale: 0.95 }}
++                          className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg"
++                        >
++                          <CheckCircle size={16} />
++                          {roleToastMessage}
++                        </motion.div>
++                      )}
++                    </AnimatePresence>
++                  </div>
++                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
++                    {roles.map((r) => (
++                      <div
++                        key={r.id}
++                        className="group relative bg-white dark:bg-slate-800 p-5 rounded-[24px] border border-slate-200 dark:border-slate-700 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between gap-4 overflow-hidden"
++                      >
++                        <div className="absolute top-0 right-0 w-2 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
++                        <div className="pr-3 flex-1 flex flex-col">
++                          <h4 className="text-lg font-bold text-navy dark:text-white group-hover:text-primary transition-colors truncate">
++                            {r.title}
++                          </h4>
++                          {r.description && (
++                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">
++                              {r.description}
++                            </p>
+                           )}
+-                        </AnimatePresence>
+-                      </div>
+-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+-                        {roles.map((r) => (
+-                          <div
+-                            key={r.id}
+-                            className="group relative bg-white dark:bg-slate-800 p-5 rounded-[24px] border border-slate-200 dark:border-slate-700 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between gap-4 overflow-hidden"
+-                          >
+-                            <div className="absolute top-0 right-0 w-2 h-full bg-primary/20 group-hover:bg-primary transition-colors" />
+-                            <div className="pr-3 flex-1 flex flex-col">
+-                              <h4 className="text-lg font-bold text-navy dark:text-white group-hover:text-primary transition-colors truncate">
+-                                {r.title}
+-                              </h4>
+-                              {r.description && (
+-                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 line-clamp-2">
+-                                  {r.description}
+-                                </p>
+-                              )}
+-                              <div className="flex flex-wrap gap-2.5 pt-4 mt-auto">
+-                                {r.location && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.location}</span>}
+-                                {r.type && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.type}</span>}
+-                                {Boolean(r.salaryMin) && String(r.salaryMin) !== "0" ? <span className="text-[11px] flex items-center gap-1.5 font-medium bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/30 px-2.5 py-1 rounded-lg"><CreditCard size={14} className="ml-1.5" /> {r.salaryMin} {r.salaryMax && `- ${r.salaryMax}`} ╪▒┘è╪د┘</span> : null}
+-                              </div>
+-                            </div>
+-
+-                            <div className="flex items-center gap-2 pr-3 pt-3 mt-2 border-t border-slate-100 dark:border-slate-700/50 justify-end">
+-                              <button
+-                                type="button"
+-                                onClick={() => {
+-                                  handleEditRole(r as any);
+-                                }}
+-                                className="bg-white text-primary border border-primary/20 hover:bg-primary/5 dark:bg-slate-800 dark:text-primary px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
+-                                title="╪ز╪╣╪»┘è┘ ╪د┘╪┤╪د╪║╪▒"
+-                              >
+-                                <Pencil size={14} className="ml-1" /> ╪ز╪╣╪»┘è┘
+-                              </button>
+-                              <button
+-                                type="button"
+-                                onClick={() => setRoleToDelete(r.id)}
+-                                className="bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
+-                                title="╪ص╪░┘ ╪د┘╪┤╪د╪║╪▒"
+-                              >
+-                                <Trash2 size={14} className="ml-1" /> ╪ص╪░┘
+-                              </button>
+-                            </div>
++                          <div className="flex flex-wrap gap-2.5 pt-4 mt-auto">
++                            {r.location && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.location}</span>}
++                            {r.type && <span className="text-[11px] font-medium bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-lg">{r.type}</span>}
++                            {Boolean(r.salaryMin) && String(r.salaryMin) !== "0" ? <span className="text-[11px] flex items-center gap-1.5 font-medium bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/30 px-2.5 py-1 rounded-lg"><CreditCard size={14} className="ml-1.5" /> {r.salaryMin} {r.salaryMax && `- ${r.salaryMax}`} ╪▒┘è╪د┘</span> : null}
+                           </div>
+-                        ))}
++                        </div>
++
++                        <div className="flex items-center gap-2 pr-3 pt-3 mt-2 border-t border-slate-100 dark:border-slate-700/50 justify-end">
++                          <button
++                            type="button"
++                            onClick={() => {
++                              handleEditRole(r as any);
++                            }}
++                            className="bg-white text-primary border border-primary/20 hover:bg-primary/5 dark:bg-slate-800 dark:text-primary px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
++                            title="╪ز╪╣╪»┘è┘ ╪د┘╪┤╪د╪║╪▒"
++                          >
++                            <Pencil size={14} className="ml-1" /> ╪ز╪╣╪»┘è┘
++                          </button>
++                          <button
++                            type="button"
++                            onClick={() => setRoleToDelete(r.id)}
++                            className="bg-red-50 text-red-500 border border-red-100 hover:bg-red-500 hover:text-white dark:bg-red-900/20 dark:text-red-400 dark:border-red-900/30 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center flex-1 sm:flex-none"
++                            title="╪ص╪░┘ ╪د┘╪┤╪د╪║╪▒"
++                          >
++                            <Trash2 size={14} className="ml-1" /> ╪ص╪░┘
++                          </button>
++                        </div>
+                       </div>
+-                    </div>
+-                  )}{" "}
++                    ))}
++                  </div>
++                </div>
++              )}{" "}
+               <div className="flex flex-col md:flex-row items-center justify-end gap-3 mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
+                 <button
+                   type="button"
