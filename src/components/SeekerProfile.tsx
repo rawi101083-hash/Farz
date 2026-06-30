@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { User, Mail, Phone, MapPin, Upload, Briefcase, GraduationCap, CheckCircle, LogOut, ArrowRight, Shield, ArrowUpCircle, ChevronDown, Lock, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Upload, Briefcase, GraduationCap, CheckCircle, LogOut, ArrowRight, ArrowLeft, Shield, ArrowUpCircle, ChevronDown, Lock, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 import { SAUDI_CITIES } from '../Shared';
 import { countriesList } from '../data/countries';
@@ -59,7 +59,7 @@ export default function SeekerProfile() {
     full_name: '',
     phone: '',
     birth_date: '',
-    city: '',
+    city: [] as string[],
     nationality: '',
     major: [] as string[],
     qualification: [] as string[],
@@ -71,7 +71,9 @@ export default function SeekerProfile() {
     id_file_url: '',
     license_file_url: '',
     personal_photo_url: '',
-    video_url: ''
+    video_url: '',
+    gender: '',
+    experience: ''
   });
 
   const verifySeekerSession = async (currentSession: any) => {
@@ -312,14 +314,16 @@ export default function SeekerProfile() {
           personal_photo_url: data.profile_data?.personal_photo_url || '',
           video_url: data.profile_data?.video_url || '',
           birth_date: data.profile_data?.birth_date || '',
-          city: data.profile_data?.city || '',
+          city: Array.isArray(data.profile_data?.city) ? data.profile_data.city : (data.profile_data?.city ? [data.profile_data.city] : []),
           nationality: data.profile_data?.nationality || '',
           major: Array.isArray(data.profile_data?.major) ? data.profile_data.major : (data.profile_data?.major ? [data.profile_data.major] : []),
           qualification: Array.isArray(data.profile_data?.qualification) ? data.profile_data.qualification : (data.profile_data?.qualification ? [data.profile_data.qualification] : []),
           languages: Array.isArray(data.profile_data?.languages) ? data.profile_data.languages : (data.profile_data?.languages ? [data.profile_data.languages] : []),
           notice_period: data.profile_data?.notice_period || '',
           linkedin_url: data.profile_data?.linkedin_url || '',
-          portfolio_url: data.profile_data?.portfolio_url || ''
+          portfolio_url: data.profile_data?.portfolio_url || '',
+          gender: data.profile_data?.gender || '',
+          experience: data.profile_data?.experience || ''
         };
         setProfile(fetchedProfile);
         setInitialProfile(JSON.stringify(fetchedProfile));
@@ -343,6 +347,12 @@ export default function SeekerProfile() {
     setIsLoading(true);
     setMessage({ type: '', text: '' });
 
+    if (profile.full_name.trim().split(/\s+/).length < 3) {
+      setMessage({ type: 'error', text: 'يرجى إدخال الاسم الثلاثي على الأقل (مثال: محمد علي العتيبي).' });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const profile_data = {
         birth_date: profile.birth_date,
@@ -355,7 +365,9 @@ export default function SeekerProfile() {
         linkedin_url: profile.linkedin_url,
         portfolio_url: profile.portfolio_url,
         personal_photo_url: profile.personal_photo_url,
-        video_url: profile.video_url
+        video_url: profile.video_url,
+        gender: profile.gender,
+        experience: profile.experience
       };
 
       const { error } = await supabase
@@ -405,7 +417,7 @@ export default function SeekerProfile() {
     input.type = 'file';
 
     if (type === 'cv') {
-      input.accept = '.pdf,.doc,.docx';
+      input.accept = '.pdf,.docx';
     } else {
       input.accept = 'image/jpeg,image/png,image/jpg,.pdf';
     }
@@ -413,6 +425,30 @@ export default function SeekerProfile() {
     input.onchange = async (e: any) => {
       const file = e.target.files[0];
       if (!file) return;
+      
+      if (file.size > 5 * 1024 * 1024) {
+        alert("عذراً، يجب ألا يتجاوز حجم الملف 5 ميجابايت.");
+        return;
+      }
+
+      const fileExt = file.name.split('.').pop()?.toLowerCase() || '';
+      
+      if (type === 'cv') {
+        if (!['pdf', 'docx'].includes(fileExt)) {
+          alert("عذراً، السيرة الذاتية يجب أن تكون بصيغة PDF أو DOCX فقط.");
+          return;
+        }
+      } else if (type === 'photo') {
+        if (!['jpg', 'jpeg', 'png'].includes(fileExt)) {
+          alert("عذراً، الصورة الشخصية يجب أن تكون صورة بصيغة JPG أو PNG فقط.");
+          return;
+        }
+      } else {
+        if (!['pdf', 'jpg', 'jpeg', 'png'].includes(fileExt)) {
+          alert("عذراً، الملف يجب أن يكون صورة (JPG/PNG) أو ملف PDF فقط.");
+          return;
+        }
+      }
 
       setIsLoading(true);
       setMessage({ type: '', text: '' });
@@ -739,19 +775,24 @@ export default function SeekerProfile() {
                 <p className="text-white/90 mt-1 text-sm font-medium">أكمل بياناتك مرة واحدة فقط، لتتمكن من التقديم على أي وظيفة بضغطة زر ⚡️</p>
               </div>
             </div>
-            <button
-              onClick={() => {
-                if (window.history.length > 1 && document.referrer) {
-                  window.history.back();
-                } else {
-                  window.location.href = '/';
-                }
-              }}
-              className="group relative overflow-hidden bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-full border border-white/20 backdrop-blur-md flex items-center font-bold text-sm transition-all duration-300 shadow-lg"
-            >
-              <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
-              الخروج
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  const searchParams = new URLSearchParams(window.location.search);
+                  const returnUrl = searchParams.get('returnUrl');
+                  if (returnUrl) {
+                    window.location.href = returnUrl;
+                  } else {
+                    window.location.href = '/';
+                  }
+                }}
+                className="group relative overflow-hidden bg-white/10 hover:bg-red-500/80 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full border border-white/20 backdrop-blur-md flex items-center font-bold text-xs sm:text-sm transition-all duration-300 shadow-lg"
+              >
+                الخروج
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 transition-transform group-hover:-translate-x-1" />
+              </button>
+            </div>
           </div>
 
           {/* Form */}
@@ -765,53 +806,55 @@ export default function SeekerProfile() {
               </h3>
               <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
                 <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">الاسم الثلاثي</label>
+                  <input type="text" className="mt-2 block w-full px-6 py-4 bg-white text-gray-900 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"
+                    placeholder="مثال: محمد علي العتيبي"
+                    value={profile.full_name} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} />
+                </div>
+                <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">البريد الإلكتروني</label>
                   <input type="email" disabled className="mt-2 block w-full px-6 py-4 bg-slate-100 border border-slate-200 rounded-2xl text-slate-500 font-medium sm:text-base cursor-not-allowed"
                     value={session?.user?.email || ''} dir="ltr" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">الاسم الثلاثي</label>
-                  <input type="text" className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"
-                    value={profile.full_name} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} />
-                </div>
-                <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">رقم الجوال</label>
                   <div className="mt-2 flex items-center bg-slate-50 border border-slate-200 rounded-2xl focus-within:ring-4 focus-within:ring-teal-700/10 focus-within:border-teal-700 transition-all overflow-hidden" dir="ltr">
                     <div className="flex items-center justify-center bg-slate-100 px-4 py-4 border-r border-slate-200 gap-2 shrink-0">
-                      <span className="text-xl">🇸🇦</span>
+                      <img src="https://flagcdn.com/w40/sa.png" alt="SA" className="w-6 h-4 object-cover rounded shadow-sm" />
                       <span className="font-bold text-slate-700">+966</span>
                     </div>
                     <input type="tel" className="block w-full px-4 py-4 bg-transparent outline-none font-medium sm:text-base tracking-widest text-gray-900"
-                      placeholder="5XXXXXXXX" maxLength={10}
-                      value={profile.phone.replace(/\D/g, '').startsWith('966') ? profile.phone.replace(/\D/g, '').substring(3) : profile.phone.replace(/\D/g, '')}
+                      placeholder="5XXXXXXXX" maxLength={9}
+                      value={profile.phone.replace('+966', '')}
                       onChange={(e) => {
                         let val = e.target.value.replace(/\D/g, '');
-                        if (val.startsWith('0') && val.length > 10) val = val.slice(0, 10);
-                        if (!val.startsWith('0') && val.length > 9) val = val.slice(0, 9);
+                        if (val.startsWith('00966')) val = val.substring(5);
+                        else if (val.startsWith('966')) val = val.substring(3);
+                        if (val.startsWith('0')) val = val.substring(1);
+                        if (val.length > 9) val = val.slice(0, 9);
                         setProfile({ ...profile, phone: val ? `+966${val}` : '' });
                       }} />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">المدينة</label>
-                  <div className="relative">
-                    <select className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
-                      value={profile.city} onChange={(e) => setProfile({ ...profile, city: e.target.value })}>
-                      <option value="" disabled>اختر المدينة</option>
-                      {SAUDI_CITIES.map(city => <option key={city} value={city}>{city}</option>)}
-                    </select>
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none mt-2">
-                      <ChevronDown className="h-5 w-5 text-gray-400" />
-                    </div>
-                  </div>
+                  <MultiSearchableSelect
+                    options={SAUDI_CITIES}
+                    value={profile.city}
+                    onChange={(val) => setProfile({ ...profile, city: Array.isArray(val) ? val : [val] })}
+                    multiple={true}
+                    allowCustom={true}
+                    placeholder="اختر المدن..."
+                    forceLightMode={true}
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">الجنسية</label>
                   <div className="relative">
-                    <select className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
+                    <select className="mt-2 block w-full px-6 py-4 bg-white text-gray-900 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
                       value={profile.nationality} onChange={(e) => setProfile({ ...profile, nationality: e.target.value })}>
-                      <option value="" disabled>اختر الجنسية</option>
-                      {countriesList.map(country => <option key={country} value={country}>{country}</option>)}
+                      <option value="" disabled className="text-gray-400">اختر الجنسية</option>
+                      {countriesList.map(country => <option key={country} value={country} className="text-gray-900">{country}</option>)}
                     </select>
                     <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none mt-2">
                       <ChevronDown className="h-5 w-5 text-gray-400" />
@@ -820,7 +863,7 @@ export default function SeekerProfile() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">تاريخ الميلاد</label>
-                  <input type="date" lang="en" dir="ltr" className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base text-right"
+                  <input type="date" lang="en-US" dir="ltr" className="mt-2 block w-full px-6 py-4 bg-white text-gray-900 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"
                     value={profile.birth_date} onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })} />
                 </div>
                 <div>
@@ -832,7 +875,23 @@ export default function SeekerProfile() {
                     multiple={true}
                     allowCustom={true}
                     placeholder="ابحث أو اختر اللغات..."
+                    forceLightMode={true}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">الجنس</label>
+                  <div className="relative">
+                    <select className="mt-2 block w-full px-6 py-4 bg-white text-gray-900 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
+                      value={profile.gender || ''} onChange={(e) => setProfile({ ...profile, gender: e.target.value })}>
+                      <option value="" disabled className="text-gray-400">اختر الجنس</option>
+                      <option value="ذكر" className="text-gray-900">ذكر</option>
+                      <option value="أنثى" className="text-gray-900">أنثى</option>
+                      <option value="غير ذلك" className="text-gray-900">غير ذلك</option>
+                    </select>
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none mt-2">
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -846,10 +905,10 @@ export default function SeekerProfile() {
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">المؤهل التعليمي</label>
                   <div className="relative">
-                    <select className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
+                    <select className="mt-2 block w-full px-6 py-4 bg-white text-gray-900 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
                       value={profile.qualification[0] || ''} onChange={(e) => setProfile({ ...profile, qualification: [e.target.value] })}>
-                      <option value="" disabled>اختر المؤهل التعليمي</option>
-                      {QUALIFICATIONS_LIST.map(q => <option key={q} value={q}>{q}</option>)}
+                      <option value="" disabled className="text-gray-400">اختر المؤهل التعليمي</option>
+                      {QUALIFICATIONS_LIST.map(q => <option key={q} value={q} className="text-gray-900">{q}</option>)}
                     </select>
                     <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none mt-2">
                       <ChevronDown className="h-5 w-5 text-gray-400" />
@@ -865,15 +924,32 @@ export default function SeekerProfile() {
                     multiple={false}
                     allowCustom={true}
                     placeholder="ابحث أو اكتب التخصص..."
+                    forceLightMode={true}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">سنوات الخبرة</label>
+                  <div className="relative">
+                    <select className="mt-2 block w-full px-6 py-4 bg-white text-gray-900 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
+                      value={profile.experience || ''} onChange={(e) => setProfile({ ...profile, experience: e.target.value })}>
+                      <option value="" disabled className="text-gray-400">اختر سنوات الخبرة</option>
+                      <option value="حديث التخرج (أقل من سنة)" className="text-gray-900">حديث التخرج (أقل من سنة)</option>
+                      <option value="1-3 سنوات" className="text-gray-900">1-3 سنوات</option>
+                      <option value="3-5 سنوات" className="text-gray-900">3-5 سنوات</option>
+                      <option value="5+ سنوات" className="text-gray-900">5+ سنوات</option>
+                    </select>
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none mt-2">
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">فترة الانضمام</label>
                   <div className="relative">
-                    <select className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
+                    <select className="mt-2 block w-full px-6 py-4 bg-white text-gray-900 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
                       value={profile.notice_period} onChange={(e) => setProfile({ ...profile, notice_period: e.target.value })}>
-                      <option value="" disabled>اختر المدة</option>
-                      {["فوري", "أسبوع", "أسبوعين", "شهر", "أكثر من شهر"].map(n => <option key={n} value={n}>{n}</option>)}
+                      <option value="" disabled className="text-gray-400">اختر المدة</option>
+                      {["فوري", "أسبوع", "أسبوعين", "شهر", "أكثر من شهر"].map(n => <option key={n} value={n} className="text-gray-900">{n}</option>)}
                     </select>
                     <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none mt-2">
                       <ChevronDown className="h-5 w-5 text-gray-400" />
@@ -882,12 +958,12 @@ export default function SeekerProfile() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">رابط لينكد إن</label>
-                  <input type="url" dir="ltr" className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"
+                  <input type="url" dir="ltr" placeholder="مثال: https://linkedin.com/in/username" className="mt-2 block w-full px-6 py-4 bg-white text-gray-900 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"
                     value={profile.linkedin_url} onChange={(e) => setProfile({ ...profile, linkedin_url: e.target.value })} />
                 </div>
-                <div className="sm:col-span-2">
+                <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">رابط معرض الأعمال</label>
-                  <input type="url" dir="ltr" className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"
+                  <input type="url" dir="ltr" placeholder="مثال: https://github.com/username أو https://behance.net/username" className="mt-2 block w-full px-6 py-4 bg-white text-gray-900 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"
                     value={profile.portfolio_url} onChange={(e) => setProfile({ ...profile, portfolio_url: e.target.value })} />
                 </div>
               </div>

@@ -9,6 +9,7 @@ interface SearchableSelectProps {
   allowCustom?: boolean;
   placeholder?: string;
   className?: string;
+  forceLightMode?: boolean;
 }
 
 export const MultiSearchableSelect: React.FC<SearchableSelectProps> = ({
@@ -18,7 +19,8 @@ export const MultiSearchableSelect: React.FC<SearchableSelectProps> = ({
   multiple = false,
   allowCustom = false,
   placeholder = "ابحث...",
-  className = ""
+  className = "",
+  forceLightMode = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -81,14 +83,14 @@ export const MultiSearchableSelect: React.FC<SearchableSelectProps> = ({
         </div>
       );
     } else {
-      return value ? <span className="text-navy dark:text-white truncate block">{value as string}</span> : <span className="text-slate-400">{placeholder}</span>;
+      return value ? <span className={`${forceLightMode ? 'text-navy' : 'text-navy dark:text-white'} truncate block`}>{value as string}</span> : <span className="text-slate-400">{placeholder}</span>;
     }
   };
 
   return (
     <div ref={wrapperRef} className={`relative ${className}`}>
       <div 
-        className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer flex items-center justify-between min-h-[56px] transition-all hover:border-primary focus:ring-4 focus:ring-primary/10"
+        className={`w-full px-6 py-4 bg-slate-50 ${forceLightMode ? 'border-slate-200' : 'dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'} border rounded-2xl cursor-pointer flex items-center justify-between min-h-[56px] transition-all hover:border-primary focus:ring-4 focus:ring-primary/10`}
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex-1 overflow-hidden pr-2">
@@ -98,13 +100,13 @@ export const MultiSearchableSelect: React.FC<SearchableSelectProps> = ({
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-60 flex flex-col overflow-hidden">
-          <div className="p-2 border-b border-slate-100 dark:border-slate-700 flex items-center gap-2">
+        <div className={`absolute z-50 w-full mt-2 bg-white ${forceLightMode ? 'border-slate-200' : 'dark:bg-slate-800 border-slate-200 dark:border-slate-700'} border rounded-xl shadow-xl max-h-60 flex flex-col overflow-hidden`}>
+          <div className={`p-2 border-b ${forceLightMode ? 'border-slate-100' : 'border-slate-100 dark:border-slate-700'} flex items-center gap-2`}>
             <Search size={16} className="text-slate-400" />
             <input 
               type="text"
               autoFocus
-              className="w-full bg-transparent border-none outline-none text-sm text-navy dark:text-white"
+              className={`w-full bg-transparent border-none outline-none text-sm ${forceLightMode ? 'text-navy' : 'text-navy dark:text-white'}`}
               placeholder="ابحث..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -122,7 +124,7 @@ export const MultiSearchableSelect: React.FC<SearchableSelectProps> = ({
                   <div 
                     key={i}
                     onClick={() => handleSelect(opt)}
-                    className={`px-3 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between transition-colors ${isSelected ? "bg-primary/10 text-primary font-bold" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"}`}
+                    className={`px-3 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between transition-colors ${isSelected ? "bg-primary/10 text-primary font-bold" : (forceLightMode ? "text-slate-700 hover:bg-slate-50" : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700")}`}
                   >
                     {opt}
                     {isSelected && <Check size={16} className="text-primary" />}
@@ -136,7 +138,7 @@ export const MultiSearchableSelect: React.FC<SearchableSelectProps> = ({
             {allowCustom && searchTerm.trim() !== "" && !options.some(opt => opt.toLowerCase() === searchTerm.trim().toLowerCase()) && (
               <div 
                 onClick={() => handleSelect(searchTerm.trim())}
-                className="px-3 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between text-primary font-bold hover:bg-primary/10 transition-colors mt-1 border-t border-slate-100 dark:border-slate-700"
+                className={`px-3 py-2.5 rounded-lg text-sm cursor-pointer flex items-center justify-between text-primary font-bold hover:bg-primary/10 transition-colors mt-1 border-t ${forceLightMode ? 'border-slate-100' : 'border-slate-100 dark:border-slate-700'}`}
               >
                 <span>{searchTerm.trim()}</span>
                 <Check size={16} />
