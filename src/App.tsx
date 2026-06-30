@@ -316,6 +316,9 @@ const JobSuccess = ({
 };
 import { prefetchApplicantProfile } from './components/JobApplication';
 
+// ⚠️ هام جداً (تحذير من نظام المعاينة الحية):
+// أي تعديل على تصميم أو هيكل هذا المكون (PublicJobPage) يجب أن تقوم بنسخه ولصقه كنسخة طبق الأصل 
+// داخل ملف (src/components/CreateJob.tsx) لكي تتطابق صفحة المتقدمين الحقيقية مع المعاينة.
 const PublicJobPage = ({
   job,
   selectedRoleId,
@@ -517,7 +520,7 @@ const PublicJobPage = ({
                           </span>
                         ))}
                         {role.type && (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-xs font-bold text-blue-600 dark:text-blue-400">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-xs font-bold text-slate-600 dark:text-slate-300">
                             <Clock size={14} /> {role.type}
                           </span>
                         )}
@@ -574,12 +577,17 @@ const PublicJobPage = ({
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> المهام والمسؤوليات
                       </h3>
-                      <ul className="space-y-3 list-disc list-inside px-2">
-                        {(activeRole?.responsibilities || job.responsibilities || '').split('\n').filter((r: string) => r.trim()).map((res: string, i: number) => (
-                          <li key={i} className="text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
-                            {res.trim()}
-                          </li>
-                        ))}
+                      <ul className="space-y-3 list-none px-2">
+                        {(activeRole?.responsibilities || job.responsibilities || '').split('\n').filter((r: string) => r.trim()).map((res: string, i: number) => {
+                          const cleanLine = res.trim();
+                          const hasBullet = /^[-•*]/.test(cleanLine) || /^\d+\./.test(cleanLine);
+                          return (
+                            <li key={i} className="flex gap-3 items-start text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
+                              {!hasBullet && <span className="mt-2 text-[0.4rem] text-slate-400 shrink-0">{"\u25CF"}</span>}
+                              <span>{cleanLine}</span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   )}
@@ -589,12 +597,17 @@ const PublicJobPage = ({
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> المؤهلات والمتطلبات
                       </h3>
-                      <ul className="space-y-3 list-disc list-inside px-2">
-                        {(activeRole?.qualifications || job.qualifications || '').split('\n').filter((q: string) => q.trim()).map((qual: string, i: number) => (
-                          <li key={i} className="text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
-                            {qual.trim()}
-                          </li>
-                        ))}
+                      <ul className="space-y-3 list-none px-2">
+                        {(activeRole?.qualifications || job.qualifications || '').split('\n').filter((q: string) => q.trim()).map((qual: string, i: number) => {
+                          const cleanLine = qual.trim();
+                          const hasBullet = /^[-•*]/.test(cleanLine) || /^\d+\./.test(cleanLine);
+                          return (
+                            <li key={i} className="flex gap-3 items-start text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
+                              {!hasBullet && <span className="mt-2 text-[0.4rem] text-slate-400 shrink-0">{"\u25CF"}</span>}
+                              <span>{cleanLine}</span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   )}
@@ -634,12 +647,17 @@ const PublicJobPage = ({
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> المميزات
                       </h3>
-                      <ul className="space-y-3 list-disc list-inside px-2">
-                        {(activeRole?.benefits || job.benefits || '').split('\n').filter((b: string) => b.trim()).map((ben: string, i: number) => (
-                          <li key={i} className="text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
-                            {ben.replace(/\(اختياري\)/g, '').trim()}
-                          </li>
-                        ))}
+                      <ul className="space-y-3 list-none px-2">
+                        {(activeRole?.benefits || job.benefits || '').split('\n').filter((b: string) => b.trim()).map((ben: string, i: number) => {
+                          const cleanLine = ben.replace(/\(اختياري\)/g, '').trim();
+                          const hasBullet = /^[-•*]/.test(cleanLine) || /^\d+\./.test(cleanLine);
+                          return (
+                            <li key={i} className="flex gap-3 items-start text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
+                              {!hasBullet && <span className="mt-2 text-[0.4rem] text-slate-400 shrink-0">{"\u25CF"}</span>}
+                              <span>{cleanLine}</span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   )}

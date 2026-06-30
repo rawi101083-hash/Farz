@@ -144,6 +144,13 @@ export const ApplicantForm = ({
   const isCampaign = job?.recordType === "campaign";
   const [userProfile, setUserProfile] = useState<any>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsLoggedIn(!!session);
+    });
+  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -594,6 +601,12 @@ export const ApplicantForm = ({
           return false;
         }
 
+        if (kq.type === "gender") {
+          if (!kq.requiredAnswer || kq.requiredAnswer === "غير ذلك") return false;
+          if (ans !== kq.requiredAnswer) return true;
+          return false;
+        }
+
         if (kq.type === "city") {
           const accepted = kq.requiredAnswer ? kq.requiredAnswer.split(",") : [];
           if (accepted.length === 0) return false;
@@ -1029,7 +1042,7 @@ export const ApplicantForm = ({
                   href="/profile"
                   className="flex items-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm"
                 >
-                  <User size={14} /> {userProfile ? "ملفي المهني" : "تسجيل دخول"}
+                  <User size={14} /> {isLoggedIn || userProfile ? "ملفي المهني" : "تسجيل دخول"}
                 </a>
               </div>
               {job?.companyLogo && (
@@ -1592,8 +1605,8 @@ export const ApplicantForm = ({
                   )}{" "}
                   {activeRole?.knockoutQuestions?.map((q: any, idx: number) => {
                     if (["nationality", "education", "experience", "city", "availability", "languages"].includes(q.type)) return null;
-                    const options = q.type === "options" && Array.isArray(q.options) && q.options.length > 0 ? q.options : ["نعم", "لا"];
-                    const qText = q.type === "age_condition" ? "تاريخ الميلاد" : q.text;
+                    const options = q.type === "gender" ? ["ذكر", "أنثى"] : (q.type === "options" && Array.isArray(q.options) && q.options.length > 0 ? q.options : ["نعم", "لا"]);
+                    const qText = q.type === "age_condition" ? "تاريخ الميلاد" : q.text || (q.type === "gender" ? "الجنس" : "");
                     const isLong = qText && qText.length > 40;
                     return (
                       <div key={`kq_${idx}`} className={`space-y-3 ${isLong ? "md:col-span-2" : "md:col-span-1"}`}>

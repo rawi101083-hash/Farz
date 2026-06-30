@@ -88,6 +88,7 @@ import { FEATURE_FLAGS, getVoiceInterviewFeatureEnabled } from "../config";
 import { Job, SearchableSelect, VerificationModal, PreviewModal, ImageLightbox, SAUDI_CITIES, getUserSavedSkills, saveUserSkills, skillsDictionary, CustomAttachment, Role } from '../Shared';
 import { MultiSearchableSelect } from './MultiSearchableSelect';
 import { countriesList } from '../data/countries';
+import { prefetchApplicantProfile } from './JobApplication';
 export const CreateJob = ({
   createJobType = "single",
   initialData = null,
@@ -1815,6 +1816,17 @@ export const CreateJob = ({
               </div>
             )}
 
+            {createJobType !== "quick_link" && (
+              <div className="mb-2 bg-teal-50/50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-800/50 rounded-lg py-2 px-3 flex items-start sm:items-center gap-2.5 shadow-sm">
+                <div className="bg-white dark:bg-slate-800 p-1.5 rounded-md shadow-sm border border-slate-100 dark:border-slate-700 shrink-0">
+                  <Sparkles size={14} className="text-teal-500" />
+                </div>
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-300 leading-relaxed">
+                  <strong className="text-teal-600 dark:text-teal-400">ملاحظة:</strong> أي حقل مميز بنجمة (<Sparkles size={12} className="inline text-teal-500 mb-0.5 mx-0.5" />) يُرسل للذكاء الاصطناعي لتحليل وفرز السير الذاتية.
+                </p>
+              </div>
+            )}
+
             <form className="space-y-6" id="createJobForm" onSubmit={handleSubmit}>
               {/* --- STEPPER UI START --- */}
               {createJobType !== "quick_link" && (
@@ -3071,7 +3083,7 @@ export const CreateJob = ({
                                         </label>
                                       </div>
                                       <div className="space-y-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-                                        {!["nationality", "city", "education", "experience", "availability", "languages", "age_condition"].includes(newKqType) && (
+                                        {!["nationality", "city", "education", "experience", "availability", "languages", "age_condition", "gender"].includes(newKqType) && (
                                           <input
                                             type="text"
                                             value={newKqText}
@@ -3080,11 +3092,11 @@ export const CreateJob = ({
                                             className="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl outline-none focus:border-red-400 transition-all font-medium text-sm"
                                           />
                                         )}
-                                        <div className={`grid ${["nationality", "city", "education", "experience", "availability", "languages", "age_condition"].includes(newKqType) ? "grid-cols-1 md:grid-cols-3" : "grid-cols-2"} gap-4`}>
+                                        <div className={`grid ${["nationality", "city", "education", "experience", "availability", "languages", "age_condition", "gender"].includes(newKqType) ? "grid-cols-1 md:grid-cols-3" : "grid-cols-2"} gap-4`}>
                                           <select
                                             value={newKqType}
                                             onChange={(e) => {
-                                              const val = e.target.value as "yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience" | "availability" | "languages";
+                                              const val = e.target.value as "yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience" | "availability" | "languages" | "gender";
                                               setNewKqType(val);
                                               if (val === "yes_no") {
                                                 setNewKqRequiredAnswer("نعم");
@@ -3094,7 +3106,7 @@ export const CreateJob = ({
                                                 setNewKqRequiredAnswer("");
                                               } else if (val === "education" || val === "experience") {
                                                 setNewKqRequiredAnswer("");
-                                              } else if (val === "availability" || val === "languages") {
+                                              } else if (val === "availability" || val === "languages" || val === "gender") {
                                                 setNewKqRequiredAnswer("");
                                               } else {
                                                 setNewKqRequiredAnswer(newKqOptions[0] || "");
@@ -3111,6 +3123,7 @@ export const CreateJob = ({
                                             <option value="experience" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى لسنوات الخبرة</option>
                                             <option value="availability" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأقصى لمدة الانضمام</option>
                                             <option value="languages" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اللغات المطلوبة</option>
+                                            <option value="gender" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الجنس</option>
                                           </select>
 
                                           {newKqType === "age_condition" ? (
@@ -3201,6 +3214,17 @@ export const CreateJob = ({
                                                 placeholder="اختر اللغات المطلوبة..."
                                               />
                                             </div>
+                                          ) : newKqType === "gender" ? (
+                                            <select
+                                              value={newKqRequiredAnswer}
+                                              onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
+                                              className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
+                                            >
+                                              <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر الجنس المطلوب...</option>
+                                              <option value="ذكر" className="bg-white text-navy dark:bg-slate-800 dark:text-white">ذكر</option>
+                                              <option value="أنثى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أنثى</option>
+                                              <option value="غير ذلك" className="bg-white text-navy dark:bg-slate-800 dark:text-white">غير ذلك</option>
+                                            </select>
                                           ) : newKqType === "yes_no" ? (
                                             <select
                                               value={newKqRequiredAnswer}
@@ -3293,7 +3317,8 @@ export const CreateJob = ({
                                               experience: "الحد الأدنى لسنوات الخبرة",
                                               availability: "الحد الأقصى لمدة الانضمام",
                                               languages: "اللغات المطلوبة",
-                                              age_condition: "تاريخ الميلاد"
+                                              age_condition: "تاريخ الميلاد",
+                                              gender: "الجنس"
                                             };
                                             const finalKqText = autoTexts[newKqType] || newKqText.trim();
                                             if (!finalKqText || (newKqType !== "age_condition" && !newKqRequiredAnswer.trim()) || (newKqType === "age_condition" && newKqMinAge === "")) {
@@ -4256,19 +4281,55 @@ const JobSuccess = ({
     </>
   );
 };
+// ⚠️ هام جداً (تحذير من نظام المعاينة الحية):
+// أي تعديل على تصميم أو هيكل هذا المكون (PublicJobPage) يجب أن تقوم بنسخه ولصقه كنسخة طبق الأصل 
+// داخل ملف (src/components/CreateJob.tsx) لكي تتطابق صفحة المتقدمين الحقيقية مع المعاينة.
+// ⚠️ هام جداً (تحذير من نظام المعاينة الحية):
+// أي تعديل على تصميم أو هيكل هذا المكون (PublicJobPage) يجب أن تقوم بنسخه ولصقه كنسخة طبق الأصل 
+// داخل ملف (src/components/CreateJob.tsx) لكي تتطابق صفحة المتقدمين الحقيقية مع المعاينة.
+// ⚠️ هام جداً (تحذير من نظام المعاينة الحية):
+// أي تعديل على تصميم أو هيكل هذا المكون (PublicJobPage) يجب أن تقوم بنسخه ولصقه كنسخة طبق الأصل 
+// داخل ملف (src/components/CreateJob.tsx) لكي تتطابق صفحة المتقدمين الحقيقية مع المعاينة.
 export const PublicJobPage = ({
   job,
   selectedRoleId,
   onSelectRole,
   onApply,
-  onBackToCampaign
+  onBackToCampaign,
+  initialIsLoggedIn = false
 }: {
   job: Job;
   selectedRoleId?: string | null;
   onSelectRole?: (roleId: string) => void;
-  onApply: () => void;
+  onApply: (mode: "fast" | "normal") => void;
   onBackToCampaign?: () => void;
+  initialIsLoggedIn?: boolean;
 }) => {
+  const [isLoggedIn, setIsLoggedIn] = useState(initialIsLoggedIn);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+      if (session) {
+        prefetchApplicantProfile();
+      }
+    };
+
+    checkSession();
+    window.addEventListener('focus', checkSession);
+    window.addEventListener('pageshow', checkSession);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => {
+      window.removeEventListener('focus', checkSession);
+      window.removeEventListener('pageshow', checkSession);
+      subscription.unsubscribe();
+    };
+  }, []);
   if (job.status === "مسودة") {
     return (
       <div className="min-h-screen bg-bg dark:bg-navy flex items-center justify-center p-6">
@@ -4277,7 +4338,7 @@ export const PublicJobPage = ({
             <Lock size={32} />
           </div>
           <h2 className="text-2xl font-bold text-navy dark:text-white mb-4">الإعلان غير متاح</h2>
-          <p className="text-slate-500 dark:text-slate-400 font-medium">عذراً، هذا الإعلان غير متاح حالياً أو معلق كمسودة، يُرجى مراجعة الشركة الناشرة للإعلان.</p>
+          <p className="text-slate-500 dark:text-slate-400 font-medium">عذراً، هذا الإعلان غير متاح.</p>
         </div>
       </div>
     );
@@ -4301,19 +4362,36 @@ export const PublicJobPage = ({
           animate={{ opacity: 1, y: 0 }}
           className="bg-white dark:bg-slate-800 rounded-[40px] shadow-2xl overflow-hidden border border-white dark:border-slate-700"
         >
-          <div className="p-10 md:p-16 bg-navy text-white relative overflow-hidden">
+          <div className="px-6 pt-5 pb-4 md:px-10 md:pt-6 md:pb-4 bg-navy text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
             <div className="relative z-10">
-              {isCampaign && selectedRoleId && onBackToCampaign && (
-                <button
-                  onClick={onBackToCampaign}
-                  className="mb-8 flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-sm font-bold bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl backdrop-blur-sm w-fit"
-                >
-                  <ArrowRight size={16} /> العودة لقائمة الوظائف
-                </button>
-              )}
+              <div className="flex justify-between items-start w-full mb-3">
+                {isCampaign && selectedRoleId && onBackToCampaign ? (
+                  <button
+                    onClick={onBackToCampaign}
+                    className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-sm font-bold bg-white/5 hover:bg-white/10 px-4 py-2 rounded-full border border-white/10 backdrop-blur-sm w-fit"
+                  >
+                    <ArrowRight size={16} /> العودة لقائمة الوظائف
+                  </button>
+                ) : <div></div>}
+                {isLoggedIn ? (
+                  <a
+                    href="/profile"
+                    className="flex items-center gap-2 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all shadow-sm mr-auto whitespace-nowrap"
+                  >
+                    <User size={16} className="text-teal-400" /> ملفي المهني
+                  </a>
+                ) : (
+                  <a
+                    href="/profile"
+                    className="flex items-center gap-2 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all shadow-sm mr-auto whitespace-nowrap"
+                  >
+                    <User size={16} className="text-teal-400" /> تسجيل دخول
+                  </a>
+                )}
+              </div>
               <div className="flex items-center gap-4 mb-8">
-                <div className="w-16 h-16 p-0 bg-white dark:bg-slate-800/10 backdrop-blur rounded-2xl flex items-center justify-center border border-white dark:border-slate-700/10 overflow-hidden shrink-0 shadow-sm">
+                <div className={`w-16 h-16 p-0 backdrop-blur rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm ${job.companyLogo ? "bg-white dark:bg-slate-800/10 border border-white dark:border-slate-700/10" : "bg-white/5 border border-white/10"}`}>
                   {job.companyLogo ? (
                     <img
                       src={job.companyLogo}
@@ -4321,7 +4399,7 @@ export const PublicJobPage = ({
                       className="w-full h-full object-cover rounded-[inherit] drop-shadow-sm"
                     />
                   ) : (
-                    <Briefcase size={16} className="text-primary opacity-80" />
+                    <Briefcase size={28} className="text-primary/80 drop-shadow-sm" />
                   )}
                 </div>
                 <div>
@@ -4329,12 +4407,10 @@ export const PublicJobPage = ({
                     <p className="text-slate-300 font-bold text-sm drop-shadow-sm">
                       {displayCompany}
                     </p>
-                    {job.entityType && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white border border-white/20 backdrop-blur-sm">
-                        <ShieldCheck size={12} className={job.entityType === "company" ? "text-emerald-400" : "text-blue-400"} />
-                        {job.entityType === "company" ? "مؤسسة معتمدة" : "مستقل معتمد"}
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/10 text-white border border-white/20 backdrop-blur-sm">
+                      <ShieldCheck size={12} className={job.entityType === "freelance" ? "text-blue-400" : "text-emerald-400"} />
+                      {job.entityType === "freelance" ? "مستقل معتمد" : "مؤسسة معتمدة"}
+                    </span>
                   </div>
                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-black mb-2 leading-tight opacity-90 drop-shadow-sm">
                     {displayTitle}
@@ -4366,12 +4442,12 @@ export const PublicJobPage = ({
                       <Briefcase size={16} className="text-white/80 shrink-0" /> {activeRole?.experience || job.experience}
                     </div>
                   )}
-                  {(activeRole?.qualification || job.qualification) && (activeRole?.qualification !== "لا يشترط مؤهل" && job.qualification !== "لا يشترط مؤهل") && (
+                  {(activeRole?.qualification || job.qualification) && (
                     <div className="inline-flex items-center justify-center gap-2 bg-white/10 px-5 py-2.5 rounded-xl border border-white/20 text-sm font-bold shadow-sm backdrop-blur-sm">
                       <FileText size={16} className="text-white/80 shrink-0" /> {activeRole?.qualification || job.qualification}
                     </div>
                   )}
-                  {!(activeRole?.isSalaryHidden ?? job.isSalaryHidden) && (activeRole?.salaryMin || job.salaryMin) && (
+                  {!(activeRole?.isSalaryHidden ?? job.isSalaryHidden) && Boolean(activeRole?.salaryMin || job.salaryMin) && String(activeRole?.salaryMin || job.salaryMin) !== "0" && (
                     <div className="inline-flex items-center justify-center gap-2 bg-emerald-500/20 px-5 py-2.5 rounded-xl border border-emerald-400/40 text-sm font-bold text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)] backdrop-blur-sm">
                       <CreditCard size={16} className="shrink-0 text-emerald-400" />
                       {activeRole?.salaryMin || job.salaryMin} {(activeRole?.salaryMax || job.salaryMax) ? `- ${activeRole?.salaryMax || job.salaryMax}` : ''} ريال
@@ -4415,7 +4491,7 @@ export const PublicJobPage = ({
                           </span>
                         ))}
                         {role.type && (
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-xs font-bold text-blue-600 dark:text-blue-400">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-900 text-xs font-bold text-slate-600 dark:text-slate-300">
                             <Clock size={14} /> {role.type}
                           </span>
                         )}
@@ -4441,7 +4517,7 @@ export const PublicJobPage = ({
                     </div>
                   )}
 
-                  {(!activeRole?.hideRoleSummary && !job.hideRoleSummary) && (activeRole?.roleSummary || job.roleSummary || activeRole?.description || job.description) ? (
+                  {(activeRole?.roleSummary || job.roleSummary || activeRole?.description || job.description) && (
                     <div>
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> نبذة عن الدور
@@ -4450,49 +4526,16 @@ export const PublicJobPage = ({
                         {activeRole?.roleSummary || job.roleSummary || activeRole?.description || job.description}
                       </div>
                     </div>
-                  ) : null}
-
-                  {(!activeRole?.hideResponsibilities && !job.hideResponsibilities) && (activeRole?.responsibilities || job.responsibilities) && (
-                    <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
-                      <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-primary rounded-full" /> المهام والمسؤوليات
-                      </h3>
-                      <ul className="space-y-4 list-none">
-                        {(activeRole?.responsibilities || job.responsibilities || '').split('\n').filter(r => r.trim()).map((res, i) => (
-                          <li key={i} className="flex gap-4 items-start text-slate-600 dark:text-slate-300 font-medium text-base">
-                            <div className="mt-1 shrink-0 bg-emerald-100 dark:bg-emerald-900/30 p-1 rounded-full text-emerald-600 dark:text-emerald-400">
-                              <CheckCircle size={16} strokeWidth={2.5} />
-                            </div>
-                            <span className="leading-relaxed pt-0.5">{res.trim()}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
                   )}
 
-                  {(!activeRole?.hideQualifications && !job.hideQualifications) && (activeRole?.qualifications || job.qualifications) && (
+                  {((activeRole?.targetMajors?.length ?? 0) > 0 || (job.targetMajors?.length ?? 0) > 0) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-primary rounded-full" /> المؤهلات والمتطلبات
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> التخصصات المطلوبة
                       </h3>
-                      <ul className="space-y-4 list-disc list-inside px-2">
-                        {(activeRole?.qualifications || job.qualifications || '').split('\n').filter(q => q.trim()).map((qual, i) => (
-                          <li key={i} className="text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
-                            {qual.trim()}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {(!activeRole?.hideTargetMajors && !job.hideTargetMajors) && ((activeRole?.targetMajors?.length ?? 0) > 0 || (job.targetMajors?.length ?? 0) > 0) && (
-                    <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
-                      <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-primary rounded-full" /> التخصصات المستهدفة
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-3">
                         {(activeRole?.targetMajors || job.targetMajors || []).map((major, i) => (
-                          <span key={i} className="inline-flex items-center px-4 py-2 rounded-xl bg-blue-50/50 dark:bg-blue-900/10 text-blue-700 dark:text-blue-300 text-sm font-medium border border-blue-100/50 dark:border-blue-800/20 shadow-sm transition-all hover:-translate-y-0.5">
+                          <span key={i} className="bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 px-4 py-2 rounded-xl text-sm font-bold border border-teal-100 dark:border-teal-800 shadow-sm">
                             {major}
                           </span>
                         ))}
@@ -4500,57 +4543,102 @@ export const PublicJobPage = ({
                     </div>
                   )}
 
-                  {(!activeRole?.hideSkillsAndLanguages && !job.hideSkillsAndLanguages) && (activeRole?.skills?.length || job.skills?.length) ? (
+                  {(activeRole?.responsibilities || job.responsibilities) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-primary rounded-full" /> المهارات المستهدفة
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> المهام والمسؤوليات
                       </h3>
-                      <div className="flex flex-wrap gap-2">
+                      <ul className="space-y-3 list-none px-2">
+                        {(activeRole?.responsibilities || job.responsibilities || '').split('\n').filter((r: string) => r.trim()).map((res: string, i: number) => {
+                          const cleanLine = res.trim();
+                          const hasBullet = /^[-•*]/.test(cleanLine) || /^\d+\./.test(cleanLine);
+                          return (
+                            <li key={i} className="flex gap-3 items-start text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
+                              {!hasBullet && <span className="mt-2 text-[0.4rem] text-slate-400 shrink-0">{"\u25CF"}</span>}
+                              <span>{cleanLine}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+
+                  {(activeRole?.qualifications || job.qualifications) && (
+                    <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
+                      <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> المؤهلات والمتطلبات
+                      </h3>
+                      <ul className="space-y-3 list-none px-2">
+                        {(activeRole?.qualifications || job.qualifications || '').split('\n').filter((q: string) => q.trim()).map((qual: string, i: number) => {
+                          const cleanLine = qual.trim();
+                          const hasBullet = /^[-•*]/.test(cleanLine) || /^\d+\./.test(cleanLine);
+                          return (
+                            <li key={i} className="flex gap-3 items-start text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
+                              {!hasBullet && <span className="mt-2 text-[0.4rem] text-slate-400 shrink-0">{"\u25CF"}</span>}
+                              <span>{cleanLine}</span>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  )}
+
+                  {((activeRole?.skills?.length ?? 0) > 0 || (job.skills?.length ?? 0) > 0) && (
+                    <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
+                      <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> المهارات
+                      </h3>
+                      <div className="flex flex-wrap gap-3">
                         {(activeRole?.skills || job.skills || []).map((skill: string) => (
-                          <span key={skill} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 shadow-sm">
+                          <span key={skill} className="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 shadow-sm">
                             {skill}
                           </span>
                         ))}
                       </div>
                     </div>
-                  ) : null}
+                  )}
 
-                  {(!activeRole?.hideSkillsAndLanguages && !job.hideSkillsAndLanguages) && (activeRole?.languages?.length || job.languages?.length) ? (
+                  {((activeRole?.languages?.length ?? 0) > 0 || (job.languages?.length ?? 0) > 0) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-primary rounded-full" /> اللغات المطلوبة
+                        <div className="w-1.5 h-6 bg-primary rounded-full" /> اللغات
                       </h3>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-3">
                         {(activeRole?.languages || job.languages || []).map((lang: string) => (
-                          <span key={lang} className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-xl text-sm font-bold border border-blue-200 dark:border-blue-800 shadow-sm">
+                          <span key={lang} className="bg-teal-50 dark:bg-teal-900/30 text-teal-700 dark:text-teal-300 px-4 py-2 rounded-xl text-sm font-bold border border-teal-100 dark:border-teal-800 shadow-sm">
                             {lang}
                           </span>
                         ))}
                       </div>
                     </div>
-                  ) : null}
+                  )}
 
-                  {(!activeRole?.hideBenefits && !job.hideBenefits) && (activeRole?.benefits || job.benefits) && (
+                  {(activeRole?.benefits || job.benefits) && (
                     <div className="pt-8 border-t border-slate-100 dark:border-slate-700">
                       <h3 className="text-xl font-bold text-navy dark:text-white mb-5 flex items-center gap-3">
                         <div className="w-1.5 h-6 bg-primary rounded-full" /> المميزات
                       </h3>
-                      <ul className="space-y-4 list-none">
-                        {(activeRole?.benefits || job.benefits || '').split('\n').filter(b => b.trim()).map((ben, i) => (
-                          <li key={i} className="flex gap-4 items-start text-slate-600 dark:text-slate-300 font-medium text-base">
-                            <div className="mt-1 shrink-0 bg-primary/10 p-1.5 rounded-full text-primary">
-                              <Sparkles size={16} strokeWidth={2.5} />
-                            </div>
-                            <span className="leading-relaxed pt-0.5">{ben.replace(/\(اختياري\)/g, '').trim()}</span>
-                          </li>
-                        ))}
+                      <ul className="space-y-3 list-none px-2">
+                        {(activeRole?.benefits || job.benefits || '').split('\n').filter((b: string) => b.trim()).map((ben: string, i: number) => {
+                          const cleanLine = ben.replace(/\(اختياري\)/g, '').trim();
+                          const hasBullet = /^[-•*]/.test(cleanLine) || /^\d+\./.test(cleanLine);
+                          return (
+                            <li key={i} className="flex gap-3 items-start text-slate-600 dark:text-slate-300 font-medium text-base leading-relaxed">
+                              {!hasBullet && <span className="mt-2 text-[0.4rem] text-slate-400 shrink-0">{"\u25CF"}</span>}
+                              <span>{cleanLine}</span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                   )}
 
-                  <div className="pt-12 pb-4">
-                    <button onClick={onApply} className="w-full max-w-md mx-auto flex bg-primary text-white py-5 rounded-2xl text-xl font-bold hover:bg-teal-600 transition-all shadow-xl shadow-primary/20 active:scale-[0.98] items-center justify-center gap-3">
-                      التقديم على هذه الوظيفة
+                  <div className="pt-12 pb-4 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-2xl mx-auto">
+                    <button onClick={() => onApply('fast')} className="w-full flex bg-primary text-white py-4 rounded-2xl text-lg font-bold hover:bg-teal-600 transition-all shadow-xl shadow-primary/20 active:scale-[0.98] items-center justify-center gap-2">
+                      <Zap size={20} className="fill-white" /> التقديم السريع
+                    </button>
+                    <button onClick={() => onApply('normal')} className="w-full flex bg-white dark:bg-slate-800 text-navy dark:text-white border-2 border-slate-200 dark:border-slate-700 py-4 rounded-2xl text-lg font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-[0.98] items-center justify-center gap-2">
+                      <FileText size={20} /> التقديم العادي
                     </button>
                   </div>
                 </div>
