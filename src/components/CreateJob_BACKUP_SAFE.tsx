@@ -96,7 +96,6 @@ export const CreateJob = ({
   onAutoSaveDraft,
   userProfile,
   onGoToSettings,
-  jobs,
 }: {
   createJobType?: "single" | "campaign" | "quick_link";
   initialData?: Job | null;
@@ -107,25 +106,10 @@ export const CreateJob = ({
   ) => string | null | undefined;
   onAutoSaveDraft?: (job: Omit<Job, "id" | "applicants" | "status" | "createdAt" | "draftId">, ds?: string | null) => string;
   userProfile?: any;
+  onGoToSettings?: () => void;
 }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
-
-  // Compute Limits
-  const plan = userProfile?.subscription_tier || 'free';
-  const hasSubscribedBefore = !!(userProfile as any)?.subscription_end_date;
-  let jobLimit = userProfile?.jobs_limit ?? 0;
-  if (plan === 'free' && hasSubscribedBefore) {
-    jobLimit = 0;
-  } else if (!jobLimit) {
-    if (plan === 'free') jobLimit = 1;
-    else if (plan === 'one-time') jobLimit = 1;
-    else if (plan === 'startup' || plan === 'growth') jobLimit = 3;
-    else if (plan === 'business') jobLimit = 10;
-    else if (plan === 'enterprise') jobLimit = 100;
-  }
-  const activeCount = jobs ? jobs.filter(j => j.status === 'نشط').reduce((acc, j) => acc + (j.recordType === 'campaign' && j.roles ? j.roles.length : 1), 0) : 0;
-  const remainingJobs = plan === 'enterprise' ? 999999 : jobLimit - activeCount;
 
   const handleBackAttempt = () => {
     const hasChanges = () => {
@@ -1011,10 +995,6 @@ export const CreateJob = ({
   };
 
   const handleSaveRole = () => {
-    if (!editingRoleId && roles.length >= remainingJobs) {
-      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: `عذراً، لقد استنفدت الحد المسموح به للوظائف النشطة (المتبقي: ${remainingJobs}).`, type: "error" } }));
-      return;
-    }
     const isRoleFormEmpty = !roleTitle.trim() || !type.trim() || type.includes("اختر") || (!location.trim() && locations.length === 0) || !experience.trim() || experience.includes("اختر") || !qualification.trim() || qualification.includes("اختر");
     if (isRoleFormEmpty) {
       window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "يرجى التأكد من تعبئة الحقول الإلزامية: (المسمى الوظيفي، نوع العمل، مقر العمل، الحد الأدنى للمؤهل، وسنوات الخبرة).", type: "warning" } }));
@@ -1260,15 +1240,6 @@ export const CreateJob = ({
         currentCampaignTitle = roleTitle.trim();
         currentCampaignDesc = roleDesc.trim();
       }
-    }
-    
-    if (adType === "campaign" && finalRoles.length > remainingJobs) {
-      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: `عذراً، عدد الوظائف المطلوبة يتجاوز الحد المسموح به للوظائف النشطة (المتبقي: ${remainingJobs} فقط). يرجى إزالة بعض الأدوار.`, type: "error" } }));
-      return;
-    }
-
-    if (adType === "campaign" && !enableWelcomeUI && finalRoles.length > 0) {
-      currentCampaignTitle = finalRoles[0].title;
     }
 
     if (adType === "campaign" && !enableWelcomeUI && finalRoles.length > 0) {
@@ -1772,7 +1743,7 @@ export const CreateJob = ({
           >
 
             {createJobType !== "quick_link" && (
-              <div className="mb-1 hidden">
+              <div className="mb-1">
                 <div className="flex bg-white dark:bg-slate-800 p-1.5 gap-1.5 rounded-2xl w-full shadow-sm border border-slate-200 dark:border-slate-700">
                   <button
                     type="button"
@@ -1950,7 +1921,7 @@ export const CreateJob = ({
 
                       <div className="space-y-3">
                         <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                          مقر العمل / المدن <span className="text-red-500">*</span>
+                          مقر العمل / المدن <Sparkles size={14} className="text-primary/70" /> <span className="text-red-500">*</span>
                         </label>
                         <SearchableSelect
                           options={SAUDI_CITIES.filter((c) => !locations.includes(c))}
@@ -1995,7 +1966,7 @@ export const CreateJob = ({
 
                       <div className="space-y-3">
                         <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                          نوع العمل <span className="text-red-500">*</span>
+                          نوع العمل <Sparkles size={14} className="text-primary/70" /> <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                           <SearchableSelect
@@ -2823,8 +2794,6 @@ export const CreateJob = ({
                           </div>
                         )}
 
-
-
                         {createJobType !== "quick_link" && (
                           <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
                             <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} /></button>
@@ -2955,10 +2924,10 @@ export const CreateJob = ({
                                         )}{" "}
                                         <div className="flex flex-wrap gap-2 mb-4">
                                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400 self-center ml-2">إضافات سريعة:</span>
-                                          <button type="button" onClick={() => { setCustomAttachments(prev => [...prev, { attachment_name: "الصورة الشخصية", attachment_type: "image", required: newAttachmentRequired }]); setNewAttachmentRequired(false); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> الصورة الشخصية</button>
-                                          <button type="button" onClick={() => { setCustomAttachments(prev => [...prev, { attachment_name: "رخصة القيادة", attachment_type: "mixed_file", required: newAttachmentRequired }]); setNewAttachmentRequired(false); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رخصة القيادة</button>
-                                          <button type="button" onClick={() => { setCustomAttachments(prev => [...prev, { attachment_name: "صورة الهوية", attachment_type: "mixed_file", required: newAttachmentRequired }]); setNewAttachmentRequired(false); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> صورة الهوية</button>
-                                          <button type="button" onClick={() => { setCustomAttachments(prev => [...prev, { attachment_name: "رابط معرض الأعمال", attachment_type: "link", required: newAttachmentRequired }]); setNewAttachmentRequired(false); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رابط معرض الأعمال</button>
+                                          <button type="button" onClick={() => { setNewAttachmentName("الصورة الشخصية"); setNewAttachmentType("image"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> الصورة الشخصية</button>
+                                          <button type="button" onClick={() => { setNewAttachmentName("رخصة القيادة"); setNewAttachmentType("mixed_file"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رخصة القيادة</button>
+                                          <button type="button" onClick={() => { setNewAttachmentName("صورة الهوية"); setNewAttachmentType("mixed_file"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> صورة الهوية</button>
+                                          <button type="button" onClick={() => { setNewAttachmentName("رابط معرض الأعمال"); setNewAttachmentType("link"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رابط معرض الأعمال</button>
                                         </div>
                                         <div className="flex flex-col md:flex-row items-center gap-4 w-full">
                                           {" "}
@@ -3509,13 +3478,6 @@ export const CreateJob = ({
                             </span>
                           </div>
                         )}
-                        {adType === "campaign" && (
-                          <div className="flex items-center justify-end mb-2">
-                            <span className="bg-primary/10 text-primary font-bold px-4 py-1.5 rounded-xl text-sm">
-                              الشاغر رقم {editingRoleId ? roles.findIndex(r => r.id === editingRoleId) + 1 : roles.length + 1}
-                            </span>
-                          </div>
-                        )}
                         {createJobType !== "quick_link" && (
                           <>
 
@@ -4047,19 +4009,8 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
         </p>
         <form onSubmit={async (e) => {
           e.preventDefault();
-          if (entityType === "company") {
-            if (!companyName.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "اسم المنشأة مطلوب", type: "error" } })); return; }
-            if (!/^\d{10}$/.test(crNumber.trim())) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم السجل التجاري يجب أن يتكون من 10 أرقام", type: "error" } })); return; }
-            if (!contactPhone.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم جوال المنشأة مطلوب", type: "error" } })); return; }
-            if (!/^(05\d{8}|9665\d{8})$/.test(contactPhone.trim())) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم الجوال يجب أن يبدأ بـ 05 (10 أرقام) أو 9665 (12 رقم)", type: "error" } })); return; }
-            if (!city.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "المدينة مطلوبة", type: "error" } })); return; }
-          } else {
-            if (!companyName.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "الاسم الثلاثي مطلوب", type: "error" } })); return; }
-            if (!/^FL-\d{6,15}$/i.test(freelanceDoc.trim())) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم الوثيقة يجب أن يبدأ بـ FL- يليه أرقام", type: "error" } })); return; }
-            if (!contactPhone.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم الجوال مطلوب", type: "error" } })); return; }
-            if (!/^(05\d{8}|9665\d{8})$/.test(contactPhone.trim())) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم الجوال يجب أن يبدأ بـ 05 (10 أرقام) أو 9665 (12 رقم)", type: "error" } })); return; }
-            if (!city.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "المدينة مطلوبة", type: "error" } })); return; }
-          }
+          if (entityType === "company" && (!companyName || !crNumber || !contactPhone)) return;
+          if (entityType === "freelance" && (!companyName || !freelanceDoc || !contactPhone)) return;
 
           const updatedProfile = {
             ...userProfile,
@@ -4118,7 +4069,7 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
               <input required type="text" value={crNumber} onChange={e => {
                 const val = e.target.value.replace(/\D/g, '');
                 if (val.length <= 10) setCrNumber(val);
-              }} maxLength={10} minLength={10} placeholder="1010123456" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white text-left transition-all" dir="ltr" />
+              }} maxLength={10} minLength={10} placeholder="مثال: 1010123456" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white text-left transition-all" dir="ltr" />
             </div>
           ) : (
             <div>
@@ -4133,21 +4084,19 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
             </label>
             <input required type="tel" value={contactPhone} onChange={e => {
               let val = e.target.value.replace(/\D/g, '');
-              if (val.length === 0) {
-                setContactPhone('');
-              } else if (val.startsWith('966')) {
+              if (val.startsWith('9665')) {
                 if (val.length <= 12) setContactPhone(val);
-              } else if (val.startsWith('0')) {
+              } else if (val.startsWith('05')) {
                 if (val.length <= 10) setContactPhone(val);
-              } else if (val === '9' || val === '96') {
-                setContactPhone(val);
+              } else if (val.length === 0) {
+                setContactPhone('');
               }
             }} placeholder="05XXXXXXXX" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white transition-all text-left" dir="ltr" />
           </div>
 
           <div>
-            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2 mr-1">المدينة</label>
-            <input required type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="الرياض، جدة..." className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white transition-all" />
+            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2 mr-1">المدينة (اختياري)</label>
+            <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="الرياض، جدة..." className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white transition-all" />
           </div>
 
           <button type="submit" className="w-full py-5 mt-4 bg-primary text-white rounded-2xl font-bold text-lg hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
@@ -4996,8 +4945,6 @@ const ManageJob = ({
                       )}
                     </AnimatePresence>
                   </div>
-
-
 
                   {/* Knockout Questions inside Filter Tab */}
                   <div className={"space-y-4 pt-6 mt-6 border-t font-medium border-slate-200 dark:border-slate-700 " + (isLocked ? "opacity-60 pointer-events-none" : "")}>

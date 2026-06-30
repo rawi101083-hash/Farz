@@ -99,4 +99,13 @@
 
 ---
 
+### 20. HOW TO RECOVER LOST CODE FROM LOGS (كيفية استرجاع الأكواد المفقودة من السجلات)
+- **Deep Log Extraction:** The AI maintains a memory of text, but exact `Code Payloads` are hidden in the system logs (`transcript_full.jsonl`).
+- If code is lost due to a crash, `git checkout`, or accidental deletion, the AI **MUST NOT** rely on general text memory to rewrite complex UI/logic from scratch.
+- **The Mandatory Recovery Process:** The AI MUST write a Node.js script using `run_command` to read `.gemini\antigravity-ide\brain\<conversation-id>\.system_generated\logs\transcript_full.jsonl`.
+- The script should parse the JSON line-by-line, locate the `tool_calls` array within the specific timeframe of the loss, extract the exact `ReplacementContent` or `CodeContent`, and output it to a file in the `scratch/` directory.
+- Once the exact raw code is extracted, the AI must verify it with the user, and then inject it carefully using the Sniper Method (`replace_file_content`).
+
+---
+
 *This file acts as the ultimate constitution for AI agents operating on this codebase. Read it, understand it, and never violate it.*
