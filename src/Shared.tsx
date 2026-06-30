@@ -340,6 +340,14 @@ export interface Role {
   hideBenefits?: boolean;
   hideTargetMajors?: boolean;
   hideSkillsAndLanguages?: boolean;
+  aiOverrideFields?: {
+    roleSummary?: string;
+    responsibilities?: string;
+    qualifications?: string;
+    targetMajors?: string[];
+    targetSkills?: string[];
+    languages?: string[];
+  };
 }
 export interface Job {
   id: string;
