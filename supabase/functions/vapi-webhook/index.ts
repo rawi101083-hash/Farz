@@ -40,6 +40,8 @@ serve(async (req) => {
 
     // Extract recording URL (usually in message.artifact.recordingUrl or message.call.recordingUrl)
     const recordingUrl = findKey(message, 'recordingUrl') || message?.artifact?.recordingUrl || message?.call?.recordingUrl
+    const transcript = findKey(message, 'transcript') || message?.artifact?.transcript || ''
+    const summary = findKey(message, 'summary') || message?.analysis?.summary || ''
 
     // Extract applicantId (we passed it in variableValues)
     const applicantId = findKey(message, 'applicantId') || message?.call?.variableValues?.applicantId
@@ -69,7 +71,13 @@ serve(async (req) => {
     }
     
     if (recordingUrl) {
-      updateData.voice_eval_url = recordingUrl
+      updateData.voice_eval = recordingUrl
+    }
+    if (transcript) {
+      updateData.interview_transcript = transcript
+    }
+    if (summary) {
+      updateData.interview_summary = summary
     }
 
     const { error } = await supabase

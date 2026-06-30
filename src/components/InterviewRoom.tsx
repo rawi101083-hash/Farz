@@ -14,6 +14,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
   const [callStatus, setCallStatus] = useState<'idle' | 'loading' | 'active' | 'ended' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [volumeLevel, setVolumeLevel] = useState(0);
+  const [userVolume, setUserVolume] = useState(0);
 
   // Read language from URL parameter
   const urlParams = new URLSearchParams(window.location.search);
@@ -21,6 +22,12 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
   
   // Use a ref to store vapi instance so it persists
   const vapiRef = useRef<any>(null);
+
+  // Refs for tracking user microphone volume
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // Check if interview was already started/completed on load
   useEffect(() => {
@@ -68,8 +75,11 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       }
     });
 
-    vapi.on('call-end', () => {
+    vapi.on('call-end', async () => {
       setCallStatus('ended');
+      if (applicantId) {
+        await supabase.from('applicants').update({ is_interview_completed: true }).eq('id', applicantId);
+      }
     });
 
     vapi.on('error', (error: any) => {
@@ -89,6 +99,73 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       vapi.stop();
     };
   }, []);
+
+  // Track user microphone volume
+  useEffect(() => {
+    if (callStatus === 'active') {
+      let isMounted = true;
+      
+      const startMic = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          if (!isMounted) return;
+          micStreamRef.current = stream;
+          
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          if (!AudioContextClass) return;
+          
+          const audioContext = new AudioContextClass();
+          audioContextRef.current = audioContext;
+          
+          const analyser = audioContext.createAnalyser();
+          analyser.fftSize = 256;
+          analyserRef.current = analyser;
+          
+          const source = audioContext.createMediaStreamSource(stream);
+          source.connect(analyser);
+          
+          const dataArray = new Uint8Array(analyser.frequencyBinCount);
+          
+          const updateVolume = () => {
+            if (!isMounted) return;
+            analyser.getByteFrequencyData(dataArray);
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+              sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+            
+            // Normalize to a 0-1 scale (max average is usually around 128)
+            let normalized = average / 128;
+            if (normalized > 1) normalized = 1;
+            
+            setUserVolume(normalized);
+            
+            animationFrameRef.current = requestAnimationFrame(updateVolume);
+          };
+          
+          updateVolume();
+        } catch (err) {
+          console.error("Could not access mic for volume tracking:", err);
+        }
+      };
+      
+      startMic();
+      
+      return () => {
+        isMounted = false;
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        if (micStreamRef.current) {
+          micStreamRef.current.getTracks().forEach(t => t.stop());
+        }
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+        }
+      };
+    } else {
+      setUserVolume(0);
+    }
+  }, [callStatus]);
 
   const startInterview = async () => {
     try {
@@ -175,6 +252,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       
       await vapiRef.current.start(assistantId, {
         maxDurationSeconds: 600, // SaaS Guardrail: 10 minutes max limit
+        serverUrl: "https://zpcooectdwokmvbgttsf.supabase.co/functions/v1/vapi-webhook",
         variableValues: {
           applicantId: applicantId,
           applicantName: firstName, // إرسال الاسم الأول فقط
@@ -230,12 +308,9 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
           </div>
         </div>
 
-        <h1 className="text-2xl lg:text-3xl font-black text-navy dark:text-white mb-2">
-          المقابلة الصوتية الذكية
+        <h1 className="text-2xl lg:text-3xl font-black text-navy dark:text-white mb-10">
+          المقابلة الصوتية مع الذكاء الاصطناعي
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 mb-10 font-medium">
-          نظام فرز المتقدمين المدعوم بالذكاء الاصطناعي
-        </p>
 
         <AnimatePresence mode="wait">
           {callStatus === 'idle' && (
@@ -291,15 +366,22 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
               className="flex flex-col items-center py-6"
             >
               <div className="relative mb-12">
-                <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
-                <div className="w-32 h-32 bg-primary/10 rounded-full flex items-center justify-center relative z-10 border-4 border-primary/20">
-                  <Mic size={40} className="text-primary animate-pulse" />
-                </div>
-                {/* Voice visualization placeholder based on volumeLevel */}
                 <div 
-                  className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 h-2 bg-primary rounded-full transition-all duration-75"
-                  style={{ width: `${Math.max(10, volumeLevel * 300)}px`, opacity: Math.max(0.2, volumeLevel) }}
+                  className="absolute inset-0 bg-primary/20 rounded-full transition-all duration-75" 
+                  style={{ 
+                    transform: `scale(${1 + Math.max(userVolume, volumeLevel) * 1.5})`,
+                    opacity: 0.3 + Math.max(userVolume, volumeLevel) * 0.7 
+                  }} 
                 />
+                <div 
+                  className="absolute inset-0 bg-primary/10 rounded-full transition-all duration-75" 
+                  style={{ 
+                    transform: `scale(${1 + Math.max(userVolume, volumeLevel) * 0.8})`
+                  }} 
+                />
+                <div className="w-32 h-32 bg-primary/10 rounded-full flex items-center justify-center relative z-10 border-4 border-primary/20">
+                  <Mic size={40} className="text-primary" />
+                </div>
               </div>
 
               <p className="text-xl font-bold text-navy dark:text-white mb-8">المقابلة جارية الآن...</p>

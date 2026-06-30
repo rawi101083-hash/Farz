@@ -24,8 +24,8 @@ const LogoIcon = () => (
 
 const MAJORS_LIST = [
   "هندسة برمجيات", "علوم حاسب", "نظم معلومات", "تقنية معلومات", "أمن سيبراني", "الذكاء الاصطناعي",
-  "إدارة أعمال", "محاسبة", "مالية", "تسويق", "موارد بشرية", "قانون", 
-  "هندسة صناعية", "هندسة مدنية", "هندسة كهربائية", "هندسة ميكانيكية", "هندسة معمارية", 
+  "إدارة أعمال", "محاسبة", "مالية", "تسويق", "موارد بشرية", "قانون",
+  "هندسة صناعية", "هندسة مدنية", "هندسة كهربائية", "هندسة ميكانيكية", "هندسة معمارية",
   "طب عام", "صيدلة", "تمريض", "طب أسنان", "علاج طبيعي",
   "لغة إنجليزية", "لغة عربية", "إعلام واتصال", "أخرى"
 ];
@@ -51,10 +51,10 @@ export default function SeekerProfile() {
   const [otpType, setOtpType] = useState<'signup' | 'recovery'>('signup');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  
+
   const [initialProfile, setInitialProfile] = useState<any>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  
+
   const [profile, setProfile] = useState({
     full_name: '',
     phone: '',
@@ -76,7 +76,7 @@ export default function SeekerProfile() {
 
   const verifySeekerSession = async (currentSession: any) => {
     if (!currentSession) return;
-    
+
     setSession(currentSession);
     setStep('profile');
     fetchProfile(currentSession.user.id);
@@ -117,11 +117,11 @@ export default function SeekerProfile() {
     if (!email) return;
     setIsLoading(true);
     setMessage({ type: '', text: '' });
-    
+
     try {
       if (authMode === 'reset') {
         const { data: userExists } = await supabase.rpc('check_user_exists', { lookup_email: email });
-        
+
         if (userExists === false) {
           setMessage({ type: 'error', text: 'عذراً، هذا الحساب غير مسجل لدينا.' });
           setIsLoading(false);
@@ -139,7 +139,7 @@ export default function SeekerProfile() {
           setIsLoading(false);
           return;
         }
-        const { data, error } = await supabase.auth.signInWithPassword({ 
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password
         });
@@ -151,21 +151,21 @@ export default function SeekerProfile() {
           setIsLoading(false);
           return;
         }
-        const { error } = await supabase.auth.signUp({ 
+        const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { 
+          options: {
             data: {
               entity_type: 'seeker'
             },
             emailRedirectTo: `${window.location.origin}/profile`
           }
         });
-        
+
         if (error) {
           if (error.message.includes("User already registered")) {
             // Trick: User already exists. Verify their password instead of rejecting!
-            const { error: signInError } = await supabase.auth.signInWithPassword({ 
+            const { error: signInError } = await supabase.auth.signInWithPassword({
               email,
               password
             });
@@ -179,7 +179,7 @@ export default function SeekerProfile() {
           }
           throw error;
         }
-        
+
         setStep('otp');
         if (resendTimer === 0) {
           setResendTimer(60);
@@ -204,22 +204,22 @@ export default function SeekerProfile() {
       setIsLoading(false);
     }
   };
-  
+
   const handleResendOtp = async () => {
     if (!email) return;
     setIsLoading(true);
-    
+
     try {
-      const { error } = await supabase.auth.resend({ 
+      const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
-        options: { 
+        options: {
           emailRedirectTo: `${window.location.origin}/profile`
         }
       });
-      
+
       if (error) throw error;
-      
+
       setIsResent(true);
       setResendTimer(60);
       setTimeout(() => setIsResent(false), 3000);
@@ -239,16 +239,16 @@ export default function SeekerProfile() {
     if (!otp) return;
     setIsLoading(true);
     setMessage({ type: '', text: '' });
-    
+
     try {
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token: otp,
         type: otpType,
       });
-      
+
       if (error) throw error;
-      
+
       if (otpType === 'recovery') {
         setStep('new_password');
         setMessage({ type: 'success', text: 'تم التحقق بنجاح! أدخل كلمة المرور الجديدة.' });
@@ -276,9 +276,9 @@ export default function SeekerProfile() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      
+
       setMessage({ type: 'success', text: 'تم تحديث كلمة المرور بنجاح! جاري الدخول...' });
-      
+
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         setSession(data.session);
@@ -301,7 +301,7 @@ export default function SeekerProfile() {
         .select('*')
         .eq('user_id', userId)
         .single();
-        
+
       if (data && !error) {
         const fetchedProfile = {
           full_name: data.full_name || '',
@@ -400,16 +400,16 @@ export default function SeekerProfile() {
 
   const handleFileUpload = async (type: string) => {
     if (!session) return;
-    
+
     const input = document.createElement('input');
     input.type = 'file';
-    
+
     if (type === 'cv') {
       input.accept = '.pdf,.doc,.docx';
     } else {
       input.accept = 'image/jpeg,image/png,image/jpg,.pdf';
     }
-    
+
     input.onchange = async (e: any) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -442,7 +442,7 @@ export default function SeekerProfile() {
           if (type === 'license') updated.license_file_url = url;
           return updated;
         });
-        
+
         setMessage({ type: 'success', text: 'تم رفع المرفق بنجاح.' });
       } catch (error: any) {
         console.error('Upload error:', error);
@@ -451,7 +451,7 @@ export default function SeekerProfile() {
         setIsLoading(false);
       }
     };
-    
+
     input.click();
   };
 
@@ -459,8 +459,8 @@ export default function SeekerProfile() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 md:p-8" dir="rtl">
         <div className="max-w-4xl w-full bg-white rounded-[32px] shadow-xl border border-slate-100 relative overflow-hidden flex flex-col md:flex-row">
-          
-          <button 
+
+          <button
             onClick={() => {
               if (window.history.length > 1 && document.referrer) {
                 window.history.back();
@@ -483,7 +483,7 @@ export default function SeekerProfile() {
                 أنشئ ملفك المهني الموحد مرة واحدة، واختصر طريقك نحو أفضل الفرص الوظيفية
               </h2>
             </div>
-            
+
             <div className="space-y-6">
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-xl bg-white border border-slate-100 shadow-sm text-teal-700 flex items-center justify-center shrink-0">
@@ -513,10 +513,10 @@ export default function SeekerProfile() {
                   {authMode === 'login' ? 'تسجيل الدخول' : authMode === 'register' ? 'إنشاء حساب جديد' : 'استعادة كلمة المرور'}
                 </h2>
                 <p className="text-slate-500 font-medium text-sm">
-                  {authMode === 'login' 
-                    ? 'مرحباً بك مجدداً في بوابة المتقدمين' 
-                    : authMode === 'register' 
-                      ? 'أدخل بريدك الإلكتروني للبدء وتوثيق حسابك' 
+                  {authMode === 'login'
+                    ? 'مرحباً بك مجدداً في بوابة المتقدمين'
+                    : authMode === 'register'
+                      ? 'أدخل بريدك الإلكتروني للبدء وتوثيق حسابك'
                       : 'أدخل بريدك الإلكتروني لتلقي رمز استعادة كلمة المرور'}
                 </p>
               </div>
@@ -550,8 +550,8 @@ export default function SeekerProfile() {
                         كلمة المرور
                       </label>
                       {authMode === 'login' && (
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => { setAuthMode('reset'); setMessage({ type: '', text: '' }); }}
                           className="text-xs font-bold text-teal-700 hover:text-teal-900"
                         >
@@ -570,8 +570,8 @@ export default function SeekerProfile() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                       />
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-teal-700 transition-colors"
                       >
@@ -628,7 +628,7 @@ export default function SeekerProfile() {
               <ArrowRight className="w-4 h-4 ml-1" />
               العودة
             </button>
-            
+
             <h2 className="text-2xl font-bold text-center mb-2">أدخل كود التحقق</h2>
             <p className="text-center text-sm text-gray-500 mb-6">
               تم إرسال كود مكون من 6 أرقام إلى<br />
@@ -682,7 +682,7 @@ export default function SeekerProfile() {
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-gray-100">
             <h2 className="text-2xl font-bold text-center mb-6">إعداد كلمة مرور جديدة</h2>
-            
+
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">كلمة المرور الجديدة</label>
@@ -727,7 +727,7 @@ export default function SeekerProfile() {
     <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8 dir-rtl" dir="rtl">
       <div className="max-w-4xl mx-auto">
         <div className="bg-white shadow rounded-xl overflow-hidden border border-gray-100">
-          
+
           {/* Header */}
           <div className="bg-[#0F766E] px-6 py-8 sm:px-8 flex justify-between items-center text-white">
             <div className="flex items-center gap-4">
@@ -739,14 +739,14 @@ export default function SeekerProfile() {
                 <p className="text-white/90 mt-1 text-sm font-medium">أكمل بياناتك مرة واحدة فقط، لتتمكن من التقديم على أي وظيفة بضغطة زر ⚡️</p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => {
                 if (window.history.length > 1 && document.referrer) {
                   window.history.back();
                 } else {
                   window.location.href = '/';
                 }
-              }} 
+              }}
               className="group relative overflow-hidden bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-full border border-white/20 backdrop-blur-md flex items-center font-bold text-sm transition-all duration-300 shadow-lg"
             >
               <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
@@ -756,7 +756,7 @@ export default function SeekerProfile() {
 
           {/* Form */}
           <div className="p-6 sm:p-8 space-y-8">
-            
+
             {/* القسم الأساسي */}
             <div>
               <h3 className="text-xl font-bold leading-6 text-gray-900 mb-6 flex items-center">
@@ -772,7 +772,7 @@ export default function SeekerProfile() {
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">الاسم الثلاثي</label>
                   <input type="text" className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"
-                    value={profile.full_name} onChange={(e) => setProfile({...profile, full_name: e.target.value})} />
+                    value={profile.full_name} onChange={(e) => setProfile({ ...profile, full_name: e.target.value })} />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">رقم الجوال</label>
@@ -783,12 +783,12 @@ export default function SeekerProfile() {
                     </div>
                     <input type="tel" className="block w-full px-4 py-4 bg-transparent outline-none font-medium sm:text-base tracking-widest text-gray-900"
                       placeholder="5XXXXXXXX" maxLength={10}
-                      value={profile.phone.replace(/\D/g, '').startsWith('966') ? profile.phone.replace(/\D/g, '').substring(3) : profile.phone.replace(/\D/g, '')} 
+                      value={profile.phone.replace(/\D/g, '').startsWith('966') ? profile.phone.replace(/\D/g, '').substring(3) : profile.phone.replace(/\D/g, '')}
                       onChange={(e) => {
                         let val = e.target.value.replace(/\D/g, '');
                         if (val.startsWith('0') && val.length > 10) val = val.slice(0, 10);
                         if (!val.startsWith('0') && val.length > 9) val = val.slice(0, 9);
-                        setProfile({...profile, phone: val ? `+966${val}` : ''});
+                        setProfile({ ...profile, phone: val ? `+966${val}` : '' });
                       }} />
                   </div>
                 </div>
@@ -796,7 +796,7 @@ export default function SeekerProfile() {
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">المدينة</label>
                   <div className="relative">
                     <select className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
-                      value={profile.city} onChange={(e) => setProfile({...profile, city: e.target.value})}>
+                      value={profile.city} onChange={(e) => setProfile({ ...profile, city: e.target.value })}>
                       <option value="" disabled>اختر المدينة</option>
                       {SAUDI_CITIES.map(city => <option key={city} value={city}>{city}</option>)}
                     </select>
@@ -809,7 +809,7 @@ export default function SeekerProfile() {
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">الجنسية</label>
                   <div className="relative">
                     <select className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
-                      value={profile.nationality} onChange={(e) => setProfile({...profile, nationality: e.target.value})}>
+                      value={profile.nationality} onChange={(e) => setProfile({ ...profile, nationality: e.target.value })}>
                       <option value="" disabled>اختر الجنسية</option>
                       {countriesList.map(country => <option key={country} value={country}>{country}</option>)}
                     </select>
@@ -821,14 +821,14 @@ export default function SeekerProfile() {
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">تاريخ الميلاد</label>
                   <input type="date" lang="en" dir="ltr" className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base text-right"
-                    value={profile.birth_date} onChange={(e) => setProfile({...profile, birth_date: e.target.value})} />
+                    value={profile.birth_date} onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })} />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">اللغات</label>
                   <MultiSearchableSelect
                     options={LANGUAGES_LIST}
                     value={profile.languages}
-                    onChange={(val) => setProfile({...profile, languages: Array.isArray(val) ? val : [val]})}
+                    onChange={(val) => setProfile({ ...profile, languages: Array.isArray(val) ? val : [val] })}
                     multiple={true}
                     allowCustom={true}
                     placeholder="ابحث أو اختر اللغات..."
@@ -847,7 +847,7 @@ export default function SeekerProfile() {
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">المؤهل التعليمي</label>
                   <div className="relative">
                     <select className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
-                      value={profile.qualification[0] || ''} onChange={(e) => setProfile({...profile, qualification: [e.target.value]})}>
+                      value={profile.qualification[0] || ''} onChange={(e) => setProfile({ ...profile, qualification: [e.target.value] })}>
                       <option value="" disabled>اختر المؤهل التعليمي</option>
                       {QUALIFICATIONS_LIST.map(q => <option key={q} value={q}>{q}</option>)}
                     </select>
@@ -861,7 +861,7 @@ export default function SeekerProfile() {
                   <MultiSearchableSelect
                     options={MAJORS_LIST}
                     value={profile.major[0] || ""}
-                    onChange={(val) => setProfile({...profile, major: Array.isArray(val) ? val : [val]})}
+                    onChange={(val) => setProfile({ ...profile, major: Array.isArray(val) ? val : [val] })}
                     multiple={false}
                     allowCustom={true}
                     placeholder="ابحث أو اكتب التخصص..."
@@ -871,7 +871,7 @@ export default function SeekerProfile() {
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">فترة الانضمام</label>
                   <div className="relative">
                     <select className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
-                      value={profile.notice_period} onChange={(e) => setProfile({...profile, notice_period: e.target.value})}>
+                      value={profile.notice_period} onChange={(e) => setProfile({ ...profile, notice_period: e.target.value })}>
                       <option value="" disabled>اختر المدة</option>
                       {["فوري", "أسبوع", "أسبوعين", "شهر", "أكثر من شهر"].map(n => <option key={n} value={n}>{n}</option>)}
                     </select>
@@ -883,12 +883,12 @@ export default function SeekerProfile() {
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">رابط لينكد إن</label>
                   <input type="url" dir="ltr" className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"
-                    value={profile.linkedin_url} onChange={(e) => setProfile({...profile, linkedin_url: e.target.value})} />
+                    value={profile.linkedin_url} onChange={(e) => setProfile({ ...profile, linkedin_url: e.target.value })} />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">رابط معرض الأعمال</label>
                   <input type="url" dir="ltr" className="mt-2 block w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base"
-                    value={profile.portfolio_url} onChange={(e) => setProfile({...profile, portfolio_url: e.target.value})} />
+                    value={profile.portfolio_url} onChange={(e) => setProfile({ ...profile, portfolio_url: e.target.value })} />
                 </div>
               </div>
             </div>
@@ -909,7 +909,7 @@ export default function SeekerProfile() {
                   ) : (
                     <span className="text-xs text-gray-400">PDF, DOCX</span>
                   )}
-                  {profile.cv_file_url && <span className="absolute top-4 left-4 text-green-500"><CheckCircle size={20}/></span>}
+                  {profile.cv_file_url && <span className="absolute top-4 left-4 text-green-500"><CheckCircle size={20} /></span>}
                 </div>
                 <div onClick={() => handleFileUpload('photo')} className="flex-1 min-w-[200px] border-2 border-dashed border-gray-300 p-8 rounded-2xl flex flex-col items-center justify-center hover:bg-gray-50 hover:border-teal-500 transition-all group relative cursor-pointer">
                   <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-teal-50 transition-colors">
@@ -921,7 +921,7 @@ export default function SeekerProfile() {
                   ) : (
                     <span className="text-xs text-gray-400">JPG, PNG</span>
                   )}
-                  {profile.personal_photo_url && <span className="absolute top-4 left-4 text-green-500"><CheckCircle size={20}/></span>}
+                  {profile.personal_photo_url && <span className="absolute top-4 left-4 text-green-500"><CheckCircle size={20} /></span>}
                 </div>
                 <div onClick={() => handleFileUpload('id')} className="flex-1 min-w-[200px] border-2 border-dashed border-gray-300 p-8 rounded-2xl flex flex-col items-center justify-center hover:bg-gray-50 hover:border-teal-500 transition-all group relative cursor-pointer">
                   <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-teal-50 transition-colors">
@@ -933,7 +933,7 @@ export default function SeekerProfile() {
                   ) : (
                     <span className="text-xs text-gray-400">JPG, PNG, PDF</span>
                   )}
-                  {profile.id_file_url && <span className="absolute top-4 left-4 text-green-500"><CheckCircle size={20}/></span>}
+                  {profile.id_file_url && <span className="absolute top-4 left-4 text-green-500"><CheckCircle size={20} /></span>}
                 </div>
                 <div onClick={() => handleFileUpload('license')} className="flex-1 min-w-[200px] border-2 border-dashed border-gray-300 p-8 rounded-2xl flex flex-col items-center justify-center hover:bg-gray-50 hover:border-teal-500 transition-all group relative cursor-pointer">
                   <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-4 group-hover:bg-teal-50 transition-colors">
@@ -945,7 +945,7 @@ export default function SeekerProfile() {
                   ) : (
                     <span className="text-xs text-gray-400">JPG, PNG, PDF</span>
                   )}
-                  {profile.license_file_url && <span className="absolute top-4 left-4 text-green-500"><CheckCircle size={20}/></span>}
+                  {profile.license_file_url && <span className="absolute top-4 left-4 text-green-500"><CheckCircle size={20} /></span>}
                 </div>
               </div>
             </div>
