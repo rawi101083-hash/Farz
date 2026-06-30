@@ -338,16 +338,16 @@ export const ManageJob = ({
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold text-navy dark:text-white">{title}</h1>
                 <span className={`flex items-center gap-1.5 px-3 py-1 border rounded-full text-xs font-bold shadow-sm ${
-                  status === "نشط" ? "bg-green-100/50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/50" :
-                  status === "مغلق مؤقتاً" ? "bg-amber-100/50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50" :
+                  effectiveStatus === "نشط" ? "bg-green-100/50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800/50" :
+                  effectiveStatus === "مغلق مؤقتاً" ? "bg-amber-100/50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800/50" :
                   "bg-red-100/50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800/50"
                 }`}>
                   <div className={`w-2 h-2 rounded-full ${
-                    status === "نشط" ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse" :
-                    status === "مغلق مؤقتاً" ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse" :
+                    effectiveStatus === "نشط" ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse" :
+                    effectiveStatus === "مغلق مؤقتاً" ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse" :
                     "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"
                   }`}></div>
-                  {status === "نشط" ? "الفرز الذكي نشط" : status === "مغلق مؤقتاً" ? "الفرز الذكي مغلق مؤقتاً" : "الفرز الذكي مغلق"}
+                  {effectiveStatus === "نشط" ? "الفرز الذكي نشط" : effectiveStatus === "مغلق مؤقتاً" ? "الفرز الذكي مغلق مؤقتاً" : effectiveStatus === "منتهي الوقت" ? "مغلق تلقائياً (منتهي الوقت)" : "الفرز الذكي مغلق"}
                 </span>
               </div>
               <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mt-1">{company}</p>
@@ -833,25 +833,25 @@ export const ManageJob = ({
                   <button 
                     type="button"
                     onClick={() => updateStatusDirectly("نشط")}
-                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl text-xs font-bold transition-all z-10 ${status === "نشط" ? "bg-white text-green-600 shadow-[0_4px_20px_-4px_rgba(34,197,94,0.3),inset_0_2px_0_rgba(255,255,255,0.8)] border border-slate-100/50 dark:bg-slate-700 dark:text-green-400 dark:border-slate-600 dark:shadow-[0_4px_20px_-4px_rgba(34,197,94,0.15)] scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50"}`}
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl text-xs font-bold transition-all z-10 ${effectiveStatus === "نشط" ? "bg-white text-green-600 shadow-[0_4px_20px_-4px_rgba(34,197,94,0.3),inset_0_2px_0_rgba(255,255,255,0.8)] border border-slate-100/50 dark:bg-slate-700 dark:text-green-400 dark:border-slate-600 dark:shadow-[0_4px_20px_-4px_rgba(34,197,94,0.15)] scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50"}`}
                   >
-                    <div className={`w-2 h-2 rounded-full ${status === "نشط" ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse" : "bg-slate-300 dark:bg-slate-600"}`}></div>
+                    <div className={`w-2 h-2 rounded-full ${effectiveStatus === "نشط" ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] animate-pulse" : "bg-slate-300 dark:bg-slate-600"}`}></div>
                     نشط
                   </button>
                   <button 
                     type="button"
                     onClick={() => updateStatusDirectly("مغلق مؤقتاً")}
-                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl text-xs font-bold transition-all z-10 ${status === "مغلق مؤقتاً" ? "bg-white text-amber-600 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.3),inset_0_2px_0_rgba(255,255,255,0.8)] border border-slate-100/50 dark:bg-slate-700 dark:text-amber-400 dark:border-slate-600 dark:shadow-[0_4px_20px_-4px_rgba(245,158,11,0.15)] scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50"}`}
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl text-xs font-bold transition-all z-10 ${effectiveStatus === "مغلق مؤقتاً" ? "bg-white text-amber-600 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.3),inset_0_2px_0_rgba(255,255,255,0.8)] border border-slate-100/50 dark:bg-slate-700 dark:text-amber-400 dark:border-slate-600 dark:shadow-[0_4px_20px_-4px_rgba(245,158,11,0.15)] scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50"}`}
                   >
-                    <div className={`w-2 h-2 rounded-full ${status === "مغلق مؤقتاً" ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse" : "bg-slate-300 dark:bg-slate-600"}`}></div>
+                    <div className={`w-2 h-2 rounded-full ${effectiveStatus === "مغلق مؤقتاً" ? "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse" : "bg-slate-300 dark:bg-slate-600"}`}></div>
                     إغلاق مؤقت
                   </button>
                   <button 
                     type="button"
                     onClick={() => updateStatusDirectly("مغلق")}
-                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl text-xs font-bold transition-all z-10 ${status === "مغلق" ? "bg-white text-red-600 shadow-[0_4px_20px_-4px_rgba(239,68,68,0.3),inset_0_2px_0_rgba(255,255,255,0.8)] border border-slate-100/50 dark:bg-slate-700 dark:text-red-400 dark:border-slate-600 dark:shadow-[0_4px_20px_-4px_rgba(239,68,68,0.15)] scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50"}`}
+                    className={`flex-1 flex flex-col items-center justify-center gap-1.5 py-3 px-1 rounded-xl text-xs font-bold transition-all z-10 ${effectiveStatus === "مغلق" || effectiveStatus === "منتهي الوقت" ? "bg-white text-red-600 shadow-[0_4px_20px_-4px_rgba(239,68,68,0.3),inset_0_2px_0_rgba(255,255,255,0.8)] border border-slate-100/50 dark:bg-slate-700 dark:text-red-400 dark:border-slate-600 dark:shadow-[0_4px_20px_-4px_rgba(239,68,68,0.15)] scale-105" : "text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700/50"}`}
                   >
-                    <div className={`w-2 h-2 rounded-full ${status === "مغلق" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "bg-slate-300 dark:bg-slate-600"}`}></div>
+                    <div className={`w-2 h-2 rounded-full ${effectiveStatus === "مغلق" || effectiveStatus === "منتهي الوقت" ? "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" : "bg-slate-300 dark:bg-slate-600"}`}></div>
                     إغلاق دائم
                   </button>
                 </div>

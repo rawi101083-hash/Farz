@@ -122,6 +122,7 @@ export const ApplicantForm = ({
     type: "",
     linkedin: "",
     source: "",
+    languages: "",
     knockoutAnswers: {} as Record<string, string>,
   });
   const [customQuestionErrors, setCustomQuestionErrors] = useState<Record<string, string>>({});
@@ -525,6 +526,7 @@ export const ApplicantForm = ({
       { question: "سنوات الخبرة", answer: submitData.experience || formDataState.experience },
       ...((formDataState.type || submitData.type) ? [{ question: "نوع العمل", answer: submitData.type || formDataState.type }] : []),
       { question: "مدة الانضمام / الجاهزية للعمل", answer: submitData.availability || (formDataState as any).availability || "" },
+      { question: "اللغات المتقنة", answer: (formDataState as any).languages || "" },
       { question: "رابط لينكد إن", answer: submitData.linkedin || formDataState.linkedin || "" },
       { question: "مصدر التقديم", answer: submitData.source || formDataState.source || "غير محدد" },
       ...(Array.isArray(customQuestions) ? customQuestions.map((q: any, idx: number) => ({
@@ -538,6 +540,7 @@ export const ApplicantForm = ({
         else if (q.type === "experience") ans = submitData.experience || formDataState.experience;
         else if (q.type === "city") ans = submitData.city || formDataState.city;
         else if (q.type === "availability") ans = submitData.availability || (formDataState as any).availability;
+        else if (q.type === "languages") ans = (formDataState as any).languages;
 
         return {
           question: q.text,
@@ -567,6 +570,7 @@ export const ApplicantForm = ({
         else if (kq.type === "experience") ans = formDataState.experience;
         else if (kq.type === "city") ans = formDataState.city;
         else if (kq.type === "availability") ans = (formDataState as any).availability;
+        else if (kq.type === "languages") ans = (formDataState as any).languages;
 
         if (!ans) return false;
 
@@ -637,6 +641,14 @@ export const ApplicantForm = ({
           const reqVal = getAvailValue(kq.requiredAnswer);
           const appVal = getAvailValue(ans);
           return appVal > reqVal;
+        }
+
+        if (kq.type === "languages") {
+          const reqLangs = kq.requiredAnswer ? kq.requiredAnswer.split(",") : [];
+          if (reqLangs.length === 0) return false;
+          const appLangs = ans ? ans.split(",") : [];
+          const missing = reqLangs.some((lang: string) => !appLangs.includes(lang.trim()));
+          return missing;
         }
 
         return ans !== kq.requiredAnswer;
@@ -741,10 +753,12 @@ export const ApplicantForm = ({
           if (!attVal) continue;
 
           if (attDef.attachment_type === "link") {
-            customAnswers.push({ question: attDef.attachment_name, answer: attVal as string });
+            if (attVal && (attVal as string).trim() !== "") {
+              customAnswers.push({ question: attDef.attachment_name, answer: attVal as string });
+            }
           } else {
             const attFile = attVal as File;
-            if (attFile && attFile instanceof File) {
+            if (attFile && attFile instanceof File && attFile.size > 0) {
               const fileExt = attFile.name.split('.').pop() || "bin";
               const fileName = `custom_att_${Date.now()}_${i}.${fileExt}`;
               const filePath = `${job?.id || 'general'}/${fileName}`;
@@ -1479,6 +1493,24 @@ export const ApplicantForm = ({
                     </div>
                   </div>
 
+                  {hasKnockout("languages") && (
+                    <div className="space-y-3 md:col-span-2">
+                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
+                        اللغات المتقنة <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <MultiSearchableSelect
+                          options={["العربية", "الإنجليزية", "الفرنسية", "الإسبانية", "الأوردو", "الهندية", "البنغالية", "الفلبينية", "أخرى"]}
+                          value={(formDataState as any).languages || ""}
+                          onChange={(val) => setFormDataState(prev => ({ ...prev, languages: val as string }))}
+                          multiple={true}
+                          placeholder="اختر اللغات التي تتقنها..."
+                          className="w-full"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   {(activeRole?.askExpectedSalary === "open" || activeRole?.askExpectedSalary === "ranges" || (!activeRole?.askExpectedSalary && (job?.askExpectedSalary === "open" || job?.askExpectedSalary === "ranges"))) && (
                     <div className="space-y-3 md:col-span-2 mt-2">
                       <label className="text-sm font-bold text-navy dark:text-white mr-1">
@@ -1559,7 +1591,7 @@ export const ApplicantForm = ({
                     </div>
                   )}{" "}
                   {activeRole?.knockoutQuestions?.map((q: any, idx: number) => {
-                    if (["nationality", "education", "experience", "city", "availability"].includes(q.type)) return null;
+                    if (["nationality", "education", "experience", "city", "availability", "languages"].includes(q.type)) return null;
                     const options = q.type === "options" && Array.isArray(q.options) && q.options.length > 0 ? q.options : ["نعم", "لا"];
                     const qText = q.type === "age_condition" ? "تاريخ الميلاد" : q.text;
                     const isLong = qText && qText.length > 40;
@@ -1681,7 +1713,7 @@ export const ApplicantForm = ({
                         </label>{" "}
                         {att.attachment_type === "link" ? (
                           <input
-                            required={att.required}
+                            required={att.required || att.isRequired}
                             name={`customAttachment_${idx}`}
                             type="url"
                             placeholder="https://..."
@@ -1691,7 +1723,7 @@ export const ApplicantForm = ({
                         ) : att.attachment_type === "image" ? (
                           <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
                             <input
-                              required={att.required}
+                              required={att.required || att.isRequired}
                               type="file"
                               name={`customAttachment_${idx}`}
                               accept="image/jpeg, image/png"
@@ -1707,7 +1739,7 @@ export const ApplicantForm = ({
                         ) : att.attachment_type === "video" ? (
                           <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
                             <input
-                              required={att.required}
+                              required={att.required || att.isRequired}
                               type="file"
                               name={`customAttachment_${idx}`}
                               accept="video/mp4"
@@ -1723,7 +1755,7 @@ export const ApplicantForm = ({
                         ) : att.attachment_type === "document" ? (
                           <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
                             <input
-                              required={att.required}
+                              required={att.required || att.isRequired}
                               type="file"
                               name={`customAttachment_${idx}`}
                               accept=".doc,.docx,.xls,.xlsx"
@@ -1736,10 +1768,26 @@ export const ApplicantForm = ({
                               اختر مستند (Word/Excel)
                             </p>{" "}
                           </div>
+                        ) : att.attachment_type === "mixed_file" ? (
+                          <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
+                            <input
+                              required={att.required || att.isRequired}
+                              type="file"
+                              name={`customAttachment_${idx}`}
+                              accept=".pdf, image/jpeg, image/png"
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />{" "}
+                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-slate-100 text-slate-400 dark:text-slate-500 group-hover:text-primary group-hover:bg-primary/10 flex items-center justify-center transition-all">
+                              <Upload size={24} />{" "}
+                            </div>{" "}
+                            <p className="text-sm font-bold text-navy dark:text-white">
+                              اختر مستند أو صورة (PDF/JPG/PNG)
+                            </p>{" "}
+                          </div>
                         ) : (
                           <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
                             <input
-                              required={att.required}
+                              required={att.required || att.isRequired}
                               type="file"
                               name={`customAttachment_${idx}`}
                               accept=".pdf"

@@ -104,10 +104,14 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
             if (!companyName.trim()) return setError("اسم المنشأة مطلوب");
             if (!/^\d{10}$/.test(crNumber.trim())) return setError("رقم السجل التجاري يجب أن يتكون من 10 أرقام");
             if (!contactPhone.trim()) return setError("رقم جوال المنشأة مطلوب");
+            if (!/^(05\d{8}|9665\d{8})$/.test(contactPhone.trim())) return setError("رقم الجوال يجب أن يبدأ بـ 05 (10 أرقام) أو 9665 (12 رقم)");
+            if (!city.trim()) return setError("المدينة مطلوبة");
           } else {
             if (!companyName.trim()) return setError("الاسم الثلاثي مطلوب");
             if (!/^FL-\d{6,15}$/i.test(freelanceDoc.trim())) return setError("رقم الوثيقة يجب أن يبدأ بـ FL- يليه أرقام");
             if (!contactPhone.trim()) return setError("رقم الجوال مطلوب");
+            if (!/^(05\d{8}|9665\d{8})$/.test(contactPhone.trim())) return setError("رقم الجوال يجب أن يبدأ بـ 05 (10 أرقام) أو 9665 (12 رقم)");
+            if (!city.trim()) return setError("المدينة مطلوبة");
           }
 
           const updatedProfile = {
@@ -169,7 +173,7 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
               <input required type="text" value={crNumber} onChange={e => {
                 const val = e.target.value.replace(/\D/g, '');
                 if (val.length <= 10) setCrNumber(val);
-              }} maxLength={10} minLength={10} placeholder="مثال: 1010123456" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white text-left transition-all" dir="ltr" />
+              }} maxLength={10} minLength={10} placeholder="1010123456" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white text-left transition-all" dir="ltr" />
             </div>
           ) : (
             <div>
@@ -190,19 +194,21 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
             </label>
             <input required type="tel" value={contactPhone} onChange={e => {
               let val = e.target.value.replace(/\D/g, '');
-              if (val.startsWith('9665')) {
-                if (val.length <= 12) setContactPhone(val);
-              } else if (val.startsWith('05')) {
-                if (val.length <= 10) setContactPhone(val);
-              } else if (val.length === 0) {
+              if (val.length === 0) {
                 setContactPhone('');
+              } else if (val.startsWith('966')) {
+                if (val.length <= 12) setContactPhone(val);
+              } else if (val.startsWith('0')) {
+                if (val.length <= 10) setContactPhone(val);
+              } else if (val === '9' || val === '96') {
+                setContactPhone(val);
               }
             }} placeholder="05XXXXXXXX" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white transition-all text-left" dir="ltr" />
           </div>
 
           <div>
-            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2 mr-1">المدينة (اختياري)</label>
-            <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="الرياض، جدة..." className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white transition-all" />
+            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2 mr-1">المدينة</label>
+            <input required type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="الرياض، جدة..." className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white transition-all" />
           </div>
 
           <button type="submit" className="w-full py-4 mt-6 bg-gradient-to-l from-primary to-primary/90 text-white rounded-2xl font-bold text-lg shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15),inset_0_2px_0_rgba(255,255,255,0.2)] hover:-translate-y-0.5 hover:shadow-[0_8px_20px_-4px_rgba(0,0,0,0.2),inset_0_2px_0_rgba(255,255,255,0.3)] active:translate-y-0 transition-all flex items-center justify-center">
@@ -2323,7 +2329,8 @@ export default function App() {
 
             // Welcome Slides Logic (ONLY for brand new accounts)
             const hasSeenWelcome = localStorage.getItem(`welcome_slides_seen_${user.id}`);
-            if (!hasSeenWelcome) {
+            const isPublicCandidatePage = window.location.pathname.startsWith('/apply/') || window.location.pathname.startsWith('/profile') || window.location.pathname.startsWith('/share/') || window.location.pathname.startsWith('/interview/');
+            if (!hasSeenWelcome && !isPublicCandidatePage) {
               setShowWelcomeSlides(true);
             }
 
@@ -2574,7 +2581,9 @@ export default function App() {
         direct_upload: newJob.directUpload || false,
         roles: newJob.roles || [],
         ai_override_fields: newJob.aiOverrideFields || undefined,
-        company_logo: newJob.companyLogo || null
+        company_logo: newJob.companyLogo || null,
+        start_date: newJob.startDate,
+        end_date: newJob.endDate
       };
       const { error } = await supabase.from('jobs').upsert([jobForDB]);
       if (error) {
@@ -2953,6 +2962,7 @@ export default function App() {
                   setDashboardTab("الحساب");
                   setStep("dashboard");
                 }}
+                jobs={jobs}
               />
             )}{" "}
             {step === "manageJob" && selectedJob && (

@@ -93,4 +93,10 @@
 
 ---
 
+### 19. STRICT BAN ON DANGEROUS TOOLS AND COMMANDS (الحظر الصارم للأدوات والأوامر المدمرة)
+- **أداة الاستبدال الجماعي (multi_replace_file_content):** يُمنع منعاً باتاً استخدام هذه الأداة لحذف أو استبدال أجزاء كبيرة من الكود (Multi-line blocks) لأنها قد تخطئ وتقوم بمسح أكواد مشابهة في أماكن أخرى. إذا احتجت لتعديل أو حذف بلوك كبير، يجب عليك استخدام أدوات التعديل الدقيقة جداً أو تحديد الأسطر بالضبط.
+- **أوامر Git المدمرة:** يُمنع منعاً باتاً، وتحت أي ظرف، استخدام أمر `git checkout <file>` أو `git reset` لإرجاع ملف إلى حالة سابقة دون أن تتحدث مع المستخدم وتحصل على إذن صريح وواضح منه. هذا الأمر يدمر الشغل غير المحفوظ (Uncommitted changes) ويعتبر جريمة برمجية في هذا المشروع.
+
+---
+
 *This file acts as the ultimate constitution for AI agents operating on this codebase. Read it, understand it, and never violate it.*

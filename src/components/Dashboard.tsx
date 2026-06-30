@@ -279,7 +279,7 @@ export const Dashboard = ({
 
   const isInitialJobLoad = useRef(true);
   // Compute Limits
-  const activeCount = jobs.filter(j => j.status === 'نشط').length;
+  const activeCount = jobs.filter(j => j.status === 'نشط').reduce((acc, j) => acc + (j.recordType === 'campaign' && j.roles ? j.roles.length : 1), 0);
   let plan = userProfile?.subscription_tier || 'free';
 
   let daysLeft: number | null = null;
@@ -2515,7 +2515,7 @@ export const Dashboard = ({
               </div>
               <div className="flex justify-between items-center text-xs font-bold text-slate-300">
                 <span>الوظائف النشطة</span>
-                <span dir="ltr">{plan === 'enterprise' ? '∞' : `${jobLimit} / ${jobLimit - activeCount}`}</span>
+                <span dir="ltr">{plan === 'enterprise' ? '∞' : `${jobLimit} / ${activeCount}`}</span>
               </div>
               <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
                 <div
