@@ -89,6 +89,8 @@ export const ManageJob = ({
 
   // Status
   const [status, setStatus] = useState(job.status || "نشط");
+  const isJobExpired = !job.isOpenEnded && job.endDate && new Date(job.endDate) < new Date();
+  const effectiveStatus = isJobExpired && status === "نشط" ? "منتهي الوقت" : status;
 
   // Manual Unlock State
   const [showUnlockModal, setShowUnlockModal] = useState(false);

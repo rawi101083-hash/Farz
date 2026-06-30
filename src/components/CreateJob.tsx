@@ -96,6 +96,7 @@ export const CreateJob = ({
   onAutoSaveDraft,
   userProfile,
   onGoToSettings,
+  jobs,
 }: {
   createJobType?: "single" | "campaign" | "quick_link";
   initialData?: Job | null;
@@ -106,10 +107,25 @@ export const CreateJob = ({
   ) => string | null | undefined;
   onAutoSaveDraft?: (job: Omit<Job, "id" | "applicants" | "status" | "createdAt" | "draftId">, ds?: string | null) => string;
   userProfile?: any;
-  onGoToSettings?: () => void;
 }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+
+  // Compute Limits
+  const plan = userProfile?.subscription_tier || 'free';
+  const hasSubscribedBefore = !!(userProfile as any)?.subscription_end_date;
+  let jobLimit = userProfile?.jobs_limit ?? 0;
+  if (plan === 'free' && hasSubscribedBefore) {
+    jobLimit = 0;
+  } else if (!jobLimit) {
+    if (plan === 'free') jobLimit = 1;
+    else if (plan === 'one-time') jobLimit = 1;
+    else if (plan === 'startup' || plan === 'growth') jobLimit = 3;
+    else if (plan === 'business') jobLimit = 10;
+    else if (plan === 'enterprise') jobLimit = 100;
+  }
+  const activeCount = jobs ? jobs.filter(j => j.status === 'نشط').reduce((acc, j) => acc + (j.recordType === 'campaign' && j.roles ? j.roles.length : 1), 0) : 0;
+  const remainingJobs = plan === 'enterprise' ? 999999 : jobLimit - activeCount;
 
   const handleBackAttempt = () => {
     const hasChanges = () => {
@@ -995,6 +1011,10 @@ export const CreateJob = ({
   };
 
   const handleSaveRole = () => {
+    if (!editingRoleId && roles.length >= remainingJobs) {
+      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: `عذراً، لقد استنفدت الحد المسموح به للوظائف النشطة (المتبقي: ${remainingJobs}).`, type: "error" } }));
+      return;
+    }
     const isRoleFormEmpty = !roleTitle.trim() || !type.trim() || type.includes("اختر") || (!location.trim() && locations.length === 0) || !experience.trim() || experience.includes("اختر") || !qualification.trim() || qualification.includes("اختر");
     if (isRoleFormEmpty) {
       window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "يرجى التأكد من تعبئة الحقول الإلزامية: (المسمى الوظيفي، نوع العمل، مقر العمل، الحد الأدنى للمؤهل، وسنوات الخبرة).", type: "warning" } }));
@@ -1240,6 +1260,15 @@ export const CreateJob = ({
         currentCampaignTitle = roleTitle.trim();
         currentCampaignDesc = roleDesc.trim();
       }
+    }
+    
+    if (adType === "campaign" && finalRoles.length > remainingJobs) {
+      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: `عذراً، عدد الوظائف المطلوبة يتجاوز الحد المسموح به للوظائف النشطة (المتبقي: ${remainingJobs} فقط). يرجى إزالة بعض الأدوار.`, type: "error" } }));
+      return;
+    }
+
+    if (adType === "campaign" && !enableWelcomeUI && finalRoles.length > 0) {
+      currentCampaignTitle = finalRoles[0].title;
     }
 
     if (adType === "campaign" && !enableWelcomeUI && finalRoles.length > 0) {
@@ -1791,7 +1820,7 @@ export const CreateJob = ({
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center font-black text-lg transition-all duration-500 relative z-10 ${currentStep === 3 ? 'bg-gradient-to-b from-teal-400 to-teal-600 text-white shadow-[0_8px_16px_rgba(13,148,136,0.3),inset_0_2px_4px_rgba(255,255,255,0.4),inset_0_-4px_8px_rgba(0,0,0,0.3)] scale-110 border-2 border-white/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 shadow-inner'}`}>
                         3
                       </div>
-                      <span className={`absolute top-full mt-3 w-max text-[13px] font-black transition-colors ${currentStep === 3 ? 'text-teal-700 dark:text-teal-400 drop-shadow-sm' : 'text-slate-400'}`}>توجيهات الفرز والنشر</span>
+                      <span className={`absolute top-full mt-3 w-max text-[13px] font-black transition-colors ${currentStep === 3 ? 'text-teal-700 dark:text-teal-400 drop-shadow-sm' : 'text-slate-400'}`}>التاريخ والنشر</span>
                     </div>
                   </div>
                 </div>
@@ -1921,7 +1950,7 @@ export const CreateJob = ({
 
                       <div className="space-y-3">
                         <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                          مقر العمل / المدن <Sparkles size={14} className="text-primary/70" /> <span className="text-red-500">*</span>
+                          مقر العمل / المدن <span className="text-red-500">*</span>
                         </label>
                         <SearchableSelect
                           options={SAUDI_CITIES.filter((c) => !locations.includes(c))}
@@ -1966,7 +1995,7 @@ export const CreateJob = ({
 
                       <div className="space-y-3">
                         <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                          نوع العمل <Sparkles size={14} className="text-primary/70" /> <span className="text-red-500">*</span>
+                          نوع العمل <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                           <SearchableSelect
@@ -2278,7 +2307,7 @@ export const CreateJob = ({
                                 </div>
                                 <div className="space-y-6 border-t border-primary/20 pt-6 mt-2">
                                   <div>
-                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">نبذة عن الدور (للذكاء الاصطناعي)</label>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2 flex items-center gap-1">نبذة عن الدور <Sparkles size={14} className="text-primary/70" /></label>
                                     <textarea
                                       value={aiRoleSummary}
                                       onChange={(e) => setAiRoleSummary(e.target.value)}
@@ -2288,7 +2317,7 @@ export const CreateJob = ({
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">المهام والمسؤوليات (للذكاء الاصطناعي)</label>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2 flex items-center gap-1">المهام والمسؤوليات <Sparkles size={14} className="text-primary/70" /></label>
                                     <textarea
                                       value={aiResponsibilities}
                                       onChange={(e) => setAiResponsibilities(e.target.value)}
@@ -2298,7 +2327,7 @@ export const CreateJob = ({
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">المؤهلات والمتطلبات (للذكاء الاصطناعي)</label>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2 flex items-center gap-1">المؤهلات والمتطلبات <Sparkles size={14} className="text-primary/70" /></label>
                                     <textarea
                                       value={aiQualifications}
                                       onChange={(e) => setAiQualifications(e.target.value)}
@@ -2308,7 +2337,7 @@ export const CreateJob = ({
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">التخصصات المستهدفة (للذكاء الاصطناعي)</label>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2 flex items-center gap-1">التخصصات المستهدفة <Sparkles size={14} className="text-primary/70" /></label>
                                     <div className="relative">
                                       <input type="text" value={aiCustomMajor} onChange={(e) => setAiCustomMajor(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } } }} placeholder="أضف تخصص..." className="w-full pr-4 pl-12 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:border-primary transition-all font-medium" />
                                       <button type="button" onClick={() => { if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Plus size={18} /></button>
@@ -2322,7 +2351,7 @@ export const CreateJob = ({
                                     )}
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">المهارات المستهدفة (للذكاء الاصطناعي)</label>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2 flex items-center gap-1">المهارات المستهدفة <Sparkles size={14} className="text-primary/70" /></label>
                                     <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl mb-2">
                                       {aiTargetSkills.length === 0 && <span className="text-sm text-slate-400 dark:text-slate-500 py-2">لم يتم اختيار مهارات بعد...</span>}
                                       {aiTargetSkills.map((skill) => (
@@ -2335,7 +2364,7 @@ export const CreateJob = ({
                                     </div>
                                   </div>
                                   <div>
-                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2">اللغات المطلوبة (للذكاء الاصطناعي)</label>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2 flex items-center gap-1">اللغات المطلوبة <Sparkles size={14} className="text-primary/70" /></label>
                                     <div className="flex flex-wrap gap-2 mb-2">
                                       {aiLanguages.map((lang) => (
                                         <span key={lang} className="bg-primary text-white px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm">{lang}
@@ -2355,6 +2384,56 @@ export const CreateJob = ({
                                       </select>
                                     </div>
                                   </div>
+
+                                  {/* AI Instructions inside useAiOverride */}
+                                  <div className="bg-gradient-to-br from-white to-primary/5 dark:from-slate-800 dark:to-primary/10 p-5 rounded-2xl border border-primary/20 border-b-4 dark:border-primary/30 shadow-md shadow-primary/10 mt-8 mb-4">
+                                    <div className="flex items-center gap-3 mb-4">
+                                      <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                                        <Sparkles size={16} />
+                                      </div>
+                                      <div>
+                                        <h3 className="text-base font-bold text-navy dark:text-white flex items-center gap-2 group relative cursor-help w-max">
+                                          توجيهات إضافية لمحرك الفرز
+                                          <div className="w-[16px] h-[16px] rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
+                                            i
+                                          </div>
+                                          <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-primary/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
+                                            نظام الفرز يقوم بتحليل السير الذاتية ومطابقتها تلقائياً. استخدم هذا الحقل للتركيز على مهارة نادرة أو شروط خاصة جداً خارج الوصف المعتاد.
+                                          </div>
+                                        </h3>
+                                      </div>
+                                    </div>
+                                    <textarea
+                                      required={false}
+                                      rows={3}
+                                      value={aiInstructions}
+                                      onChange={(e) => setAiInstructions(e.target.value)}
+                                      placeholder="(اكتب توجيهاتك الدقيقة لمحرك الفرز هنا...)"
+                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border border-primary/20 border-b-2 dark:border-primary/30 text-navy dark:text-white dark:placeholder-slate-500 rounded-xl outline-none font-medium resize-none focus:border-primary focus:border-b-primary focus:ring-4 focus:ring-primary/10 dark:focus:ring-primary/20 transition-all placeholder:text-[13px] leading-relaxed relative z-10 shadow-sm"
+                                    />
+                                    <div className="mt-3 flex flex-wrap gap-2 relative z-10">
+                                      {[
+                                        { label: "+ إعطاء أولوية للخبرة المحلية", text: "ركز بشكل أكبر على الخبرة العملية داخل السوق المحلي." },
+                                        { label: "+ التركيز على الاستقرار الوظيفي", text: "أعطِ أولوية للمتقدمين الذين أظهروا استقراراً في وظائفهم السابقة وتجنب التنقل السريع." },
+                                        { label: "+ تفضيل الشهادات المهنية", text: "أعطِ وزناً أعلى للشهادات المهنية المعتمدة مقارنة بالشهادات الأكاديمية البحتة." },
+                                      ].map((suggestion, idx) => (
+                                        <button
+                                          key={idx}
+                                          type="button"
+                                          onClick={() => {
+                                            setAiInstructions(prev => {
+                                              const textToAdd = suggestion.text;
+                                              return prev ? `${prev}\n${textToAdd}` : textToAdd;
+                                            });
+                                          }}
+                                          className="text-[11px] px-3 py-1.5 rounded-full bg-primary/5 dark:bg-primary/10 text-primary font-bold hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors border border-primary/20 dark:border-primary/30"
+                                        >
+                                          {suggestion.label}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  </div>
+
                                 </div>
                               </motion.div>
                             )}
@@ -2694,6 +2773,58 @@ export const CreateJob = ({
                           </div>
                         </div>
 
+                        {createJobType !== "quick_link" && !useAiOverride && (
+                          <div className="bg-gradient-to-br from-white to-primary/5 dark:from-slate-800 dark:to-primary/10 p-5 rounded-2xl border border-primary/20 border-b-4 dark:border-primary/30 shadow-md shadow-primary/10 mt-8 mb-4">
+                            <div className="flex items-center gap-3 mb-4">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                                <Sparkles size={16} />
+                              </div>
+                              <div>
+                                <h3 className="text-base font-bold text-navy dark:text-white flex items-center gap-2 group relative cursor-help w-max">
+                                  توجيهات إضافية لمحرك الفرز
+                                  <div className="w-[16px] h-[16px] rounded-full bg-primary text-white flex items-center justify-center text-[10px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
+                                    i
+                                  </div>
+                                  <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-primary/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
+                                    نظام الفرز يقوم بتحليل السير الذاتية ومطابقتها تلقائياً. استخدم هذا الحقل للتركيز على مهارة نادرة أو شروط خاصة جداً خارج الوصف المعتاد.
+                                  </div>
+                                </h3>
+                              </div>
+                            </div>
+                            <textarea
+                              required={false}
+                              rows={3}
+                              value={aiInstructions}
+                              onChange={(e) => setAiInstructions(e.target.value)}
+                              placeholder="(اكتب توجيهاتك الدقيقة لمحرك الفرز هنا...)"
+                              className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border border-primary/20 border-b-2 dark:border-primary/30 text-navy dark:text-white dark:placeholder-slate-500 rounded-xl outline-none font-medium resize-none focus:border-primary focus:border-b-primary focus:ring-4 focus:ring-primary/10 dark:focus:ring-primary/20 transition-all placeholder:text-[13px] leading-relaxed relative z-10 shadow-sm"
+                            />
+                            <div className="mt-3 flex flex-wrap gap-2 relative z-10">
+                              {[
+                                { label: "+ إعطاء أولوية للخبرة المحلية", text: "ركز بشكل أكبر على الخبرة العملية داخل السوق المحلي." },
+                                { label: "+ التركيز على الاستقرار الوظيفي", text: "أعطِ أولوية للمتقدمين الذين أظهروا استقراراً في وظائفهم السابقة وتجنب التنقل السريع." },
+                                { label: "+ تفضيل الشهادات المهنية", text: "أعطِ وزناً أعلى للشهادات المهنية المعتمدة مقارنة بالشهادات الأكاديمية البحتة." },
+                              ].map((suggestion, idx) => (
+                                <button
+                                  key={idx}
+                                  type="button"
+                                  onClick={() => {
+                                    setAiInstructions(prev => {
+                                      const textToAdd = suggestion.text;
+                                      return prev ? `${prev}\n${textToAdd}` : textToAdd;
+                                    });
+                                  }}
+                                  className="text-[11px] px-3 py-1.5 rounded-full bg-primary/5 dark:bg-primary/10 text-primary font-bold hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors border border-primary/20 dark:border-primary/30"
+                                >
+                                  {suggestion.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+
+
                         {createJobType !== "quick_link" && (
                           <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
                             <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} /></button>
@@ -2824,10 +2955,10 @@ export const CreateJob = ({
                                         )}{" "}
                                         <div className="flex flex-wrap gap-2 mb-4">
                                           <span className="text-xs font-bold text-slate-500 dark:text-slate-400 self-center ml-2">إضافات سريعة:</span>
-                                          <button type="button" onClick={() => { setNewAttachmentName("الصورة الشخصية"); setNewAttachmentType("image"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> الصورة الشخصية</button>
-                                          <button type="button" onClick={() => { setNewAttachmentName("رخصة القيادة"); setNewAttachmentType("mixed_file"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رخصة القيادة</button>
-                                          <button type="button" onClick={() => { setNewAttachmentName("صورة الهوية"); setNewAttachmentType("mixed_file"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> صورة الهوية</button>
-                                          <button type="button" onClick={() => { setNewAttachmentName("رابط معرض الأعمال"); setNewAttachmentType("link"); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رابط معرض الأعمال</button>
+                                          <button type="button" onClick={() => { setCustomAttachments(prev => [...prev, { attachment_name: "الصورة الشخصية", attachment_type: "image", required: newAttachmentRequired }]); setNewAttachmentRequired(false); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> الصورة الشخصية</button>
+                                          <button type="button" onClick={() => { setCustomAttachments(prev => [...prev, { attachment_name: "رخصة القيادة", attachment_type: "mixed_file", required: newAttachmentRequired }]); setNewAttachmentRequired(false); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رخصة القيادة</button>
+                                          <button type="button" onClick={() => { setCustomAttachments(prev => [...prev, { attachment_name: "صورة الهوية", attachment_type: "mixed_file", required: newAttachmentRequired }]); setNewAttachmentRequired(false); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> صورة الهوية</button>
+                                          <button type="button" onClick={() => { setCustomAttachments(prev => [...prev, { attachment_name: "رابط معرض الأعمال", attachment_type: "link", required: newAttachmentRequired }]); setNewAttachmentRequired(false); }} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-200 dark:border-slate-600 flex items-center gap-1"><Plus size={14} /> رابط معرض الأعمال</button>
                                         </div>
                                         <div className="flex flex-col md:flex-row items-center gap-4 w-full">
                                           {" "}
@@ -3378,71 +3509,18 @@ export const CreateJob = ({
                             </span>
                           </div>
                         )}
+                        {adType === "campaign" && (
+                          <div className="flex items-center justify-end mb-2">
+                            <span className="bg-primary/10 text-primary font-bold px-4 py-1.5 rounded-xl text-sm">
+                              الشاغر رقم {editingRoleId ? roles.findIndex(r => r.id === editingRoleId) + 1 : roles.length + 1}
+                            </span>
+                          </div>
+                        )}
                         {createJobType !== "quick_link" && (
                           <>
-                            <div className="bg-gradient-to-br from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 p-8 rounded-[32px] border-2 border-primary/20 dark:border-primary/30 shadow-inner mt-8 mb-8">
-                              <div className="flex items-center gap-3 mb-4">
-                                <div className="w-10 h-10 rounded-full bg-primary/10 dark:bg-primary/20 flex items-center justify-center text-primary shrink-0">
-                                  <Zap size={20} />
-                                </div>
-                                <div>
-                                  <h3 className="text-lg font-bold text-navy dark:text-white flex items-center gap-2 group relative cursor-help w-max">
-                                    توجيهات إضافية لمحرك الفرز
-                                    <div className="w-[18px] h-[18px] rounded-full bg-primary text-white flex items-center justify-center text-[12px] font-bold leading-none shrink-0 shadow-sm" style={{ fontFamily: 'monospace' }}>
-                                      i
-                                    </div>
-                                    <div className="absolute bottom-full mb-3 w-80 bg-slate-900 text-white text-xs leading-relaxed font-medium p-4 rounded-xl shadow-2xl shadow-primary/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-50 left-1/2 -translate-x-1/2 before:content-[''] before:absolute before:top-full before:left-1/2 before:-translate-x-1/2 before:border-4 before:border-transparent before:border-t-slate-900">
-                                      نظام الفرز يقوم بتحليل السير الذاتية ومطابقتها تلقائياً. استخدم هذا الحقل للتركيز على مهارة نادرة أو شروط خاصة جداً خارج الوصف المعتاد.
-                                    </div>
-                                  </h3>
-                                </div>
-                              </div>
-                              <textarea
-                                required={false}
-                                rows={3}
-                                value={aiInstructions}
-                                onChange={(e) => setAiInstructions(e.target.value)}
-                                placeholder="(اكتب توجيهاتك الدقيقة لمحرك الفرز هنا...)"
-                                className="w-full px-6 py-5 bg-white/80 dark:bg-slate-800/80 border-2 border-primary/20 dark:border-primary/30 text-navy dark:text-white dark:placeholder-slate-500 rounded-2xl outline-none font-medium resize-none focus:border-primary focus:ring-4 focus:ring-primary/10 dark:focus:ring-primary/20 transition-all placeholder:text-[13px] leading-relaxed relative z-10"
-                              />
-                              <div className="mt-3 flex flex-wrap gap-2 relative z-10">
-                                {[
-                                  { label: "+ إعطاء أولوية للخبرة المحلية", text: "ركز بشكل أكبر على الخبرة العملية داخل السوق المحلي." },
-                                  { label: "+ التركيز على الاستقرار الوظيفي", text: "أعطِ أولوية للمتقدمين الذين أظهروا استقراراً في وظائفهم السابقة وتجنب التنقل السريع." },
-                                  { label: "+ تفضيل الشهادات المهنية", text: "أعطِ وزناً أعلى للشهادات المهنية المعتمدة مقارنة بالشهادات الأكاديمية البحتة." },
-                                ].map((suggestion, idx) => (
-                                  <button
-                                    key={idx}
-                                    type="button"
-                                    onClick={() => {
-                                      setAiInstructions(prev => {
-                                        const textToAdd = suggestion.text;
-                                        return prev ? `${prev}\n${textToAdd}` : textToAdd;
-                                      });
-                                    }}
-                                    className="text-[11px] px-3 py-1.5 rounded-full bg-primary/5 dark:bg-primary/10 text-primary font-bold hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors border border-primary/20 dark:border-primary/30"
-                                  >
-                                    {suggestion.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
 
-                            <div className="bg-slate-50 dark:bg-slate-900/30 p-4 rounded-xl border border-slate-200 dark:border-slate-700 mb-8 mt-2">
-                              <div className="flex items-center justify-between gap-4">
-                                <div>
-                                  <h4 className="font-bold text-navy dark:text-white text-sm flex items-center gap-2">
-                                    <Settings size={18} className="text-primary" />
-                                    تخطي صفحة الوصف (إعداد عام)
-                                  </h4>
-                                  <p className="text-slate-500 dark:text-slate-400 text-xs mt-1 max-w-2xl leading-relaxed">عند تفعيل هذا الخيار، سيتم توجيه المتقدمين مباشرة لصفحة التقديم ورفع السيرة الذاتية بدلاً من عرض تفاصيل الوظيفة.</p>
-                                </div>
-                                <label className="relative inline-flex items-center cursor-pointer shrink-0">
-                                  <input type="checkbox" className="sr-only peer" checked={directUpload} onChange={(e) => setDirectUpload(e.target.checked)} />
-                                  <div className="relative w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.3rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
-                                </label>
-                              </div>
-                            </div>
+
+
 
 
 
@@ -3600,7 +3678,22 @@ export const CreateJob = ({
 
               <div className={currentStep === 3 ? "block animate-in fade-in slide-in-from-bottom-4 duration-500" : "hidden"}>
                 <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-slate-200 dark:border-slate-700 shadow-sm p-8 mt-6 mb-6">
-                  {/* Card: Schedule */}
+                  {/* Card: Schedule and Options */}
+                  {createJobType !== "quick_link" && (
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 mb-6 border-b border-slate-100 dark:border-slate-700">
+                      <div>
+                        <h4 className="font-bold text-navy dark:text-white text-base flex items-center gap-2 mb-1">
+                          <Settings size={20} className="text-primary" />
+                          تخطي صفحة الوصف (إعداد عام)
+                        </h4>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm max-w-2xl leading-relaxed pr-7">عند تفعيل هذا الخيار، سيتم توجيه المتقدمين مباشرة لصفحة التقديم ورفع السيرة الذاتية بدلاً من عرض تفاصيل الوظيفة.</p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="checkbox" className="sr-only peer" checked={directUpload} onChange={(e) => setDirectUpload(e.target.checked)} />
+                        <div className="relative w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:-translate-x-[1.6rem] peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-transform dark:border-slate-600 peer-checked:bg-primary"></div>
+                      </label>
+                    </div>
+                  )}
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                     <h3 className="text-xl font-bold text-navy dark:text-white flex items-center gap-3">
                       <Calendar className="text-primary" size={24} /> التواريخ والجدولة
@@ -3954,8 +4047,19 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
         </p>
         <form onSubmit={async (e) => {
           e.preventDefault();
-          if (entityType === "company" && (!companyName || !crNumber || !contactPhone)) return;
-          if (entityType === "freelance" && (!companyName || !freelanceDoc || !contactPhone)) return;
+          if (entityType === "company") {
+            if (!companyName.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "اسم المنشأة مطلوب", type: "error" } })); return; }
+            if (!/^\d{10}$/.test(crNumber.trim())) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم السجل التجاري يجب أن يتكون من 10 أرقام", type: "error" } })); return; }
+            if (!contactPhone.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم جوال المنشأة مطلوب", type: "error" } })); return; }
+            if (!/^(05\d{8}|9665\d{8})$/.test(contactPhone.trim())) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم الجوال يجب أن يبدأ بـ 05 (10 أرقام) أو 9665 (12 رقم)", type: "error" } })); return; }
+            if (!city.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "المدينة مطلوبة", type: "error" } })); return; }
+          } else {
+            if (!companyName.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "الاسم الثلاثي مطلوب", type: "error" } })); return; }
+            if (!/^FL-\d{6,15}$/i.test(freelanceDoc.trim())) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم الوثيقة يجب أن يبدأ بـ FL- يليه أرقام", type: "error" } })); return; }
+            if (!contactPhone.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم الجوال مطلوب", type: "error" } })); return; }
+            if (!/^(05\d{8}|9665\d{8})$/.test(contactPhone.trim())) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "رقم الجوال يجب أن يبدأ بـ 05 (10 أرقام) أو 9665 (12 رقم)", type: "error" } })); return; }
+            if (!city.trim()) { window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "المدينة مطلوبة", type: "error" } })); return; }
+          }
 
           const updatedProfile = {
             ...userProfile,
@@ -4014,7 +4118,7 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
               <input required type="text" value={crNumber} onChange={e => {
                 const val = e.target.value.replace(/\D/g, '');
                 if (val.length <= 10) setCrNumber(val);
-              }} maxLength={10} minLength={10} placeholder="مثال: 1010123456" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white text-left transition-all" dir="ltr" />
+              }} maxLength={10} minLength={10} placeholder="1010123456" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white text-left transition-all" dir="ltr" />
             </div>
           ) : (
             <div>
@@ -4029,19 +4133,21 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
             </label>
             <input required type="tel" value={contactPhone} onChange={e => {
               let val = e.target.value.replace(/\D/g, '');
-              if (val.startsWith('9665')) {
-                if (val.length <= 12) setContactPhone(val);
-              } else if (val.startsWith('05')) {
-                if (val.length <= 10) setContactPhone(val);
-              } else if (val.length === 0) {
+              if (val.length === 0) {
                 setContactPhone('');
+              } else if (val.startsWith('966')) {
+                if (val.length <= 12) setContactPhone(val);
+              } else if (val.startsWith('0')) {
+                if (val.length <= 10) setContactPhone(val);
+              } else if (val === '9' || val === '96') {
+                setContactPhone(val);
               }
             }} placeholder="05XXXXXXXX" className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white transition-all text-left" dir="ltr" />
           </div>
 
           <div>
-            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2 mr-1">المدينة (اختياري)</label>
-            <input type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="الرياض، جدة..." className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white transition-all" />
+            <label className="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2 mr-1">المدينة</label>
+            <input required type="text" value={city} onChange={e => setCity(e.target.value)} placeholder="الرياض، جدة..." className="w-full px-5 py-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 outline-none focus:border-orange-400 focus:ring-4 focus:ring-orange-100 dark:focus:ring-orange-900/30 font-medium dark:text-white transition-all" />
           </div>
 
           <button type="submit" className="w-full py-5 mt-4 bg-primary text-white rounded-2xl font-bold text-lg hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
@@ -4805,7 +4911,7 @@ const ManageJob = ({
                         >
                           <div className="space-y-6 border-t border-indigo-200/50 dark:border-indigo-800/50 pt-6 mt-2">
                             <div>
-                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">نبذة عن الدور (للذكاء الاصطناعي)</label>
+                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-1">نبذة عن الدور <Sparkles size={14} className="text-primary/70" /></label>
                               <textarea
                                 value={aiRoleSummary}
                                 onChange={(e) => setAiRoleSummary(e.target.value)}
@@ -4816,7 +4922,7 @@ const ManageJob = ({
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المهام والمسؤوليات (للذكاء الاصطناعي)</label>
+                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-1">المهام والمسؤوليات <Sparkles size={14} className="text-primary/70" /></label>
                               <textarea
                                 value={aiResponsibilities}
                                 onChange={(e) => setAiResponsibilities(e.target.value)}
@@ -4827,7 +4933,7 @@ const ManageJob = ({
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المؤهلات والمتطلبات (للذكاء الاصطناعي)</label>
+                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-1">المؤهلات والمتطلبات <Sparkles size={14} className="text-primary/70" /></label>
                               <textarea
                                 value={aiQualifications}
                                 onChange={(e) => setAiQualifications(e.target.value)}
@@ -4838,7 +4944,7 @@ const ManageJob = ({
                               />
                             </div>
                             <div>
-                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">التخصصات المستهدفة (للذكاء الاصطناعي)</label>
+                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-1">التخصصات المستهدفة <Sparkles size={14} className="text-primary/70" /></label>
                               <div className="relative">
                                 <input type="text" disabled={isLocked} value={aiCustomMajor} onChange={(e) => setAiCustomMajor(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } } }} placeholder="أضف تخصص..." className="w-full pr-4 pl-12 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm" />
                                 <button type="button" disabled={isLocked} onClick={() => { if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-all"><Plus size={18} /></button>
@@ -4852,7 +4958,7 @@ const ManageJob = ({
                               )}
                             </div>
                             <div>
-                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">المهارات المستهدفة (للذكاء الاصطناعي)</label>
+                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-1">المهارات المستهدفة <Sparkles size={14} className="text-primary/70" /></label>
                               <div className="flex flex-wrap gap-2 min-h-[60px] p-4 bg-white/50 dark:bg-slate-800/50 border-2 border-indigo-100 dark:border-indigo-800/30 rounded-2xl mb-2">
                                 {aiTargetSkills.length === 0 && <span className="text-sm text-slate-400 dark:text-slate-500 py-2">لم يتم اختيار مهارات بعد...</span>}
                                 {aiTargetSkills.map((skill) => (
@@ -4865,7 +4971,7 @@ const ManageJob = ({
                               </div>
                             </div>
                             <div>
-                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2">اللغات المطلوبة (للذكاء الاصطناعي)</label>
+                              <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-1">اللغات المطلوبة <Sparkles size={14} className="text-primary/70" /></label>
                               <div className="flex flex-wrap gap-2 mb-2">
                                 {aiLanguages.map((lang) => (
                                   <span key={lang} className="bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm">{lang}
@@ -4890,6 +4996,8 @@ const ManageJob = ({
                       )}
                     </AnimatePresence>
                   </div>
+
+
 
                   {/* Knockout Questions inside Filter Tab */}
                   <div className={"space-y-4 pt-6 mt-6 border-t font-medium border-slate-200 dark:border-slate-700 " + (isLocked ? "opacity-60 pointer-events-none" : "")}>
