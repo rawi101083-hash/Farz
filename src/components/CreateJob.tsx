@@ -2275,21 +2275,7 @@ export const CreateJob = ({
                   <div className={`bg-white border-slate-200 dark:bg-slate-800 p-8 rounded-[32px] border dark:border-slate-700 space-y-6 ${currentStep === 3 ? 'hidden' : ''}`}>
                     {currentStep === 1 && (
                       <>
-                        {adType === "campaign" && (
-                          <h3 className="text-xl font-bold text-navy dark:text-white flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                              <Users className="text-primary" size={24} /> تفاصيل الأدوار والمتطلبات
-                            </div>
-                            <span className="text-xs md:text-sm bg-primary/10 text-primary px-3 py-1.5 rounded-full font-bold">
-                              الشاغر رقم {editingRoleId ? roles.findIndex(r => r.id === editingRoleId) + 1 : roles.length + 1}
-                            </span>
-                          </h3>
-                        )}
-                        {adType === "campaign" && (
-                          <p className="text-sm font-medium text-gray-500 mb-6 px-1">
-                            (تنبيه: هذه البيانات أساسية لعمل محرك الفرز بدقة، حتى وإن تم تفعيل خاصية التخطي للمتقدمين)
-                          </p>
-                        )}
+
                         {/* Main Section Heading */}
                         <h3 className="text-xl font-bold text-navy dark:text-white mb-6 mt-8">تفاصيل الاعلان</h3>
 
