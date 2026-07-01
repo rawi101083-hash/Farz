@@ -443,6 +443,23 @@ export const CreateJob = ({
     }
   }, []);
 
+  useEffect(() => {
+    if (userProfile?.isLoaded) {
+      setCompany(prev => {
+        if (!prev && !initialData?.company) {
+          return localStorage.getItem("last_used_company") || userProfile?.companyName || userProfile?.name || "";
+        }
+        return prev;
+      });
+      setCompanyLogo(prev => {
+        if (!prev && !initialData?.companyLogo) {
+          return localStorage.getItem("last_used_logo") || null;
+        }
+        return prev;
+      });
+    }
+  }, [userProfile?.isLoaded, userProfile?.companyName, userProfile?.name, initialData]);
+
   const [knockoutQuestions, setKnockoutQuestions] = useState<
     { text: string; type: "yes_no" | "options" | "age_condition" | "nationality" | "city" | "education" | "experience" | "availability" | "languages"; options?: string[]; requiredAnswer: string; minAge?: number; maxAge?: number }[]
   >(baseRole?.knockoutQuestions || []);

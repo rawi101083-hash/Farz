@@ -1891,6 +1891,15 @@ export const ApplicantForm = ({
                                   if (file.size > 5 * 1024 * 1024) { alert("عذراً، يجب ألا يتجاوز حجم الملف 5 ميجابايت."); e.target.value = ""; return; }
                                   const ext = file.name.split('.').pop()?.toLowerCase();
                                   if (!['jpg', 'jpeg', 'png'].includes(ext || '')) { alert("صيغة الملف غير مدعومة، يرجى رفع ملفات JPG أو PNG فقط"); e.target.value = ""; return; }
+                                  const parent = e.target.parentElement;
+                                  if (parent) {
+                                    const titleEl = parent.querySelector('p');
+                                    if (titleEl) titleEl.textContent = file.name;
+                                    parent.classList.remove('border-dashed', 'border-slate-200', 'dark:border-slate-700');
+                                    parent.classList.add('border-solid', 'border-primary', 'bg-primary/5');
+                                    const iconContainer = parent.querySelector('div');
+                                    if (iconContainer) iconContainer.className = "w-12 h-12 mx-auto mb-3 rounded-xl bg-primary text-white flex items-center justify-center transition-all shadow-md";
+                                  }
                                 }
                               }}
                               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -1915,6 +1924,15 @@ export const ApplicantForm = ({
                                   if (file.size > 15 * 1024 * 1024) { alert("عذراً، يجب ألا يتجاوز حجم الفيديو 15 ميجابايت."); e.target.value = ""; return; }
                                   const ext = file.name.split('.').pop()?.toLowerCase();
                                   if (ext !== 'mp4') { alert("صيغة الملف غير مدعومة، يرجى رفع فيديو MP4 فقط"); e.target.value = ""; return; }
+                                  const parent = e.target.parentElement;
+                                  if (parent) {
+                                    const titleEl = parent.querySelector('p');
+                                    if (titleEl) titleEl.textContent = file.name;
+                                    parent.classList.remove('border-dashed', 'border-slate-200', 'dark:border-slate-700');
+                                    parent.classList.add('border-solid', 'border-primary', 'bg-primary/5');
+                                    const iconContainer = parent.querySelector('div');
+                                    if (iconContainer) iconContainer.className = "w-12 h-12 mx-auto mb-3 rounded-xl bg-primary text-white flex items-center justify-center transition-all shadow-md";
+                                  }
                                 }
                               }}
                               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -1939,6 +1957,15 @@ export const ApplicantForm = ({
                                   if (file.size > 5 * 1024 * 1024) { alert("عذراً، يجب ألا يتجاوز حجم الملف 5 ميجابايت."); e.target.value = ""; return; }
                                   const ext = file.name.split('.').pop()?.toLowerCase();
                                   if (!['doc', 'docx', 'xls', 'xlsx'].includes(ext || '')) { alert("صيغة الملف غير مدعومة، يرجى رفع مستند Word أو Excel فقط"); e.target.value = ""; return; }
+                                  const parent = e.target.parentElement;
+                                  if (parent) {
+                                    const titleEl = parent.querySelector('p');
+                                    if (titleEl) titleEl.textContent = file.name;
+                                    parent.classList.remove('border-dashed', 'border-slate-200', 'dark:border-slate-700');
+                                    parent.classList.add('border-solid', 'border-primary', 'bg-primary/5');
+                                    const iconContainer = parent.querySelector('div');
+                                    if (iconContainer) iconContainer.className = "w-12 h-12 mx-auto mb-3 rounded-xl bg-primary text-white flex items-center justify-center transition-all shadow-md";
+                                  }
                                 }
                               }}
                               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -1963,6 +1990,15 @@ export const ApplicantForm = ({
                                   if (file.size > 5 * 1024 * 1024) { alert("عذراً، يجب ألا يتجاوز حجم الملف 5 ميجابايت."); e.target.value = ""; return; }
                                   const ext = file.name.split('.').pop()?.toLowerCase();
                                   if (!['pdf', 'jpg', 'jpeg', 'png'].includes(ext || '')) { alert("صيغة الملف غير مدعومة، يرجى رفع ملف PDF أو صورة JPG/PNG فقط"); e.target.value = ""; return; }
+                                  const parent = e.target.parentElement;
+                                  if (parent) {
+                                    const titleEl = parent.querySelector('p');
+                                    if (titleEl) titleEl.textContent = file.name;
+                                    parent.classList.remove('border-dashed', 'border-slate-200', 'dark:border-slate-700');
+                                    parent.classList.add('border-solid', 'border-primary', 'bg-primary/5');
+                                    const iconContainer = parent.querySelector('div');
+                                    if (iconContainer) iconContainer.className = "w-12 h-12 mx-auto mb-3 rounded-xl bg-primary text-white flex items-center justify-center transition-all shadow-md";
+                                  }
                                 }
                               }}
                               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
@@ -1987,6 +2023,15 @@ export const ApplicantForm = ({
                                   if (file.size > 5 * 1024 * 1024) { alert("عذراً، يجب ألا يتجاوز حجم الملف 5 ميجابايت."); e.target.value = ""; return; }
                                   const ext = file.name.split('.').pop()?.toLowerCase();
                                   if (ext !== 'pdf') { alert("صيغة الملف غير مدعومة، يرجى رفع ملف PDF فقط"); e.target.value = ""; return; }
+                                  const parent = e.target.parentElement;
+                                  if (parent) {
+                                    const titleEl = parent.querySelector('p');
+                                    if (titleEl) titleEl.textContent = file.name;
+                                    parent.classList.remove('border-dashed', 'border-slate-200', 'dark:border-slate-700');
+                                    parent.classList.add('border-solid', 'border-primary', 'bg-primary/5');
+                                    const iconContainer = parent.querySelector('div');
+                                    if (iconContainer) iconContainer.className = "w-12 h-12 mx-auto mb-3 rounded-xl bg-primary text-white flex items-center justify-center transition-all shadow-md";
+                                  }
                                 }
                               }}
                               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
