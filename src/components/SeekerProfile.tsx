@@ -498,6 +498,7 @@ export default function SeekerProfile() {
 
           <button
             onClick={() => {
+              sessionStorage.removeItem('sahab_active_step');
               const searchParams = new URLSearchParams(window.location.search);
               const returnUrl = searchParams.get('returnUrl');
               if (returnUrl) {
@@ -780,6 +781,7 @@ export default function SeekerProfile() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => {
+                  sessionStorage.removeItem('sahab_active_step');
                   const searchParams = new URLSearchParams(window.location.search);
                   const returnUrl = searchParams.get('returnUrl');
                   if (returnUrl) {
