@@ -1123,7 +1123,7 @@ export const ApplicantForm = ({
                 </a>
               </div>
               {job?.companyLogo && (
-                <div className="w-20 h-20 p-0 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center overflow-hidden">
+                <div className="w-20 h-20 p-0 bg-transparent dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200/20 dark:border-slate-700 flex items-center justify-center overflow-hidden">
                   <img
                     src={job.companyLogo}
                     alt={job.company || "Company"}

@@ -1901,7 +1901,7 @@ export const CreateJob = ({
                       <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
                         <div className="flex items-center gap-6">
                           <div
-                            className={`relative overflow-hidden w-20 h-20 p-0 rounded-2xl bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex items-center justify-center border-2 ${companyLogo ? "border-solid border-primary/20 cursor-pointer hover:border-primary/50" : "border-dashed"} transition-colors shrink-0 shadow-sm`}
+                            className={`relative overflow-hidden w-20 h-20 p-0 rounded-2xl bg-transparent dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex items-center justify-center border-2 ${companyLogo ? "border-solid border-primary/20 cursor-pointer hover:border-primary/50" : "border-dashed"} transition-colors shrink-0 shadow-sm`}
                             onClick={() => { if (companyLogo) setLightboxPhoto(companyLogo); }}
                           >
                             {!companyLogo && (
@@ -4391,7 +4391,7 @@ export const PublicJobPage = ({
                 )}
               </div>
               <div className="flex items-center gap-4 mb-8">
-                <div className={`w-16 h-16 p-0 backdrop-blur rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm ${job.companyLogo ? "bg-white dark:bg-slate-800/10 border border-white dark:border-slate-700/10" : "bg-white/5 border border-white/10"}`}>
+                <div className={`w-16 h-16 p-0 backdrop-blur rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm ${job.companyLogo ? "bg-transparent dark:bg-slate-800/10 border border-white/10 dark:border-slate-700/10" : "bg-white/5 border border-white/10"}`}>
                   {job.companyLogo ? (
                     <img
                       src={job.companyLogo}
