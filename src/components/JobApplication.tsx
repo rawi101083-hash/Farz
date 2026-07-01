@@ -14,7 +14,6 @@ import {
   Upload,
   LayoutDashboard,
   Check,
-  Zap,
   CheckCircle,
   Play,
   FileText,
@@ -151,6 +150,30 @@ export const ApplicantForm = ({
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  const isAutoPulled = (fieldKey: string) => {
+    if (applyMode !== 'fast' || !userProfile) return false;
+    switch (fieldKey) {
+      case 'fullName': return !!userProfile.full_name;
+      case 'phone': return !!userProfile.phone;
+      case 'email': return !!userProfile._sessionEmail;
+      case 'city': return !!userProfile.profile_data?.city;
+      case 'nationality': return !!userProfile.profile_data?.nationality;
+      case 'education': return !!userProfile.profile_data?.qualification?.[0];
+      case 'experience': return !!userProfile.profile_data?.experience;
+      case 'linkedin': return !!userProfile.profile_data?.linkedin_url;
+      case 'languages': return !!userProfile.profile_data?.languages;
+      case 'gender': return !!userProfile.profile_data?.gender;
+      case 'availability': return !!userProfile.profile_data?.notice_period;
+      case 'birth_date': return !!userProfile.profile_data?.birth_date;
+      default: return false;
+    }
+  };
+
+  const PulledIcon = ({ isPulled }: { isPulled: boolean }) => {
+    if (!isPulled) return null;
+    return <Zap size={14} className="text-teal-500 fill-teal-500 mr-1 inline-block" title="تم سحب البيانات تلقائياً من ملفك المهني" />;
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsLoggedIn(!!session);
@@ -185,6 +208,23 @@ export const ApplicantForm = ({
             birth_date: data.profile_data?.birth_date || prev.birth_date,
             cvUrl: data.cv_file_url || '',
           }));
+
+          let prefilledKnockouts: Record<number, string> = {};
+          if (activeRole?.knockoutQuestions) {
+            activeRole.knockoutQuestions.forEach((q: any, idx: number) => {
+              if (q.type === 'age_condition' && data.profile_data?.birth_date) {
+                prefilledKnockouts[idx] = data.profile_data.birth_date;
+              } else if (q.type === 'gender' && data.profile_data?.gender) {
+                prefilledKnockouts[idx] = data.profile_data.gender;
+              }
+            });
+            if (Object.keys(prefilledKnockouts).length > 0) {
+              setFormDataState(prev => ({
+                ...prev,
+                knockoutAnswers: { ...prev.knockoutAnswers, ...prefilledKnockouts }
+              }));
+            }
+          }
 
           if (data.profile_data?.portfolio_url) {
             setPortfolioLinksState([data.profile_data.portfolio_url]);
@@ -536,19 +576,19 @@ export const ApplicantForm = ({
     setIsSubmitting(true);
     const formData = new FormData(formRef.current);
     const submitData = Object.fromEntries(formData.entries());
+    const hasKnockoutFn = (type: string) => {
+      if (!activeRole?.knockoutQuestions || !Array.isArray(activeRole.knockoutQuestions)) return false;
+      return activeRole.knockoutQuestions.some((q: any) => q.type === type);
+    };
+
     let customAnswers = [
-      { question: "المدينة", answer: submitData.city || formDataState.city },
-      { question: "أعلى مؤهل علمي", answer: submitData.education || formDataState.education },
-      { question: "سنوات الخبرة", answer: submitData.experience || formDataState.experience },
+      ...(!hasKnockoutFn("city") ? [{ question: "المدينة", answer: submitData.city || formDataState.city }] : []),
+      ...((!hasKnockoutFn("nationality") && (activeRole?.askNationality ?? job?.askNationality)) ? [{ question: "الجنسية", answer: submitData.nationality || formDataState.nationality }] : []),
+      ...((!hasKnockoutFn("education") && (activeRole?.askEducation ?? job?.askEducation)) ? [{ question: "أعلى مؤهل علمي", answer: submitData.education || formDataState.education }] : []),
+      ...((!hasKnockoutFn("experience") && (activeRole?.askExperience ?? job?.askExperience)) ? [{ question: "سنوات الخبرة", answer: submitData.experience || formDataState.experience }] : []),
       ...((formDataState.type || submitData.type) ? [{ question: "نوع العمل", answer: submitData.type || formDataState.type }] : []),
-      { question: "مدة الانضمام / الجاهزية للعمل", answer: submitData.availability || (formDataState as any).availability || "" },
-      { question: "اللغات المتقنة", answer: (formDataState as any).languages || "" },
-      { question: "رابط لينكد إن", answer: submitData.linkedin || formDataState.linkedin || "" },
+      ...(!hasKnockoutFn("availability") ? [{ question: "مدة الانضمام / الجاهزية للعمل", answer: submitData.availability || (formDataState as any).availability || "" }] : []),
       { question: "مصدر التقديم", answer: submitData.source || formDataState.source || "غير محدد" },
-      { question: "الجنس", answer: submitData.gender || formDataState.gender || "" },
-      { question: "الصورة الشخصية", answer: (userProfile?.profile_data?.personal_photo_url) || "" },
-      { question: "ملف الهوية", answer: (userProfile?.id_file_url) || "" },
-      { question: "رخصة القيادة", answer: (userProfile?.license_file_url) || "" },
       ...(Array.isArray(customQuestions) ? customQuestions.map((q: any, idx: number) => ({
         question: q.text,
         answer: submitData[`customQuestion_${idx}`],
@@ -1201,13 +1241,13 @@ export const ApplicantForm = ({
               )}
 
               {applyMode === 'fast' && !isLoadingProfile && userProfile && !canOneClickApply && (
-                <div className="md:col-span-2 bg-orange-50 border border-orange-200 p-5 rounded-2xl flex items-center gap-3 shadow-sm">
-                  <div className="bg-orange-100 text-orange-600 p-2 rounded-xl shrink-0">
-                    <AlertTriangle size={24} />
+                <div className="md:col-span-2 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 p-5 rounded-2xl flex items-center gap-3 shadow-sm">
+                  <div className="bg-teal-100 dark:bg-teal-800/50 text-teal-600 dark:text-teal-400 p-2 rounded-xl shrink-0">
+                    <CheckCircle size={24} />
                   </div>
                   <div className="text-right">
-                    <h4 className="font-bold text-orange-900 text-base">التقديم السريع غير متاح</h4>
-                    <p className="text-orange-800 text-sm mt-1">يُرجى إكمال التقديم يدوياً بسبب وجود متطلبات إضافية من الشركة، أو لوجود نقص في بيانات ملفك.</p>
+                    <h4 className="font-bold text-teal-900 dark:text-teal-100 text-base">تم استخراج معلوماتك بنجاح</h4>
+                    <p className="text-teal-800 dark:text-teal-300 text-sm mt-1">يوجد متطلبات إضافية للشركة يرجى إكمالها، أو إكمال النقص في بيانات ملفك.</p>
                   </div>
                 </div>
               )}
