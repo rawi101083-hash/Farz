@@ -817,6 +817,38 @@ export const ApplicantForm = ({
         console.error("Failed to upload:", err);
       }
 
+      // --- Upload Personal Photo (if any) ---
+      try {
+        let finalPhotoUrl = "";
+        if (photoFile && photoFile instanceof File) {
+          const fileExt = photoFile.name.split('.').pop() || "jpg";
+          const fileName = `${Date.now()}_photo.${fileExt}`;
+          const filePath = `${job?.id || 'general'}/${fileName}`;
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("cv_uploads")
+            .upload(filePath, photoFile);
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrlData } = supabase.storage
+              .from("cv_uploads")
+              .getPublicUrl(uploadData.path);
+            finalPhotoUrl = publicUrlData.publicUrl;
+          } else {
+            console.error("Photo upload error:", uploadError);
+          }
+        } else if (photoPreview && photoPreview.startsWith("http")) {
+          // In case of fast apply, photoPreview contains the URL
+          finalPhotoUrl = photoPreview;
+        }
+
+        if (finalPhotoUrl) {
+          customAnswers.push({ question: "الصورة الشخصية", answer: finalPhotoUrl });
+        }
+      } catch (err) {
+        console.error("Failed to process personal photo:", err);
+      }
+
       // --- Upload and Process Custom Attachments ---
       try {
         const customAttachmentsDef = Array.isArray(customAttachments) ? customAttachments : [];
