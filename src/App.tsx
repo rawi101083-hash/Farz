@@ -2200,6 +2200,13 @@ export default function App() {
     if (session && step && step !== "landing" && step !== "login" && step !== "registerCompany") {
       sessionStorage.setItem("sahab_active_step", step);
     }
+    
+    if (!window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.has('step') && searchParams.get('step') !== step) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }, [step, session]);
 
   // Jobs fetching moved to user-dependent useEffect
