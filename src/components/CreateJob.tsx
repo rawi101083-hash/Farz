@@ -4507,6 +4507,11 @@ export const PublicJobPage = ({
                     </button>
                   ))}
                 </div>
+                <div className="mt-8 text-center px-4">
+                  <p className="text-slate-400 dark:text-slate-500 text-[11px] leading-relaxed">
+                    ملاحظة: بتقديمك على هذه الوظيفة، أنت توافق على مشاركة بياناتك ومرفقاتك مع الشركة الموظفة.
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="max-w-4xl mx-auto space-y-10">
@@ -4640,6 +4645,11 @@ export const PublicJobPage = ({
                     <button onClick={() => onApply('normal')} className="w-full flex bg-white dark:bg-slate-800 text-navy dark:text-white border-2 border-slate-200 dark:border-slate-700 py-4 rounded-2xl text-lg font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-[0.98] items-center justify-center gap-2">
                       <FileText size={20} /> التقديم العادي
                     </button>
+                  </div>
+                  <div className="text-center px-4">
+                    <p className="text-slate-400 dark:text-slate-500 text-[11px] leading-relaxed">
+                      ملاحظة: بتقديمك على هذه الوظيفة، أنت توافق على مشاركة بياناتك ومرفقاتك مع الشركة الموظفة.
+                    </p>
                   </div>
                 </div>
               </div>
