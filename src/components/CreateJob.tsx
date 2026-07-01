@@ -4376,14 +4376,14 @@ export const PublicJobPage = ({
                 ) : <div></div>}
                 {isLoggedIn ? (
                   <a
-                    href="/profile"
+                    href={`/profile?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`}
                     className="flex items-center gap-2 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all shadow-sm mr-auto whitespace-nowrap"
                   >
                     <User size={16} className="text-teal-400" /> ملفي المهني
                   </a>
                 ) : (
                   <a
-                    href="/profile"
+                    href={`/profile?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`}
                     className="flex items-center gap-2 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all shadow-sm mr-auto whitespace-nowrap"
                   >
                     <User size={16} className="text-teal-400" /> تسجيل دخول

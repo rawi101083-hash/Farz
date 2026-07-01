@@ -405,14 +405,14 @@ const PublicJobPage = ({
                 ) : <div></div>}
                 {isLoggedIn ? (
                   <a
-                    href="/profile"
+                    href={`/profile?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`}
                     className="flex items-center gap-2 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all shadow-sm mr-auto whitespace-nowrap"
                   >
                     <User size={16} className="text-teal-400" /> ملفي المهني
                   </a>
                 ) : (
                   <a
-                    href="/profile"
+                    href={`/profile?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`}
                     className="flex items-center gap-2 text-sm font-bold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm px-5 py-2.5 rounded-full transition-all shadow-sm mr-auto whitespace-nowrap"
                   >
                     <User size={16} className="text-teal-400" /> تسجيل دخول
@@ -806,7 +806,7 @@ const Navbar = ({
                 </a>
               ))}{" "}
               <button
-                onClick={() => window.location.href = '/profile'}
+                onClick={() => window.location.href = '/profile?returnUrl=/?step=landing'}
                 className="text-sm font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/50 dark:text-slate-300 dark:hover:bg-slate-800 transition-all px-4 py-2 rounded-xl flex items-center shadow-sm border border-slate-200 dark:border-slate-700 border-b-2 hover:-translate-y-0.5 hover:shadow-md active:scale-95 ml-2"
               >
                 الملف المهني
@@ -2208,11 +2208,16 @@ export default function App() {
       setSession(session);
       setUser(session?.user || null);
       if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
-        const savedStep = sessionStorage.getItem('sahab_active_step');
-        if (savedStep && savedStep !== "landing" && savedStep !== "login" && savedStep !== "registerCompany") {
-          setStep(savedStep as FlowStep);
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('step') === 'landing') {
+          setStep('landing');
         } else {
-          setStep("dashboard");
+          const savedStep = sessionStorage.getItem('sahab_active_step');
+          if (savedStep && savedStep !== "landing" && savedStep !== "login" && savedStep !== "registerCompany") {
+            setStep(savedStep as FlowStep);
+          } else {
+            setStep("dashboard");
+          }
         }
       }
       setIsCheckingAuth(false);
@@ -2236,6 +2241,25 @@ export default function App() {
         setStep("updatePassword");
       } else if (_event === 'TOKEN_REFRESHED' || _event === 'SIGNED_IN') {
         if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
+          const searchParams = new URLSearchParams(window.location.search);
+          if (searchParams.get('step') === 'landing') {
+            setStep('landing');
+          } else {
+            const savedStep = sessionStorage.getItem('sahab_active_step');
+            setStep(prevStep => {
+              if (prevStep === "updatePassword") return "updatePassword";
+              if (["landing", "login", "registerCompany"].includes(prevStep)) {
+                return (savedStep as FlowStep) || "dashboard";
+              }
+              return prevStep;
+            });
+          }
+        }
+      } else if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('step') === 'landing') {
+          setStep('landing');
+        } else {
           const savedStep = sessionStorage.getItem('sahab_active_step');
           setStep(prevStep => {
             if (prevStep === "updatePassword") return "updatePassword";
@@ -2245,15 +2269,6 @@ export default function App() {
             return prevStep;
           });
         }
-      } else if (session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
-        const savedStep = sessionStorage.getItem('sahab_active_step');
-        setStep(prevStep => {
-          if (prevStep === "updatePassword") return "updatePassword";
-          if (["landing", "login", "registerCompany"].includes(prevStep)) {
-            return (savedStep as FlowStep) || "dashboard";
-          }
-          return prevStep;
-        });
       } else if (!session && !window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
         if (_event === 'SIGNED_OUT') {
           sessionStorage.removeItem("sahab_active_step");
