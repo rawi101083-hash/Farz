@@ -4216,18 +4216,24 @@ const JobSuccess = ({
   };
   return (
     <>
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center p-6">
         {" "}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white dark:bg-slate-800 rounded-[40px] shadow-2xl p-10 md:p-16 max-w-2xl w-full text-center border border-white dark:border-slate-700"
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
+          className="bg-white dark:bg-slate-800 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-10 md:p-16 max-w-2xl w-full text-center border border-white dark:border-slate-700 border-b-[8px] dark:border-b-slate-900/50"
         >
           {" "}
-          <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner-3d">
+          <motion.div 
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+            className="w-24 h-24 bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner-3d"
+          >
             {" "}
             <CheckCircle size={48} />{" "}
-          </div>{" "}
+          </motion.div>{" "}
           <h2 className="text-4xl font-bold text-navy dark:text-white mb-4">
             تم إنشاء الشاغر بنجاح!
           </h2>{" "}
@@ -4267,7 +4273,7 @@ const JobSuccess = ({
             </button>{" "}
             <button
               onClick={onDone}
-              className="bg-navy text-white py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all"
+              className="bg-green-500 hover:bg-green-600 text-white py-4 rounded-2xl font-bold transition-all shadow-[0_6px_0_rgb(22,101,52)] active:translate-y-[6px] active:shadow-none"
             >
               {" "}
               العودة للوحة التحكم{""}

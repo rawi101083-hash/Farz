@@ -244,18 +244,24 @@ const JobSuccess = ({
   };
   return (
     <>
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-slate-100 dark:bg-slate-900 bg-gradient-to-br from-blue-50/50 via-purple-50/50 to-pink-50/50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 flex items-center justify-center p-6">
         {" "}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-white dark:bg-slate-800 rounded-[40px] shadow-2xl p-10 md:p-16 max-w-2xl w-full text-center border border-white dark:border-slate-700"
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20 }}
+          className="bg-white dark:bg-slate-800 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-10 md:p-16 max-w-2xl w-full text-center border border-white dark:border-slate-700 border-b-[8px] dark:border-b-slate-900/50"
         >
           {" "}
-          <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner-3d">
+          <motion.div 
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+            className="w-24 h-24 bg-gradient-to-br from-teal-100 to-teal-50 dark:from-teal-900/40 dark:to-teal-800/40 text-primary dark:text-teal-400 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_10px_20px_rgba(13,148,136,0.2)] dark:shadow-[0_10px_20px_rgba(13,148,136,0.1)] border-4 border-white dark:border-slate-800"
+          >
             {" "}
             <CheckCircle size={48} />{" "}
-          </div>{" "}
+          </motion.div>{" "}
           <h2 className="text-4xl font-bold text-navy dark:text-white mb-4">
             تم إنشاء الشاغر بنجاح!
           </h2>{" "}
@@ -272,7 +278,7 @@ const JobSuccess = ({
               {" "}
               <button
                 onClick={copyToClipboard}
-                className={`flex items-center gap-2 px-6 py-2 rounded-xl font-bold transition-all ${copied ? "bg-green-500 text-white" : "bg-primary text-white hover:bg-teal-600"}`}
+                className={`flex items-center gap-2 px-6 py-2 rounded-xl font-bold transition-all ${copied ? "bg-green-500 text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] border-b-4 border-green-700 active:border-b-0 active:translate-y-1" : "bg-primary text-white border-b-4 border-teal-800 hover:bg-teal-500 hover:border-teal-700 active:border-b-0 active:translate-y-1"}`}
               >
                 {" "}
                 {copied ? "تم النسخ!" : "نسخ الرابط"} <Copy size={18} />{" "}
@@ -288,14 +294,14 @@ const JobSuccess = ({
             {" "}
             <button
               onClick={onPreview}
-              className="flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white py-4 rounded-2xl font-bold hover:bg-slate-50 dark:bg-slate-800/50 transition-all"
+              className="flex items-center justify-center gap-2 bg-primary text-white py-4 rounded-2xl font-bold border-b-[6px] border-teal-800 hover:bg-teal-500 hover:border-teal-700 active:border-b-0 active:translate-y-[6px] transition-all shadow-[0_4px_10px_rgba(13,148,136,0.3)]"
             >
               {" "}
               <ExternalLink size={20} /> معاينة صفحة التقديم{" "}
             </button>{" "}
             <button
               onClick={onDone}
-              className="bg-navy text-white py-4 rounded-2xl font-bold hover:bg-slate-800 transition-all"
+              className="bg-white dark:bg-slate-800 border-x-2 border-t-2 border-b-[6px] border-slate-200 dark:border-slate-700 dark:border-b-slate-900 text-navy dark:text-white py-4 rounded-2xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 active:border-b-2 active:translate-y-[4px] transition-all"
             >
               {" "}
               العودة للوحة التحكم{" "}
