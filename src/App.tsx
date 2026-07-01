@@ -2203,7 +2203,7 @@ export default function App() {
     if (session && step && step !== "landing" && step !== "login" && step !== "registerCompany") {
       sessionStorage.setItem("sahab_active_step", step);
     }
-    
+
     if (!window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
       const searchParams = new URLSearchParams(window.location.search);
       if (searchParams.has('step') && searchParams.get('step') !== step) {
@@ -2374,9 +2374,10 @@ export default function App() {
 
 
 
-            // Force Settings tab if profile is incomplete
+            // Allow user to land on dashboard first
             if (!isProfileComplete) {
-              setDashboardTab("الحساب");
+              // We used to force "الحساب" here, but now we don't.
+              // Just keep whatever they had, or default which is "الرئيسية"
             }
           } else if (!navigator.onLine || (error && error.message.toLowerCase().includes('fetch'))) {
             // If it's a network error or offline, do NOT set isLoaded: true. Let it spin.
@@ -2399,13 +2400,13 @@ export default function App() {
               setShowWelcomeSlides(true);
             }
 
-            setDashboardTab("الحساب");
+            setDashboardTab("الرئيسية");
           }
         } catch (err: any) {
           console.error("Error fetching company profile:", err);
           if (!navigator.onLine || (err && err.message && err.message.toLowerCase().includes('fetch'))) return;
           setUserProfile(prev => ({ ...prev, id: user.id, name: user.user_metadata?.full_name || prev.name, isLoaded: true }));
-          setDashboardTab("الحساب");
+          setDashboardTab("الرئيسية");
         }
       };
 

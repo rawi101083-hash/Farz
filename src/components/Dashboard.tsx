@@ -597,6 +597,7 @@ export const Dashboard = ({
             return {
               id: raw.id,
               name: raw.full_name || "متقدم جديد",
+              photoUrl: parsedAnswers.find((a: any) => a.question?.includes("الصورة الشخصية"))?.answer || "",
               job: actualJobTitle,
               rating: raw.match_score || raw.match_percentage || 0,
               status: parsedAnswers.find((a: any) => a.question === "مدة الانضمام / الجاهزية للعمل")?.answer || raw.availability || raw.status || "غير محدد",

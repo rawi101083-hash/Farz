@@ -33,8 +33,8 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
 
   // AI Interview Custom Questions State
   const [showInterviewQuestionsModal, setShowInterviewQuestionsModal] = useState(false);
-  const [interviewQuestion1, setInterviewQuestion1] = useState("");
-  const [interviewQuestion2, setInterviewQuestion2] = useState("");
+  const [customQuestions, setCustomQuestions] = useState<string[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [interviewSendMethod, setInterviewSendMethod] = useState<'whatsapp' | 'email' | null>(null);
   const [isSavingQuestions, setIsSavingQuestions] = useState(false);
   const [pendingInterviewsCount, setPendingInterviewsCount] = useState(0);
@@ -349,11 +349,26 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
   const topPercentile = dynamicPercentile || applicant?.top_percentile;
   const redFlags = safeParseArray(applicant?.red_flags);
 
-  let rawQuestions = applicant?.interview_questions;
-  if (!rawQuestions || (Array.isArray(rawQuestions) && rawQuestions.length === 0) || (typeof rawQuestions === 'string' && rawQuestions.length < 5)) {
-    rawQuestions = applicant?.suggested_questions || applicant?.interview_plan;
-  }
-  const interviewQuestions = safeParseArray(rawQuestions);
+  const interviewQuestions = safeParseArray(
+    applicant?.interview_questions || 
+    applicant?.suggested_questions || 
+    applicant?.interview_plan
+  );
+
+  useEffect(() => {
+    if (showInterviewQuestionsModal) {
+      if (applicant?.client_interview_questions && Array.isArray(applicant.client_interview_questions) && applicant.client_interview_questions.length > 0) {
+        setCustomQuestions(applicant.client_interview_questions.slice(0, 4));
+      } else {
+        if (interviewQuestions && Array.isArray(interviewQuestions) && interviewQuestions.length > 0) {
+          let strings = interviewQuestions.map(q => typeof q === 'string' ? q : q?.question || JSON.stringify(q)).filter(Boolean);
+          setCustomQuestions(strings.slice(0, 4));
+        } else {
+          setCustomQuestions([""]);
+        }
+      }
+    }
+  }, [showInterviewQuestionsModal, applicant, interviewQuestions]);
 
   const attachments = safeParseArray(applicant?.attachments);
 
@@ -381,10 +396,6 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
   useEffect(() => {
     setOfferText(`السلام عليكم الأستاذ/ ${actualName}،\n\nيسعدنا إبلاغك بقبولك المبدئي لوظيفة ${actualJob} في ${companyName}، براتب شهري قدره ${applicant?.expectedSalary || "يُحدد لاحقاً"}.\n\nنأمل تأكيد المباشرة في تاريخ: ${startDate}.\n\nمع أطيب التحيات،\nإدارة الموارد البشرية`);
   }, [startDate, actualName, actualJob, applicant?.expectedSalary, companyName]);
-
-  useEffect(() => {
-    setInterviewText(`السلام عليكم الأستاذ/ ${actualName}،\n\nيسعدنا إبلاغك بترشيحك للمقابلة الشخصية لوظيفة ${actualJob} في ${companyName}.\n\nتم تحديد موعد المقابلة يوم ${interviewDate} الساعة ${interviewTime}.\nنأمل منك تأكيد الحضور.\n\nمع أطيب التحيات،\nإدارة الموارد البشرية`);
-  }, [interviewDate, interviewTime, actualName, actualJob, companyName]);
 
   useEffect(() => {
     setInterviewText(`السلام عليكم الأستاذ/ ${actualName}،\n\nيسعدنا إبلاغك بترشيحك للمقابلة الشخصية لوظيفة ${actualJob} في ${companyName}.\n\nتم تحديد موعد المقابلة يوم ${interviewDate} الساعة ${interviewTime}.\nنأمل منك تأكيد الحضور.\n\nمع أطيب التحيات،\nإدارة الموارد البشرية`);
@@ -650,7 +661,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                             </div>
                           ) : (
                             <div className="w-full bg-slate-100 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-center shadow-inner">
-                              <span className="block text-sm font-medium text-slate-500 dark:text-slate-400">جاري معالجة التسجيل الصوتي، يرجى الانتظار...</span>
+                              <span className="block text-sm medium text-slate-500 dark:text-slate-400">جاري معالجة التسجيل الصوتي، يرجى الانتظار...</span>
                             </div>
                           )}
                         </div>
@@ -1366,11 +1377,15 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
         {showInterviewQuestionsModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white dark:bg-slate-800 rounded-[32px] p-8 max-w-lg w-full shadow-2xl relative"
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-white/40 dark:border-slate-700/60 shadow-[0_0_40px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[0_0_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)] rounded-[32px] p-8 max-w-lg w-full relative overflow-hidden ring-1 ring-slate-900/5 dark:ring-white/10"
             >
+              {/* Decorative blobs */}
+              <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+              
               <button
                 onClick={() => setShowInterviewQuestionsModal(false)}
                 className="absolute top-6 left-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
@@ -1378,12 +1393,30 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                 <X size={24} />
               </button>
 
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6">
-                <Mic size={28} />
-              </div>
+              <motion.div 
+                animate={{ 
+                  y: [0, -8, 0],
+                  rotateX: [0, 10, 0],
+                  rotateY: [0, -15, 0]
+                }}
+                transition={{ 
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+                style={{ transformStyle: "preserve-3d", perspective: 1000 }}
+                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 text-primary flex items-center justify-center mb-6 shadow-xl shadow-primary/20"
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                >
+                  <Mic size={32} />
+                </motion.div>
+              </motion.div>
 
-              <h3 className="text-2xl font-bold text-navy dark:text-white mb-2">
-                أسئلة المقابلة الإضافية (اختياري)
+              <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-l from-primary to-emerald-500 mb-2 drop-shadow-sm">
+                أسئلة مقابلة الذكاء الاصطناعي
               </h3>
 
               {/* Overbooking Warning */}
@@ -1435,36 +1468,74 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                   </button>
                 </div>
               )}
-              <p className="text-slate-500 dark:text-slate-400 mb-6 text-sm leading-relaxed">
-                هل ترغب في إضافة سؤالين محددين ليقوم الذكاء الاصطناعي بطرحهما على المتقدم أثناء المقابلة؟
+              <p className="text-slate-500 dark:text-slate-400 mb-8 text-[15px] leading-relaxed font-medium">
+                قمنا بتجهيز هذه الأسئلة المخصصة باستخدام الذكاء الاصطناعي بناءً على السيرة الذاتية للمتقدم. يمكنك مراجعتها، تعديلها، أو إضافة أسئلتك الخاصة (بحد أقصى 4 أسئلة):
               </p>
 
               <div className="space-y-4 mb-8">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">السؤال الأول (مخصص):</label>
-                  <input
-                    type="text"
-                    value={interviewQuestion1}
-                    onChange={(e) => setInterviewQuestion1(e.target.value)}
-                    placeholder="مثال: كيف تعاملت مع عميل غاضب في السابق؟"
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">السؤال الثاني (مخصص):</label>
-                  <input
-                    type="text"
-                    value={interviewQuestion2}
-                    onChange={(e) => setInterviewQuestion2(e.target.value)}
-                    placeholder="مثال: اشرح لي تجربة قمت فيها بإدارة فريق عمل."
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-primary dark:text-white"
-                  />
-                </div>
+                {customQuestions.map((q, idx) => (
+                  <div key={idx} className="group relative z-10">
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                      السؤال {idx + 1}:
+                    </label>
+                    {editingIndex === idx ? (
+                      <div className="relative">
+                        <textarea
+                          rows={3}
+                          autoFocus
+                          value={q}
+                          onChange={(e) => {
+                            const newQs = [...customQuestions];
+                            newQs[idx] = e.target.value;
+                            setCustomQuestions(newQs);
+                          }}
+                          onBlur={() => setEditingIndex(null)}
+                          className="w-full bg-white dark:bg-slate-900 border-2 border-primary/50 dark:border-primary/50 rounded-xl px-4 py-3 pr-12 text-sm outline-none focus:ring-4 focus:ring-primary/20 dark:text-white resize-none shadow-inner transition-all"
+                        />
+                        <button 
+                          onClick={() => setEditingIndex(null)}
+                          className="absolute top-3 left-3 text-primary hover:text-primary/80 bg-primary/10 p-1.5 rounded-lg transition-colors"
+                          title="حفظ التعديل"
+                        >
+                          <CheckCircle size={18} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="relative bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)]">
+                        <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed pl-8">
+                          {q || "اضغط للتعديل وإضافة نص السؤال..."}
+                        </p>
+                        <button 
+                          onClick={() => setEditingIndex(idx)}
+                          className="absolute top-1/2 -translate-y-1/2 left-4 text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 p-2 rounded-lg transition-all shadow-sm"
+                          title="تعديل السؤال"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {customQuestions.length < 4 && (
+                  <button
+                    onClick={() => {
+                      setCustomQuestions([...customQuestions, ""]);
+                      setEditingIndex(customQuestions.length);
+                    }}
+                    className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 hover:text-primary hover:border-primary hover:bg-primary/5 transition-all font-bold text-sm relative z-10"
+                  >
+                    + إضافة سؤال إضافي
+                  </button>
+                )}
               </div>
 
               <div className="flex gap-4">
                 <button
-                  onClick={() => setShowInterviewQuestionsModal(false)}
+                  onClick={() => {
+                    setShowInterviewQuestionsModal(false);
+                    setEditingIndex(null);
+                  }}
                   className="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-200 rounded-2xl font-bold transition-all"
                 >
                   إلغاء
@@ -1473,9 +1544,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                   onClick={async () => {
                     setIsSavingQuestions(true);
                     try {
-                      const q = [];
-                      if (interviewQuestion1.trim()) q.push(interviewQuestion1.trim());
-                      if (interviewQuestion2.trim()) q.push(interviewQuestion2.trim());
+                      const q = customQuestions.filter(item => item.trim() !== "");
 
                       if (q.length > 0) {
                         await supabase
@@ -1519,6 +1588,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                       }
 
                       setShowInterviewQuestionsModal(false);
+                      setEditingIndex(null);
                     } catch (e) {
                       console.error(e);
                     } finally {
@@ -1532,8 +1602,8 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
                     <>
-                      {interviewSendMethod === 'whatsapp' ? <MessageCircle size={18} /> : <Mail size={18} />}
-                      إرسال المقابلة
+                      {interviewSendMethod === 'whatsapp' ? <WhatsAppIcon size={18} /> : <Mail size={18} />}
+                      {interviewSendMethod === 'whatsapp' ? 'إرسال المقابلة عبر واتساب' : 'إرسال المقابلة بالإيميل'}
                     </>
                   )}
                 </button>

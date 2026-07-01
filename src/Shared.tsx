@@ -2445,10 +2445,46 @@ export const SettingsPage = ({
     const name = tier === 'startup' ? `باقة نمو (${isYearly ? 'سنوي' : 'شهري'})` : `باقة الشركات (${isYearly ? 'سنوي' : 'شهري'})`;
     const price = tier === 'startup' ? (isYearly ? 4990 : 499) : (isYearly ? 14990 : 1499);
     setCheckoutPlan({ id: packageId, price, name });
+    
+    // Notify admin immediately
+    try {
+      const { supabase: sb } = await import('./lib/supabaseClient');
+      await sb.functions.invoke('notify-payment', {
+        body: {
+          customerName: userProfile?.companyName || userProfile?.name || 'غير معروف',
+          customerEmail: userProfile?.contactEmail || 'غير متوفر',
+          customerPhone: userProfile?.contactPhone || 'غير متوفر',
+          planName: name,
+          price,
+          type: 'subscription'
+        }
+      });
+    } catch (e) {
+      console.error("Failed to notify admin", e);
+    }
   };
 
   const handleBuyAd = async () => {
-    setCheckoutPlan({ id: 'single_job', price: 199, name: 'شراء إعلان وظيفي منفرد' });
+    const name = 'شراء إعلان وظيفي منفرد';
+    const price = 199;
+    setCheckoutPlan({ id: 'single_job', price, name });
+    
+    // Notify admin immediately
+    try {
+      const { supabase: sb } = await import('./lib/supabaseClient');
+      await sb.functions.invoke('notify-payment', {
+        body: {
+          customerName: userProfile?.companyName || userProfile?.name || 'غير معروف',
+          customerEmail: userProfile?.contactEmail || 'غير متوفر',
+          customerPhone: userProfile?.contactPhone || 'غير متوفر',
+          planName: name,
+          price,
+          type: 'addon'
+        }
+      });
+    } catch (e) {
+      console.error("Failed to notify admin", e);
+    }
   };
 
   const handleConfirmPayment = () => {
@@ -2700,24 +2736,24 @@ export const SettingsPage = ({
                     <label className="text-sm font-bold text-navy dark:text-slate-300">
                       {userProfile.entityType === "company" ? "رقم جوال المنشأة" : "رقم الجوال"} <span className="text-red-500">*</span>
                     </label>
-                        <input
-                          type="tel"
-                          value={userProfile.contactPhone || ""}
-                          onChange={(e) => {
-                            let val = e.target.value.replace(/\D/g, '');
-                            if (val.startsWith('9665')) {
-                              if (val.length > 12) val = val.substring(0, 12);
-                            } else {
-                              if (val.length > 10) val = val.substring(0, 10);
-                            }
-                            setUserProfile({ ...userProfile, contactPhone: val });
-                          }}
-                          placeholder="05xxxxxxxx"
-                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
-                          dir="ltr"
-                        />
-                        {hasSubmittedWorkData && errors.contactPhone && <p className="text-red-500 text-xs mt-1 font-bold">{errors.contactPhone}</p>}
-                    </div>
+                    <input
+                      type="tel"
+                      value={userProfile.contactPhone || ""}
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/\D/g, '');
+                        if (val.startsWith('9665')) {
+                          if (val.length > 12) val = val.substring(0, 12);
+                        } else {
+                          if (val.length > 10) val = val.substring(0, 10);
+                        }
+                        setUserProfile({ ...userProfile, contactPhone: val });
+                      }}
+                      placeholder="05xxxxxxxx"
+                      className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium text-left"
+                      dir="ltr"
+                    />
+                    {hasSubmittedWorkData && errors.contactPhone && <p className="text-red-500 text-xs mt-1 font-bold">{errors.contactPhone}</p>}
+                  </div>
 
                   {userProfile.entityType === "company" ? (
                     <div className="space-y-2">
@@ -2846,8 +2882,8 @@ export const SettingsPage = ({
             {activeTab === "المحفظة" && (
               <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex justify-end mb-4">
-                  <button onClick={() => setShowRechargeModal(true)} className="bg-gradient-to-b from-[#0D9488] to-[#0b7c72] hover:to-[#0a6f66] border-b-[4px] border-[#075952] text-white px-8 py-3.5 rounded-2xl font-bold shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] transition-all active:scale-95 flex items-center gap-2 hover:-translate-y-1 hover:shadow-[0_15px_30px_-10px_rgba(13,148,136,0.6)]">
-                    <Plus size={20} /> شحن الرصيد
+                  <button disabled className="bg-slate-300 dark:bg-slate-700 text-slate-500 dark:text-slate-400 border-b-[4px] border-slate-400/50 dark:border-slate-800 px-8 py-3.5 rounded-2xl font-bold flex items-center gap-2 opacity-60 cursor-not-allowed transition-none">
+                    <Plus size={20} /> شحن الرصيد (معطل مؤقتاً)
                   </button>
                 </div>
 
@@ -3669,13 +3705,35 @@ export const SettingsPage = ({
               <div className="space-y-3">
                 <p className="text-xs font-black text-slate-400 uppercase tracking-wider">اختر طريقة الدفع</p>
 
-                {/* Wallet option */}
+                {/* WhatsApp option (New Primary) */}
                 <button
-                  onClick={() => handlePayWithWallet(checkoutPlan.price, checkoutPlan.id)}
-                  className="w-full p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-primary/50 bg-slate-50/50 dark:bg-slate-800/20 hover:bg-slate-50 text-right flex justify-between items-center transition-all group font-bold"
+                  onClick={() => {
+                    const msg = encodeURIComponent(`مرحباً منصة فرز، أرغب بتفعيل "${checkoutPlan.name}" لحسابي المسجل بالإيميل: ${userProfile?.contactEmail || ''}`);
+                    window.open(`https://wa.me/966545517495?text=${msg}`, '_blank');
+                    setCheckoutPlan(null);
+                  }}
+                  className="w-full p-4 rounded-2xl border-2 border-emerald-500/30 hover:border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-right flex justify-between items-center transition-all group font-bold shadow-sm relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-l from-emerald-500/10 to-transparent pointer-events-none" />
+                  <div className="relative z-10">
+                    <p className="font-bold text-emerald-800 dark:text-emerald-300 text-sm">إكمال التفعيل عبر الواتساب</p>
+                    <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1">تفعيل فوري خلال دقيقة واحدة</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md relative z-10">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133-.298-.347-.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                  </div>
+                </button>
+
+                {/* Wallet option (Temporarily Disabled) */}
+                <button
+                  disabled
+                  className="w-full p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 text-right flex justify-between items-center transition-all group font-bold opacity-50 cursor-not-allowed"
                 >
                   <div>
-                    <p className="font-bold text-navy dark:text-white text-sm group-hover:text-primary transition-colors">الدفع السريع بمحفظة فرز</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-navy dark:text-white text-sm">الدفع السريع بمحفظة فرز</p>
+                      <span className="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">معطل مؤقتاً</span>
+                    </div>
                     <p className="text-xs text-slate-450 mt-1">الرصيد المتوفر: <span className="font-bold text-slate-600 dark:text-slate-350 font-mono">{walletBalance.toFixed(2)} ر.س</span></p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -3683,17 +3741,16 @@ export const SettingsPage = ({
                   </div>
                 </button>
 
-                {/* Card gateway option */}
+                {/* Card gateway option (Temporarily Disabled) */}
                 <button
-                  onClick={async () => {
-                    const pid = checkoutPlan.id;
-                    setCheckoutPlan(null);
-                    await generatePaymentForm(pid, pid.endsWith('yearly'));
-                  }}
-                  className="w-full p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 hover:border-primary/50 bg-slate-50/50 dark:bg-slate-800/20 hover:bg-slate-50 text-right flex justify-between items-center transition-all group font-bold"
+                  disabled
+                  className="w-full p-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20 text-right flex justify-between items-center transition-all group font-bold opacity-50 cursor-not-allowed"
                 >
                   <div>
-                    <p className="font-bold text-navy dark:text-white text-sm group-hover:text-primary transition-colors">البطاقة الائتمانية / مدى</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-navy dark:text-white text-sm">البطاقة الائتمانية / مدى</p>
+                      <span className="text-[9px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">معطل مؤقتاً</span>
+                    </div>
                     <p className="text-xs text-slate-450 mt-1">عبر بوابة NeoLeap الآمنة</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-[#0D9488]/10 text-[#0D9488] flex items-center justify-center shrink-0">
@@ -3984,15 +4041,14 @@ export const ActiveJobs = ({
                     {job.company || "جهة غير محددة"}
                   </p>
                   {job.recordType === "campaign" && job.roles && job.roles.length > 0 && (
-                    <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border ${
-                      job.status === "نشط" 
-                        ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30" 
-                        : job.status === "مغلق" 
-                        ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30" 
-                        : job.status === "مغلق مؤقتاً" || job.status === "إغلاق مؤقت" 
-                        ? "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/30" 
-                        : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30"
-                    }`}>
+                    <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border ${job.status === "نشط"
+                        ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30"
+                        : job.status === "مغلق"
+                          ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30"
+                          : job.status === "مغلق مؤقتاً" || job.status === "إغلاق مؤقت"
+                            ? "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/30"
+                            : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30"
+                      }`}>
                       <Briefcase size={12} />
                       <span className="text-[10px] font-bold">حملة: {job.roles.length} شواغر</span>
                     </div>

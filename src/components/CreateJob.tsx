@@ -4068,9 +4068,13 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
         <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900/40 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner-3d">
           <ShieldCheck size={40} />
         </div>
-        <h3 className="text-2xl font-bold text-center text-navy dark:text-white mb-3">خطوة أخيرة لنشر إعلانك!</h3>
+        <h3 className="text-2xl font-bold text-center text-navy dark:text-white mb-3">
+          {entityType === "company" ? "خطوة أخيرة لتوثيق منشأتك!" : "خطوة أخيرة لتوثيق عملك الحر!"}
+        </h3>
         <p className="text-slate-500 dark:text-slate-400 text-center mb-8 text-sm leading-relaxed">
-          يرجى استكمال بيانات الكيان الخاص بك لنتمكن من عرضها للمتقدمين ونشر تفاصيل الشواغر الخاصة بك.
+          {entityType === "company" 
+            ? "يرجى استكمال بيانات السجل التجاري والمنشأة لنتمكن من توثيق حسابك وعرضها للمتقدمين." 
+            : "يرجى استكمال بيانات وثيقة العمل الحر الخاصة بك لنتمكن من توثيق حسابك وعرضها للمتقدمين."}
         </p>
         <form onSubmit={async (e) => {
           e.preventDefault();
@@ -4112,6 +4116,7 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
                 entity_type: entityType,
                 city: city || null,
                 contact_phone: contactPhone,
+                contact_email: userProfile?.contactEmail || user?.email || null,
                 commercial_registration: entityType === "company" ? crNumber.trim() : null,
                 freelance_document: entityType === "freelance" ? freelanceDoc.trim() : null,
                 fields_locked: true
