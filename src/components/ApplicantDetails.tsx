@@ -368,7 +368,8 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
         }
       }
     }
-  }, [showInterviewQuestionsModal, applicant, interviewQuestions]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showInterviewQuestionsModal]);
 
   const attachments = safeParseArray(applicant?.attachments);
 
@@ -1468,9 +1469,18 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                   </button>
                 </div>
               )}
-              <p className="text-slate-500 dark:text-slate-400 mb-8 text-[15px] leading-relaxed font-medium">
+              <p className="text-slate-500 dark:text-slate-400 mb-6 text-[15px] leading-relaxed font-medium">
                 قمنا بتجهيز هذه الأسئلة المخصصة باستخدام الذكاء الاصطناعي بناءً على السيرة الذاتية للمتقدم. يمكنك مراجعتها، تعديلها، أو إضافة أسئلتك الخاصة (بحد أقصى 4 أسئلة):
               </p>
+
+              {interviewLang === 'en' && (
+                <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-xl p-4 mb-8 flex gap-3">
+                  <AlertTriangle size={20} className="text-orange-500 shrink-0 mt-0.5" />
+                  <p className="text-sm font-bold text-orange-700 dark:text-orange-400 leading-relaxed">
+                    تنبيه: الذكاء الاصطناعي سيطرح هذه الأسئلة باللغة الإنجليزية حتى لو كانت مكتوبة بالعربية.
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-4 mb-8">
                 {customQuestions.map((q, idx) => (
@@ -1490,14 +1500,20 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                             setCustomQuestions(newQs);
                           }}
                           onBlur={() => setEditingIndex(null)}
-                          className="w-full bg-white dark:bg-slate-900 border-2 border-primary/50 dark:border-primary/50 rounded-xl px-4 py-3 pr-12 text-sm outline-none focus:ring-4 focus:ring-primary/20 dark:text-white resize-none shadow-inner transition-all"
+                          className="w-full bg-white dark:bg-slate-900 border-2 border-primary/50 dark:border-primary/50 rounded-xl px-4 py-3 pr-12 text-sm outline-none focus:ring-4 focus:ring-primary/20 text-slate-900 dark:text-white resize-none shadow-inner transition-all"
                         />
                         <button 
-                          onClick={() => setEditingIndex(null)}
-                          className="absolute top-3 left-3 text-primary hover:text-primary/80 bg-primary/10 p-1.5 rounded-lg transition-colors"
-                          title="حفظ التعديل"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            const newQs = [...customQuestions];
+                            newQs.splice(idx, 1);
+                            setCustomQuestions(newQs);
+                            setEditingIndex(null);
+                          }}
+                          className="absolute top-3 left-3 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 p-1.5 rounded-lg transition-colors shadow-sm"
+                          title="حذف السؤال"
                         >
-                          <CheckCircle size={18} />
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     ) : (
