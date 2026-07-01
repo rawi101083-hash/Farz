@@ -504,7 +504,7 @@ export default function SeekerProfile() {
               if (returnUrl) {
                 window.location.href = returnUrl;
               } else {
-                window.location.href = '/';
+                window.location.href = '/?step=landing';
               }
             }}
             className="absolute top-6 right-6 z-20 w-8 h-8 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full flex items-center justify-center transition-all border border-slate-100 shadow-sm"
@@ -787,7 +787,7 @@ export default function SeekerProfile() {
                   if (returnUrl) {
                     window.location.href = returnUrl;
                   } else {
-                    window.location.href = '/';
+                    window.location.href = '/?step=landing';
                   }
                 }}
                 className="group relative overflow-hidden bg-white/10 hover:bg-white/20 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full border border-white/20 backdrop-blur-md flex items-center font-bold text-xs sm:text-sm transition-all duration-300 shadow-lg"

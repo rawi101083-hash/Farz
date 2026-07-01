@@ -2051,29 +2051,41 @@ export default function App() {
 
     if (isInitial) {
       if (!window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
-        const savedStep = sessionStorage.getItem('sahab_active_step');
-        if (savedStep && savedStep !== "landing" && savedStep !== "login" && savedStep !== "registerCompany") {
-          setStep(savedStep as FlowStep);
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('step') === 'landing') {
+          setStep('landing');
         } else {
-          setStep("dashboard");
+          const savedStep = sessionStorage.getItem('sahab_active_step');
+          if (savedStep && savedStep !== "landing" && savedStep !== "login" && savedStep !== "registerCompany") {
+            setStep(savedStep as FlowStep);
+          } else {
+            setStep("dashboard");
+          }
         }
       }
       setIsCheckingAuth(false);
     } else {
       if (!window.location.pathname.startsWith('/apply/') && !window.location.pathname.startsWith('/profile') && !window.location.pathname.startsWith('/share/') && !window.location.pathname.startsWith('/interview/')) {
-        const savedStep = sessionStorage.getItem('sahab_active_step');
-        setStep(prevStep => {
-          if (prevStep === "updatePassword") return "updatePassword";
-          if (["landing", "login", "registerCompany"].includes(prevStep)) {
-            return (savedStep as FlowStep) || "dashboard";
-          }
-          return prevStep;
-        });
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('step') === 'landing') {
+          setStep('landing');
+        } else {
+          const savedStep = sessionStorage.getItem('sahab_active_step');
+          setStep(prevStep => {
+            if (prevStep === "updatePassword") return "updatePassword";
+            if (["landing", "login", "registerCompany"].includes(prevStep)) {
+              return (savedStep as FlowStep) || "dashboard";
+            }
+            return prevStep;
+          });
+        }
       }
     }
   };
 
   const [step, setStep] = useState<FlowStep>(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('step') === 'landing') return 'landing';
     if (window.location.pathname.startsWith("/profile")) return "seeker-profile";
     if (window.location.pathname.startsWith("/interview/")) return "interview";
     if (window.location.pathname.startsWith("/share/")) return "share";
