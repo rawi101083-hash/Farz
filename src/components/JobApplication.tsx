@@ -182,6 +182,10 @@ export const ApplicantForm = ({
 
   useEffect(() => {
     const fetchProfile = async () => {
+      if (applyMode !== 'fast') {
+        setIsLoadingProfile(false);
+        return;
+      }
       try {
         const data = await prefetchApplicantProfile();
         if (!data) {
