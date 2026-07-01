@@ -2168,6 +2168,9 @@ export const ApplicantForm = ({
                       <>إرسال الطلب</>
                     )}
                   </button>{" "}
+                  <p className="md:col-span-2 text-center text-slate-400 dark:text-slate-500 text-xs mt-3 px-4 leading-relaxed">
+                    ملاحظة: بتقديمك لهذا الطلب، أنت توافق على مشاركة بياناتك المدخلة ومرفقاتك مع الجهة الموظفة، ويحق لهم تقييمها والتواصل معك.
+                  </p>
                 </motion.div>
               )}{" "}
             </form>{" "}
