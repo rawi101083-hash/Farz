@@ -420,7 +420,7 @@ const PublicJobPage = ({
                 )}
               </div>
               <div className="flex items-center gap-4 mb-8">
-                <div className={`w-16 h-16 p-0 backdrop-blur rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm ${job.companyLogo ? "bg-white dark:bg-slate-800/10 border border-white dark:border-slate-700/10" : "bg-white/5 border border-white/10"}`}>
+                <div className={`w-16 h-16 p-0 backdrop-blur rounded-2xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm ${job.companyLogo ? "bg-transparent dark:bg-slate-800/10 border border-white/10 dark:border-slate-700/10" : "bg-white/5 border border-white/10"}`}>
                   {job.companyLogo ? (
                     <img
                       src={job.companyLogo}
@@ -2085,7 +2085,10 @@ export default function App() {
 
   const [step, setStep] = useState<FlowStep>(() => {
     const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.get('step') === 'landing') return 'landing';
+    const stepParam = searchParams.get('step');
+    if (stepParam === 'landing' || stepParam === 'login' || stepParam === 'registerCompany' || stepParam === 'updatePassword') {
+      return stepParam as FlowStep;
+    }
     if (window.location.pathname.startsWith("/profile")) return "seeker-profile";
     if (window.location.pathname.startsWith("/interview/")) return "interview";
     if (window.location.pathname.startsWith("/share/")) return "share";
