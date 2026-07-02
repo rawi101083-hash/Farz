@@ -86,6 +86,8 @@ import { FEATURE_FLAGS } from "../config";
 import { MOCK_TEST_APPLICANTS } from "../mockData";
 import { ActiveJobs, Reports, EmptyState, TalentPool, GlobalJobSelector, SettingsPage, Job, Applicant, ImageLightbox, LogoIcon } from '../Shared';
 import { globalApplicantsCache } from "../lib/applicantsCache";
+import BulkSendTemplatesModal from './BulkSendTemplatesModal';
+import QuestionTemplatesManager from './QuestionTemplatesManager';
 
 const CompactJobSelector = ({
   jobs,
@@ -747,6 +749,9 @@ export const Dashboard = ({
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [showUndoConfirmModal, setShowUndoConfirmModal] = useState(false);
   const [undoTargetId, setUndoTargetId] = useState<string | null>(null);
+  const [showTemplatesManager, setShowTemplatesManager] = useState(false);
+  const [showBulkSendModal, setShowBulkSendModal] = useState(false);
+  const [showBulkUndoConfirm, setShowBulkUndoConfirm] = useState(false);
   const [applicantToInterview, setApplicantToInterview] = useState<Applicant | null>(null);
   const [interviewDate, setInterviewDate] = useState("");
   const [interviewTime, setInterviewTime] = useState("");
@@ -956,6 +961,42 @@ export const Dashboard = ({
     } else {
       setUndoAction(null);
     }
+  };
+
+  const handleBulkDecision = async (decision: "accepted" | "rejected" | "interview" | "pending") => {
+    if (selectedApplicantIds.length === 0) return;
+
+    const idsToUpdate = [...selectedApplicantIds];
+    if (undoAction?.timeoutId) clearTimeout(undoAction.timeoutId);
+
+    const updatePayload: any = { decision };
+    if (decision === "rejected") {
+      updatePayload.rejection_reason = "مرفوض من قبل المراجع";
+    }
+
+    startTransition(() => {
+      setApplicants(prev => prev.map(a => idsToUpdate.includes(a.id) ? { ...a, ...updatePayload } : a));
+    });
+
+    const realIds = idsToUpdate.filter(id => !id.startsWith("mock-"));
+    if (realIds.length > 0) {
+      try {
+        await supabase.from('applicants').update(updatePayload).in('id', realIds);
+      } catch (error) {
+        console.warn("Could not sync bulk decision to backend:", error);
+      }
+    }
+
+    try {
+      const decisions = JSON.parse(window.localStorage.getItem("sahab_decisions") || "{}");
+      idsToUpdate.forEach(id => {
+        if (id.startsWith("mock-")) decisions[id] = decision;
+      });
+      window.localStorage.setItem("sahab_decisions", JSON.stringify(decisions));
+    } catch (e) { }
+
+    setSelectedApplicantIds([]);
+    setIsSelectionMode(false);
   };
 
   const handleBulkFilterOut = async () => {
@@ -1350,19 +1391,66 @@ export const Dashboard = ({
                     className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] border-[2px] border-b-[4px] active:translate-y-[2px] active:border-b-[2px] active:mb-[2px] hover:-translate-y-0.5 ${isSelectionMode ? 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 border-slate-300 border-b-slate-400 dark:border-slate-600 dark:border-b-slate-800' : 'bg-gradient-to-b from-white to-slate-50 text-navy border-slate-200 border-b-slate-300 dark:from-slate-800 dark:to-slate-900 dark:text-white dark:border-slate-700 dark:border-b-slate-900'}`}
                   >
                     <CheckSquare size={18} />
-                    <span className="whitespace-nowrap w-[85px] text-center">{isSelectionMode ? "إلغاء التصفية" : "تصفية"}</span>
+                    <span className="whitespace-nowrap w-[85px] text-center">{isSelectionMode ? "إلغاء التحديد" : "تحديد"}</span>
+                  </button>
+                  <button
+                    onClick={() => setShowTemplatesManager(true)}
+                    className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] border-[2px] border-b-[4px] active:translate-y-[2px] active:border-b-[2px] active:mb-[2px] hover:-translate-y-0.5 bg-gradient-to-b from-white to-slate-50 text-navy border-slate-200 border-b-slate-300 dark:from-slate-800 dark:to-slate-900 dark:text-white dark:border-slate-700 dark:border-b-slate-900 hover:text-primary dark:hover:text-primary"
+                  >
+                    <MessageCircle size={18} />
+                    <span className="whitespace-nowrap text-center">قوالب الأسئلة</span>
                   </button>
                   <AnimatePresence>
                     {isSelectionMode && selectedApplicantIds.length > 0 && (
-                      <motion.button
-                        initial={{ opacity: 0, scale: 0.9 }}
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        onClick={handleBulkFilterOut}
-                        className="bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-red-100 dark:hover:bg-red-900/50 transition-all flex items-center gap-2"
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className="flex flex-wrap items-center gap-3 bg-slate-100/80 dark:bg-slate-800 p-2 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm"
                       >
-                        <Trash2 size={18} /> تصفية المحدد ({selectedApplicantIds.length})
-                      </motion.button>
+                        <div className="flex items-center gap-2 px-3 border-l border-slate-300 dark:border-slate-600">
+                          <CheckSquare size={18} className="text-primary" />
+                          <span className="font-bold text-sm text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                            تم تحديد ({selectedApplicantIds.length})
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleBulkDecision("accepted")}
+                          className="bg-teal-50 text-teal-600 border border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-800/50 px-4 py-2 rounded-xl font-bold text-sm hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-all flex items-center gap-2 shadow-sm"
+                        >
+                          <CheckCircle size={16} /> قبول للكل
+                        </button>
+                        <button
+                          onClick={() => handleBulkDecision("interview")}
+                          className="bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50 px-4 py-2 rounded-xl font-bold text-sm hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-all flex items-center gap-2 shadow-sm"
+                        >
+                          <Mic size={16} /> مقابلة للكل
+                        </button>
+                        <button
+                          onClick={() => handleBulkDecision("rejected")}
+                          className="bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50 px-4 py-2 rounded-xl font-bold text-sm hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-all flex items-center gap-2 shadow-sm"
+                        >
+                          <X size={16} /> رفض للكل
+                        </button>
+                        <button
+                          onClick={() => setShowBulkUndoConfirm(true)}
+                          className="bg-slate-50 text-slate-600 border border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-600 transition-all flex items-center gap-2 shadow-sm"
+                        >
+                          <RotateCcw size={16} /> تراجع
+                        </button>
+                        <button
+                          onClick={() => setShowBulkSendModal(true)}
+                          className="bg-yellow-50 text-yellow-600 border border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50 px-4 py-2 rounded-xl font-bold text-sm hover:bg-yellow-100 dark:hover:bg-yellow-900/50 transition-all shadow-sm"
+                        >
+                          مقابلة AI
+                        </button>
+                        <button
+                          onClick={handleBulkFilterOut}
+                          className="bg-slate-200 text-slate-700 border border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-300 dark:hover:bg-slate-600 transition-all flex items-center gap-2 shadow-sm"
+                        >
+                          <Trash2 size={16} /> تصفية المحدد
+                        </button>
+                      </motion.div>
                     )}
                   </AnimatePresence>
                   <CompactJobSelector jobs={jobs} selectedFilter={jobFilter} onFilterChange={(id) => setJobFilter(id)} />
@@ -1375,6 +1463,16 @@ export const Dashboard = ({
                       { id: "filtered", label: "تمت تصفيتهم", color: "text-slate-500 dark:text-slate-400", dotActive: "bg-slate-500 shadow-[0_0_8px_rgba(100,116,139,0.8),inset_0_1.5px_2px_rgba(255,255,255,0.8)] border-slate-400", dotInactive: "bg-slate-200/80 dark:bg-slate-700/80 shadow-inner border-slate-300 dark:border-slate-600" }
                     ].map(tab => {
                       const isActive = decisionFilter === tab.id;
+                      const count = applicants.filter(a => {
+                        const searchJob = jobs.find(j => j.id === jobFilter)?.title || "";
+                        const jobMatch = jobFilter === "all" || (searchJob ? (a.job || "").includes(searchJob) : true);
+                        if (!jobMatch) return false;
+                        const d = a.decision || "pending";
+                        if (tab.id === "interview") return d === "interview" || d === "interviewing";
+                        if (tab.id === "rejected") return d === "rejected" || d === "deleted";
+                        return d === tab.id;
+                      }).length;
+                      
                       return (
                         <button
                           key={tab.id}
@@ -1382,7 +1480,7 @@ export const Dashboard = ({
                           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${isActive ? `bg-white dark:bg-slate-700 shadow-md border border-slate-100 dark:border-slate-600 transform -translate-y-0.5 text-slate-800 dark:text-slate-200` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 border border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                         >
                           <span className={`w-2 h-2 rounded-full border transition-all duration-300 ${isActive ? tab.dotActive + ' scale-110' : tab.dotInactive}`}></span>
-                          {tab.label}
+                          {tab.label} <span className={`mr-1 px-1.5 py-0.5 rounded-md text-[10px] ${isActive ? 'bg-slate-100 dark:bg-slate-600' : 'bg-slate-200/50 dark:bg-slate-700/50 opacity-70'}`}>{count}</span>
                         </button>
                       )
                     })}
@@ -1640,19 +1738,21 @@ export const Dashboard = ({
                                       onViewDetails(row);
                                     }
                                   }}
-                                  className={`transition-colors group ${isFomoLocked || isEvaluating ? 'bg-slate-50/50 dark:bg-slate-800/30' : 'hover:bg-slate-50 dark:bg-slate-800/80 cursor-pointer'}`}
+                                  className={`transition-all group ${isFomoLocked || isEvaluating ? 'bg-slate-50/50 dark:bg-slate-800/30' : 'cursor-pointer relative z-0 hover:z-10'}`}
                                 >
                                   {isSelectionMode && (
-                                    <td className="px-3 py-4 w-10">
+                                    <td
+                                      className="px-3 py-4 w-10 cursor-pointer"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (selectedApplicantIds.includes(row.id)) {
+                                          setSelectedApplicantIds(prev => prev.filter(id => id !== row.id));
+                                        } else {
+                                          setSelectedApplicantIds(prev => [...prev, row.id]);
+                                        }
+                                      }}
+                                    >
                                       <div
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (selectedApplicantIds.includes(row.id)) {
-                                            setSelectedApplicantIds(prev => prev.filter(id => id !== row.id));
-                                          } else {
-                                            setSelectedApplicantIds(prev => [...prev, row.id]);
-                                          }
-                                        }}
                                         className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${selectedApplicantIds.includes(row.id) ? "bg-primary border-primary text-white opacity-100" : "border-slate-300 dark:border-slate-600 bg-slate-100/50 dark:bg-slate-800 opacity-0 group-hover:opacity-100 hover:border-slate-400"}`}
                                       >
                                         {selectedApplicantIds.includes(row.id) && (
@@ -1664,8 +1764,8 @@ export const Dashboard = ({
                                   <td className="px-2 py-3">
                                     <div className="flex items-center gap-2 whitespace-nowrap">
                                       <button
-                                        onClick={(e) => { e.stopPropagation(); handleToggleFavorite(row.id); }}
-                                        className={`transition-all ${row.is_favorite ? "text-yellow-500 scale-75" : "text-slate-200 hover:text-yellow-500"}`}
+                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); handleToggleFavorite(row.id); }}
+                                        className={`transition-all relative z-20 p-5 -m-5 ${row.is_favorite ? "text-yellow-500 scale-75" : "text-slate-200 hover:text-yellow-500"}`}
                                         title={row.is_favorite ? "إزالة من المفضلة" : "إضافة للمفضلة"}
                                       >
                                         <Star
@@ -1684,7 +1784,7 @@ export const Dashboard = ({
                                             setLightboxPhoto(row.photoUrl);
                                           }
                                         }}
-                                        className={`w-10 h-10 rounded-[14px] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-600 dark:border-b-slate-900 shadow-sm transition-colors overflow-hidden ${row.photoUrl && !isFomoLocked ? "cursor-pointer hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-[2px]" : "group-hover:text-primary dark:group-hover:text-primary"}`}
+                                        className={`w-10 h-10 rounded-[14px] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center font-bold text-slate-500 dark:text-slate-200 border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-600 dark:border-b-slate-900 shadow-sm transition-all duration-300 overflow-hidden ${row.photoUrl && !isFomoLocked ? "cursor-pointer hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-[2px]" : "group-hover:text-primary dark:group-hover:text-primary group-hover:border-primary/40 group-hover:bg-primary/5"}`}
                                       >
                                         {row.photoUrl && !isFomoLocked ? (
                                           <img src={row.photoUrl} alt={row.name} className="w-full h-full object-cover" />
@@ -1757,7 +1857,7 @@ export const Dashboard = ({
                                       </span>
                                     )}
                                   </td>
-                                  <td className="px-2 py-3">
+                                  <td className="px-2 py-3 cursor-default" onClick={(e) => e.stopPropagation()}>
                                     <div className={`flex items-center justify-center gap-1 ${isFomoLocked ? 'filter blur-[4px] select-none pointer-events-none' : ''}`}>
                                       <a
                                         href={`https://wa.me/${row.phone}`}
@@ -1800,7 +1900,7 @@ export const Dashboard = ({
                                     </div>{" "}
                                   </td>
                                   {decisionFilter === "interview" && (
-                                    <td className="px-2 py-3">
+                                    <td className="px-2 py-3 cursor-default" onClick={(e) => e.stopPropagation()}>
                                       <div className="flex justify-center">
                                         {isFomoLocked ? (
                                           <span className="filter blur-[4px] select-none text-xs text-slate-400 font-bold">مقفل</span>
@@ -1824,7 +1924,7 @@ export const Dashboard = ({
                                       </div>
                                     </td>
                                   )}
-                                  <td className="px-2 py-3">
+                                  <td className="px-2 py-3 cursor-default" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex items-center justify-end gap-1.5 w-full pl-4">
                                       {isFomoLocked ? (
                                         <div className="flex justify-center w-full">
@@ -2825,7 +2925,7 @@ export const Dashboard = ({
                     if (targetApp && (targetApp.interview_sent || targetApp.decision === 'interview_sent' || targetApp.decision === 'interviewing' || targetApp.has_started_interview)) {
                       return (
                         <span className="block mt-4 text-red-600 dark:text-red-400 font-bold bg-red-50 dark:bg-red-900/20 p-3 rounded-xl border border-red-100 dark:border-red-900/50">
-                          سيتم إبطال رابط المقابلة ولن يتمكن المتقدم من إجرائها.
+                          سيتم إبطال أي رابط مقابلة تم إرساله ولن يتمكن المتقدم من إجرائها.
                         </span>
                       );
                     }
@@ -2855,6 +2955,74 @@ export const Dashboard = ({
                 </div>
               </motion.div>
             </div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showTemplatesManager && (
+            <QuestionTemplatesManager onClose={() => setShowTemplatesManager(false)} mode="manage" />
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showBulkUndoConfirm && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-navy/40 dark:bg-navy/80 backdrop-blur-sm"
+                onClick={() => setShowBulkUndoConfirm(false)}
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-md w-full relative z-10 shadow-2xl border border-slate-100 dark:border-slate-800 text-center"
+              >
+                <div className="w-16 h-16 bg-teal-50 dark:bg-teal-900/30 text-teal-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                  <RotateCcw size={32} />
+                </div>
+                <h3 className="text-2xl font-bold text-navy dark:text-white mb-3">تأكيد التراجع</h3>
+                <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-6">
+                  هل أنت متأكد من رغبتك في التراجع وإعادة المتقدمين المحددين لقيد المراجعة؟
+                </p>
+                {applicants.filter(a => selectedApplicantIds.includes(a.id)).some(a => a.decision === 'interview' || a.decision === 'interviewing' || a.interview_sent) && (
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-900/10 text-red-600 dark:text-red-400 p-4 rounded-xl text-sm font-bold border border-red-200 dark:border-red-800/50 mb-8 shadow-[0_4px_0_0_rgba(254,202,202,1)] dark:shadow-[0_4px_0_0_rgba(153,27,27,0.5)] transform -translate-y-1">
+                    سيتم إبطال أي رابط مقابلة تم إنشاؤه، ولن يتمكن المتقدم من إجرائها.
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowBulkUndoConfirm(false)}
+                    className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleBulkDecision("pending");
+                      setShowBulkUndoConfirm(false);
+                    }}
+                    className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-teal-600 hover:bg-teal-700 transition-colors shadow-sm"
+                  >
+                    نعم، تراجع
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {showBulkSendModal && (
+            <BulkSendTemplatesModal
+              applicants={applicants.filter(a => selectedApplicantIds.includes(a.id))}
+              onClose={() => setShowBulkSendModal(false)}
+              onUpdateStatus={() => {
+                // Refresh logic if needed
+              }}
+            />
           )}
         </AnimatePresence>
 

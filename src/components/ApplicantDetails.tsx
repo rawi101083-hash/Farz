@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, Target } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, Target, FolderSync } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import QuestionTemplatesManager from './QuestionTemplatesManager';
 
 const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -33,6 +34,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
 
   // AI Interview Custom Questions State
   const [showInterviewQuestionsModal, setShowInterviewQuestionsModal] = useState(false);
+  const [showTemplatesManager, setShowTemplatesManager] = useState(false);
   const [customQuestions, setCustomQuestions] = useState<string[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [interviewSendMethod, setInterviewSendMethod] = useState<'whatsapp' | 'email' | null>(null);
@@ -1059,9 +1061,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                                 if (error) console.error("Failed to nominate to AI interview", error);
                               });
                             }}
-                            className="px-8 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border bg-yellow-50 text-yellow-600 hover:bg-yellow-500 hover:text-white dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-600 dark:hover:text-white border-yellow-100 dark:border-yellow-900/50 hover:border-transparent"
+                            className="px-8 py-3 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center gap-2 border bg-yellow-50 text-yellow-600 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50 hover:bg-yellow-100 dark:hover:bg-yellow-900/50"
                           >
-                            <Calendar size={16} /> مقابلة AI
+                            مقابلة AI
                           </button>
                         </div>
                       )}
@@ -1472,6 +1474,27 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
               <p className="text-slate-500 dark:text-slate-400 mb-6 text-[15px] leading-relaxed font-medium">
                 قمنا بتجهيز هذه الأسئلة المخصصة باستخدام محرك الفرز بناءً على السيرة الذاتية للمتقدم. يمكنك مراجعتها، تعديلها، أو إضافة أسئلتك الخاصة - بحد أقصى 4 أسئلة:
               </p>
+
+              <div className="mb-6">
+                <button
+                  onClick={() => setShowTemplatesManager(true)}
+                  className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 hover:bg-primary/5 hover:border-primary/30 dark:hover:bg-primary/10 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm"
+                >
+                  <FolderSync size={18} className="text-primary" /> 
+                  استيراد من قوالب الأسئلة المحفوظة
+                </button>
+              </div>
+
+              {showTemplatesManager && (
+                <QuestionTemplatesManager 
+                  mode="select"
+                  onClose={() => setShowTemplatesManager(false)}
+                  onSelectTemplate={(t) => {
+                    setCustomQuestions(t.questions.slice(0, 4));
+                    setShowTemplatesManager(false);
+                  }}
+                />
+              )}
 
               {interviewLang === 'en' && (
                 <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-xl p-4 mb-8 flex gap-3">
