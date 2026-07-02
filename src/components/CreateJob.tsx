@@ -1044,14 +1044,16 @@ export const CreateJob = ({
       setRoles(roles.map(r => r.id === editingRoleId ? {
         ...r,
         title: roleTitle.trim(),
-        description: "",
+        description: roleSummary.trim(),
         roleSummary: roleSummary.trim(),
         responsibilities: responsibilities.trim(),
         qualifications: qualifications.trim(),
         benefits: benefits.trim(),
         aiInstructions: aiInstructions.trim(),
         skills: [...selectedSkills],
+        targetSkills: [...selectedSkills],
         languages: [...selectedLanguages],
+        requiredLanguages: [...selectedLanguages],
         customQuestions: [...customQuestions],
         requiredAttachments: [...requiredAttachments],
         portfolioRequirement: requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined,
@@ -1096,14 +1098,16 @@ export const CreateJob = ({
         {
           id: Math.random().toString(36).substr(2, 9),
           title: roleTitle.trim(),
-          description: "",
+          description: roleSummary.trim(),
           roleSummary: roleSummary.trim(),
           responsibilities: responsibilities.trim(),
           qualifications: qualifications.trim(),
           benefits: benefits.trim(),
           aiInstructions: aiInstructions.trim(),
           skills: [...selectedSkills],
+          targetSkills: [...selectedSkills],
           languages: [...selectedLanguages],
+          requiredLanguages: [...selectedLanguages],
           customQuestions: [...customQuestions],
           requiredAttachments: [...requiredAttachments],
           portfolioRequirement: requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined,
@@ -1205,13 +1209,16 @@ export const CreateJob = ({
       const activeRoleData = {
         id: editingRoleId || Math.random().toString(36).substr(2, 9),
         title: roleTitle.trim(),
-        description: "",
+        description: roleSummary.trim(),
         roleSummary: roleSummary.trim(),
         responsibilities: responsibilities.trim(),
         qualifications: qualifications.trim(),
         benefits: benefits.trim(),
         aiInstructions: aiInstructions.trim(),
         skills: [...selectedSkills],
+        targetSkills: [...selectedSkills],
+        requiredLanguages: selectedLanguages,
+        languages: selectedLanguages,
         customQuestions: [...customQuestions],
         requiredAttachments: [...requiredAttachments],
         portfolioRequirement: requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined,
@@ -1256,13 +1263,15 @@ export const CreateJob = ({
         {
           id: Math.random().toString(36).substr(2, 9),
           title: roleTitle.trim() || "شاغر جديد",
-          description: "",
+          description: roleSummary.trim(),
           roleSummary: roleSummary.trim(),
           responsibilities: responsibilities.trim(),
           qualifications: qualifications.trim(),
           benefits: benefits.trim(),
           aiInstructions: createJobType === "quick_link" ? "" : aiInstructions.trim(),
           skills: createJobType === "quick_link" ? [] : selectedSkills,
+          targetSkills: createJobType === "quick_link" ? [] : selectedSkills,
+          requiredLanguages: selectedLanguages,
           customQuestions: createJobType === "quick_link" ? [] : customQuestions,
           requiredAttachments: createJobType === "quick_link" ? ["سيرة ذاتية PDF"] : requiredAttachments,
           portfolioRequirement: createJobType === "quick_link" ? undefined : (requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined),
@@ -1302,7 +1311,7 @@ export const CreateJob = ({
         currentCampaignDesc = roleDesc.trim();
       }
     }
-    
+
     if (adType === "campaign" && finalRoles.length > remainingJobs) {
       window.dispatchEvent(new CustomEvent("showToast", { detail: { message: `عذراً، عدد الوظائف المطلوبة يتجاوز الحد المسموح به للوظائف النشطة (المتبقي: ${remainingJobs} فقط). يرجى إزالة بعض الأدوار.`, type: "error" } }));
       return;
@@ -1355,8 +1364,8 @@ export const CreateJob = ({
       autoRejectExperience: createJobType === "quick_link" ? false : autoRejectExperience,
       aiInstructions: createJobType === "quick_link" ? "" : aiInstructions.trim(),
       companyLogo: companyLogo || undefined,
-      skills: createJobType === "quick_link" ? [] : selectedSkills,
-      languages: selectedLanguages,
+      targetSkills: createJobType === "quick_link" ? [] : selectedSkills,
+      requiredLanguages: selectedLanguages,
       customQuestions: createJobType === "quick_link" ? [] : customQuestions,
       requiredAttachments: createJobType === "quick_link" ? ["سيرة ذاتية PDF"] : requiredAttachments,
       directUpload: createJobType === "quick_link" ? false : directUpload,
@@ -1365,6 +1374,7 @@ export const CreateJob = ({
       voiceInterviewQuestions: createJobType === "quick_link" ? undefined : voiceInterviewQuestions,
       photoRequirement: createJobType === "quick_link" ? "optional" : photoRequirement,
       portfolioRequirement: createJobType === "quick_link" ? undefined : (requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined),
+      aiOverrideFields: finalRoles[0]?.aiOverrideFields,
     };
     try {
       await fetch(
@@ -1398,13 +1408,15 @@ export const CreateJob = ({
       const activeRoleData = {
         id: editingRoleId || Math.random().toString(36).substr(2, 9),
         title: roleTitle.trim() || "شاغر جديد",
-        description: "",
+        description: roleSummary.trim(),
         roleSummary: roleSummary.trim(),
         responsibilities: responsibilities.trim(),
         qualifications: qualifications.trim(),
         benefits: benefits.trim(),
         aiInstructions,
         skills: selectedSkills,
+        targetSkills: selectedSkills,
+        requiredLanguages: selectedLanguages,
         languages: selectedLanguages,
         customQuestions,
         requiredAttachments,
@@ -1501,6 +1513,7 @@ export const CreateJob = ({
       portfolioRequirement,
       startDate: startDate || undefined,
       endDate: isOpenEnded ? undefined : (endDate || undefined),
+      aiOverrideFields: finalRoles[0]?.aiOverrideFields,
     };
 
     if (onSubmit) {
@@ -2378,7 +2391,7 @@ export const CreateJob = ({
                                     <label className="block text-sm font-bold text-navy dark:text-white mb-2 flex items-center gap-1">التخصصات المستهدفة <Sparkles size={14} className="text-primary/70" /></label>
                                     <div className="relative">
                                       <input type="text" value={aiCustomMajor} onChange={(e) => setAiCustomMajor(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } } }} placeholder="أضف تخصص..." className="w-full pr-4 pl-12 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:border-primary transition-all font-medium" />
-                                      <button type="button" onClick={() => { if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Plus size={18} /></button>
+                                      <button type="button" onClick={() => { if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-white bg-emerald-500 hover:bg-emerald-600 shadow-sm transition-all"><Plus size={18} /></button>
                                     </div>
                                     {aiTargetMajors.length > 0 && (
                                       <div className="flex flex-wrap gap-2 mt-2">
@@ -2398,7 +2411,7 @@ export const CreateJob = ({
                                     </div>
                                     <div className="relative">
                                       <input type="text" value={aiCustomSkill} onChange={(e) => setAiCustomSkill(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (aiCustomSkill.trim() && !aiTargetSkills.includes(aiCustomSkill.trim())) { setAiTargetSkills([...aiTargetSkills, aiCustomSkill.trim()]); setAiCustomSkill(""); } } }} placeholder="أضف مهارة..." className="w-full pr-6 pl-14 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
-                                      <button type="button" onClick={() => { if (aiCustomSkill.trim() && !aiTargetSkills.includes(aiCustomSkill.trim())) { setAiTargetSkills([...aiTargetSkills, aiCustomSkill.trim()]); setAiCustomSkill(""); } }} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-primary transition-all"><Plus size={20} /></button>
+                                      <button type="button" onClick={() => { if (aiCustomSkill.trim() && !aiTargetSkills.includes(aiCustomSkill.trim())) { setAiTargetSkills([...aiTargetSkills, aiCustomSkill.trim()]); setAiCustomSkill(""); } }} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-emerald-500 dark:bg-emerald-600 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 dark:hover:bg-emerald-700 shadow-sm transition-all"><Plus size={20} /></button>
                                     </div>
                                   </div>
                                   <div>
@@ -2746,7 +2759,7 @@ export const CreateJob = ({
                                   <button
                                     type="button"
                                     onClick={addCustomSkill}
-                                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-primary transition-all"
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-emerald-500 dark:bg-emerald-600 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 dark:hover:bg-emerald-700 shadow-sm transition-all"
                                   >
                                     <Plus size={20} />
                                   </button>{" "}
@@ -4089,8 +4102,8 @@ const OnboardingModal = ({ isOpen, onClose, userProfile, setUserProfile, onPubli
           {entityType === "company" ? "خطوة أخيرة لتوثيق منشأتك!" : "خطوة أخيرة لتوثيق عملك الحر!"}
         </h3>
         <p className="text-slate-500 dark:text-slate-400 text-center mb-8 text-sm leading-relaxed">
-          {entityType === "company" 
-            ? "يرجى استكمال بيانات السجل التجاري والمنشأة لنتمكن من توثيق حسابك وعرضها للمتقدمين." 
+          {entityType === "company"
+            ? "يرجى استكمال بيانات السجل التجاري والمنشأة لنتمكن من توثيق حسابك وعرضها للمتقدمين."
             : "يرجى استكمال بيانات وثيقة العمل الحر الخاصة بك لنتمكن من توثيق حسابك وعرضها للمتقدمين."}
         </p>
         <form onSubmit={async (e) => {
@@ -4242,7 +4255,7 @@ const JobSuccess = ({
           className="bg-white dark:bg-slate-800 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-10 md:p-16 max-w-2xl w-full text-center border border-white dark:border-slate-700 border-b-[8px] dark:border-b-slate-900/50"
         >
           {" "}
-          <motion.div 
+          <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
@@ -4958,7 +4971,7 @@ const ManageJob = ({
                     </div>
                     <div className="relative">
                       <input type="text" disabled={isLocked} value={newMajorInput} onChange={(e) => setNewMajorInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (newMajorInput.trim() && !targetMajors.includes(newMajorInput.trim())) { setTargetMajors([...targetMajors, newMajorInput.trim()]); setNewMajorInput(""); } } }} placeholder="أضف تخصصاً (اترك الحقل فارغاً للقبول العام)..." className="w-full pr-4 pl-12 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl outline-none hover:border-primary focus:border-primary transition-all font-medium" />
-                      <button type="button" disabled={isLocked} onClick={() => { if (newMajorInput.trim() && !targetMajors.includes(newMajorInput.trim())) { setTargetMajors([...targetMajors, newMajorInput.trim()]); setNewMajorInput(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-primary transition-all"><Plus size={18} /></button>
+                      <button type="button" disabled={isLocked} onClick={() => { if (newMajorInput.trim() && !targetMajors.includes(newMajorInput.trim())) { setTargetMajors([...targetMajors, newMajorInput.trim()]); setNewMajorInput(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-white bg-emerald-500 hover:bg-emerald-600 shadow-sm transition-all"><Plus size={18} /></button>
                     </div>
                     {targetMajors.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -4982,7 +4995,7 @@ const ManageJob = ({
                     </div>
                     <div className="relative">
                       <input type="text" disabled={isLocked} value={customSkill} onChange={(e) => setCustomSkill(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustomSkill(e); } }} placeholder="أضف مهارة (تحديد المهارات الدقيقة يجعل الفرز الآلي أكثر دقة)..." className="w-full pr-6 pl-14 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-medium" />
-                      <button type="button" disabled={isLocked} onClick={addCustomSkill} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-primary transition-all"><Plus size={20} /></button>
+                      <button type="button" disabled={isLocked} onClick={addCustomSkill} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-emerald-500 dark:bg-emerald-600 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 dark:hover:bg-emerald-700 shadow-sm transition-all"><Plus size={20} /></button>
                     </div>
                   </div>
                   <div className={"space-y-3 pt-4 border-t border-slate-100 dark:border-slate-700 " + (isLocked ? "opacity-60 pointer-events-none" : "")}>
@@ -5075,7 +5088,7 @@ const ManageJob = ({
                               <label className="block text-sm font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-1">التخصصات المستهدفة <Sparkles size={14} className="text-primary/70" /></label>
                               <div className="relative">
                                 <input type="text" disabled={isLocked} value={aiCustomMajor} onChange={(e) => setAiCustomMajor(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } } }} placeholder="أضف تخصص..." className="w-full pr-4 pl-12 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm" />
-                                <button type="button" disabled={isLocked} onClick={() => { if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-all"><Plus size={18} /></button>
+                                <button type="button" disabled={isLocked} onClick={() => { if (aiCustomMajor.trim() && !aiTargetMajors.includes(aiCustomMajor.trim())) { setAiTargetMajors([...aiTargetMajors, aiCustomMajor.trim()]); setAiCustomMajor(""); } }} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-lg flex items-center justify-center text-white bg-emerald-500 hover:bg-emerald-600 shadow-sm transition-all"><Plus size={18} /></button>
                               </div>
                               {aiTargetMajors.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mt-2">
@@ -5095,7 +5108,7 @@ const ManageJob = ({
                               </div>
                               <div className="relative">
                                 <input type="text" disabled={isLocked} value={aiCustomSkill} onChange={(e) => setAiCustomSkill(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); if (aiCustomSkill.trim() && !aiTargetSkills.includes(aiCustomSkill.trim())) { setAiTargetSkills([...aiTargetSkills, aiCustomSkill.trim()]); setAiCustomSkill(""); } } }} placeholder="أضف مهارة..." className="w-full pr-6 pl-14 py-4 bg-white/80 dark:bg-slate-800/80 border-2 border-indigo-100 dark:border-indigo-800/30 text-navy dark:text-white rounded-xl outline-none focus:border-indigo-400 transition-all text-sm" />
-                                <button type="button" disabled={isLocked} onClick={() => { if (aiCustomSkill.trim() && !aiTargetSkills.includes(aiCustomSkill.trim())) { setAiTargetSkills([...aiTargetSkills, aiCustomSkill.trim()]); setAiCustomSkill(""); } }} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-white dark:bg-slate-800 border-2 border-indigo-100 dark:border-indigo-800/30 text-slate-400 rounded-xl flex items-center justify-center hover:text-indigo-600 transition-all"><Plus size={20} /></button>
+                                <button type="button" disabled={isLocked} onClick={() => { if (aiCustomSkill.trim() && !aiTargetSkills.includes(aiCustomSkill.trim())) { setAiTargetSkills([...aiTargetSkills, aiCustomSkill.trim()]); setAiCustomSkill(""); } }} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 bg-emerald-500 dark:bg-emerald-600 text-white rounded-xl flex items-center justify-center hover:bg-emerald-600 dark:hover:bg-emerald-700 shadow-sm transition-all"><Plus size={20} /></button>
                               </div>
                             </div>
                             <div>
