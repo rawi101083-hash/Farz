@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   PieChart as PieChartIcon,
   LayoutDashboard,
@@ -27,6 +27,65 @@ import { getVoiceInterviewFeatureEnabled, setVoiceInterviewFeatureEnabled } from
 const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("إدارة الشركات");
   const [isVoiceFeatureEnabled, setIsVoiceFeatureEnabled] = useState(getVoiceInterviewFeatureEnabled());
+  const [companiesList, setCompaniesList] = useState<any[]>([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+  const [totalVisits, setTotalVisits] = useState<number>(0);
+
+  useEffect(() => {
+    async function fetchData() {
+      setIsLoadingCompanies(true);
+      try {
+        const { supabase } = await import('../lib/supabaseClient');
+        
+        // Fetch all companies using Admin RPC (bypasses RLS & includes incomplete signups)
+        const { data: companiesData, error: compError } = await supabase.rpc('get_admin_companies_stats');
+        if (compError) throw compError;
+        
+        // Fetch total unique site visits
+        const { data: visitsData } = await supabase.rpc('get_site_visits');
+        if (visitsData !== null && visitsData !== undefined) {
+          setTotalVisits(visitsData);
+        }
+
+        if (companiesData) {
+          const processed = companiesData.map((c: any) => {
+            let status = 'نشط';
+            let color = 'teal';
+            
+            if (c.subscription_plan === 'free') {
+              status = 'فترة تجريبية';
+              color = 'orange';
+            } else if (c.subscription_plan === 'pro' || c.subscription_plan === 'enterprise') {
+              status = 'نشط';
+              color = 'teal';
+            } else {
+               status = c.subscription_plan || 'غير محدد';
+               color = 'teal';
+            }
+
+            return {
+              id: c.id,
+              name: c.company_name + (!c.has_profile ? ' (لم يكمل الإعداد)' : ''),
+              jobs: c.active_jobs || 0,
+              cvs: c.cvs_processed_count || 0,
+              status,
+              color,
+              raw: c
+            };
+          });
+          setCompaniesList(processed);
+        }
+      } catch (err) {
+        console.error("Error fetching admin data:", err);
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    }
+    
+    if (activeTab === "إدارة الشركات") {
+      fetchData();
+    }
+  }, [activeTab]);
 
   const handleToggleVoiceFeature = () => {
     const newVal = !isVoiceFeatureEnabled;
@@ -96,8 +155,21 @@ const SuperAdminDashboard = () => {
                 <Zap size={18} /> تحديث النظام{" "}
               </button>{" "}
             </div>{" "}
-          </header>{" "}
-          {/* Companies Table */}{" "}
+          </header> 
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+              <div>
+                <p className="text-slate-500 dark:text-slate-400 text-sm font-bold mb-1">الزيارات الفريدة للموقع</p>
+                <h3 className="text-3xl font-black text-navy dark:text-white">{totalVisits}</h3>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                <Users size={28} />
+              </div>
+            </div>
+          </div>
+
+          {/* Companies Table */}
           <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50/30">
               <div className="flex items-center gap-4">
@@ -105,7 +177,7 @@ const SuperAdminDashboard = () => {
                   الشركات المسجلة
                 </h3>{" "}
                 <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 px-3 py-1 rounded-full text-[10px] font-bold">
-                  128 شركة
+                  {companiesList.length} شركة
                 </span>{" "}
               </div>{" "}
               <div className="flex gap-2">
@@ -120,46 +192,27 @@ const SuperAdminDashboard = () => {
               <table className="w-full text-right">
                 <thead className="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-200 text-[11px] uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
                   <tr>
-                    <th className="px-6 py-4 font-bold">اسم الشركة</th>{" "}
-                    <th className="px-6 py-4 font-bold">الوظائف النشطة</th>{" "}
-                    <th className="px-6 py-4 font-bold">
-                      السير الذاتية المعالجة
-                    </th>{" "}
-                    <th className="px-6 py-4 font-bold">حالة الاشتراك</th>{" "}
-                    <th className="px-6 py-4 font-bold">الإجراءات</th>{" "}
-                  </tr>{" "}
-                </thead>{" "}
+                    <th className="px-6 py-4 font-bold">اسم الشركة</th>
+                    <th className="px-6 py-4 font-bold">الوظائف النشطة</th>
+                    <th className="px-6 py-4 font-bold">السير الذاتية المعالجة</th>
+                    <th className="px-6 py-4 font-bold">حالة الاشتراك</th>
+                    <th className="px-6 py-4 font-bold">الإجراءات</th>
+                  </tr>
+                </thead>
                 <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                  {[
-                    {
-                      name: "شركة سحاب",
-                      jobs: 3,
-                      cvs: 150,
-                      status: "فترة تجريبية",
-                      color: "orange",
-                    },
-                    {
-                      name: "مؤسسة الحلول الذكية",
-                      jobs: 12,
-                      cvs: 1240,
-                      status: "نشط",
-                      color: "teal",
-                    },
-                    {
-                      name: "تقنية الغد",
-                      jobs: 0,
-                      cvs: 45,
-                      status: "منتهي",
-                      color: "red",
-                    },
-                    {
-                      name: "مجموعة الرواد",
-                      jobs: 8,
-                      cvs: 890,
-                      status: "نشط",
-                      color: "teal",
-                    },
-                  ].map((company, idx) => (
+                  {isLoadingCompanies ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-10 text-center text-slate-500 font-medium">
+                        جاري تحميل البيانات...
+                      </td>
+                    </tr>
+                  ) : companiesList.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-10 text-center text-slate-500 font-medium">
+                        لا توجد شركات مسجلة
+                      </td>
+                    </tr>
+                  ) : companiesList.map((company, idx) => (
                     <tr
                       key={idx}
                       className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors group"
@@ -215,7 +268,7 @@ const SuperAdminDashboard = () => {
             </div>{" "}
             <div className="p-6 bg-slate-50 dark:bg-slate-800/50/30 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
               <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                عرض 1-4 من أصل 128 شركة
+                عرض {companiesList.length} شركة
               </span>{" "}
               <div className="flex gap-2">
                 <button className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-400 dark:text-slate-500 hover:bg-white dark:bg-slate-800 transition-all">

@@ -253,7 +253,7 @@ const JobSuccess = ({
           className="bg-white dark:bg-slate-800 rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] p-10 md:p-16 max-w-2xl w-full text-center border border-white dark:border-slate-700 border-b-[8px] dark:border-b-slate-900/50"
         >
           {" "}
-          <motion.div 
+          <motion.div
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
@@ -2021,6 +2021,35 @@ export default function App() {
   });
 
   useEffect(() => {
+    const trackVisit = async () => {
+      try {
+        const VISITOR_KEY = 'smart_recruitment_visitor';
+        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+        const visitorData = localStorage.getItem(VISITOR_KEY);
+        const now = Date.now();
+        let shouldLog = false;
+        
+        if (!visitorData) {
+          shouldLog = true;
+        } else {
+          const parsed = JSON.parse(visitorData);
+          if (now - parsed.timestamp > SEVEN_DAYS) {
+            shouldLog = true;
+          }
+        }
+      
+        if (shouldLog) {
+          await supabase.rpc('increment_site_visit');
+          localStorage.setItem(VISITOR_KEY, JSON.stringify({ timestamp: now }));
+        }
+      } catch (e) {
+        console.error("Error tracking visit:", e);
+      }
+    };
+    trackVisit();
+  }, []);
+
+  useEffect(() => {
     if (selectedApplicantForDetails) {
       sessionStorage.setItem("sahab_selected_applicant", JSON.stringify(selectedApplicantForDetails));
     } else {
@@ -2092,7 +2121,7 @@ export default function App() {
   const [step, setStep] = useState<FlowStep>(() => {
     const searchParams = new URLSearchParams(window.location.search);
     const stepParam = searchParams.get('step');
-    if (stepParam === 'landing' || stepParam === 'login' || stepParam === 'registerCompany' || stepParam === 'updatePassword') {
+    if (stepParam === 'landing' || stepParam === 'login' || stepParam === 'registerCompany' || stepParam === 'updatePassword' || stepParam === 'superAdmin') {
       return stepParam as FlowStep;
     }
     if (window.location.pathname.startsWith("/profile")) return "seeker-profile";
@@ -2227,6 +2256,8 @@ export default function App() {
         const searchParams = new URLSearchParams(window.location.search);
         if (searchParams.get('step') === 'landing') {
           setStep('landing');
+        } else if (searchParams.get('step') === 'superAdmin') {
+          setStep('superAdmin');
         } else {
           const savedStep = sessionStorage.getItem('sahab_active_step');
           if (savedStep && savedStep !== "landing" && savedStep !== "login" && savedStep !== "registerCompany") {
