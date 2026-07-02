@@ -1470,7 +1470,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                 </div>
               )}
               <p className="text-slate-500 dark:text-slate-400 mb-6 text-[15px] leading-relaxed font-medium">
-                قمنا بتجهيز هذه الأسئلة المخصصة باستخدام محرك الفرز بناءً على السيرة الذاتية للمتقدم. يمكنك مراجعتها، تعديلها، أو إضافة أسئلتك الخاصة (بحد أقصى 4 أسئلة):
+                قمنا بتجهيز هذه الأسئلة المخصصة باستخدام محرك الفرز بناءً على السيرة الذاتية للمتقدم. يمكنك مراجعتها، تعديلها، أو إضافة أسئلتك الخاصة - بحد أقصى 4 أسئلة:
               </p>
 
               {interviewLang === 'en' && (
