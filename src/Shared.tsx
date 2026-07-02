@@ -304,8 +304,8 @@ export interface Role {
   qualifications?: string;
   benefits?: string;
   aiInstructions?: string;
-  skills?: string[];
-  languages?: string[];
+  targetSkills?: string[];
+  requiredLanguages?: string[];
   customQuestions?: { text: string; type: string; options?: string[]; required?: boolean }[];
   requiredAttachments?: string[];
   customAttachments?: CustomAttachment[];
@@ -386,8 +386,8 @@ export interface Job {
   qualification?: string;
   salaryMin?: string;
   salaryMax?: string;
-  skills?: string[];
-  languages?: string[];
+  targetSkills?: string[];
+  requiredLanguages?: string[];
   customQuestions?: { text: string; type: string; options?: string[]; required?: boolean }[];
   requiredAttachments?: string[];
   customAttachments?: CustomAttachment[];

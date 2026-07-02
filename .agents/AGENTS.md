@@ -98,5 +98,10 @@
 - **أوامر Git المدمرة:** يُمنع منعاً باتاً، وتحت أي ظرف، استخدام أمر `git checkout <file>` أو `git reset` لإرجاع ملف إلى حالة سابقة دون أن تتحدث مع المستخدم وتحصل على إذن صريح وواضح منه. هذا الأمر يدمر الشغل غير المحفوظ (Uncommitted changes) ويعتبر جريمة برمجية في هذا المشروع.
 
 ---
+### 20. STRICT AWARENESS OF DATA FLOW & NAMING CONVENTIONS (الوعي الصارم بتدفق البيانات وتحولات الأسماء)
+- **لا تفترض تطابق الأسماء بين الواجهة والخلفية (Do not assume naming consistency):** يجب أن تدرك تماماً أن قواعد البيانات (مثل Supabase/Postgres) تقوم غالباً بتحويل أسماء المتغيرات القادمة من الواجهة الأمامية بصيغة (CamelCase) مثل `aiOverrideFields` إلى صيغة (Snake_Case) مثل `ai_override_fields`.
+- **التحقق من الكود الوسيط (Verify the Intermediary Code):** عند تعديل أو قراءة كود الذكاء الاصطناعي (Backend / Python)، يجب عليك فحص كيف يتم استخراج البيانات من قاموس الاستجابة (`job_data.get`). إياك أن تعتمد على اسم المتغير كما أرسلته الواجهة الأمامية دون التحقق من كيفية تخزينه في قاعدة البيانات، واستخدم دائماً الدالة `get` مع التحقق من الصيغتين (مثل `job_data.get("camelCase") or job_data.get("snake_case")`) لتفادي فقدان البيانات.
+
+---
 
 *This file acts as the ultimate constitution for AI agents operating on this codebase. Read it, understand it, and never violate it.*
