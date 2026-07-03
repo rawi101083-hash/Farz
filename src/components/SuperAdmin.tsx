@@ -276,9 +276,10 @@ const SuperAdminDashboard = () => {
                                 <button
                                   onClick={async () => {
                                     try {
-                                      await supabase.from('companies').update({ status: 'active' }).eq('id', company.id);
-                                      setCompaniesList(prev => prev.map(c => c.id === company.id ? { ...c, status: 'نشط', color: 'teal', raw: { ...c.raw, status: 'active' } } : c));
-                                      alert('تم تفعيل الحساب بنجاح!');
+                                      const newEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+                                      await supabase.from('companies').update({ status: 'active', subscription_end_date: newEndDate }).eq('id', company.id);
+                                      setCompaniesList(prev => prev.map(c => c.id === company.id ? { ...c, status: 'نشط', color: 'teal', raw: { ...c.raw, status: 'active', subscription_end_date: newEndDate } } : c));
+                                      alert('تم تفعيل الحساب وإضافة 14 يوم تجريبي بنجاح!');
                                     } catch (e) {
                                       console.error(e);
                                       alert('حدث خطأ أثناء التفعيل');
@@ -305,7 +306,22 @@ const SuperAdminDashboard = () => {
                                   <Ban size={14} /> إيقاف الحساب{" "}
                                 </button>
                               )}
-                              <button className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-primary hover:text-white transition-all">
+                              <button 
+                                onClick={async () => {
+                                  const days = prompt("أدخل عدد الأيام الإضافية للفترة التجريبية (مثال: 14):");
+                                  if (!days || isNaN(Number(days))) return;
+                                  try {
+                                    const newEndDate = new Date(Date.now() + Number(days) * 24 * 60 * 60 * 1000).toISOString();
+                                    await supabase.from('companies').update({ subscription_end_date: newEndDate }).eq('id', company.id);
+                                    setCompaniesList(prev => prev.map(c => c.id === company.id ? { ...c, raw: { ...c.raw, subscription_end_date: newEndDate } } : c));
+                                    alert('تم تحديث أيام الفترة التجريبية بنجاح!');
+                                  } catch (e) {
+                                    console.error(e);
+                                    alert('حدث خطأ أثناء التحديث');
+                                  }
+                                }}
+                                className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-primary hover:text-white transition-all"
+                              >
                                 <Calendar size={14} /> التحكم بأيام الفترة التجريبية{" "}
                               </button>{" "}
                               <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-navy dark:text-white transition-colors">

@@ -112,11 +112,18 @@ export const CreateJob = ({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
 
-  // Compute Limits
   const plan = userProfile?.subscription_tier || 'free';
   const hasSubscribedBefore = !!(userProfile as any)?.subscription_end_date;
+  let daysLeft: number | null = null;
+  if (userProfile?.subscription_end_date) {
+    const end = new Date(userProfile.subscription_end_date);
+    const diffTime = end.getTime() - new Date().getTime();
+    daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  }
+  const isExpired = daysLeft !== null && daysLeft <= 0;
+
   let jobLimit = userProfile?.jobs_limit ?? 0;
-  if (plan === 'free' && hasSubscribedBefore) {
+  if (plan === 'free' && hasSubscribedBefore && isExpired) {
     jobLimit = 0;
   } else if (!jobLimit) {
     if (plan === 'free') jobLimit = 1;

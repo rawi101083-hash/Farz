@@ -377,9 +377,10 @@ export const Dashboard = ({
   let interviewsLimit = userProfile?.interviews_limit ?? 0;
 
   const hasSubscribedBefore = !!(userProfile as any)?.subscription_end_date;
+  const isExpired = daysLeft !== null && daysLeft <= 0;
 
-  // Force override to 0 if they are on a free plan but have subscribed before (expired)
-  if (plan === 'free' && hasSubscribedBefore) {
+  // Force override to 0 if they are on a free plan but have subscribed before and the trial has expired
+  if (plan === 'free' && hasSubscribedBefore && isExpired) {
     jobLimit = 0;
     cvLimit = 0;
     interviewsLimit = 0;
