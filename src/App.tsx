@@ -886,6 +886,7 @@ const LoginPage = ({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [entityType, setEntityType] = useState<"company" | "freelance">("company");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -893,7 +894,7 @@ const LoginPage = ({
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const [authStep, setAuthStep] = useState<"initial" | "otp" | "new_password">("initial");
+  const [authStep, setAuthStep] = useState<"initial" | "otp" | "new_password" | "signup_success">("initial");
   const [otpType, setOtpType] = useState<"signup" | "recovery" | null>(null);
   const [otp, setOtp] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
@@ -987,12 +988,14 @@ const LoginPage = ({
 
     try {
       if (mode === "register") {
-        const { error } = await supabase.auth.signUp({
+        sessionStorage.setItem('is_signing_up', 'true');
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               name,
+              phone,
               entity_type: entityType
             }
           }
@@ -1006,25 +1009,74 @@ const LoginPage = ({
               password,
             });
             if (signInError) {
+              sessionStorage.removeItem('is_signing_up');
               throw new Error("البريد الإلكتروني مسجل مسبقاً، وكلمة المرور غير صحيحة. يرجى إدخال كلمة المرور الصحيحة للربط الدخول.");
             }
             // Password is correct! Let them in.
-            await supabase.auth.updateUser({ data: { entity_type: entityType, name } });
+            await supabase.auth.updateUser({ data: { entity_type: entityType, name, phone } });
+            sessionStorage.removeItem('is_signing_up');
             onLogin();
             return;
           }
+          sessionStorage.removeItem('is_signing_up');
           throw error;
         }
 
-        setAuthStep("otp");
-        setOtpType("signup");
-        setMessage("تم إرسال رمز التحقق المكون من 6 أرقام لبريدك الإلكتروني.");
+        if (data?.user) {
+          try {
+            await supabase.rpc('create_pending_company', {
+              p_id: data.user.id,
+              p_name: name,
+              p_email: email,
+              p_phone: phone
+            });
+          } catch (rpcErr) {
+            console.error("RPC Error:", rpcErr);
+            // Ignore if RPC fails, we still want to show success to user
+          }
+
+          // Notify admin of the new signup
+          try {
+            await supabase.functions.invoke('notify-admin', {
+              body: {
+                companyName: name,
+                companyEmail: email,
+                companyPhone: phone,
+                createdDate: new Date().toLocaleString('ar-SA')
+              }
+            });
+          } catch (notifyErr) {
+            console.error("Failed to send notification to admin", notifyErr);
+          }
+        }
+
+        // Ensure user is signed out so they don't enter the dashboard
+        await supabase.auth.signOut();
+        sessionStorage.removeItem('is_signing_up');
+
+        setAuthStep("signup_success");
+        setMessage("");
+        setIsError(false);
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+
+        // Check if account is still pending
+        if (data.user) {
+          const { data: compData, error: compErr } = await supabase
+            .from('companies')
+            .select('status')
+            .eq('id', data.user.id)
+            .single();
+
+          if (!compErr && compData?.status === 'pending') {
+            await supabase.auth.signOut();
+            throw new Error("حسابك لا يزال قيد المراجعة ولم يتم تفعيله بعد.");
+          }
+        }
 
         onLogin();
       }
@@ -1141,7 +1193,7 @@ const LoginPage = ({
           animate={{ opacity: 1, x: 0 }}
           className="w-full max-w-md my-auto pt-16 pb-8"
         >
-          {(isForgotPassword || authStep !== "initial") && (
+          {(isForgotPassword && authStep !== "signup_success") && (
             <button
               onClick={() => { setIsForgotPassword(false); setAuthStep("initial"); setOtpType(null); setOtp(""); setMessage(""); setIsError(false); }}
               className="flex items-center text-sm font-bold text-slate-500 hover:text-primary mb-6 transition-colors"
@@ -1151,9 +1203,11 @@ const LoginPage = ({
             </button>
           )}
           <div className="mb-10 text-center md:text-right">
-            <h2 className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight mb-2">
-              {authStep === "otp" ? "التحقق من البريد الإلكتروني" : authStep === "new_password" ? "تعيين كلمة المرور الجديدة" : isForgotPassword ? "استعادة كلمة المرور" : mode === "register" ? "إنشاء حساب جديد" : "تسجيل الدخول"}
-            </h2>
+            {authStep !== "signup_success" && (
+              <h2 className="text-3xl font-bold text-slate-800 dark:text-white tracking-tight mb-2">
+                {authStep === "otp" ? "التحقق من البريد الإلكتروني" : authStep === "new_password" ? "تعيين كلمة المرور الجديدة" : isForgotPassword ? "استعادة كلمة المرور" : mode === "register" ? "إنشاء حساب جديد" : "تسجيل الدخول"}
+              </h2>
+            )}
             {authStep === "initial" && isForgotPassword && (
               <p className="text-slate-500 font-medium mt-2">
                 أدخل بريدك الإلكتروني وسنرسل لك رمزاً من 6 أرقام لإعادة تعيين كلمة المرور.
@@ -1166,196 +1220,247 @@ const LoginPage = ({
             )}
           </div>
 
-          <form onSubmit={authStep === "otp" ? handleVerifyOtp : authStep === "new_password" ? handleUpdatePassword : isForgotPassword ? handleResetPassword : handleAuth} className="space-y-5">
-            {authStep === "otp" ? (
-              <div>
-                <input
-                  type="text"
-                  className="focus:ring-teal-700 focus:border-teal-700 block w-full sm:text-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl py-4 border text-center tracking-[1em] text-slate-800 dark:text-white font-bold transition-all shadow-sm"
-                  placeholder="123456"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                />
-              </div>
-            ) : authStep === "new_password" ? (
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                  كلمة المرور الجديدة
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary z-10" size={20} />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
-                    placeholder="••••••••"
-                    dir="ltr"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-primary dark:hover:text-primary/80 transition-colors z-10"
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
+          {authStep === "signup_success" ? (
+            <div className="text-center py-8 flex flex-col items-center justify-center animate-in zoom-in-95 fade-in duration-500">
+              {/* 3D Checkmark Container */}
+              <div className="relative mb-10 group">
+                {/* Glowing background ring */}
+                <div className="absolute inset-0 bg-emerald-400 rounded-full blur-2xl opacity-30 animate-pulse"></div>
+
+                {/* Orbiting rings */}
+                <div className="absolute -inset-4 border-2 border-emerald-500/20 rounded-full animate-[spin_8s_linear_infinite]"></div>
+                <div className="absolute -inset-8 border border-emerald-500/10 rounded-full animate-[spin_12s_linear_infinite_reverse]"></div>
+
+                {/* Main 3D Sphere */}
+                <div className="w-20 h-20 relative flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-300 via-emerald-500 to-emerald-700 shadow-[0_0_30px_rgba(16,185,129,0.4),inset_0_8px_16px_rgba(255,255,255,0.6),inset_0_-8px_16px_rgba(0,0,0,0.2)] transition-transform duration-500 hover:scale-110">
+                  <svg className="w-10 h-10 text-white drop-shadow-[0_4px_8px_rgba(0,0,0,0.3)] animate-[bounce_2s_ease-in-out_infinite]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
                 </div>
               </div>
-            ) : (
-              <>
-                {!isForgotPassword && mode === "register" && (
-                  <>
-                    <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-xl mb-6 border border-slate-200/50 dark:border-slate-800">
-                      <button
-                        type="button"
-                        onClick={() => setEntityType("company")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold transition-all ${entityType === "company" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"}`}
-                      >
-                        <Building2 size={18} /> شركة / جهة اعتبارية
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEntityType("freelance")}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold transition-all ${entityType === "freelance" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"}`}
-                      >
-                        <User size={18} /> فرد / عمل حر
-                      </button>
-                    </div>
 
-                    <div>
-                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                        {entityType === "company" ? "اسم الشركة / الجهة" : "الاسم الكامل"}
-                      </label>
-                      <div className="relative">
-                        <User
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary"
-                          size={20}
-                        />
-                        <input
-                          type="text"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
-                          placeholder={entityType === "company" ? "اسم الشركة أو الجهة" : "الاسم الكامل"}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
+              <h3 className="text-3xl font-black text-slate-800 dark:text-white mb-6 tracking-tight">
+                تم استلام طلبك بنجاح!
+              </h3>
 
+              {/* Premium Message Box */}
+              <div className="bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 p-8 rounded-3xl w-full shadow-sm relative overflow-hidden group hover:border-emerald-500/30 transition-colors duration-500 mb-8">
+                <div className="absolute top-0 right-0 w-full h-1.5 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-400 bg-[length:200%_auto] animate-[gradient_3s_linear_infinite]"></div>
+                <p className="text-[17px] text-slate-600 dark:text-slate-300 font-bold leading-loose">
+                  نحن سعداء جداً بانضمامك إلينا. سيتواصل معك فريق <span className="text-primary font-black mx-1">فرز</span> قريباً لتفعيل حسابك والبدء في رحلة التوظيف الذكي.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={authStep === "otp" ? handleVerifyOtp : authStep === "new_password" ? handleUpdatePassword : isForgotPassword ? handleResetPassword : handleAuth} className="space-y-5">
+              {authStep === "otp" ? (
+                <div>
+                  <input
+                    type="text"
+                    className="focus:ring-teal-700 focus:border-teal-700 block w-full sm:text-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 rounded-xl py-4 border text-center tracking-[1em] text-slate-800 dark:text-white font-bold transition-all shadow-sm"
+                    placeholder="123456"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                  />
+                </div>
+              ) : authStep === "new_password" ? (
                 <div>
                   <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    البريد الإلكتروني
+                    كلمة المرور الجديدة
                   </label>
                   <div className="relative">
-                    <Mail
-                      className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary"
-                      size={20}
-                    />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary z-10" size={20} />
                     <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
-                      placeholder={entityType === "company" && mode === "register" ? "name@company.com" : "name@example.com"}
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
+                      placeholder="••••••••"
                       dir="ltr"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-primary dark:hover:text-primary/80 transition-colors z-10"
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
                   </div>
                 </div>
-
-                {!isForgotPassword && (
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
-                        كلمة المرور
-                      </label>
-                      {mode === "login" && (
-                        <button type="button" onClick={() => setIsForgotPassword(true)} className="text-sm font-bold text-primary hover:text-primary-dark transition-colors">
-                          نسيت كلمة المرور؟
+              ) : (
+                <>
+                  {!isForgotPassword && mode === "register" && (
+                    <>
+                      <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1.5 rounded-xl mb-6 border border-slate-200/50 dark:border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => setEntityType("company")}
+                          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold transition-all ${entityType === "company" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"}`}
+                        >
+                          <Building2 size={18} /> شركة / جهة اعتبارية
                         </button>
-                      )}
-                    </div>
+                        <button
+                          type="button"
+                          onClick={() => setEntityType("freelance")}
+                          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg text-sm font-bold transition-all ${entityType === "freelance" ? "bg-white dark:bg-slate-700 text-primary shadow-sm" : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white"}`}
+                        >
+                          <User size={18} /> فرد / عمل حر
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                          {entityType === "company" ? "اسم الشركة / الجهة" : "الاسم الكامل"}
+                        </label>
+                        <div className="relative">
+                          <User
+                            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary"
+                            size={20}
+                          />
+                          <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
+                            placeholder={entityType === "company" ? "اسم الشركة أو الجهة" : "الاسم الكامل"}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                          رقم الجوال
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary z-10 font-bold" dir="ltr">+966</span>
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                            className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-16 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
+                            placeholder="5XXXXXXXX"
+                            dir="ltr"
+                            maxLength={9}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
+                      البريد الإلكتروني
+                    </label>
                     <div className="relative">
-                      <Lock
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary z-10"
+                      <Mail
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary"
                         size={20}
                       />
                       <input
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
-                        placeholder="••••••••"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-4 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
+                        placeholder={entityType === "company" && mode === "register" ? "name@company.com" : "name@example.com"}
                         dir="ltr"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-primary dark:hover:text-primary/80 transition-colors z-10"
-                      >
-                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                      </button>
                     </div>
                   </div>
-                )}
-              </>
-            )}
 
-            {message && (
-              <div className={`p-4 rounded-xl text-sm font-bold ${isError ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-                {message}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={isLoading || (authStep === "otp" && otp.length !== 6) || (authStep === "new_password" && !password) || (authStep === "initial" && (!email || (!isForgotPassword && !password) || (!isForgotPassword && mode === "register" && !name)))}
-              className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold text-white bg-[#10857b] hover:bg-teal-700 transition-all shadow-sm disabled:opacity-70 disabled:cursor-default"
-            >
-              {isLoading ? (
-                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : authStep === "otp" ? (
-                "التحقق من الكود"
-              ) : authStep === "new_password" ? (
-                "تغيير كلمة المرور"
-              ) : isForgotPassword ? (
-                "إرسال رمز التحقق"
-              ) : mode === "register" ? (
-                "إنشاء حساب"
-              ) : (
-                "تسجيل الدخول"
+                  {!isForgotPassword && (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-bold text-slate-700 dark:text-slate-300">
+                          كلمة المرور
+                        </label>
+                        {mode === "login" && (
+                          <button type="button" onClick={() => setIsForgotPassword(true)} className="text-sm font-bold text-primary hover:text-primary-dark transition-colors">
+                            نسيت كلمة المرور؟
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <Lock
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-primary z-10"
+                          size={20}
+                        />
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pr-12 pl-12 text-slate-800 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all shadow-sm dark:[&:-webkit-autofill]:[-webkit-box-shadow:0_0_0_30px_#0f172a_inset] dark:[&:-webkit-autofill]:[-webkit-text-fill-color:white]"
+                          placeholder="••••••••"
+                          dir="ltr"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-primary dark:hover:text-primary/80 transition-colors z-10"
+                        >
+                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
-            </button>
 
-            {!isForgotPassword && authStep === "initial" && (
-              <div className="mt-6 text-center">
-                {mode === "login" ? (
-                  <div className="text-sm font-bold text-slate-600 dark:text-slate-400">
-                    ليس لديك حساب؟ <button type="button" onClick={() => setMode("register")} className="text-primary hover:text-primary/80 transition-colors">إنشاء حساب جديد</button>
-                  </div>
+              {message && (
+                <div className={`p-4 rounded-xl text-sm font-bold ${isError ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                  {message}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isLoading || (authStep === "otp" && otp.length !== 6) || (authStep === "new_password" && !password) || (authStep === "initial" && (!email || (!isForgotPassword && !password) || (!isForgotPassword && mode === "register" && !name)))}
+                className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold text-white bg-[#10857b] hover:bg-teal-700 transition-all shadow-sm disabled:opacity-70 disabled:cursor-default"
+              >
+                {isLoading ? (
+                  <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : authStep === "otp" ? (
+                  "التحقق من الكود"
+                ) : authStep === "new_password" ? (
+                  "تغيير كلمة المرور"
+                ) : isForgotPassword ? (
+                  "إرسال رمز التحقق"
+                ) : mode === "register" ? (
+                  "إنشاء حساب"
                 ) : (
-                  <div className="text-sm font-bold text-slate-600 dark:text-slate-400">
-                    لديك حساب بالفعل؟ <button type="button" onClick={() => setMode("login")} className="text-primary hover:text-primary/80 transition-colors">تسجيل الدخول</button>
-                  </div>
+                  "تسجيل الدخول"
                 )}
-              </div>
-            )}
+              </button>
 
-            {authStep === "otp" && (
-              <div className="mt-6 text-center text-sm">
-                <span className="text-slate-600 dark:text-slate-400 font-medium">لم يصلك الكود؟ </span>
-                <button
-                  type="button"
-                  onClick={handleResendOtp}
-                  disabled={isLoading || isResent || resendTimer > 0}
-                  className={`font-bold transition-colors disabled:opacity-50 ${isResent ? 'text-emerald-600' : resendTimer > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-primary hover:text-primary/80'}`}
-                >
-                  {isResent ? 'تم الإرسال ✓' : resendTimer > 0 ? `إعادة إرسال (${resendTimer})` : 'إعادة إرسال'}
-                </button>
-              </div>
-            )}
-          </form>
+              {!isForgotPassword && authStep === "initial" && (
+                <div className="mt-6 text-center">
+                  {mode === "login" ? (
+                    <div className="text-sm font-bold text-slate-600 dark:text-slate-400">
+                      ليس لديك حساب؟ <button type="button" onClick={() => setMode("register")} className="text-primary hover:text-primary/80 transition-colors">إنشاء حساب جديد</button>
+                    </div>
+                  ) : (
+                    <div className="text-sm font-bold text-slate-600 dark:text-slate-400">
+                      لديك حساب بالفعل؟ <button type="button" onClick={() => setMode("login")} className="text-primary hover:text-primary/80 transition-colors">تسجيل الدخول</button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {authStep === "otp" && (
+                <div className="mt-6 text-center text-sm">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">لم يصلك الكود؟ </span>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={isLoading || isResent || resendTimer > 0}
+                    className={`font-bold transition-colors disabled:opacity-50 ${isResent ? 'text-emerald-600' : resendTimer > 0 ? 'text-slate-400 cursor-not-allowed' : 'text-primary hover:text-primary/80'}`}
+                  >
+                    {isResent ? 'تم الإرسال ✓' : resendTimer > 0 ? `إعادة إرسال (${resendTimer})` : 'إعادة إرسال'}
+                  </button>
+                </div>
+              )}
+            </form>
+          )}
 
           <div className="mt-12 pt-8 text-center flex flex-col items-center justify-center gap-2">
             <div className="flex items-center gap-2 text-slate-400 dark:text-slate-500 justify-center">
@@ -2028,7 +2133,7 @@ export default function App() {
         const visitorData = localStorage.getItem(VISITOR_KEY);
         const now = Date.now();
         let shouldLog = false;
-        
+
         if (!visitorData) {
           shouldLog = true;
         } else {
@@ -2037,7 +2142,7 @@ export default function App() {
             shouldLog = true;
           }
         }
-      
+
         if (shouldLog) {
           await supabase.rpc('increment_site_visit');
           localStorage.setItem(VISITOR_KEY, JSON.stringify({ timestamp: now }));
@@ -2272,13 +2377,38 @@ export default function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       console.log("Supabase Auth Event:", _event);
+
+      // Ignore all auth events while we are actively signing up a new account
+      if (sessionStorage.getItem('is_signing_up')) {
+        return;
+      }
 
       // Prevent network drops from falsely logging out the user
       if (_event === 'SIGNED_OUT' && !navigator.onLine) {
         console.warn("Ignored SIGNED_OUT event because the browser is offline.");
         return;
+      }
+
+      // Check for pending accounts before logging them in
+      if (session?.user && (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED')) {
+        try {
+          const { data: compData, error: compErr } = await supabase
+            .from('companies')
+            .select('status')
+            .eq('id', session.user.id)
+            .single();
+
+          if (!compErr && compData?.status === 'pending') {
+            console.warn("Account is pending, logging out...");
+            await supabase.auth.signOut();
+            alert("حسابك لا يزال قيد المراجعة ولم يتم تفعيله بعد.");
+            return; // Prevent setting the session!
+          }
+        } catch (err) {
+          console.error("Error checking account status in onAuthStateChange", err);
+        }
       }
 
       setSession(session);
@@ -2324,7 +2454,7 @@ export default function App() {
           sessionStorage.removeItem("sahab_selected_job");
           sessionStorage.removeItem("sahab_decision_filter");
           sessionStorage.removeItem("sahab_job_filter");
-          setStep("landing");
+          setStep(prev => (prev === 'registerCompany' || prev === 'login') ? prev : "landing");
           localStorage.removeItem("sahab_jobs_db_v1");
           localStorage.removeItem("sahab_applicants_fast_cache");
           localStorage.removeItem("sahab_decisions");

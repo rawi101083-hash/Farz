@@ -1,0 +1,1 @@
+import dotenv from 'dotenv'; dotenv.config({ path: '.env.local' }); async function main() { const url = process.env.VITE_SUPABASE_URL + '/rest/v1/?apikey=' + process.env.VITE_SUPABASE_ANON_KEY; const res = await fetch(url); const json = await res.json(); console.log(Object.keys(json.components?.schemas?.companies?.properties || {})); } main();

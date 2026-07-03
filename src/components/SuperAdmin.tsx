@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { LogoIcon, skillsDictionary } from '../Shared';
 import { getVoiceInterviewFeatureEnabled, setVoiceInterviewFeatureEnabled } from '../config';
+import { supabase } from '../lib/supabaseClient';
 
 const SuperAdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("إدارة الشركات");
@@ -35,12 +36,10 @@ const SuperAdminDashboard = () => {
     async function fetchData() {
       setIsLoadingCompanies(true);
       try {
-        const { supabase } = await import('../lib/supabaseClient');
-        
         // Fetch all companies using Admin RPC (bypasses RLS & includes incomplete signups)
         const { data: companiesData, error: compError } = await supabase.rpc('get_admin_companies_stats');
         if (compError) throw compError;
-        
+
         // Fetch total unique site visits
         const { data: visitsData } = await supabase.rpc('get_site_visits');
         if (visitsData !== null && visitsData !== undefined) {
@@ -51,23 +50,29 @@ const SuperAdminDashboard = () => {
           const processed = companiesData.map((c: any) => {
             let status = 'نشط';
             let color = 'teal';
-            
-            if (c.subscription_plan === 'free') {
-              status = 'فترة تجريبية';
+
+            if (c.status === 'pending') {
+              status = 'بانتظار التفعيل';
               color = 'orange';
+            } else if (c.subscription_plan === 'free') {
+              status = 'فترة تجريبية';
+              color = 'teal';
             } else if (c.subscription_plan === 'pro' || c.subscription_plan === 'enterprise') {
               status = 'نشط';
               color = 'teal';
             } else {
-               status = c.subscription_plan || 'غير محدد';
-               color = 'teal';
+              status = c.subscription_plan || 'غير محدد';
+              color = 'teal';
             }
 
             return {
               id: c.id,
               name: c.company_name + (!c.has_profile ? ' (لم يكمل الإعداد)' : ''),
+              phone: c.contact_phone || 'غير متوفر',
+              email: c.email || c.contact_email || 'غير متوفر',
+              date: c.created_at ? new Date(c.created_at).toLocaleString('ar-SA', { year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' }) : 'غير متوفر',
               jobs: c.active_jobs || 0,
-              cvs: c.cvs_processed_count || 0,
+              cvs: c.total_cvs || c.cvs_processed_count || 0,
               status,
               color,
               raw: c
@@ -81,7 +86,7 @@ const SuperAdminDashboard = () => {
         setIsLoadingCompanies(false);
       }
     }
-    
+
     if (activeTab === "إدارة الشركات") {
       fetchData();
     }
@@ -134,157 +139,204 @@ const SuperAdminDashboard = () => {
       {/* Main Content */}{" "}
       <main className="flex-1 lg:mr-72 p-8 pt-20 lg:pt-8">
         <div className="max-w-7xl mx-auto space-y-8">
-          
+
           {activeTab === "إدارة الشركات" && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-            <div>
-              <h1 className="text-3xl font-bold text-navy dark:text-white mb-2">
-                إدارة الشركات المشتركة
-              </h1>{" "}
-              <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
-                مرحباً بك في لوحة تحكم النظام. يمكنك إدارة كافة الشركات
-                والاشتراكات من هنا.
-              </p>{" "}
-            </div>{" "}
-            <div className="flex gap-3">
-              <button className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-50 dark:bg-slate-800/50 transition-all shadow-sm flex items-center gap-2">
-                <Database size={18} /> قاعدة البيانات{" "}
-              </button>{" "}
-              <button className="bg-navy text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-primary transition-all shadow-lg flex items-center gap-2">
-                <Zap size={18} /> تحديث النظام{" "}
-              </button>{" "}
-            </div>{" "}
-          </header> 
+                <div>
+                  <h1 className="text-3xl font-bold text-navy dark:text-white mb-2">
+                    إدارة الشركات المشتركة
+                  </h1>{" "}
+                  <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">
+                    مرحباً بك في لوحة تحكم النظام. يمكنك إدارة كافة الشركات
+                    والاشتراكات من هنا.
+                  </p>{" "}
+                </div>{" "}
+                <div className="flex gap-3">
+                  <button className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-50 dark:bg-slate-800/50 transition-all shadow-sm flex items-center gap-2">
+                    <Database size={18} /> قاعدة البيانات{" "}
+                  </button>{" "}
+                  <button className="bg-navy text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-primary transition-all shadow-lg flex items-center gap-2">
+                    <Zap size={18} /> تحديث النظام{" "}
+                  </button>{" "}
+                </div>{" "}
+              </header>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm font-bold mb-1">الزيارات الفريدة للموقع</p>
-                <h3 className="text-3xl font-black text-navy dark:text-white">{totalVisits}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                  <div>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-bold mb-1">الزيارات الفريدة للموقع</p>
+                    <h3 className="text-3xl font-black text-navy dark:text-white">{totalVisits}</h3>
+                  </div>
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Users size={28} />
+                  </div>
+                </div>
               </div>
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                <Users size={28} />
-              </div>
-            </div>
-          </div>
 
-          {/* Companies Table */}
-          <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50/30">
-              <div className="flex items-center gap-4">
-                <h3 className="font-bold text-navy dark:text-white">
-                  الشركات المسجلة
-                </h3>{" "}
-                <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 px-3 py-1 rounded-full text-[10px] font-bold">
-                  {companiesList.length} شركة
-                </span>{" "}
-              </div>{" "}
-              <div className="flex gap-2">
-                  <input
-                  type="text"
-                  placeholder="بحث عن شركة..."
-                  className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all w-60 font-medium dark:text-white dark:placeholder-slate-400"
-                />{" "}
-              </div>{" "}
-            </div>{" "}
-            <div className="overflow-x-auto">
-              <table className="w-full text-right">
-                <thead className="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-200 text-[11px] uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
-                  <tr>
-                    <th className="px-6 py-4 font-bold">اسم الشركة</th>
-                    <th className="px-6 py-4 font-bold">الوظائف النشطة</th>
-                    <th className="px-6 py-4 font-bold">السير الذاتية المعالجة</th>
-                    <th className="px-6 py-4 font-bold">حالة الاشتراك</th>
-                    <th className="px-6 py-4 font-bold">الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
-                  {isLoadingCompanies ? (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-10 text-center text-slate-500 font-medium">
-                        جاري تحميل البيانات...
-                      </td>
-                    </tr>
-                  ) : companiesList.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-10 text-center text-slate-500 font-medium">
-                        لا توجد شركات مسجلة
-                      </td>
-                    </tr>
-                  ) : companiesList.map((company, idx) => (
-                    <tr
-                      key={idx}
-                      className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors group"
-                    >
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-300 text-sm">
-                            {company.name.charAt(0)}{" "}
-                          </div>{" "}
-                          <span className="font-bold text-navy dark:text-white text-sm">
-                            {company.name}
-                          </span>{" "}
-                        </div>{" "}
-                      </td>{" "}
-                      <td className="px-6 py-5">
-                        <span className="text-sm font-bold text-navy dark:text-white">
-                          {company.jobs}
-                        </span>{" "}
-                      </td>{" "}
-                      <td className="px-6 py-5">
-                        <span className="text-sm font-bold text-navy dark:text-white">
-                          {company.cvs.toLocaleString()}
-                        </span>{" "}
-                      </td>{" "}
-                      <td className="px-6 py-5">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold ${company.color === "teal" ? "bg-teal-50 text-teal-700" : company.color === "orange" ? "bg-orange-50 text-orange-700" : "bg-red-50 text-red-700"}`}
+              {/* Companies Table */}
+              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50/30">
+                  <div className="flex items-center gap-4">
+                    <h3 className="font-bold text-navy dark:text-white">
+                      الشركات المسجلة
+                    </h3>{" "}
+                    <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 px-3 py-1 rounded-full text-[10px] font-bold">
+                      {companiesList.length} شركة
+                    </span>{" "}
+                  </div>{" "}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="بحث عن شركة..."
+                      className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all w-60 font-medium dark:text-white dark:placeholder-slate-400"
+                    />{" "}
+                  </div>{" "}
+                </div>{" "}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right">
+                    <thead className="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-200 text-[11px] uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
+                      <tr>
+                        <th className="px-6 py-4 font-bold">اسم الشركة</th>
+                        <th className="px-6 py-4 font-bold">رقم الجوال</th>
+                        <th className="px-6 py-4 font-bold">البريد الإلكتروني</th>
+                        <th className="px-6 py-4 font-bold">تاريخ التسجيل</th>
+                        <th className="px-6 py-4 font-bold">الوظائف النشطة</th>
+                        <th className="px-6 py-4 font-bold">السير الذاتية المعالجة</th>
+                        <th className="px-6 py-4 font-bold">حالة الحساب</th>
+                        <th className="px-6 py-4 font-bold">الإجراءات</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50 dark:divide-slate-700/50">
+                      {isLoadingCompanies ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-10 text-center text-slate-500 font-medium">
+                            جاري تحميل البيانات...
+                          </td>
+                        </tr>
+                      ) : companiesList.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="px-6 py-10 text-center text-slate-500 font-medium">
+                            لا توجد شركات مسجلة
+                          </td>
+                        </tr>
+                      ) : companiesList.map((company, idx) => (
+                        <tr
+                          key={idx}
+                          className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors group"
                         >
-                          <div
-                            className={`w-1.5 h-1.5 rounded-full ${company.color === "teal" ? "bg-teal-500" : company.color === "orange" ? "bg-orange-500" : "bg-red-500"}`}
-                          />{" "}
-                          {company.status}{" "}
-                        </span>{" "}
-                      </td>{" "}
-                      <td className="px-6 py-5">
-                        <div className="flex items-center gap-2">
-                          <button className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-primary hover:text-white transition-all">
-                            <Calendar size={14} /> التحكم بأيام الفترة
-                            التجريبية{" "}
-                          </button>{" "}
-                          <button className="flex items-center gap-2 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-red-600 hover:text-white transition-all">
-                            <Ban size={14} /> إيقاف الحساب{" "}
-                          </button>{" "}
-                          <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-navy dark:text-white transition-colors">
-                            <MoreVertical size={16} />{" "}
-                          </button>{" "}
-                        </div>{" "}
-                      </td>{" "}
-                    </tr>
-                  ))}{" "}
-                </tbody>{" "}
-              </table>{" "}
-            </div>{" "}
-            <div className="p-6 bg-slate-50 dark:bg-slate-800/50/30 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                عرض {companiesList.length} شركة
-              </span>{" "}
-              <div className="flex gap-2">
-                <button className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-400 dark:text-slate-500 hover:bg-white dark:bg-slate-800 transition-all">
-                  السابق
-                </button>{" "}
-                <button className="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-navy dark:text-white shadow-sm">
-                  1
-                </button>{" "}
-                <button className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-400 dark:text-slate-500 hover:bg-white dark:bg-slate-800 transition-all">
-                  2
-                </button>{" "}
-                <button className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-400 dark:text-slate-500 hover:bg-white dark:bg-slate-800 transition-all">
-                  التالي
-                </button>{" "}
-              </div>{" "}
-            </div>{" "}
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-slate-500 dark:text-slate-300 text-sm">
+                                {company.name.charAt(0)}{" "}
+                              </div>{" "}
+                              <span className="font-bold text-navy dark:text-white text-sm">
+                                {company.name}
+                              </span>{" "}
+                            </div>{" "}
+                          </td>{" "}
+                          <td className="px-6 py-5">
+                            <span className="text-sm font-bold text-slate-500 dark:text-slate-400" dir="ltr">
+                              {company.phone}
+                            </span>{" "}
+                          </td>{" "}
+                          <td className="px-6 py-5">
+                            <span className="text-sm font-bold text-slate-500 dark:text-slate-400" dir="ltr">
+                              {company.email}
+                            </span>{" "}
+                          </td>{" "}
+                          <td className="px-6 py-5">
+                            <span className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                              {company.date}
+                            </span>{" "}
+                          </td>{" "}
+                          <td className="px-6 py-5">
+                            <span className="text-sm font-bold text-navy dark:text-white">
+                              {company.jobs}
+                            </span>{" "}
+                          </td>{" "}
+                          <td className="px-6 py-5">
+                            <span className="text-sm font-bold text-navy dark:text-white">
+                              {company.cvs.toLocaleString()}
+                            </span>{" "}
+                          </td>{" "}
+                          <td className="px-6 py-5">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold ${company.color === "teal" ? "bg-teal-50 text-teal-700" : company.color === "orange" ? "bg-orange-50 text-orange-700" : "bg-red-50 text-red-700"}`}
+                            >
+                              <div
+                                className={`w-1.5 h-1.5 rounded-full ${company.color === "teal" ? "bg-teal-500" : company.color === "orange" ? "bg-orange-500" : "bg-red-500"}`}
+                              />{" "}
+                              {company.status}{" "}
+                            </span>{" "}
+                          </td>{" "}
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-2">
+                              {company.raw.status === 'pending' ? (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await supabase.from('companies').update({ status: 'active' }).eq('id', company.id);
+                                      setCompaniesList(prev => prev.map(c => c.id === company.id ? { ...c, status: 'نشط', color: 'teal', raw: { ...c.raw, status: 'active' } } : c));
+                                      alert('تم تفعيل الحساب بنجاح!');
+                                    } catch (e) {
+                                      console.error(e);
+                                      alert('حدث خطأ أثناء التفعيل');
+                                    }
+                                  }}
+                                  className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-emerald-600 hover:text-white transition-all"
+                                >
+                                  <CheckCircle size={14} /> تفعيل الحساب
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await supabase.from('companies').update({ status: 'pending' }).eq('id', company.id);
+                                      setCompaniesList(prev => prev.map(c => c.id === company.id ? { ...c, status: 'بانتظار التفعيل', color: 'orange', raw: { ...c.raw, status: 'pending' } } : c));
+                                      alert('تم تعطيل الحساب بنجاح!');
+                                    } catch (e) {
+                                      console.error(e);
+                                      alert('حدث خطأ أثناء الإيقاف');
+                                    }
+                                  }}
+                                  className="flex items-center gap-2 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-red-600 hover:text-white transition-all"
+                                >
+                                  <Ban size={14} /> إيقاف الحساب{" "}
+                                </button>
+                              )}
+                              <button className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-primary hover:text-white transition-all">
+                                <Calendar size={14} /> التحكم بأيام الفترة التجريبية{" "}
+                              </button>{" "}
+                              <button className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-navy dark:text-white transition-colors">
+                                <MoreVertical size={16} />{" "}
+                              </button>{" "}
+                            </div>{" "}
+                          </td>{" "}
+                        </tr>
+                      ))}{" "}
+                    </tbody>{" "}
+                  </table>{" "}
+                </div>{" "}
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50/30 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                  <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                    عرض {companiesList.length} شركة
+                  </span>{" "}
+                  <div className="flex gap-2">
+                    <button className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-400 dark:text-slate-500 hover:bg-white dark:bg-slate-800 transition-all">
+                      السابق
+                    </button>{" "}
+                    <button className="px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-navy dark:text-white shadow-sm">
+                      1
+                    </button>{" "}
+                    <button className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-400 dark:text-slate-500 hover:bg-white dark:bg-slate-800 transition-all">
+                      2
+                    </button>{" "}
+                    <button className="px-3 py-1 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold text-slate-400 dark:text-slate-500 hover:bg-white dark:bg-slate-800 transition-all">
+                      التالي
+                    </button>{" "}
+                  </div>{" "}
+                </div>{" "}
               </div>
             </div>
           )}
@@ -354,8 +406,8 @@ const SuperAdminDashboard = () => {
                 </p>
               </header>
               <div className="flex-1 w-full bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden relative min-h-[600px]">
-                <iframe 
-                  src="https://farz-cv-processo-2.onrender.com" 
+                <iframe
+                  src="https://farz-cv-processo-2.onrender.com"
                   className="absolute inset-0 w-full h-full border-0"
                   title="System Monitor"
                 />
@@ -365,8 +417,8 @@ const SuperAdminDashboard = () => {
 
           {activeTab !== "إدارة الشركات" && activeTab !== "قاموس المهارات" && activeTab !== "الإعدادات العامة" && activeTab !== "مراقبة النظام" && (
             <div className="flex flex-col items-center justify-center p-20 bg-white/5 rounded-3xl border border-dashed border-slate-300 dark:border-slate-700">
-               <h2 className="text-2xl font-bold text-slate-400 mb-2">قريباً</h2>
-               <p className="text-slate-500">هذه الأداة قيد التطوير...</p>
+              <h2 className="text-2xl font-bold text-slate-400 mb-2">قريباً</h2>
+              <p className="text-slate-500">هذه الأداة قيد التطوير...</p>
             </div>
           )}
         </div>
