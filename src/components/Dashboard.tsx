@@ -2615,6 +2615,22 @@ export const Dashboard = ({
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_5px_rgba(13,148,136,0.8)]"></div>
                 {plan === 'startup' || plan === 'growth' ? 'نمو' : plan === 'business' ? 'أعمال' : plan === 'enterprise' ? 'الشركات الكبرى' : 'المجانية'}
               </div>
+              {/* NEW: Trial Days Remaining for Free Plan */}
+              {plan === 'free' && daysLeft !== null && (
+                <>
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-300 mt-2">
+                    <span>أيام التجربة المتبقية</span>
+                    <span dir="ltr">{Math.max(0, daysLeft)} / 14</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden mb-2">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${daysLeft <= 0 ? 'bg-red-500' : 'bg-primary'}`}
+                      style={{ width: `${Math.min(100, Math.max(0, (daysLeft / 14) * 100))}%` }}
+                    />
+                  </div>
+                  <div className="border-b border-slate-700/50 mb-2"></div>
+                </>
+              )}
               <div className="flex justify-between items-center text-xs font-bold text-slate-300">
                 <span>الوظائف النشطة</span>
                 <span dir="ltr">{plan === 'enterprise' ? '∞' : `${jobLimit} / ${activeCount}`}</span>
