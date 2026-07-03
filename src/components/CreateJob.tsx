@@ -1039,6 +1039,10 @@ export const CreateJob = ({
       return;
     }
 
+    if (newMajorInput.trim() !== "" || customSkill.trim() !== "") {
+      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "يرجى الضغط على علامة (+) لإضافة التخصص أو المهارة التي قمت بكتابتها، أو مسح النص في حال عدم الحاجة لها.", type: "warning" } }));
+      return;
+    }
 
     if (editingRoleId) {
       setRoles(roles.map(r => r.id === editingRoleId ? {
@@ -1551,6 +1555,10 @@ export const CreateJob = ({
       }
     }
 
+    if (newMajorInput.trim() !== "" || customSkill.trim() !== "") {
+      window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "يرجى الضغط على علامة (+) لإضافة التخصص أو المهارة التي قمت بكتابتها، أو مسح النص في حال عدم الحاجة لها.", type: "warning" } }));
+      return;
+    }
 
     let finalRoles = [...roles];
     if (
@@ -1999,6 +2007,63 @@ export const CreateJob = ({
                           />
                         </div>
                       </div>
+
+                      {(adType !== "campaign" || roles.length === 0 || editingRoleId === roles[0]?.id) && (
+                        <div className="md:col-span-2 bg-primary/5 dark:bg-primary/10 p-5 rounded-2xl border border-primary/20 shadow-sm mb-8 mt-6">
+                          <div className={`flex flex-col md:flex-row md:items-center justify-between gap-4 mb-2`}>
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <h3 className="text-sm font-bold text-primary">إضافة واجهة ترحيبية للمتقدمين (اختياري)</h3>
+                              </div>
+                            </div>
+                            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                              <input
+                                type="checkbox"
+                                className="sr-only peer"
+                                checked={enableWelcomeUI}
+                                onChange={(e) => setEnableWelcomeUI(e.target.checked)}
+                              />
+                              <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                            </label>
+                          </div>
+
+                          <AnimatePresence>
+                            {enableWelcomeUI && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="space-y-6 border-t border-primary/20 pt-6 mt-2">
+                                  {adType === "campaign" && (
+                                    <div>
+                                      <label className="block text-sm font-bold text-navy dark:text-white mb-2 flex items-center gap-1">عنوان البوابة (يظهر كعنوان رئيسي)</label>
+                                      <input
+                                        type="text"
+                                        value={campaignTitle}
+                                        onChange={(e) => setCampaignTitle(e.target.value)}
+                                        className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
+                                        placeholder="مثال: تقديم طلب توظيف - شركة كذا"
+                                      />
+                                    </div>
+                                  )}
+                                  <div>
+                                    <label className="block text-sm font-bold text-navy dark:text-white mb-2 flex items-center gap-1">الرسالة الترحيبية</label>
+                                    <textarea
+                                      value={campaignDescription}
+                                      onChange={(e) => setCampaignDescription(e.target.value)}
+                                      className="w-full px-4 py-3 bg-white/80 dark:bg-slate-800/80 border-2 border-slate-200 dark:border-slate-700 text-navy dark:text-white rounded-xl outline-none focus:border-primary transition-all text-sm"
+                                      rows={4}
+                                      placeholder="مثال: أهلاً بك في بوابة التوظيف، يرجى تعبئة البيانات بدقة..."
+                                    />
+                                  </div>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      )}
 
                       <div className="md:col-span-2 space-y-3">
                         <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
@@ -2504,8 +2569,6 @@ export const CreateJob = ({
                             💡 سيقوم محرك الفرز بقراءة الوصف العام أدناه وفرز السير الذاتية بناءً عليه تلقائياً
                           </p>
                         )}
-
-                        {/* Welcome UI removed as requested */}
 
                         {/* Fields moved to Basic Information section */}
 
@@ -3975,82 +4038,106 @@ export const CreateJob = ({
           </motion.div>{" "}
         </div>{" "}
       </div>{" "}
-      {isLivePreview && (
-        <PreviewModal
-          job={{
-            id: "preview",
-            recordType: adType === "single" && createJobType === "quick_link" ? "quick_link" : adType,
-            campaignTitle: enableWelcomeUI ? campaignTitle : undefined,
-            campaignDescription: enableWelcomeUI ? campaignDescription : undefined,
+        {(() => {
+          const currentFormRole = {
+            id: editingRoleId || "preview_new",
+            title: (roleTitle || "").trim() || "",
+            description: "",
             roleSummary: (roleSummary || "").trim(),
             responsibilities: (responsibilities || "").trim(),
             qualifications: (qualifications || "").trim(),
             benefits: (benefits || "").trim(),
-            description: (!enableWelcomeUI && adType === "single" && createJobType !== "quick_link") ? (roleDesc || "").trim() : (adType === "campaign" ? (enableWelcomeUI ? campaignDescription : "") : ""),
-            startDate,
-            endDate: isOpenEnded ? undefined : endDate,
-            company: company,
-            entityType: userProfile?.entityType,
-            city: userProfile?.city,
-            location: createJobType === "quick_link" ? "غير محدد" : location,
-            locations: createJobType === "quick_link" ? [] : locations,
+            aiInstructions: (aiInstructions || "").trim(),
+            skills: selectedSkills,
+            customQuestions: customQuestions,
+            requiredAttachments: requiredAttachments,
+            portfolioRequirement: requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined,
+            customAttachments: customAttachments,
+            type,
+            location,
+            locations,
             targetMajors,
-            experience: createJobType === "quick_link" ? "غير محدد" : experience,
-            qualification: createJobType === "quick_link" ? "غير محدد" : qualification,
-            salaryMin: createJobType === "quick_link" ? undefined : salaryMin,
-            salaryMax: createJobType === "quick_link" ? undefined : salaryMax,
-            isSalaryHidden: createJobType === "quick_link" ? false : isSalaryHidden,
-            askExpectedSalary: createJobType === "quick_link" ? "hidden" : askExpectedSalary,
-            expectedSalaryRanges: createJobType === "quick_link" ? [] : expectedSalaryRanges,
-            knockoutQuestions: createJobType === "quick_link" ? [] : knockoutQuestions,
-            type: createJobType === "quick_link" ? "دوام كامل" : type,
-            aiInstructions: createJobType === "quick_link" ? "" : (aiInstructions || "").trim(),
-            title: (adType === "campaign" ? (enableWelcomeUI ? campaignTitle : "") : roleTitle) || roleTitle || "",
-            companyLogo: companyLogo || undefined,
-            skills: createJobType === "quick_link" ? [] : selectedSkills,
-            languages: selectedLanguages,
-            customQuestions: createJobType === "quick_link" ? [] : customQuestions,
-            requiredAttachments: createJobType === "quick_link" ? ["سيرة ذاتية PDF"] : requiredAttachments,
-            directUpload: createJobType === "quick_link" ? false : directUpload,
-            requireVoiceInterview: createJobType === "quick_link" ? false : isVoiceEnabled,
-            voiceInterviewTemplate: createJobType === "quick_link" ? undefined : voiceInterviewTemplate,
-            voiceInterviewQuestions: createJobType === "quick_link" ? undefined : voiceInterviewQuestions,
-            photoRequirement: createJobType === "quick_link" ? "optional" : photoRequirement,
-            portfolioRequirement: createJobType === "quick_link" ? undefined : (requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined),
-            applicants: 0,
-            status: "نشط",
-            createdAt: new Date().toISOString().split("T")[0],
-            roles: adType === "single" || createJobType === "quick_link" ? [
-              {
-                id: "r1",
-                title: (roleTitle || "").trim() || "",
-                description: "",
+            experience,
+            qualification,
+            salaryMin,
+            salaryMax,
+            isSalaryHidden,
+            knockoutQuestions,
+          };
+
+          let previewRoles = [];
+          if (adType === "single" || createJobType === "quick_link") {
+            previewRoles = [{
+              ...currentFormRole,
+              id: "r1",
+              aiInstructions: createJobType === "quick_link" ? "" : currentFormRole.aiInstructions,
+              skills: createJobType === "quick_link" ? [] : currentFormRole.skills,
+              customQuestions: createJobType === "quick_link" ? [] : currentFormRole.customQuestions,
+              requiredAttachments: createJobType === "quick_link" ? ["سيرة ذاتية PDF"] : currentFormRole.requiredAttachments,
+              portfolioRequirement: createJobType === "quick_link" ? undefined : currentFormRole.portfolioRequirement,
+              customAttachments: createJobType === "quick_link" ? [] : currentFormRole.customAttachments
+            }];
+          } else if (roles.length > 0) {
+            if (editingRoleId) {
+              previewRoles = roles.map(r => r.id === editingRoleId ? currentFormRole : r);
+            } else {
+              previewRoles = roleTitle.trim() ? [...roles, currentFormRole] : roles;
+            }
+          } else {
+            previewRoles = roleTitle.trim() ? [{ ...currentFormRole, id: "r1" }] : [];
+          }
+
+          return isLivePreview && (
+            <PreviewModal
+              job={{
+                id: "preview",
+                recordType: adType === "single" && createJobType === "quick_link" ? "quick_link" : adType,
+                campaignTitle: enableWelcomeUI ? campaignTitle : undefined,
+                campaignDescription: enableWelcomeUI ? campaignDescription : undefined,
                 roleSummary: (roleSummary || "").trim(),
                 responsibilities: (responsibilities || "").trim(),
                 qualifications: (qualifications || "").trim(),
                 benefits: (benefits || "").trim(),
+                description: (!enableWelcomeUI && adType === "single" && createJobType !== "quick_link") ? (roleDesc || "").trim() : (adType === "campaign" ? (enableWelcomeUI ? campaignDescription : "") : ""),
+                startDate,
+                endDate: isOpenEnded ? undefined : endDate,
+                company: company,
+                entityType: userProfile?.entityType,
+                city: userProfile?.city,
+                location: createJobType === "quick_link" ? "غير محدد" : location,
+                locations: createJobType === "quick_link" ? [] : locations,
+                targetMajors,
+                experience: createJobType === "quick_link" ? "غير محدد" : experience,
+                qualification: createJobType === "quick_link" ? "غير محدد" : qualification,
+                salaryMin: createJobType === "quick_link" ? undefined : salaryMin,
+                salaryMax: createJobType === "quick_link" ? undefined : salaryMax,
+                isSalaryHidden: createJobType === "quick_link" ? false : isSalaryHidden,
+                askExpectedSalary: createJobType === "quick_link" ? "hidden" : askExpectedSalary,
+                expectedSalaryRanges: createJobType === "quick_link" ? [] : expectedSalaryRanges,
+                knockoutQuestions: createJobType === "quick_link" ? [] : knockoutQuestions,
+                type: createJobType === "quick_link" ? "دوام كامل" : type,
                 aiInstructions: createJobType === "quick_link" ? "" : (aiInstructions || "").trim(),
+                title: (adType === "campaign" ? (enableWelcomeUI ? campaignTitle : "") : roleTitle) || roleTitle || "",
+                companyLogo: companyLogo || undefined,
                 skills: createJobType === "quick_link" ? [] : selectedSkills,
+                languages: selectedLanguages,
                 customQuestions: createJobType === "quick_link" ? [] : customQuestions,
                 requiredAttachments: createJobType === "quick_link" ? ["سيرة ذاتية PDF"] : requiredAttachments,
+                directUpload: createJobType === "quick_link" ? false : directUpload,
+                requireVoiceInterview: createJobType === "quick_link" ? false : isVoiceEnabled,
+                voiceInterviewTemplate: createJobType === "quick_link" ? undefined : voiceInterviewTemplate,
+                voiceInterviewQuestions: createJobType === "quick_link" ? undefined : voiceInterviewQuestions,
+                photoRequirement: createJobType === "quick_link" ? "optional" : photoRequirement,
                 portfolioRequirement: createJobType === "quick_link" ? undefined : (requiredAttachments.includes("رابط معرض أعمال/Portfolio") ? portfolioRequirement : undefined),
-                customAttachments: createJobType === "quick_link" ? [] : customAttachments,
-                type,
-                location,
-                locations,
-                targetMajors,
-                experience,
-                qualification,
-                salaryMin,
-                salaryMax,
-                isSalaryHidden,
-                knockoutQuestions,
-              }
-            ] : roles,
-          }}
-          onClose={() => setIsLivePreview(false)}
-        />
-      )}{" "}
+                applicants: 0,
+                status: "نشط",
+                createdAt: new Date().toISOString().split("T")[0],
+                roles: previewRoles,
+              }}
+              onClose={() => setIsLivePreview(false)}
+            />
+          );
+        })()}{" "}
       <ImageLightbox url={lightboxPhoto} onClose={() => setLightboxPhoto(null)} />
     </div>
   );
@@ -4565,7 +4652,7 @@ export const PublicJobPage = ({
                 <div className="space-y-10">
                   {job.recordType !== "campaign" && job.campaignDescription && (
                     <div className="bg-primary/5 border border-primary/20 rounded-[28px] p-8 -mt-4 mb-8 text-center shadow-sm">
-                      <p className="text-navy dark:text-white font-medium text-lg leading-relaxed"><Sparkles className="inline-block mr-2 -mt-1 text-primary" size={24} /> {job.campaignDescription}</p>
+                      <p className="text-navy dark:text-white font-medium text-lg leading-relaxed">{job.campaignDescription}</p>
                     </div>
                   )}
 

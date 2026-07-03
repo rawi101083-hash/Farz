@@ -15,6 +15,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
   const [errorMessage, setErrorMessage] = useState('');
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [userVolume, setUserVolume] = useState(0);
+  const [isAiThinking, setIsAiThinking] = useState(false);
 
   // Read language from URL parameter
   const urlParams = new URLSearchParams(window.location.search);
@@ -92,6 +93,20 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
 
     vapi.on('volume-level', (level: number) => {
       setVolumeLevel(level);
+    });
+
+    vapi.on('message', (message: any) => {
+      if (message.type === 'speech-update') {
+        if (message.role === 'user' && message.status === 'stopped') {
+          setIsAiThinking(true);
+        }
+        if (message.role === 'assistant' && message.status === 'started') {
+          setIsAiThinking(false);
+        }
+      }
+      if (message.type === 'transcript' && message.transcriptType === 'final' && message.role === 'user') {
+        setIsAiThinking(true);
+      }
     });
 
     return () => {
@@ -234,14 +249,8 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       const clientQs = safeParseArray(appData.client_interview_questions);
       const aiQs = safeParseArray(appData.interview_questions);
       
-      // الخطة: إجمالي الأسئلة هو 4 أسئلة فقط
-      // الأولوية لأسئلة العميل، ثم نكمل الباقي من أسئلة الذكاء الاصطناعي
-      let finalQs: string[] = [...clientQs];
-      
-      if (finalQs.length < 4) {
-        const needed = 4 - finalQs.length;
-        finalQs.push(...aiQs.slice(0, needed));
-      }
+      // نعتمد أسئلة العميل أولاً، وإذا لم توجد نعتمد أسئلة الذكاء الاصطناعي. ولا نقوم بدمجهم أبداً
+      let finalQs: string[] = clientQs.length > 0 ? clientQs : aiQs;
       
       finalQs = finalQs.slice(0, 4);
 
@@ -384,7 +393,26 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
                 </div>
               </div>
 
-              <p className="text-xl font-bold text-navy dark:text-white mb-8">المقابلة جارية الآن...</p>
+              <p className="text-xl font-bold text-navy dark:text-white mb-4">المقابلة جارية الآن...</p>
+
+              <div className="h-12 flex items-center justify-center mb-6">
+                <AnimatePresence>
+                  {isAiThinking && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      className="flex items-center justify-center bg-primary/10 dark:bg-primary/20 text-primary px-6 py-4 rounded-full"
+                    >
+                      <div className="flex gap-2.5">
+                        <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1, delay: 0 }} className="w-2.5 h-2.5 bg-current rounded-full" />
+                        <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-2.5 h-2.5 bg-current rounded-full" />
+                        <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-2.5 h-2.5 bg-current rounded-full" />
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               <button
                 onClick={endInterview}

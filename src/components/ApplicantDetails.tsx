@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, Target, FolderSync } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, Target, FolderSync, Info } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import QuestionTemplatesManager from './QuestionTemplatesManager';
 
@@ -1153,6 +1153,13 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                               )}
                             </div>
 
+                            <div className="bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/50 mt-4 text-sm leading-relaxed w-full max-w-md shadow-sm">
+                              <span className="font-bold flex items-center gap-2 mb-1">
+                                <Info size={16} /> ملاحظة هامة:
+                              </span>
+                              إذا قمت بإعادة فتح الرابط للمتقدم لإجراء المقابلة مرة أخرى، وكنت قد <span className="font-bold">قمت بتغيير الأسئلة</span>، <span className="font-bold underline">يجب عليك إرسال الرابط له مرة أخرى</span> عبر الإيميل أو الواتساب، ولا يكفي إعادة الفتح فقط.
+                            </div>
+
                             {applicant?.interview_revoked && (
                               <div className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-bold py-3 px-5 rounded-xl flex items-center gap-2 border border-slate-200 dark:border-slate-700 w-max mt-2">
                                 <Ban size={18} /> تم سحب وإلغاء رابط المقابلة لهذا المتقدم.
@@ -1396,27 +1403,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                 <X size={24} />
               </button>
 
-              <motion.div 
-                animate={{ 
-                  y: [0, -8, 0],
-                  rotateX: [0, 10, 0],
-                  rotateY: [0, -15, 0]
-                }}
-                transition={{ 
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                style={{ transformStyle: "preserve-3d", perspective: 1000 }}
-                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 text-primary flex items-center justify-center mb-6 shadow-xl shadow-primary/20"
-              >
-                <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  <Mic size={32} />
-                </motion.div>
-              </motion.div>
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 text-primary flex items-center justify-center mb-6 shadow-xl shadow-primary/20">
+                <Mic size={32} />
+              </div>
 
               <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-l from-primary to-emerald-500 mb-2 drop-shadow-sm">
                 أسئلة مقابلة الذكاء الاصطناعي
@@ -1478,10 +1467,10 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
               <div className="mb-6">
                 <button
                   onClick={() => setShowTemplatesManager(true)}
-                  className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 hover:bg-primary/5 hover:border-primary/30 dark:hover:bg-primary/10 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm"
+                  className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 hover:bg-primary/5 hover:border-primary/30 dark:hover:bg-primary/10 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm group"
                 >
-                  <FolderSync size={18} className="text-primary" /> 
-                  استيراد من قوالب الأسئلة المحفوظة
+                  <MessageCircle size={18} className="text-primary group-hover:scale-110 transition-transform" /> 
+                  اختيار من قوالب الأسئلة
                 </button>
               </div>
 
@@ -1508,8 +1497,9 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
               <div className="space-y-4 mb-8">
                 {customQuestions.map((q, idx) => (
                   <div key={idx} className="group relative z-10">
-                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">
-                      السؤال {idx + 1}:
+                    <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2.5 flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-xs">0{idx + 1}</span>
+                      السؤال
                     </label>
                     {editingIndex === idx ? (
                       <div className="relative">
@@ -1523,7 +1513,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                             setCustomQuestions(newQs);
                           }}
                           onBlur={() => setEditingIndex(null)}
-                          className="w-full bg-white dark:bg-slate-900 border-2 border-primary/50 dark:border-primary/50 rounded-xl px-4 py-3 pr-12 text-sm outline-none focus:ring-4 focus:ring-primary/20 text-slate-900 dark:text-white resize-none shadow-inner transition-all"
+                          className="w-full bg-white dark:bg-slate-900 border-[3px] border-primary/50 dark:border-primary/50 rounded-2xl px-5 py-4 pl-14 text-sm font-medium outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary text-slate-900 dark:text-white resize-none shadow-[inset_0_2px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_8px_rgba(0,0,0,0.2)] transition-all"
                         />
                         <button 
                           onMouseDown={(e) => {
@@ -1533,23 +1523,26 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                             setCustomQuestions(newQs);
                             setEditingIndex(null);
                           }}
-                          className="absolute top-3 left-3 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 p-1.5 rounded-lg transition-colors shadow-sm"
+                          className="absolute top-4 left-4 text-red-500 hover:text-white dark:text-red-400 dark:hover:text-white bg-red-50 dark:bg-red-500/10 hover:bg-red-500 dark:hover:bg-red-600 p-2 rounded-xl transition-all shadow-sm active:scale-95"
                           title="حذف السؤال"
                         >
                           <Trash2 size={18} />
                         </button>
                       </div>
                     ) : (
-                      <div className="relative bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/50 rounded-xl p-4 shadow-[0_4px_12px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.2)] transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_24px_rgba(0,0,0,0.3)]">
-                        <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed pl-8">
+                      <div className="relative bg-white dark:bg-slate-800 border-[2px] border-b-[6px] border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] transition-all hover:-translate-y-1 hover:border-primary hover:border-b-primary hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_24px_rgba(0,0,0,0.3)] cursor-pointer group-hover:border-slate-300" onClick={() => setEditingIndex(idx)}>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed pl-10 pr-2">
                           {q || "اضغط للتعديل وإضافة نص السؤال..."}
                         </p>
                         <button 
-                          onClick={() => setEditingIndex(idx)}
-                          className="absolute top-1/2 -translate-y-1/2 left-4 text-emerald-500 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 p-2 rounded-lg transition-all shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingIndex(idx);
+                          }}
+                          className="absolute top-1/2 -translate-y-1/2 left-4 text-emerald-500 hover:text-white dark:text-emerald-400 dark:hover:text-white bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-500 dark:hover:bg-emerald-600 p-2.5 rounded-xl transition-all shadow-sm active:scale-95"
                           title="تعديل السؤال"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={18} />
                         </button>
                       </div>
                     )}

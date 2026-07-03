@@ -1398,7 +1398,7 @@ export const Dashboard = ({
                     className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] border-[2px] border-b-[4px] active:translate-y-[2px] active:border-b-[2px] active:mb-[2px] hover:-translate-y-0.5 bg-gradient-to-b from-white to-slate-50 text-navy border-slate-200 border-b-slate-300 dark:from-slate-800 dark:to-slate-900 dark:text-white dark:border-slate-700 dark:border-b-slate-900 hover:text-primary dark:hover:text-primary"
                   >
                     <MessageCircle size={18} />
-                    <span className="whitespace-nowrap text-center">قوالب الأسئلة</span>
+                    <span className="whitespace-nowrap text-center">قوالب أسئلة AI</span>
                   </button>
                   <AnimatePresence>
                     {isSelectionMode && selectedApplicantIds.length > 0 && (

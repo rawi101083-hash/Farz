@@ -47,9 +47,13 @@ export default function BulkSendTemplatesModal({ applicants, onClose, onUpdateSt
   const handleSendToApplicant = async (app: Applicant, method: 'whatsapp' | 'email') => {
     if (!useAI && !selectedTemplate) return;
 
-    let questionsToSend = [];
+    let questionsToSend: string[] = [];
     if (useAI) {
-      questionsToSend = app.suggested_questions || [];
+      if (app.interview_questions && Array.isArray(app.interview_questions) && app.interview_questions.length > 0) {
+        questionsToSend = app.interview_questions.map(q => typeof q === 'string' ? q : q?.question || JSON.stringify(q)).filter(Boolean) as string[];
+      } else {
+        questionsToSend = app.suggested_questions || [];
+      }
     } else {
       questionsToSend = selectedTemplate?.questions || [];
     }
