@@ -335,6 +335,7 @@ export const ApplicantForm = ({
   const hasResumeOption =
     requiredAttachments.includes("سيرة ذاتية PDF") ||
     requiredAttachments.includes("لا يتطلب مرفقات") === false;
+  const hasKnockout = (type: string) => activeRole?.knockoutQuestions?.some((q: any) => q.type === type) || job?.knockoutQuestions?.some((q: any) => q.type === type) || false;
   const showUploadStep = true;
   const shouldShowFormInputs = !hasResumeOption || isParsed;
   const isAllFieldsFilled = Object.entries(formDataState)
@@ -399,8 +400,6 @@ export const ApplicantForm = ({
 
     setIsParsed(true);
   };
-  const hasKnockout = (type: string) => activeRole?.knockoutQuestions?.some((q: any) => q.type === type) || job?.knockoutQuestions?.some((q: any) => q.type === type) || false;
-
   const handleInputChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -1151,10 +1150,10 @@ export const ApplicantForm = ({
         <div className="text-center mb-12">
           {formStep === "details" && (
             <div className="flex flex-col items-center gap-2 mb-8 relative">
-              <div className="w-full flex flex-wrap-reverse md:flex-nowrap justify-center md:justify-between items-center gap-3 mb-6 z-10">
+              <div className="w-full flex flex-wrap-reverse md:flex-row-reverse md:flex-nowrap justify-center md:justify-between items-center gap-3 mb-6 md:mb-0 md:absolute md:top-0 md:left-0 md:right-0 z-10">
                 <a
                   href={`/profile?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-                  className="flex items-center justify-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm md:mr-auto"
+                  className="flex items-center justify-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm"
                 >
                   <User size={14} /> {isLoggedIn || userProfile ? "ملفي المهني" : "تسجيل دخول"}
                 </a>
@@ -1225,7 +1224,7 @@ export const ApplicantForm = ({
               className={`grid grid-cols-1 md:grid-cols-2 gap-8 ${formStep === "details" ? "block" : "hidden"}`}
               onSubmit={handleNextStep}
             >
-              {(activeRole || job) && !activeDirectUpload && (() => {
+              {(activeRole || job) && (() => {
                 const displayRole = {
                   title: activeRole?.title || job.title,
                   location: activeRole?.location || job.location,
@@ -1375,11 +1374,11 @@ export const ApplicantForm = ({
                             href={resumeFile ? URL.createObjectURL(resumeFile) : "#"}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-bold text-primary hover:underline hover:text-teal-600 mb-1 flex items-center gap-1.5 cursor-pointer transition-colors break-all whitespace-normal"
+                            className="font-bold text-primary hover:underline hover:text-teal-600 mb-1 flex flex-wrap items-center gap-1.5 cursor-pointer transition-colors"
                             title={resumeFileName || "عرض الملف"}
                           >
-                            {resumeFileName || "السيرة الذاتية المرفقة"}
-                            <ExternalLink size={14} className="opacity-70" />
+                            <span className="break-all whitespace-normal">{resumeFileName || "السيرة الذاتية المرفقة"}</span>
+                            <ExternalLink size={14} className="opacity-70 shrink-0" />
                           </a>
                           <p className="text-xs font-medium text-green-600 dark:text-green-400">تم الرفع بنجاح</p>
                         </div>
