@@ -85,10 +85,14 @@ export const prefetchApplicantProfile = () => {
     } catch (err) {
       console.error(err);
       isProfileFetched = true;
-      return null;
     }
   })();
   return profileFetchPromise;
+};
+
+const PulledIcon = ({ isPulled }: { isPulled: boolean }) => {
+  if (!isPulled) return null;
+  return <Zap size={14} className="text-teal-500 fill-teal-500 mr-1 inline-block" title="تم سحب البيانات تلقائياً من ملفك المهني" />;
 };
 
 export const ApplicantForm = ({
@@ -170,10 +174,7 @@ export const ApplicantForm = ({
     }
   };
 
-  const PulledIcon = ({ isPulled }: { isPulled: boolean }) => {
-    if (!isPulled) return null;
-    return <Zap size={14} className="text-teal-500 fill-teal-500 mr-1 inline-block" title="تم سحب البيانات تلقائياً من ملفك المهني" />;
-  };
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -1150,7 +1151,7 @@ export const ApplicantForm = ({
         <div className="text-center mb-12">
           {formStep === "details" && (
             <div className="flex flex-col items-center gap-2 mb-8 relative">
-              <div className="w-full flex flex-wrap-reverse md:flex-nowrap justify-center md:justify-between items-center gap-3 mb-6 md:mb-0 md:absolute md:top-0 md:left-0 md:right-0 z-10">
+              <div className="w-full flex flex-wrap-reverse md:flex-nowrap justify-center md:justify-between items-center gap-3 mb-6 z-10">
                 <a
                   href={`/profile?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`}
                   className="flex items-center justify-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm md:mr-auto"
@@ -1374,10 +1375,10 @@ export const ApplicantForm = ({
                             href={resumeFile ? URL.createObjectURL(resumeFile) : "#"}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="font-bold text-primary hover:underline hover:text-teal-600 mb-1 flex items-center gap-1.5 cursor-pointer transition-colors"
+                            className="font-bold text-primary hover:underline hover:text-teal-600 mb-1 flex items-center gap-1.5 cursor-pointer transition-colors break-all whitespace-normal"
                             title={resumeFileName || "عرض الملف"}
                           >
-                            {resumeFileName ? (resumeFileName.length > 25 ? resumeFileName.substring(0, 25) + "..." : resumeFileName) : "السيرة الذاتية المرفقة"}
+                            {resumeFileName || "السيرة الذاتية المرفقة"}
                             <ExternalLink size={14} className="opacity-70" />
                           </a>
                           <p className="text-xs font-medium text-green-600 dark:text-green-400">تم الرفع بنجاح</p>
