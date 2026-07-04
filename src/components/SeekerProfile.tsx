@@ -73,7 +73,7 @@ export default function SeekerProfile() {
     personal_photo_url: '',
     video_url: '',
     gender: '',
-    experience: ''
+    desired_job_type: ''
   });
 
   const verifySeekerSession = async (currentSession: any) => {
@@ -323,7 +323,7 @@ export default function SeekerProfile() {
           linkedin_url: data.profile_data?.linkedin_url || '',
           portfolio_url: data.profile_data?.portfolio_url || '',
           gender: data.profile_data?.gender || '',
-          experience: data.profile_data?.experience || ''
+          desired_job_type: data.profile_data?.desired_job_type || ''
         };
         setProfile(fetchedProfile);
         setInitialProfile(JSON.stringify(fetchedProfile));
@@ -367,7 +367,7 @@ export default function SeekerProfile() {
         personal_photo_url: profile.personal_photo_url,
         video_url: profile.video_url,
         gender: profile.gender,
-        experience: profile.experience
+        desired_job_type: profile.desired_job_type
       };
 
       const { error } = await supabase
@@ -931,15 +931,14 @@ export default function SeekerProfile() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">سنوات الخبرة</label>
+                  <label className="block text-sm font-bold text-gray-900 mb-2 mr-1">نوع العمل المرغوب</label>
                   <div className="relative">
                     <select className="mt-2 block w-full px-6 py-4 bg-white text-gray-900 border border-slate-200 rounded-2xl focus:ring-4 focus:ring-teal-700/10 focus:border-teal-700 outline-none transition-all font-medium sm:text-base appearance-none"
-                      value={profile.experience || ''} onChange={(e) => setProfile({ ...profile, experience: e.target.value })}>
-                      <option value="" disabled className="text-gray-400">اختر سنوات الخبرة</option>
-                      <option value="حديث التخرج (أقل من سنة)" className="text-gray-900">حديث التخرج (أقل من سنة)</option>
-                      <option value="1-3 سنوات" className="text-gray-900">1-3 سنوات</option>
-                      <option value="3-5 سنوات" className="text-gray-900">3-5 سنوات</option>
-                      <option value="5+ سنوات" className="text-gray-900">5+ سنوات</option>
+                      value={profile.desired_job_type || ''} onChange={(e) => setProfile({ ...profile, desired_job_type: e.target.value })}>
+                      <option value="" disabled className="text-gray-400">اختر نوع العمل</option>
+                      {["دوام كامل", "دوام جزئي", "عن بعد", "تدريب"].map(t => (
+                        <option key={t} value={t} className="text-gray-900">{t}</option>
+                      ))}
                     </select>
                     <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none mt-2">
                       <ChevronDown className="h-5 w-5 text-gray-400" />

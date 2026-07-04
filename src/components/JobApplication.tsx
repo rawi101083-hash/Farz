@@ -165,6 +165,7 @@ export const ApplicantForm = ({
       case 'gender': return !!userProfile.profile_data?.gender;
       case 'availability': return !!userProfile.profile_data?.notice_period;
       case 'birth_date': return !!userProfile.profile_data?.birth_date;
+      case 'type': return !!userProfile.profile_data?.desired_job_type;
       default: return false;
     }
   };
@@ -210,6 +211,7 @@ export const ApplicantForm = ({
             gender: data.profile_data?.gender || prev.gender,
             availability: data.profile_data?.notice_period || prev.availability,
             birth_date: data.profile_data?.birth_date || prev.birth_date,
+            type: data.profile_data?.desired_job_type || prev.type,
             cvUrl: data.cv_file_url || '',
           }));
 
@@ -345,14 +347,16 @@ export const ApplicantForm = ({
   const hasCustomQuestions = customQuestions.length > 0;
   const hasKnockoutQuestions = (activeRole?.knockoutQuestions?.length || 0) > 0 || (job?.knockoutQuestions?.length || 0) > 0;
 
+
   const coreFieldsFilled = !!(
     formDataState.fullName &&
     formDataState.phone &&
     formDataState.email &&
-    formDataState.nationality &&
     formDataState.city &&
-    formDataState.education &&
-    formDataState.experience
+    ((formDataState as any).availability) &&
+    (!(hasKnockout("nationality") || (activeRole?.askNationality ?? job?.askNationality)) || formDataState.nationality) &&
+    (!(hasKnockout("education") || (activeRole?.askEducation ?? job?.askEducation)) || formDataState.education) &&
+    (!(hasKnockout("experience") || (activeRole?.askExperience ?? job?.askExperience)) || formDataState.experience)
   );
 
   // One click apply is available if profile exists, all required fields are filled, CV is uploaded, and there are NO custom questions
@@ -1146,25 +1150,24 @@ export const ApplicantForm = ({
         <div className="text-center mb-12">
           {formStep === "details" && (
             <div className="flex flex-col items-center gap-2 mb-8 relative">
-              <div className="absolute top-0 left-0">
+              <div className="w-full flex flex-wrap-reverse md:flex-nowrap justify-center md:justify-between items-center gap-3 mb-6 md:mb-0 md:absolute md:top-0 md:left-0 md:right-0 z-10">
                 <a
                   href={`/profile?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`}
-                  className="flex items-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm"
+                  className="flex items-center justify-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm md:mr-auto"
                 >
                   <User size={14} /> {isLoggedIn || userProfile ? "ملفي المهني" : "تسجيل دخول"}
                 </a>
-              </div>
-              {isCampaign && onBackToJobs && (
-                <div className="absolute top-0 right-0">
+
+                {((isCampaign && onBackToJobs) || (!isCampaign && onBackToJobs && !!job?.description)) && (
                   <button
                     type="button"
                     onClick={onBackToJobs}
-                    className="flex items-center gap-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl transition-all border border-slate-200 dark:border-slate-700 shadow-sm"
+                    className="flex items-center justify-center gap-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl transition-all border border-slate-200 dark:border-slate-700 shadow-sm"
                   >
-                    <ArrowRight size={14} /> العودة للوظائف
+                    <ArrowRight size={14} /> {isCampaign ? "العودة للوظائف" : "العودة"}
                   </button>
-                </div>
-              )}
+                )}
+              </div>
               {job?.companyLogo && (
                 <div className="w-20 h-20 p-0 bg-transparent dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200/20 dark:border-slate-700 flex items-center justify-center overflow-hidden">
                   <img
@@ -1302,7 +1305,7 @@ export const ApplicantForm = ({
               {canOneClickApply && (
                 <div className="md:col-span-2 text-center text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 border border-teal-100 dark:border-teal-800 rounded-xl py-3 px-4 flex items-center justify-center gap-2 mb-4 font-bold text-sm">
                   <Zap size={18} className="fill-teal-600 dark:fill-teal-400 shrink-0" />
-                  تم جلب بياناتك وسيرتك الذاتية من ملفك الشخصي لتسهيل التقديم.
+                  تم استخراج معلوماتك بنجاح، يرجى مراجعة معلوماتك قبل الإرسال
                 </div>
               )}
 
@@ -1580,31 +1583,6 @@ export const ApplicantForm = ({
                     </div>
                   )}
 
-                  {((activeRole?.types?.length || 0) > 1 || (!activeRole?.types && (job?.types?.length || 0) > 1)) && (
-                    <div className="space-y-3">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-1">
-                        نوع العمل <span className="text-red-500">*</span>
-                      </label>
-                      <div className="relative">
-                        <select
-                          required
-                          name="type"
-                          value={formDataState.type}
-                          onChange={handleInputChange}
-                          className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium appearance-none cursor-pointer"
-                        >
-                          <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر نوع العمل</option>
-                          {(activeRole?.types || job?.types || []).map((t: string) => (
-                            <option key={t} value={t} className="bg-white text-navy dark:bg-slate-800 dark:text-white">{t}</option>
-                          ))}
-                        </select>
-                        <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
-                          <ChevronDown size={18} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
 
 
 
@@ -1734,14 +1712,14 @@ export const ApplicantForm = ({
                   )}{" "}
                   {activeRole?.knockoutQuestions?.map((q: any, idx: number) => {
                     if (["nationality", "education", "experience", "city", "availability", "languages"].includes(q.type)) return null;
-                    const options = q.type === "gender" ? ["ذكر", "أنثى"] : (q.type === "options" && Array.isArray(q.options) && q.options.length > 0 ? q.options : ["نعم", "لا"]);
-                    const qText = q.type === "age_condition" ? "تاريخ الميلاد" : q.text || (q.type === "gender" ? "الجنس" : "");
+                    const options = q.type === "gender" ? ["ذكر", "أنثى"] : (q.type === "job_type" ? ["دوام كامل", "دوام جزئي", "عن بعد", "تدريب"] : (q.type === "options" && Array.isArray(q.options) && q.options.length > 0 ? q.options : ["نعم", "لا"]));
+                    const qText = q.type === "age_condition" ? "تاريخ الميلاد" : q.text || (q.type === "gender" ? "الجنس" : (q.type === "job_type" ? "نوع العمل المرغوب" : ""));
                     const isLong = qText && qText.length > 40;
                     return (
                       <div key={`kq_${idx}`} className={`space-y-3 ${isLong ? "md:col-span-2" : "md:col-span-1"}`}>
                         <label className="text-sm font-bold text-navy dark:text-white mr-1 flex items-center gap-2">
                           {qText} <span className="text-red-500">*</span>
-                          <PulledIcon isPulled={isAutoPulled(q.type === 'age_condition' ? 'birth_date' : q.type === 'gender' ? 'gender' : '')} />
+                          <PulledIcon isPulled={isAutoPulled(q.type === 'age_condition' ? 'birth_date' : q.type === 'gender' ? 'gender' : q.type === 'job_type' ? 'type' : '')} />
                         </label>
                         {q.type === "age_condition" ? (
                           <div className="relative">
@@ -1801,7 +1779,7 @@ export const ApplicantForm = ({
                           ) : (
                             <span className="text-slate-400 text-xs font-normal">(اختياري)</span>
                           )}
-                          <PulledIcon isPulled={applyMode === 'fast' && !!userProfile && ((q.text.includes('لينكد إن') && !!userProfile.profile_data?.linkedin_url) || (q.text.includes('معرض الأعمال') && !!userProfile.profile_data?.portfolio_url))} />
+                          <PulledIcon isPulled={applyMode === 'fast' && !!userProfile && ((q.text.includes('لينكد إن') && !!userProfile.profile_data?.linkedin_url) || (q.text.includes('معرض الأعمال') && !!userProfile.profile_data?.portfolio_url) || (q.text.includes('نوع العمل') && !!userProfile.profile_data?.desired_job_type))} />
                         </label>{" "}
                         {q.type === "نص طويل" ? (
                           <textarea
@@ -1809,8 +1787,8 @@ export const ApplicantForm = ({
                             rows={4}
                             defaultValue={
                               q.text.includes("لينكد إن") ? userProfile?.profile_data?.linkedin_url || "" :
-                              q.text.includes("معرض الأعمال") ? userProfile?.profile_data?.portfolio_url || "" :
-                              ""
+                                q.text.includes("معرض الأعمال") ? userProfile?.profile_data?.portfolio_url || "" :
+                                  ""
                             }
                             placeholder="اكتب إجابتك هنا..."
                             className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${errorMsg ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium resize-none`}
@@ -1819,6 +1797,7 @@ export const ApplicantForm = ({
                           <div className="relative">
                             <select
                               name={`customQuestion_${idx}`}
+                              defaultValue={q.text.includes("نوع العمل") ? userProfile?.profile_data?.desired_job_type || "" : ""}
                               className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${errorMsg ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all appearance-none cursor-pointer font-medium`}
                             >
                               <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر إجابة</option>{" "}
@@ -1838,8 +1817,8 @@ export const ApplicantForm = ({
                             type="text"
                             defaultValue={
                               q.text.includes("لينكد إن") ? userProfile?.profile_data?.linkedin_url || "" :
-                              q.text.includes("معرض الأعمال") ? userProfile?.profile_data?.portfolio_url || "" :
-                              ""
+                                q.text.includes("معرض الأعمال") ? userProfile?.profile_data?.portfolio_url || "" :
+                                  ""
                             }
                             placeholder="إجابة قصيرة..."
                             className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border ${errorMsg ? 'border-red-500' : 'border-slate-200 dark:border-slate-700'} dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium`}
@@ -1873,54 +1852,54 @@ export const ApplicantForm = ({
                             type="url"
                             defaultValue={
                               att.attachment_name.includes("لينكد إن") ? userProfile?.profile_data?.linkedin_url || "" :
-                              att.attachment_name.includes("معرض الأعمال") ? userProfile?.profile_data?.portfolio_url || "" :
-                              ""
+                                att.attachment_name.includes("معرض الأعمال") ? userProfile?.profile_data?.portfolio_url || "" :
+                                  ""
                             }
                             placeholder="https://..."
                             className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-400 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all font-medium text-left"
                             dir="ltr"
                           />
                         ) : userProfile && (
-                            (att.attachment_name.includes("الصورة الشخصية") && userProfile.profile_data?.personal_photo_url) ||
-                            (att.attachment_name.includes("الهوية") && userProfile.id_file_url) ||
-                            (att.attachment_name.includes("رخصة القيادة") && userProfile.license_file_url)
+                          (att.attachment_name.includes("الصورة الشخصية") && userProfile.profile_data?.personal_photo_url) ||
+                          (att.attachment_name.includes("الهوية") && userProfile.id_file_url) ||
+                          (att.attachment_name.includes("رخصة القيادة") && userProfile.license_file_url)
                         ) ? (
-                            <div className="relative border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center gap-2 group hover:border-primary hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all cursor-pointer">
-                              <input
-                                type="file"
-                                name={`customAttachment_${idx}`}
-                                accept={
-                                  att.attachment_name.includes("الصورة الشخصية") ? "image/jpeg, image/png, image/jpg" :
+                          <div className="relative border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center gap-2 group hover:border-primary hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all cursor-pointer">
+                            <input
+                              type="file"
+                              name={`customAttachment_${idx}`}
+                              accept={
+                                att.attachment_name.includes("الصورة الشخصية") ? "image/jpeg, image/png, image/jpg" :
                                   att.attachment_name.includes("الهوية") || att.attachment_name.includes("رخصة القيادة") ? ".pdf, image/jpeg, image/png, image/jpg, .doc, .docx" : ""
-                                }
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    if (file.size > 5 * 1024 * 1024) { alert("عذراً، يجب ألا يتجاوز حجم الملف 5 ميجابايت."); e.target.value = ""; return; }
-                                    const parent = e.target.parentElement;
-                                    if (parent) {
-                                      const titleEl = parent.querySelector('.att-title');
-                                      const subEl = parent.querySelector('.att-subtitle');
-                                      const checkIcon = parent.querySelector('.check-icon');
-                                      const uploadIcon = parent.querySelector('.upload-icon');
-                                      if (titleEl) titleEl.textContent = file.name;
-                                      if (subEl) subEl.textContent = "سيتم رفع هذا الملف واستبدال الملف المهني";
-                                      if (checkIcon) checkIcon.classList.add('hidden');
-                                      if (uploadIcon) uploadIcon.classList.remove('hidden');
-                                      parent.classList.remove('border-slate-200', 'dark:border-slate-700');
-                                      parent.classList.add('border-primary');
-                                    }
+                              }
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  if (file.size > 5 * 1024 * 1024) { alert("عذراً، يجب ألا يتجاوز حجم الملف 5 ميجابايت."); e.target.value = ""; return; }
+                                  const parent = e.target.parentElement;
+                                  if (parent) {
+                                    const titleEl = parent.querySelector('.att-title');
+                                    const subEl = parent.querySelector('.att-subtitle');
+                                    const checkIcon = parent.querySelector('.check-icon');
+                                    const uploadIcon = parent.querySelector('.upload-icon');
+                                    if (titleEl) titleEl.textContent = file.name;
+                                    if (subEl) subEl.textContent = "سيتم رفع هذا الملف واستبدال الملف المهني";
+                                    if (checkIcon) checkIcon.classList.add('hidden');
+                                    if (uploadIcon) uploadIcon.classList.remove('hidden');
+                                    parent.classList.remove('border-slate-200', 'dark:border-slate-700');
+                                    parent.classList.add('border-primary');
                                   }
-                                }}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                              />
-                              <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-1 group-hover:bg-primary/10 group-hover:text-primary transition-all">
-                                <Check size={20} className="check-icon group-hover:hidden" />
-                                <Upload size={20} className="upload-icon hidden group-hover:block" />
-                              </div>
-                              <p className="att-title text-sm font-bold text-teal-700 dark:text-teal-400 group-hover:text-primary">تم سحب {att.attachment_name} تلقائياً</p>
-                              <p className="att-subtitle text-xs font-medium text-slate-500 group-hover:text-primary/70">انقر هنا لتغيير الملف</p>
+                                }
+                              }}
+                              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                            />
+                            <div className="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 flex items-center justify-center mb-1 group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                              <Check size={20} className="check-icon group-hover:hidden" />
+                              <Upload size={20} className="upload-icon hidden group-hover:block" />
                             </div>
+                            <p className="att-title text-sm font-bold text-teal-700 dark:text-teal-400 group-hover:text-primary">تم سحب {att.attachment_name} تلقائياً</p>
+                            <p className="att-subtitle text-xs font-medium text-slate-500 group-hover:text-primary/70">انقر هنا لتغيير الملف</p>
+                          </div>
                         ) : att.attachment_type === "image" ? (
                           <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
                             <input

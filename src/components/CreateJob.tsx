@@ -2188,49 +2188,54 @@ export const CreateJob = ({
                           نوع العمل <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
-                          <SearchableSelect
-                            options={["دوام كامل", "دوام جزئي", "عن بعد", "تدريب"].filter((c) => !types.includes(c))}
-                            value={""}
-                            onChange={(val) => {
-                              if (val && !types.includes(val)) {
-                                setTypes([...types, val]);
+                          <select
+                            value={types[0] || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val) {
+                                setTypes([val]);
                                 setType(val); // fallback for older clients if needed
                                 if (val === "عن بعد" && !locations.includes("لا يشترط / كافة المدن")) {
                                   setLocations([...locations, "لا يشترط / كافة المدن"]);
                                 }
                               }
                             }}
-                            placeholder="اختر نوع العمل..."
-                          />
-                          {types.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                              <AnimatePresence>
-                                {types.map((t) => (
-                                  <motion.span
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    exit={{ scale: 0.8, opacity: 0 }}
-                                    key={t}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
-                                  >
-                                    {t}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const newTypes = types.filter((l) => l !== t);
-                                        setTypes(newTypes.length > 0 ? newTypes : ["دوام كامل"]);
-                                        if (newTypes.length > 0) setType(newTypes[0]); else setType("دوام كامل");
-                                      }}
-                                      className="hover:text-red-500 transition-colors p-0.5"
-                                    >
-                                      <X size={14} />
-                                    </button>
-                                  </motion.span>
-                                ))}
-                              </AnimatePresence>
-                            </div>
-                          )}
+                            className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-2xl outline-none hover:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-medium appearance-none cursor-pointer"
+                          >
+                            <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر نوع العمل...</option>
+                            <option value="دوام كامل" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام كامل</option>
+                            <option value="دوام جزئي" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام جزئي</option>
+                            <option value="عن بعد" className="bg-white text-navy dark:bg-slate-800 dark:text-white">عن بعد</option>
+                            <option value="تدريب" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تدريب</option>
+                          </select>
+                          <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                            <ChevronDown size={18} />
+                          </div>
                         </div>
+                        {types.length > 0 && types[0] && (
+                          <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                            <AnimatePresence>
+                              <motion.span
+                                initial={{ scale: 0.8, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.8, opacity: 0 }}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
+                              >
+                                {types[0]}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTypes([]);
+                                    setType("");
+                                  }}
+                                  className="hover:text-red-500 transition-colors p-0.5"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </motion.span>
+                            </AnimatePresence>
+                          </div>
+                        )}
                       </div>
 
                       <div className="space-y-3">
@@ -3282,6 +3287,7 @@ export const CreateJob = ({
                                             <option value="experience" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأدنى لسنوات الخبرة</option>
                                             <option value="availability" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الحد الأقصى لمدة الانضمام</option>
                                             <option value="languages" className="bg-white text-navy dark:bg-slate-800 dark:text-white">اللغات المطلوبة</option>
+                                            <option value="job_type" className="bg-white text-navy dark:bg-slate-800 dark:text-white">نوع العمل المقبول</option>
                                             <option value="gender" className="bg-white text-navy dark:bg-slate-800 dark:text-white">الجنس</option>
                                           </select>
 
@@ -3384,6 +3390,18 @@ export const CreateJob = ({
                                               <option value="أنثى" className="bg-white text-navy dark:bg-slate-800 dark:text-white">أنثى</option>
                                               <option value="غير ذلك" className="bg-white text-navy dark:bg-slate-800 dark:text-white">غير ذلك</option>
                                             </select>
+                                          ) : newKqType === "job_type" ? (
+                                            <select
+                                              value={newKqRequiredAnswer}
+                                              onChange={(e) => setNewKqRequiredAnswer(e.target.value)}
+                                              className="md:col-span-2 px-4 py-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/30 rounded-xl outline-none font-bold text-sm appearance-none"
+                                            >
+                                              <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر نوع العمل المقبول...</option>
+                                              <option value="دوام كامل" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام كامل</option>
+                                              <option value="دوام جزئي" className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام جزئي</option>
+                                              <option value="عن بعد" className="bg-white text-navy dark:bg-slate-800 dark:text-white">عن بعد</option>
+                                              <option value="تدريب" className="bg-white text-navy dark:bg-slate-800 dark:text-white">تدريب</option>
+                                            </select>
                                           ) : newKqType === "yes_no" ? (
                                             <select
                                               value={newKqRequiredAnswer}
@@ -3476,6 +3494,7 @@ export const CreateJob = ({
                                               experience: "الحد الأدنى لسنوات الخبرة",
                                               availability: "الحد الأقصى لمدة الانضمام",
                                               languages: "اللغات المطلوبة",
+                                              job_type: "نوع العمل المقبول",
                                               age_condition: "تاريخ الميلاد",
                                               gender: "الجنس"
                                             };
@@ -5071,13 +5090,43 @@ const ManageJob = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-navy dark:text-white mr-2 flex items-center gap-1">نوع العمل <span className="text-red-500">*</span></label>
-                      <select required value={type} onChange={(e) => {
-                        const val = e.target.value;
-                        setType(val);
-                        if (val === "عن بعد") setLocation("لا يشترط / كافة المدن");
-                      }} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-bold text-navy dark:text-white appearance-none cursor-pointer">
-                        <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام كامل</option><option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام جزئي</option><option className="bg-white text-navy dark:bg-slate-800 dark:text-white">عن بعد</option><option className="bg-white text-navy dark:bg-slate-800 dark:text-white">تدريب</option>
-                      </select>
+                      <div className="relative">
+                        <select required value={type} onChange={(e) => {
+                          const val = e.target.value;
+                          setType(val);
+                          if (val === "عن بعد") setLocation("لا يشترط / كافة المدن");
+                        }} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all font-bold text-navy dark:text-white appearance-none cursor-pointer">
+                          <option value="" disabled hidden className="bg-white text-navy dark:bg-slate-800 dark:text-white">اختر نوع العمل...</option>
+                          <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام كامل</option>
+                          <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">دوام جزئي</option>
+                          <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">عن بعد</option>
+                          <option className="bg-white text-navy dark:bg-slate-800 dark:text-white">تدريب</option>
+                        </select>
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400 dark:text-slate-500">
+                          <ChevronDown size={16} />
+                        </div>
+                      </div>
+                      {type && (
+                        <div className="flex flex-wrap gap-2 mt-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                          <AnimatePresence>
+                            <motion.span
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.8, opacity: 0 }}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 text-primary text-sm font-bold"
+                            >
+                              {type}
+                              <button
+                                type="button"
+                                onClick={() => setType("")}
+                                className="hover:text-red-500 transition-colors p-0.5"
+                              >
+                                <X size={14} />
+                              </button>
+                            </motion.span>
+                          </AnimatePresence>
+                        </div>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-bold text-navy dark:text-white mr-2 flex items-center gap-1">مقر العمل / المدينة <span className="text-red-500">*</span></label>
