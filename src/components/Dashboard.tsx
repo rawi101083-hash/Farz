@@ -228,6 +228,7 @@ export const Dashboard = ({
   onReactivateJob,
   onPreviewJob,
   jobs,
+  isLoadingJobs = false,
   shortlistedIds,
   onToggleShortlist,
   darkMode,
@@ -253,6 +254,7 @@ export const Dashboard = ({
   onReactivateJob?: (job: Job) => void;
   onPreviewJob: (job: Job) => void;
   jobs: Job[];
+  isLoadingJobs?: boolean;
   shortlistedIds: string[];
   onToggleShortlist: (id: string) => void;
   darkMode: boolean;
@@ -282,7 +284,12 @@ export const Dashboard = ({
   const isInitialJobLoad = useRef(true);
   // Compute Limits
   const activeCount = jobs.filter(j => j.status === 'نشط').reduce((acc, j) => acc + (j.recordType === 'campaign' && j.roles ? j.roles.length : 1), 0);
-  let plan = userProfile?.subscription_tier || 'free';
+  let rawPlan = userProfile?.subscription_tier || 'free';
+  let plan = rawPlan;
+  if (rawPlan.includes('startup') || rawPlan.includes('growth')) plan = 'startup';
+  else if (rawPlan.includes('business')) plan = 'business';
+  else if (rawPlan.includes('enterprise')) plan = 'enterprise';
+  else if (rawPlan.includes('single_job') || rawPlan.includes('one-time')) plan = 'single_job';
 
   let daysLeft: number | null = null;
   if (userProfile?.subscription_end_date) {
@@ -387,21 +394,21 @@ export const Dashboard = ({
   } else {
     if (!jobLimit) {
       if (plan === 'free') jobLimit = 1;
-      else if (plan === 'one-time') jobLimit = 1;
+      else if (plan === 'one-time' || plan === 'single_job') jobLimit = 1;
       else if (plan === 'startup' || plan === 'growth') jobLimit = 3;
       else if (plan === 'business') jobLimit = 10;
       else if (plan === 'enterprise') jobLimit = 100;
     }
     if (!cvLimit) {
       if (plan === 'free') cvLimit = 50;
-      else if (plan === 'one-time') cvLimit = 500;
+      else if (plan === 'one-time' || plan === 'single_job') cvLimit = 500;
       else if (plan === 'startup' || plan === 'growth') cvLimit = isYearly ? 12000 : 1000;
       else if (plan === 'business') cvLimit = isYearly ? 60000 : 5000;
       else if (plan === 'enterprise') cvLimit = isYearly ? 180000 : 15000;
     }
     if (!interviewsLimit) {
       if (plan === 'free') interviewsLimit = 1;
-      else if (plan === 'one-time') interviewsLimit = 0;
+      else if (plan === 'one-time' || plan === 'single_job') interviewsLimit = 1;
       else if (plan === 'startup' || plan === 'growth') interviewsLimit = 100;
       else if (plan === 'business') interviewsLimit = 500;
       else if (plan === 'enterprise') interviewsLimit = 1500;
@@ -1254,14 +1261,10 @@ export const Dashboard = ({
                       setTimeout(() => setToastMessage(null), 3000);
                       return;
                     }
-                    if (activeCount >= jobLimit) {
-                      setToastMessage(`وصلت للحد الأقصى للوظائف المسموحة (${jobLimit}). يرجى إغلاق إحدى الوظائف النشطة لتتمكن من إنشاء إعلان جديد.`);
-                      setTimeout(() => setToastMessage(null), 3000);
-                      return;
-                    }
+
                     onCreateJob();
                   }}
-                  className={`px-4 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap ${(activeCount >= jobLimit || plan === 'none') ? 'bg-slate-200 text-slate-500 cursor-not-allowed shadow-[0_6px_0_#cbd5e1] translate-y-[2px]' : 'bg-gradient-to-b from-primary to-[#0d847a] text-white shadow-[0_6px_0_#096159,0_12px_20px_rgba(13,148,136,0.3)] hover:shadow-[0_4px_0_#096159,0_8px_15px_rgba(13,148,136,0.3)] hover:translate-y-[2px] active:shadow-[0_0px_0_#096159] active:translate-y-[6px]'}`}
+                  className={`px-4 md:px-8 py-3 md:py-4 rounded-2xl font-bold transition-all duration-200 flex items-center justify-center gap-2 text-sm md:text-base whitespace-nowrap ${plan === 'none' ? 'bg-slate-200 text-slate-500 cursor-not-allowed shadow-[0_6px_0_#cbd5e1] translate-y-[2px]' : 'bg-gradient-to-b from-primary to-[#0d847a] text-white shadow-[0_6px_0_#096159,0_12px_20px_rgba(13,148,136,0.3)] hover:shadow-[0_4px_0_#096159,0_8px_15px_rgba(13,148,136,0.3)] hover:translate-y-[2px] active:shadow-[0_0px_0_#096159] active:translate-y-[6px]'}`}
                 >
                   <Briefcase size={20} /> <span className="hidden md:inline">إنشاء إعلان وظيفي</span>
                 </button>
@@ -1636,7 +1639,7 @@ export const Dashboard = ({
 
                 return (
                   <div className="relative overflow-x-auto overflow-y-hidden min-h-[60vh] hide-scrollbar pb-10">
-                    {isHomeMockState && (
+                    {isHomeMockState && !isLoadingJobs && (
                       <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none px-4">
                         <div className="pointer-events-auto scale-90 md:scale-100 w-full max-w-2xl">
                           <EmptyState
@@ -2272,7 +2275,8 @@ export const Dashboard = ({
             </div>{" "}
             <ActiveJobs
               subTab={subTab}
-              isNewUser={jobs.filter(j => j.status !== "مسودة").length === 0}
+              isLoading={isLoadingJobs}
+              isNewUser={jobs.filter(j => j.status !== "مسودة").length === 0 && !isLoadingJobs}
               jobs={subTab === "active" ? activeJobsList : subTab === "paused" ? pausedJobsList : subTab === "inactive" ? inactiveJobsList : draftJobsList}
               onManage={onManageJob}
               onCreateJob={onCreateJob}
@@ -2613,24 +2617,8 @@ export const Dashboard = ({
             {isSidebarOpen && (<div className="bg-slate-800/40 rounded-2xl p-4 pt-5 border border-slate-700/50 space-y-4 relative mt-3">
               <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#1b2537] border border-slate-700 px-3 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1.5 shadow-md whitespace-nowrap">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_5px_rgba(13,148,136,0.8)]"></div>
-                {plan === 'startup' || plan === 'growth' ? 'نمو' : plan === 'business' ? 'أعمال' : plan === 'enterprise' ? 'الشركات الكبرى' : 'المجانية'}
+                {plan === 'startup' || plan === 'growth' ? 'نمو' : plan === 'business' ? 'أعمال' : plan === 'enterprise' ? 'الشركات الكبرى' : plan === 'single_job' || plan === 'one-time' ? 'التوظيف الفوري' : 'المجانية'}
               </div>
-              {/* NEW: Trial Days Remaining for Free Plan */}
-              {plan === 'free' && daysLeft !== null && (
-                <>
-                  <div className="flex justify-between items-center text-xs font-bold text-slate-300 mt-2">
-                    <span>أيام التجربة المتبقية</span>
-                    <span dir="ltr">{Math.max(0, daysLeft)} / 14</span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden mb-2">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${daysLeft <= 0 ? 'bg-red-500' : 'bg-primary'}`}
-                      style={{ width: `${Math.min(100, Math.max(0, (daysLeft / 14) * 100))}%` }}
-                    />
-                  </div>
-                  <div className="border-b border-slate-700/50 mb-2"></div>
-                </>
-              )}
               <div className="flex justify-between items-center text-xs font-bold text-slate-300">
                 <span>الوظائف النشطة</span>
                 <span dir="ltr">{plan === 'enterprise' ? '∞' : `${jobLimit} / ${activeCount}`}</span>

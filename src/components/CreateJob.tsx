@@ -110,6 +110,7 @@ export const CreateJob = ({
   userProfile?: any;
 }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
 
   const plan = userProfile?.subscription_tier || 'free';
@@ -349,11 +350,19 @@ export const CreateJob = ({
   // Common
   const [company, setCompany] = useState(() => {
     if (initialData?.company) return initialData.company;
+    
+    const latestCompanyFromJobs = jobs?.find(j => j.company)?.company;
+    if (latestCompanyFromJobs) return latestCompanyFromJobs;
+
     return localStorage.getItem("last_used_company") || userProfile?.companyName || "";
   });
   const [companyLogo, setCompanyLogo] = useState<string | null>(() => {
     if (initialData?.companyLogo && !initialData.companyLogo.startsWith("blob:")) return initialData.companyLogo;
-    return localStorage.getItem("last_used_logo") || null;
+    
+    const latestLogoFromJobs = jobs?.find(j => j.companyLogo && !j.companyLogo.startsWith("blob:"))?.companyLogo;
+    if (latestLogoFromJobs) return latestLogoFromJobs;
+
+    return localStorage.getItem("last_used_logo") || localStorage.getItem("savedCompanyLogo") || null;
   });
   const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(initialData?.status === "مسودة" ? initialData.id : null);
@@ -1537,7 +1546,7 @@ export const CreateJob = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const isCompanyDataIncomplete = userProfile?.isLoaded && (!userProfile?.commercialRegistration && !userProfile?.freelanceDocument);
+    const isCompanyDataIncomplete = userProfile?.isLoaded && plan !== 'free' && (!userProfile?.commercialRegistration && !userProfile?.freelanceDocument);
     if (isCompanyDataIncomplete && initialData?.status !== "مسودة") {
       handleSaveAsDraft(true);
       window.dispatchEvent(new CustomEvent('showOnboardingGlobal'));
@@ -1583,6 +1592,11 @@ export const CreateJob = ({
       return;
     }
 
+    if (remainingJobs <= 0 && initialData?.status !== "نشط") {
+      setShowLimitModal(true);
+      return;
+    }
+
     setShowConfirmModal(true);
   };
   const showRoleForm = true;
@@ -1591,6 +1605,45 @@ export const CreateJob = ({
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 p-8 pt-24 lg:pt-10">
       {" "}
       <AnimatePresence>
+        {showLimitModal && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm" style={{ perspective: '1000px' }}>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, rotateX: 20, y: 40 }}
+              animate={{ opacity: 1, scale: 1, rotateX: 0, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, rotateX: -20, y: 40 }}
+              transition={{ type: "spring", bounce: 0.4, duration: 0.8 }}
+              className="bg-white dark:bg-slate-800 rounded-[32px] p-8 max-w-md w-full shadow-[0_30px_60px_rgba(0,0,0,0.4)] relative border border-slate-200 dark:border-slate-700"
+            >
+              <h2 className="text-2xl font-black text-navy dark:text-white text-center mb-4">
+                تنبيه نشر الإعلان
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-center mb-8 font-medium leading-relaxed">
+                لو سمحت، لقد تجاوزت الحد الأقصى للوظائف النشطة المسموح بها في باقتك الحالية. يرجى إغلاق إحدى وظائفك لتتمكن من نشر إعلان جديد، أو يمكنك حفظ هذا الإعلان كمسودة للعودة إليه لاحقاً.
+              </p>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowLimitModal(false)}
+                  className="flex-1 px-4 py-3 rounded-xl font-bold border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
+                >
+                  حسناً
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowLimitModal(false);
+                    handleSaveAsDraft();
+                  }}
+                  className="flex-1 bg-primary text-white px-4 py-3 rounded-xl font-bold shadow-[0_4px_12px_-2px_rgba(0,0,0,0.15)] hover:shadow-lg hover:shadow-primary/30 transition-all border-b-4 border-[#0a7a70] active:border-b-0 active:translate-y-1 active:mt-1"
+                >
+                  حفظ كمسودة
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
 
         {showConfirmModal && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-navy/60 backdrop-blur-sm" style={{ perspective: '1000px' }}>
@@ -1736,7 +1789,7 @@ export const CreateJob = ({
       </AnimatePresence>
 
       {/* Subtle Banner For Incomplete Company Data */}
-      {userProfile?.isLoaded && (!userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
+      {userProfile?.isLoaded && plan !== 'free' && (!userProfile?.commercialRegistration && !userProfile?.freelanceDocument) && (
         <div className="w-full max-w-[800px] mx-auto px-4 mt-8 mb-4">
           <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900/50 px-4 py-3 rounded-2xl text-center">
             <p className="text-orange-800 dark:text-orange-300 text-sm md:text-base font-medium flex flex-wrap items-center justify-center gap-2">
@@ -3893,15 +3946,17 @@ export const CreateJob = ({
                     <h3>الشواغر المطلوبة ({roles.length}):</h3>
                     <AnimatePresence>
                       {roleToastMessage && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg"
-                        >
-                          <CheckCircle size={16} />
-                          {roleToastMessage}
-                        </motion.div>
+                        <div className="fixed inset-0 pointer-events-none z-[9999] flex items-center justify-center">
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.8, y: -20 }}
+                            className="flex items-center gap-3 bg-emerald-600/95 backdrop-blur-md text-white px-6 py-3 rounded-2xl shadow-[0_20px_40px_-10px_rgba(5,150,105,0.4)] ring-1 ring-white/20 pointer-events-auto"
+                          >
+                            <CheckCircle size={20} className="text-emerald-100" />
+                            <span className="font-bold text-sm tracking-wide">{roleToastMessage}</span>
+                          </motion.div>
+                        </div>
                       )}
                     </AnimatePresence>
                   </div>
@@ -5461,7 +5516,10 @@ const ManageJob = ({
                         <p className="font-bold text-navy dark:text-white">حالة الوظيفة: {status}</p><p className="text-xs text-slate-500 font-medium">تحويل الحالة إلى {status === "نشط" ? "مغلق" : "نشط"}</p>
                       </div>
                     </div>
-                    <button type="button" onClick={() => setStatus(status === "نشط" ? "مغلق" : "نشط")} className={`w-14 h-8 rounded-full relative transition-all ${status === "نشط" ? "bg-green-500" : "bg-slate-300"}`}>
+                    <button type="button" onClick={() => {
+                      if (status !== "نشط" && remainingJobs <= 0) return;
+                      setStatus(status === "نشط" ? "مغلق" : "نشط");
+                    }} className={`w-14 h-8 rounded-full relative transition-all ${status === "نشط" ? "bg-green-500" : "bg-slate-300"}`}>
                       <div className={`absolute top-1 w-6 h-6 bg-white dark:bg-slate-800 rounded-full transition-all ${status === "نشط" ? "left-1" : "left-7"}`} />
                     </button>
                   </div>

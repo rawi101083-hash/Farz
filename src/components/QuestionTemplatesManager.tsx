@@ -15,19 +15,13 @@ interface Props {
   mode?: 'manage' | 'select';
 }
 
-export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mode = 'manage' }: Props) {
-  const [templates, setTemplates] = useState<QuestionTemplate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [editingTemplate, setEditingTemplate] = useState<QuestionTemplate | null>(null);
-  const [newTitle, setNewTitle] = useState('');
-  const [newQuestions, setNewQuestions] = useState<string[]>(['', '', '', '']);
+export let globalTemplatesCache: QuestionTemplate[] | null = null;
+let globalTemplatesPromise: Promise<any> | null = null;
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
-
-  const fetchTemplates = async () => {
-    setIsLoading(true);
+export const prefetchQuestionTemplates = async () => {
+  if (globalTemplatesPromise) return globalTemplatesPromise;
+  
+  globalTemplatesPromise = (async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
       const { data, error } = await supabase
@@ -36,10 +30,46 @@ export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mo
         .order('created_at', { ascending: false });
       
       if (!error && data) {
-        setTemplates(data);
+        globalTemplatesCache = data;
+        return data;
       }
     }
-    setIsLoading(false);
+    return [];
+  })();
+  
+  return globalTemplatesPromise;
+};
+
+export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mode = 'manage' }: Props) {
+  const [templates, setTemplates] = useState<QuestionTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingTemplate, setEditingTemplate] = useState<QuestionTemplate | null>(null);
+  const [newTitle, setNewTitle] = useState('');
+  const [newQuestions, setNewQuestions] = useState<string[]>(['', '', '', '']);
+
+  useEffect(() => {
+    if (globalTemplatesCache) {
+      setTemplates(globalTemplatesCache);
+      setIsLoading(false);
+      // Background refresh
+      fetchTemplates(true);
+    } else {
+      fetchTemplates();
+    }
+  }, []);
+
+  const fetchTemplates = async (isBackground = false) => {
+    if (!isBackground) setIsLoading(true);
+    
+    // Force new fetch if it's a background refresh
+    if (isBackground) {
+      globalTemplatesPromise = null;
+    }
+    
+    const data = await prefetchQuestionTemplates();
+    setTemplates(data);
+    
+    if (!isBackground) setIsLoading(false);
   };
 
   const handleSave = async () => {
@@ -65,7 +95,9 @@ export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mo
         .eq('id', editingTemplate.id);
       
       if (!error) {
-        setTemplates(templates.map(t => t.id === editingTemplate.id ? { ...t, title: newTitle, questions: validQuestions } : t));
+        const updated = templates.map(t => t.id === editingTemplate.id ? { ...t, title: newTitle, questions: validQuestions } : t);
+        setTemplates(updated);
+        globalTemplatesCache = updated;
         setEditingTemplate(null);
       }
     } else {
@@ -76,7 +108,9 @@ export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mo
         .select();
         
       if (!error && data) {
-        setTemplates([data[0], ...templates]);
+        const updated = [data[0], ...templates];
+        setTemplates(updated);
+        globalTemplatesCache = updated;
         setEditingTemplate(null);
       }
     }
@@ -91,7 +125,9 @@ export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mo
       .eq('id', id);
       
     if (!error) {
-      setTemplates(templates.filter(t => t.id !== id));
+      const updated = templates.filter(t => t.id !== id);
+      setTemplates(updated);
+      globalTemplatesCache = updated;
     }
   };
 

@@ -176,7 +176,7 @@ const SuperAdminDashboard = () => {
 
               {/* Companies Table */}
               <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50/30">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
                   <div className="flex items-center gap-4">
                     <h3 className="font-bold text-navy dark:text-white">
                       الشركات المسجلة
@@ -277,7 +277,7 @@ const SuperAdminDashboard = () => {
                                   onClick={async () => {
                                     try {
                                       const newEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-                                      await supabase.from('companies').update({ status: 'active', subscription_end_date: newEndDate }).eq('id', company.id);
+                                      await supabase.rpc('admin_update_company_status', { p_company_id: company.id, p_status: 'active', p_end_date: newEndDate });
                                       setCompaniesList(prev => prev.map(c => c.id === company.id ? { ...c, status: 'نشط', color: 'teal', raw: { ...c.raw, status: 'active', subscription_end_date: newEndDate } } : c));
                                       alert('تم تفعيل الحساب وإضافة 14 يوم تجريبي بنجاح!');
                                     } catch (e) {
@@ -293,7 +293,7 @@ const SuperAdminDashboard = () => {
                                 <button
                                   onClick={async () => {
                                     try {
-                                      await supabase.from('companies').update({ status: 'pending' }).eq('id', company.id);
+                                      await supabase.rpc('admin_update_company_status', { p_company_id: company.id, p_status: 'pending' });
                                       setCompaniesList(prev => prev.map(c => c.id === company.id ? { ...c, status: 'بانتظار التفعيل', color: 'orange', raw: { ...c.raw, status: 'pending' } } : c));
                                       alert('تم تعطيل الحساب بنجاح!');
                                     } catch (e) {
@@ -312,7 +312,7 @@ const SuperAdminDashboard = () => {
                                   if (!days || isNaN(Number(days))) return;
                                   try {
                                     const newEndDate = new Date(Date.now() + Number(days) * 24 * 60 * 60 * 1000).toISOString();
-                                    await supabase.from('companies').update({ subscription_end_date: newEndDate }).eq('id', company.id);
+                                    await supabase.rpc('admin_update_company_status', { p_company_id: company.id, p_end_date: newEndDate });
                                     setCompaniesList(prev => prev.map(c => c.id === company.id ? { ...c, raw: { ...c.raw, subscription_end_date: newEndDate } } : c));
                                     alert('تم تحديث أيام الفترة التجريبية بنجاح!');
                                   } catch (e) {
@@ -334,7 +334,7 @@ const SuperAdminDashboard = () => {
                     </tbody>{" "}
                   </table>{" "}
                 </div>{" "}
-                <div className="p-6 bg-slate-50 dark:bg-slate-800/50/30 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
                   <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                     عرض {companiesList.length} شركة
                   </span>{" "}

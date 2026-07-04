@@ -104,19 +104,9 @@ serve(async (req) => {
         });
       }
 
-      // SECURITY: Backend Pricing Map (DO NOT TRUST FRONTEND)
-      // Since the 'plans' table is empty/unconfigured, we store the official prices here in the secure backend.
-      const pricingMap: Record<string, number> = {
-        'startup_monthly': 499,
-        'startup_yearly': 4990,
-        'business_monthly': 1499,
-        'business_yearly': 14990,
-        'enterprise_monthly': 3499,
-        'enterprise_yearly': 34990,
-        'single_job': 149 // Or 150 based on frontend single job price
-      };
-
-      const amount = pricingMap[packageId];
+      // Fetch official price securely from the database
+      const { data: planData } = await supabase.from('plans').select('price').eq('id', packageId).single();
+      const amount = planData?.price;
 
       if (amount === undefined || amount === null) {
         return new Response(JSON.stringify({ error: 'Invalid Package ID or Price not configured' }), { 
@@ -184,18 +174,50 @@ serve(async (req) => {
           const planId = paymentResult.udf2;
           
           if (customerId) {
-            // Activate in Supabase
-            const { error } = await supabase
+            // 1. Fetch exact package details from plans table
+            const { data: planData, error: planError } = await supabase
+              .from('plans')
+              .select('cv_limit, jobs_limit, interviews_limit, duration_type, duration_value')
+              .eq('id', planId)
+              .single();
+
+            // 2. Calculate exact expiration date based on duration
+            const now = new Date();
+            let endDate = new Date(now);
+            
+            if (planData && planData.duration_type && planData.duration_value) {
+              const durType = planData.duration_type.toLowerCase();
+              const durVal = parseInt(planData.duration_value);
+              
+              if (durType.includes('month')) {
+                endDate.setMonth(now.getMonth() + durVal);
+              } else if (durType.includes('year')) {
+                endDate.setFullYear(now.getFullYear() + durVal);
+              } else if (durType.includes('day')) {
+                endDate.setDate(now.getDate() + durVal);
+              } else {
+                endDate.setMonth(now.getMonth() + 1); // fallback
+              }
+            } else {
+              endDate.setMonth(now.getMonth() + 1); // fallback
+            }
+
+            // 3. Activate in Supabase
+            const { error: updateErr } = await supabase
               .from('companies')
               .update({ 
-                subscription_status: 'Active',
                 subscription_plan: planId,
-                payment_transaction_id: paymentResult.tranid,
-                subscription_end_date: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString()
+                subscription_end_date: endDate.toISOString(),
+                cv_limit: planData?.cv_limit ?? 50,
+                jobs_limit: planData?.jobs_limit ?? 1,
+                interviews_limit: planData?.interviews_limit ?? 1,
+                used_cvs: 0,
+                used_jobs: 0,
+                used_interviews: 0
               })
               .eq('id', customerId);
               
-            if (error) console.error("Supabase Update Error:", error);
+            if (updateErr) console.error("CRITICAL Supabase Update Error:", updateErr);
           }
           return Response.redirect('https://your-domain.com/settings?payment=success', 302);
         } else {
@@ -210,7 +232,55 @@ serve(async (req) => {
         
         // Similar logic...
         if (paymentResult.result === "CAPTURED" || paymentResult.result === "APPROVED") {
-           await supabase.from('companies').update({ subscription_status: 'Active' }).eq('id', paymentResult.udf1);
+           const customerId = paymentResult.udf1;
+           const planId = paymentResult.udf2;
+           if (customerId) {
+             // 1. Fetch exact package details from plans table
+             const { data: planData } = await supabase
+               .from('plans')
+               .select('cv_limit, jobs_limit, interviews_limit, duration_type, duration_value')
+               .eq('id', planId)
+               .single();
+
+             // 2. Calculate exact expiration date based on duration
+             const now = new Date();
+             let endDate = new Date(now);
+             
+             if (planData && planData.duration_type && planData.duration_value) {
+               const durType = planData.duration_type.toLowerCase();
+               const durVal = parseInt(planData.duration_value);
+               
+               if (durType.includes('month')) {
+                 endDate.setMonth(now.getMonth() + durVal);
+               } else if (durType.includes('year')) {
+                 endDate.setFullYear(now.getFullYear() + durVal);
+               } else if (durType.includes('day')) {
+                 endDate.setDate(now.getDate() + durVal);
+               } else {
+                 endDate.setMonth(now.getMonth() + 1); // fallback
+               }
+             } else {
+               endDate.setMonth(now.getMonth() + 1); // fallback
+             }
+
+             // 3. Activate in Supabase
+             const { error: updateErr } = await supabase.from('companies').update({ 
+               subscription_plan: planId,
+               cv_limit: planData?.cv_limit ?? 50,
+               jobs_limit: planData?.jobs_limit ?? 1,
+               interviews_limit: planData?.interviews_limit ?? 1,
+               used_cvs: 0,
+               used_jobs: 0,
+               used_interviews: 0,
+               subscription_end_date: endDate.toISOString()
+             }).eq('id', customerId);
+
+             if (updateErr) {
+               console.error("CRITICAL SUPABASE UPDATE ERROR:", updateErr);
+               return new Response(JSON.stringify({ error: updateErr }), { status: 500 });
+             }
+           }
+           
            return new Response('Success', { status: 200 });
         }
         return new Response('Failed', { status: 400 });

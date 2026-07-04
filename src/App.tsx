@@ -10,6 +10,7 @@ import { SharedManagementView } from './components/SharedManagementView';
 import { InterviewRoom } from './components/InterviewRoom';
 import SeekerProfile from './components/SeekerProfile';
 import { WelcomeSlidesModal } from './components/WelcomeSlidesModal';
+import { prefetchQuestionTemplates } from './components/QuestionTemplatesManager';
 import React, { useState, useEffect, useRef, Component, ErrorInfo, ReactNode } from "react";
 
 class ErrorBoundary extends React.Component<any, any> {
@@ -2338,6 +2339,7 @@ export default function App() {
     }
     return [];
   });
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
 
   useEffect(() => {
     if (session && step && step !== "landing" && step !== "login" && step !== "registerCompany") {
@@ -2372,13 +2374,17 @@ export default function App() {
           }
         }
       }
+    }).catch((err) => {
+      console.error("Session Error:", err);
+    }).finally(() => {
       setIsCheckingAuth(false);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       console.log("Supabase Auth Event:", _event);
+      setIsCheckingAuth(false);
 
       // Ignore all auth events while we are actively signing up a new account
       if (sessionStorage.getItem('is_signing_up')) {
@@ -2393,22 +2399,22 @@ export default function App() {
 
       // Check for pending accounts before logging them in
       if (session?.user && (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED')) {
-        try {
-          const { data: compData, error: compErr } = await supabase
-            .from('companies')
-            .select('status')
-            .eq('id', session.user.id)
-            .single();
-
-          if (!compErr && compData?.status === 'pending') {
-            console.warn("Account is pending, logging out...");
-            await supabase.auth.signOut();
-            alert("حسابك لا يزال قيد المراجعة ولم يتم تفعيله بعد.");
-            return; // Prevent setting the session!
-          }
-        } catch (err) {
-          console.error("Error checking account status in onAuthStateChange", err);
-        }
+        supabase
+          .from('companies')
+          .select('status')
+          .eq('id', session.user.id)
+          .single()
+          .then(({ data: compData, error: compErr }) => {
+            if (!compErr && compData?.status === 'pending') {
+              console.warn("Account is pending, logging out...");
+              supabase.auth.signOut().then(() => {
+                alert("حسابك لا يزال قيد المراجعة ولم يتم تفعيله بعد.");
+              });
+            }
+          })
+          .catch((err) => {
+            console.error("Error checking account status in onAuthStateChange", err);
+          });
       }
 
       setSession(session);
@@ -2426,7 +2432,10 @@ export default function App() {
             setStep(prevStep => {
               if (prevStep === "updatePassword") return "updatePassword";
               if (["landing", "login", "registerCompany"].includes(prevStep)) {
-                return (savedStep as FlowStep) || "dashboard";
+                if (savedStep && !["landing", "login", "registerCompany"].includes(savedStep)) {
+                  return savedStep as FlowStep;
+                }
+                return "dashboard";
               }
               return prevStep;
             });
@@ -2503,7 +2512,7 @@ export default function App() {
             const isProfileComplete = !!(data.company_name && data.city);
 
             const rawPlan = data.subscription_plan || "free";
-            let normalizedPlan = rawPlan.replace('_yearly', '').replace('_monthly', '');
+            let normalizedPlan = rawPlan.trim().replace('_yearly', '').replace('_monthly', '');
             if (normalizedPlan === 'single_job') normalizedPlan = 'one-time';
             const isYearly = rawPlan.includes('_yearly');
 
@@ -2559,15 +2568,16 @@ export default function App() {
               hasExplicitEntityType: !!user.user_metadata?.entity_type,
               isLoaded: true
             }));
-
-            // Welcome Slides Logic (ONLY for brand new accounts)
-            const hasSeenWelcome = localStorage.getItem(`welcome_slides_seen_${user.id}`);
-            const isPublicCandidatePage = window.location.pathname.startsWith('/apply/') || window.location.pathname.startsWith('/profile') || window.location.pathname.startsWith('/share/') || window.location.pathname.startsWith('/interview/');
-            if (!hasSeenWelcome && !isPublicCandidatePage) {
-              setShowWelcomeSlides(true);
-            }
-
             setDashboardTab("الرئيسية");
+          }
+
+          // Welcome Slides Logic (For any account that hasn't seen it yet, and is new)
+          const hasSeenWelcomeStorage = localStorage.getItem(`welcome_slides_seen_${user.id}`);
+          const hasSeenWelcomeMeta = user.user_metadata?.has_seen_welcome;
+          const isNewAccount = user.created_at ? (new Date().getTime() - new Date(user.created_at).getTime() < 24 * 60 * 60 * 1000) : true;
+          const isPublicCandidatePage = window.location.pathname.startsWith('/apply/') || window.location.pathname.startsWith('/profile') || window.location.pathname.startsWith('/share/') || window.location.pathname.startsWith('/interview/');
+          if (!hasSeenWelcomeStorage && !hasSeenWelcomeMeta && isNewAccount && !isPublicCandidatePage) {
+            setShowWelcomeSlides(true);
           }
         } catch (err: any) {
           console.error("Error fetching company profile:", err);
@@ -2578,6 +2588,7 @@ export default function App() {
       };
 
       const fetchUserJobs = async () => {
+        setIsLoadingJobs(true);
         try {
           const { data, error } = await supabase.from('jobs').select('*').eq('company_id', user.id).order('created_at', { ascending: false });
           if (data && !error) {
@@ -2627,17 +2638,21 @@ export default function App() {
           }
         } catch (err) {
           console.warn("Failed to fetch jobs from Supabase", err);
+        } finally {
+          setIsLoadingJobs(false);
         }
       };
       handleOnline = () => {
         if (!navigator.onLine) return;
         fetchCompanyProfile();
         fetchUserJobs();
+        prefetchQuestionTemplates();
       };
       window.addEventListener('online', handleOnline);
 
       fetchCompanyProfile();
       fetchUserJobs();
+      prefetchQuestionTemplates();
     }
 
     return () => {
@@ -2911,12 +2926,7 @@ export default function App() {
       return;
     }
 
-    if (activeCount >= limit) {
-      alert("عذراً، لقد وصلت للحد الأقصى للوظائف المسموح بها في باقتك الحالية. يرجى ترقية باقتك للتمكن من إضافة وظائف جديدة.");
-      setDashboardTab("باقات فرز");
-      setStep("dashboard");
-      return;
-    }
+
 
     setCreateJobType(type);
     setClonedJob(initialJobData);
@@ -2943,10 +2953,16 @@ export default function App() {
       )}{" "}
       {" "}
 
-      <WelcomeSlidesModal isOpen={showWelcomeSlides} onClose={() => {
+      <WelcomeSlidesModal isOpen={showWelcomeSlides} onClose={async () => {
         setShowWelcomeSlides(false);
         if (session?.user?.id) {
           localStorage.setItem(`welcome_slides_seen_${session.user.id}`, 'true');
+          try {
+            const { supabase: sb } = await import('./lib/supabaseClient');
+            await sb.auth.updateUser({ data: { has_seen_welcome: true } });
+          } catch (e) {
+            console.error('Failed to sync welcome state to auth', e);
+          }
         }
         // Show the beautiful welcome gift modal!
         setShowWelcomeGift(true);
@@ -3107,6 +3123,7 @@ export default function App() {
                   onReactivateJob={handleReactivateJob}
                   onPreviewJob={(job) => setPreviewJobState(job)}
                   jobs={jobs}
+                  isLoadingJobs={isLoadingJobs}
                   shortlistedIds={shortlistedIds}
                   onToggleShortlist={(id) => {
                     setShortlistedIds((prev) =>

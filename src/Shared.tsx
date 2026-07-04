@@ -2441,11 +2441,15 @@ export const SettingsPage = ({
   };
 
   const handleSubscribe = async (tier: string) => {
+    if (!userProfile?.commercialRegistration?.trim() && !userProfile?.freelanceDocument?.trim()) {
+      alert("عفواً، يرجى استكمال بيانات الكيان القانوني (السجل التجاري أو وثيقة العمل الحر) في قسم (الملف الشخصي) أولاً لتتمكن من الاشتراك في الباقات المدفوعة.");
+      return;
+    }
     const packageId = `${tier}_${isYearly ? 'yearly' : 'monthly'}`;
     const name = tier === 'startup' ? `باقة نمو (${isYearly ? 'سنوي' : 'شهري'})` : `باقة الشركات (${isYearly ? 'سنوي' : 'شهري'})`;
     const price = tier === 'startup' ? (isYearly ? 4990 : 499) : (isYearly ? 14990 : 1499);
     setCheckoutPlan({ id: packageId, price, name });
-    
+
     // Notify admin immediately
     try {
       const { supabase: sb } = await import('./lib/supabaseClient');
@@ -2465,10 +2469,14 @@ export const SettingsPage = ({
   };
 
   const handleBuyAd = async () => {
+    if (!userProfile?.commercialRegistration?.trim() && !userProfile?.freelanceDocument?.trim()) {
+      alert("عفواً، يرجى استكمال بيانات الكيان القانوني (السجل التجاري أو وثيقة العمل الحر) في قسم (الملف الشخصي) أولاً لتتمكن من شراء باقة التوظيف الفوري.");
+      return;
+    }
     const name = 'شراء إعلان وظيفي منفرد';
     const price = 199;
     setCheckoutPlan({ id: 'single_job', price, name });
-    
+
     // Notify admin immediately
     try {
       const { supabase: sb } = await import('./lib/supabaseClient');
@@ -3080,13 +3088,13 @@ export const SettingsPage = ({
                   <div className="bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl flex gap-1 shadow-inner border border-slate-200 dark:border-slate-700">
                     <button
                       onClick={() => setBillingCycle('subscription')}
-                      className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-b-[3px] ${billingCycle === 'subscription' ? 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-600 border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
+                      className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-b-[3px] ${billingCycle === 'subscription' ? 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-white border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
                     >
                       اشتراكات مستمرة
                     </button>
                     <button
                       onClick={() => setBillingCycle('one-time')}
-                      className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-b-[3px] ${billingCycle === 'one-time' ? 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-600 border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
+                      className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all border-b-[3px] ${billingCycle === 'one-time' ? 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-600 dark:text-white border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
                     >
                       توظيف لمرة واحدة
                     </button>
@@ -3096,13 +3104,13 @@ export const SettingsPage = ({
                     <div className="bg-slate-100 dark:bg-slate-800 p-1.5 rounded-xl flex gap-1 shadow-inner border border-slate-200 dark:border-slate-700 mt-2">
                       <button
                         onClick={() => setIsYearly(false)}
-                        className={`px-5 py-2 rounded-lg text-xs font-bold transition-all border-b-[3px] ${!isYearly ? 'bg-gradient-to-b from-white to-slate-50 text-slate-800 dark:from-slate-700 dark:to-slate-600 dark:text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-500 border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
+                        className={`px-5 py-2 rounded-lg text-xs font-bold transition-all border-b-[3px] ${!isYearly ? 'bg-gradient-to-b from-white to-slate-50 text-slate-800 dark:from-slate-700 dark:to-slate-600 dark:text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-white border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
                       >
                         دفع شهري
                       </button>
                       <button
                         onClick={() => setIsYearly(true)}
-                        className={`px-5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border-b-[3px] ${isYearly ? 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-500 border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
+                        className={`px-5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border-b-[3px] ${isYearly ? 'bg-gradient-to-b from-[#0D9488] to-[#0b7c72] text-white shadow-md border-transparent translate-y-[3px] border-b-0 mb-[3px]' : 'bg-white dark:bg-slate-700 text-slate-500 dark:text-white border-slate-200 dark:border-slate-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px]'}`}
                       >
                         دفع سنوي
                         <span className={`text-[10px] font-black px-2 py-0.5 rounded-md shadow-sm border-b-[2px] ${isYearly ? 'bg-white/20 text-white border-transparent' : 'bg-emerald-100 text-emerald-700 border-emerald-200'}`}>16%</span>
@@ -3141,15 +3149,15 @@ export const SettingsPage = ({
                           <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">الخطوة الأولى لبناء فريق عملك بكفاءة عالية.</p>
 
                           <div className="flex flex-col items-center mb-5 mt-1">
-                            <span className="text-4xl font-bold text-gray-900 dark:text-white">{startupPrice}</span>
-                            <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
+                            <span className={`text-4xl font-bold text-gray-900 dark:text-white ${isYearly ? 'blur-md opacity-30 select-none' : ''}`}>{startupPrice}</span>
+                            <span className={`text-xs text-gray-500 mt-1 ${isYearly ? 'blur-sm opacity-30 select-none' : ''}`}>{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
                           </div>
 
-                          <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
+                          <div className={`bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm ${isYearly ? 'blur-sm opacity-40 select-none pointer-events-none' : ''}`}>
                             {isYearly ? 'توفير 16%' : 'بدون التزام (ألغِ في أي وقت)'}
                           </div>
 
-                          <ul className={`${highlightedTier === 'startup' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
+                          <ul className={`${highlightedTier === 'startup' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1 ${isYearly ? 'blur-sm opacity-40 select-none pointer-events-none' : ''}`}>
                             {startupFeatures.map((feature: string, idx: number) => (
                               <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'startup' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
                                 <CheckCircle size={highlightedTier === 'startup' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'startup' ? 2.5 : 2} />
@@ -3158,7 +3166,12 @@ export const SettingsPage = ({
                             ))}
                           </ul>
 
-                          {activeTier === 'startup' && (userProfile as any).subscription_is_yearly === isYearly ? (
+                          {isYearly ? (
+                            <button onClick={() => window.dispatchEvent(new Event('openBookingModal'))} className={`relative w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 overflow-hidden ${highlightedTier === 'startup' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
+                              {highlightedTier === 'startup' && <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />}
+                              <span className="relative z-10">احجز موعد</span>
+                            </button>
+                          ) : activeTier === 'startup' && (userProfile as any).subscription_is_yearly === isYearly ? (
                             <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden group">
                               <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />
                               <div className="flex items-center gap-2 relative z-10">
@@ -3183,15 +3196,15 @@ export const SettingsPage = ({
                           <p className="text-xs font-bold text-slate-600 mb-5 text-center leading-relaxed">الأكثر طلباً للشركات لتسريع وتيرة التوظيف.</p>
 
                           <div className="flex flex-col items-center mb-5 mt-1">
-                            <span className="text-4xl font-bold text-gray-900 dark:text-white">{businessPrice}</span>
-                            <span className="text-xs text-gray-500 mt-1">{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
+                            <span className={`text-4xl font-bold text-gray-900 dark:text-white ${isYearly ? 'blur-md opacity-30 select-none' : ''}`}>{businessPrice}</span>
+                            <span className={`text-xs text-gray-500 mt-1 ${isYearly ? 'blur-sm opacity-30 select-none' : ''}`}>{isYearly ? 'ريال / سنة' : 'ريال / شهر'}</span>
                           </div>
 
-                          <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm">
+                          <div className={`bg-emerald-100 text-emerald-700 text-[10px] font-bold px-3 py-1.5 rounded-full mb-6 text-center w-fit shadow-sm ${isYearly ? 'blur-sm opacity-40 select-none pointer-events-none' : ''}`}>
                             {isYearly ? 'توفير 16%' : 'الخيار الأكثر طلباً'}
                           </div>
 
-                          <ul className={`${highlightedTier === 'business' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1`}>
+                          <ul className={`${highlightedTier === 'business' ? 'space-y-3' : 'space-y-2'} mb-8 w-full px-1 ${isYearly ? 'blur-sm opacity-40 select-none pointer-events-none' : ''}`}>
                             {businessFeatures.map((feature: string, idx: number) => (
                               <li key={idx} className={`flex items-center gap-2 ${highlightedTier === 'business' ? 'text-[13px] font-bold text-slate-800 dark:text-slate-100' : 'text-xs font-semibold text-slate-700 dark:text-slate-300'}`}>
                                 <CheckCircle size={highlightedTier === 'business' ? 18 : 16} className="text-[#0D9488] shrink-0" strokeWidth={highlightedTier === 'business' ? 2.5 : 2} />
@@ -3200,7 +3213,12 @@ export const SettingsPage = ({
                             ))}
                           </ul>
 
-                          {activeTier === 'business' && (userProfile as any).subscription_is_yearly === isYearly ? (
+                          {isYearly ? (
+                            <button onClick={() => window.dispatchEvent(new Event('openBookingModal'))} className={`relative w-full rounded-lg text-xs font-bold transition-all mt-auto py-3 overflow-hidden ${highlightedTier === 'business' ? 'bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white shadow-[0_8px_20px_-6px_rgba(13,148,136,0.5)] hover:shadow-[0_12px_25px_-6px_rgba(13,148,136,0.6)] hover:-translate-y-0.5' : 'bg-teal-50 dark:bg-teal-900/20 text-[#0D9488] dark:text-teal-400 border border-teal-100 dark:border-teal-800/50 hover:bg-[#0D9488] hover:text-white hover:border-[#0D9488] hover:shadow-md active:scale-95'}`}>
+                              {highlightedTier === 'business' && <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />}
+                              <span className="relative z-10">احجز موعد</span>
+                            </button>
+                          ) : activeTier === 'business' && (userProfile as any).subscription_is_yearly === isYearly ? (
                             <button className="relative w-full py-3 rounded-lg text-[13px] font-bold bg-gradient-to-r from-[#0D9488] via-[#2dd4bf] to-[#0D9488] animate-gradient-move bg-[length:200%_auto] text-white border-b-[4px] border-[#096159] shadow-inner cursor-default flex flex-col justify-center items-center overflow-hidden group">
                               <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shine" />
                               <div className="flex items-center gap-2 relative z-10">
@@ -3720,7 +3738,7 @@ export const SettingsPage = ({
                     <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1">تفعيل فوري خلال دقيقة واحدة</p>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md relative z-10">
-                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133-.298-.347-.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133-.298-.347-.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z" /></svg>
                   </div>
                 </button>
 
@@ -3847,7 +3865,7 @@ export const ActiveJobs = ({
   };
   return (
     <div className="relative w-full min-h-[400px]">
-      {isMockState && (
+      {isMockState && !isLoading && (
         <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-auto">
           <EmptyState
             title={
@@ -4034,20 +4052,27 @@ export const ActiveJobs = ({
                   >
                     {getJobIcon(job.title || job.campaignTitle)}
                   </div>
-                  <h3 className="text-sm font-bold text-navy dark:text-white mt-2.5 mb-0.5 line-clamp-2 w-full px-2" title={job.title || job.campaignTitle}>
-                    {job.title || job.campaignTitle || "عنوان غير محدد"}
+                  <h3 className="text-sm font-bold text-navy dark:text-white mt-2.5 mb-0.5 line-clamp-2 w-full px-2" title={job.title || job.campaignTitle || (job.roles && job.roles.length > 0 ? job.roles.map((r: any) => r.title).filter(Boolean).join("، ") : "")}>
+                    {(() => {
+                      const hasTitle = job.title || job.campaignTitle;
+                      let displayTitle = hasTitle || (job.roles && job.roles.length > 0 ? job.roles[0]?.title : null) || "عنوان غير محدد";
+                      if (!hasTitle && job.recordType === "campaign" && job.roles && job.roles.length > 1 && !displayTitle.endsWith("...")) {
+                        displayTitle += " ...";
+                      }
+                      return displayTitle;
+                    })()}
                   </h3>
                   <p className="text-slate-400 dark:text-slate-500 text-[10.5px] font-semibold truncate w-full px-2" title={job.company}>
                     {job.company || "جهة غير محددة"}
                   </p>
                   {job.recordType === "campaign" && job.roles && job.roles.length > 0 && (
                     <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border ${job.status === "نشط"
-                        ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30"
-                        : job.status === "مغلق"
-                          ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30"
-                          : job.status === "مغلق مؤقتاً" || job.status === "إغلاق مؤقت"
-                            ? "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/30"
-                            : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30"
+                      ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-900/30"
+                      : job.status === "مغلق"
+                        ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30"
+                        : job.status === "مغلق مؤقتاً" || job.status === "إغلاق مؤقت"
+                          ? "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-900/30"
+                          : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30"
                       }`}>
                       <Briefcase size={12} />
                       <span className="text-[10px] font-bold">حملة: {job.roles.length} شواغر</span>

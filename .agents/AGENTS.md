@@ -105,3 +105,7 @@
 ---
 
 *This file acts as the ultimate constitution for AI agents operating on this codebase. Read it, understand it, and never violate it.*
+
+### 21. STRICT VERIFICATION OF SCRIPT PERMISSIONS & DATA (ÇáÊÍŞŞ ÇáÕÇÑã ãä ÕáÇÍíÇÊ ÇáÓßÑÈÊÇÊ æÇáÈíÇäÇÊ)
+- **áÇ ÊÓÊäÊÌ Ãä ÇáÈíÇäÇÊ ãİŞæÏÉ ÈÓÈÈ ÎØÃ İí ÇáÕáÇÍíÇÊ (Do not assume missing data due to permission errors):** ÅĞÇ ŞãÊ ÈßÊÇÈÉ ÓßÑÈÊ ãÍÇßÇÉ (Simulation Script) áŞÑÇÁÉ ŞÇÚÏÉ ÇáÈíÇäÇÊ¡ æİÔá ÇáÓßÑÈÊ İí ÌáÈ ÇáÈíÇäÇÊ (ÃÚØÇß undefined)¡ **íõãäÚ ãäÚÇğ ÈÇÊÇğ** Ãä ÊÎÈÑ ÇáãÓÊÎÏã Ãä ŞÇÚÏÉ ÈíÇäÇÊå İÇÑÛÉ Ãæ áÇ ÊÍÊæí Úáì ÃÑŞÇã.
+- **ÇáÊÍŞŞ ãä ÇáÜ Service Key (Verify Service Key):** íÌÈ Ãä ÊÏÑß Ãä ÇáÓßÑÈÊÇÊ ÇáÎÇÑÌíÉ ŞÏ ÊİÔá ÈÓÈÈ ÚÏã ÇãÊáÇßåÇ ÕáÇÍíÇÊ (Service Role Key) Ãæ ÈÓÈÈ ÓíÇÓÇÊ (RLS). ÏÇÆãÇğ ÇİÊÑÖ Ãä ÇáÎáá İí ÇáÓßÑÈÊ Ãæ ÇáÕáÇÍíÇÊ¡ æáÇ ÊÊåã ŞÇÚÏÉ ÈíÇäÇÊ ÇáãÓÊÎÏã ÈÃäåÇ İÇÑÛÉ ÅáÇ ÅĞÇ ßäÊ ÊÊÕİÍåÇ ÈÕáÇÍíÇÊ ßÇãáÉ æÊÃßÏÊ 100%.
