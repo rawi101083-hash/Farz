@@ -387,7 +387,7 @@ const PublicJobPage = ({
     ? job.roles?.find((r) => r.id === selectedRoleId)
     : (job.roles && job.roles.length > 0 ? job.roles[0] : null);
 
-  const displayTitle = isJobBoard ? (job.campaignTitle || job.title) : (activeRole?.title || job.title);
+  const displayTitle = isJobBoard ? (job.campaignTitle || "") : (activeRole?.title || job.title);
   const displayCompany = job.company;
 
   return (
@@ -448,9 +448,11 @@ const PublicJobPage = ({
                       {job.entityType === "freelance" ? "مستقل معتمد" : "مؤسسة معتمدة"}
                     </span>
                   </div>
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-black mb-2 leading-tight opacity-90 drop-shadow-sm">
-                    {displayTitle}
-                  </h1>
+                  {displayTitle && (
+                    <h1 className="text-3xl md:text-4xl lg:text-5xl font-black mb-2 leading-tight opacity-90 drop-shadow-sm">
+                      {displayTitle}
+                    </h1>
+                  )}
                 </div>
               </div>
 
@@ -489,9 +491,9 @@ const PublicJobPage = ({
                       {activeRole?.salaryMin || job.salaryMin} {(activeRole?.salaryMax || job.salaryMax) ? `- ${activeRole?.salaryMax || job.salaryMax}` : ''} ريال
                     </div>
                   )}
-                  {job.createdAt && (
+                  {(activeRole?.createdAt || job.createdAt) && (
                     <div className="inline-flex items-center justify-center gap-2 bg-white/5 px-5 py-2.5 rounded-xl border border-white/10 text-sm font-bold shadow-sm backdrop-blur-sm">
-                      <Calendar size={16} className="text-white/60 shrink-0" /> نُشر في {job.createdAt}
+                      <Calendar size={16} className="text-white/60 shrink-0" /> نُشر في {activeRole?.createdAt || job.createdAt}
                     </div>
                   )}
                 </div>
@@ -506,7 +508,7 @@ const PublicJobPage = ({
                   <div className="w-2 h-8 bg-primary rounded-full" /> الفرص الوظيفية المتاحة
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {job.roles?.map(role => (
+                  {job.roles?.filter(r => r.status !== "مغلق").map(role => (
                     <button
                       key={role.id}
                       onClick={() => onSelectRole?.(role.id)}
@@ -2704,11 +2706,17 @@ export default function App() {
             job_number: data.job_number
           };
           setSelectedJob(fetchedJob as Job);
-          setStep(
-            fetchedJob.directUpload || fetchedJob.roles?.some((r: any) => r.directUpload) || fetchedJob.roles?.[0]?.directUpload
-              ? 'form'
-              : 'publicJob'
-          );
+          const isMultiRoleCampaign = fetchedJob.recordType === 'campaign' && (fetchedJob.roles?.length || 0) > 1;
+          
+          if (isMultiRoleCampaign) {
+            setStep('publicJob');
+          } else {
+            setStep(
+              fetchedJob.directUpload || fetchedJob.roles?.[0]?.directUpload
+                ? 'form'
+                : 'publicJob'
+            );
+          }
         } else {
           // Fallback to local storage if not synced
           const localData = localStorage.getItem("sahab_jobs_db_v1");
@@ -2717,11 +2725,16 @@ export default function App() {
             const jobFound = localJobs.find((j: any) => j.id === jobId);
             if (jobFound) {
               setSelectedJob(jobFound);
-              setStep(
-                jobFound.directUpload || jobFound.roles?.some((r: any) => r.directUpload) || jobFound.roles?.[0]?.directUpload
-                  ? 'form'
-                  : 'publicJob'
-              );
+              const isMultiRoleLocal = jobFound.recordType === 'campaign' && (jobFound.roles?.length || 0) > 1;
+              if (isMultiRoleLocal) {
+                setStep('publicJob');
+              } else {
+                setStep(
+                  jobFound.directUpload || jobFound.roles?.[0]?.directUpload
+                    ? 'form'
+                    : 'publicJob'
+                );
+              }
               return;
             }
           }
@@ -2876,28 +2889,34 @@ export default function App() {
     }
   };
   const handleDeactivateJob = async (job: Job) => {
+    const updatedRoles = job.roles ? job.roles.map((r: any) => ({ ...r, status: "مغلق" })) : job.roles;
     const updatedJobs = jobs.map((j) =>
-      j.id === job.id ? { ...j, status: "مغلق" as const } : j,
+      j.id === job.id ? { ...j, status: "مغلق" as const, roles: updatedRoles } : j,
     );
     setJobs(updatedJobs);
 
     // Backend Sync
     try {
-      await supabase.from('jobs').update({ status: 'مغلق', closed_at: new Date().toISOString() }).eq('id', job.id);
+      const updateData: any = { status: 'مغلق', closed_at: new Date().toISOString() };
+      if (updatedRoles) updateData.roles = updatedRoles;
+      await supabase.from('jobs').update(updateData).eq('id', job.id);
     } catch (err) {
       console.error("Could not deactivate job in backend", err);
     }
   };
 
   const handleReactivateJob = async (job: Job) => {
+    const updatedRoles = job.roles ? job.roles.map((r: any) => ({ ...r, status: "نشط" })) : job.roles;
     const updatedJobs = jobs.map((j) =>
-      j.id === job.id ? { ...j, status: "نشط" as const, createdAt: new Date().toISOString().split("T")[0] } : j,
+      j.id === job.id ? { ...j, status: "نشط" as const, createdAt: new Date().toISOString().split("T")[0], roles: updatedRoles } : j,
     );
     setJobs(updatedJobs);
 
     // Backend Sync
     try {
-      await supabase.from('jobs').update({ status: 'نشط', closed_at: null }).eq('id', job.id);
+      const updateData: any = { status: 'نشط', closed_at: null };
+      if (updatedRoles) updateData.roles = updatedRoles;
+      await supabase.from('jobs').update(updateData).eq('id', job.id);
     } catch (err) {
       console.error("Could not reactivate job in backend", err);
     }
@@ -3218,6 +3237,7 @@ export default function App() {
             {step === "manageJob" && selectedJob && (
               <ErrorBoundary>
                 <ManageJob
+                  selectedRoleId={applicantSelectedRoleId}
                   job={{ ...selectedJob, company: selectedJob.company || userProfile.companyName || "لم تُحدد" }}
                   onBack={() => setStep("dashboard")}
                   onUpdate={(updatedJob, stayOnPage) => {
@@ -3253,7 +3273,13 @@ export default function App() {
               <PublicJobPage
                 job={selectedJob}
                 selectedRoleId={applicantSelectedRoleId}
-                onSelectRole={(id) => setApplicantSelectedRoleId(id)}
+                onSelectRole={(id) => {
+                  setApplicantSelectedRoleId(id);
+                  const selectedRole = selectedJob.roles?.find(r => r.id === id);
+                  if (selectedRole?.directUpload || selectedJob.directUpload) {
+                    setStep("form");
+                  }
+                }}
                 onBackToCampaign={() => setApplicantSelectedRoleId(null)}
                 onApply={(mode) => {
                   setApplyMode(mode);

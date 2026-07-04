@@ -35,10 +35,18 @@ export const ManageJob = ({
   const handleRefreshDate = async () => {
     const newDateStr = new Date().toISOString();
     try {
-      const { error } = await supabase.from('jobs').update({ created_at: newDateStr }).eq('id', job.id);
-      if (error) throw error;
-      onUpdate({ ...job, createdAt: newDateStr.split("T")[0] }, true);
-      showToast("تم تحديث تاريخ النشر بنجاح!", "success");
+      if (selectedRoleId && job.roles) {
+        const updatedRoles = job.roles.map(r => r.id === selectedRoleId ? { ...r, createdAt: newDateStr.split("T")[0] } : r);
+        const { error } = await supabase.from('jobs').update({ roles: updatedRoles }).eq('id', job.id);
+        if (error) throw error;
+        onUpdate({ ...job, roles: updatedRoles }, true);
+        showToast("تم تحديث تاريخ النشر للشاغر بنجاح!", "success");
+      } else {
+        const { error } = await supabase.from('jobs').update({ created_at: newDateStr }).eq('id', job.id);
+        if (error) throw error;
+        onUpdate({ ...job, createdAt: newDateStr.split("T")[0] }, true);
+        showToast("تم تحديث تاريخ النشر بنجاح!", "success");
+      }
     } catch (err) {
       console.error(err);
       showToast("فشل تحديث التاريخ، يرجى المحاولة مرة أخرى.", "error");
@@ -88,7 +96,8 @@ export const ManageJob = ({
   const [aiInstructions, setAiInstructions] = useState(job.aiInstructions || (job as any).ai_instructions || "");
 
   // Status
-  const [status, setStatus] = useState(job.status || "نشط");
+  const singleRoleStatus = selectedRoleId ? job.roles?.find(r => r.id === selectedRoleId)?.status : undefined;
+  const [status, setStatus] = useState(singleRoleStatus || job.status || "نشط");
   const isJobExpired = !job.isOpenEnded && job.endDate && new Date(job.endDate) < new Date();
   const effectiveStatus = isJobExpired && status === "نشط" ? "منتهي الوقت" : status;
 
@@ -235,28 +244,41 @@ export const ManageJob = ({
     };
 
     try {
-      const { error } = await supabase.from('jobs').update({
-        location: updatedJob.location,
-        type: updatedJob.type,
-        salary_min: updatedJob.salaryMin === "" ? null : Number(updatedJob.salaryMin) || null,
-        salary_max: updatedJob.salaryMax === "" ? null : Number(updatedJob.salaryMax) || null,
-        hide_salary: updatedJob.isSalaryHidden,
-        start_date: updatedJob.startDate,
-        end_date: updatedJob.endDate,
-        status: updatedJob.status,
-        knockout_questions: updatedJob.knockoutQuestions,
-        custom_questions: updatedJob.customQuestions,
-        required_attachments: updatedJob.requiredAttachments,
-        custom_attachments: updatedJob.customAttachments,
-        welcome_ui_message: updatedJob.welcomeUIMessage,
-        portal_title: updatedJob.portalTitle,
-        font_family: updatedJob.fontFamily,
-        ai_instructions: updatedJob.aiInstructions
-      }).eq('id', updatedJob.id);
-      
-      if (error) throw error;
-      
-      onUpdate(updatedJob);
+      if (selectedRoleId && job.roles) {
+        const updatedRoles = job.roles.map(r => r.id === selectedRoleId ? {
+          ...r,
+          location: updatedJob.location,
+          type: updatedJob.type,
+          salaryMin: updatedJob.salaryMin === "" ? undefined : Number(updatedJob.salaryMin) || undefined,
+          salaryMax: updatedJob.salaryMax === "" ? undefined : Number(updatedJob.salaryMax) || undefined,
+          isSalaryHidden: updatedJob.isSalaryHidden,
+          status: updatedJob.status
+        } : r);
+        const { error } = await supabase.from('jobs').update({ roles: updatedRoles }).eq('id', updatedJob.id);
+        if (error) throw error;
+        onUpdate({ ...updatedJob, roles: updatedRoles });
+      } else {
+        const { error } = await supabase.from('jobs').update({
+          location: updatedJob.location,
+          type: updatedJob.type,
+          salary_min: updatedJob.salaryMin === "" ? null : Number(updatedJob.salaryMin) || null,
+          salary_max: updatedJob.salaryMax === "" ? null : Number(updatedJob.salaryMax) || null,
+          hide_salary: updatedJob.isSalaryHidden,
+          start_date: updatedJob.startDate,
+          end_date: updatedJob.endDate,
+          status: updatedJob.status,
+          knockout_questions: updatedJob.knockoutQuestions,
+          custom_questions: updatedJob.customQuestions,
+          required_attachments: updatedJob.requiredAttachments,
+          custom_attachments: updatedJob.customAttachments,
+          welcome_ui_message: updatedJob.welcomeUIMessage,
+          portal_title: updatedJob.portalTitle,
+          font_family: updatedJob.fontFamily,
+          ai_instructions: updatedJob.aiInstructions
+        }).eq('id', updatedJob.id);
+        if (error) throw error;
+        onUpdate(updatedJob);
+      }
       setShowWarningModal(false);
       alert("تم حفظ التعديلات بنجاح!");
     } catch (err: any) {
@@ -287,10 +309,17 @@ export const ManageJob = ({
   const updateStatusDirectly = async (newStatus: "نشط" | "مغلق مؤقتاً" | "مغلق") => {
     setStatus(newStatus);
     try {
-      const { error } = await supabase.from('jobs').update({ status: newStatus }).eq('id', job.id);
-      if (error) throw error;
-      setStatus(newStatus);
-      onUpdate({...job, status: newStatus}, true);
+      if (selectedRoleId && job.roles) {
+        const updatedRoles = job.roles.map(r => r.id === selectedRoleId ? { ...r, status: newStatus } : r);
+        const { error } = await supabase.from('jobs').update({ roles: updatedRoles }).eq('id', job.id);
+        if (error) throw error;
+        onUpdate({ ...job, roles: updatedRoles }, true);
+      } else {
+        const { error } = await supabase.from('jobs').update({ status: newStatus }).eq('id', job.id);
+        if (error) throw error;
+        onUpdate({ ...job, status: newStatus }, true);
+      }
+
       
       if (newStatus === "نشط") {
         showToast("تم تنشيط الوظيفة بنجاح وإعادة استقبال الطلبات.", "success");
@@ -411,32 +440,32 @@ export const ManageJob = ({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
                       <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">المسمى الوظيفي</p>
                       <p className="font-bold text-navy dark:text-white">{title || "لم تُحدد"}</p>
                     </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
                       <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الجهة / الشركة</p>
                       <p className="font-bold text-navy dark:text-white">{company || "لم تُحدد"}</p>
                     </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
                       <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">سنوات الخبرة</p>
                       <p className="font-bold text-navy dark:text-white">{experience}</p>
                     </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
                       <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الحد الأدنى للمؤهل</p>
                       <p className="font-bold text-navy dark:text-white">{qualification}</p>
                     </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
                       <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">نوع العمل</p>
                       <p className="font-bold text-navy dark:text-white">{jobType}</p>
                     </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
                       <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">مقر العمل</p>
                       <p className="font-bold text-navy dark:text-white">{jobLocation}</p>
                     </div>
                     {(job.salaryMin || job.salaryMax) ? (
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700 md:col-span-2 text-center flex flex-col items-center justify-center">
+                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 md:col-span-2 text-center flex flex-col items-center justify-center shadow-sm">
                         <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الراتب</p>
                         <p className="font-bold text-navy dark:text-white">
                           {job.salaryMin && job.salaryMax 
@@ -606,7 +635,7 @@ export const ManageJob = ({
                       <p className="text-center py-8 text-slate-400 font-medium">لا توجد أسئلة استبعاد مضافة</p>
                     ) : (
                       knockoutQuestions.map((kq, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-b-4 border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
                           <div>
                             <p className="font-bold text-sm text-navy dark:text-white mb-1">{kq.text}</p>
                             <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">الشرط لاجتياز الفرز: {kq.requiredAnswer}</span>

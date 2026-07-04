@@ -1146,7 +1146,7 @@ export const ApplicantForm = ({
         <div className="text-center mb-12">
           {formStep === "details" && (
             <div className="flex flex-col items-center gap-2 mb-8 relative">
-              <div className="absolute top-0 right-0">
+              <div className="absolute top-0 left-0">
                 <a
                   href={`/profile?returnUrl=${encodeURIComponent(window.location.pathname + window.location.search)}`}
                   className="flex items-center gap-2 text-xs font-bold bg-primary/10 hover:bg-primary hover:text-white text-primary px-4 py-2 rounded-xl transition-all border border-primary/20 shadow-sm"
@@ -1154,6 +1154,17 @@ export const ApplicantForm = ({
                   <User size={14} /> {isLoggedIn || userProfile ? "ملفي المهني" : "تسجيل دخول"}
                 </a>
               </div>
+              {isCampaign && onBackToJobs && (
+                <div className="absolute top-0 right-0">
+                  <button
+                    type="button"
+                    onClick={onBackToJobs}
+                    className="flex items-center gap-2 text-xs font-bold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 px-4 py-2 rounded-xl transition-all border border-slate-200 dark:border-slate-700 shadow-sm"
+                  >
+                    <ArrowRight size={14} /> العودة للوظائف
+                  </button>
+                </div>
+              )}
               {job?.companyLogo && (
                 <div className="w-20 h-20 p-0 bg-transparent dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200/20 dark:border-slate-700 flex items-center justify-center overflow-hidden">
                   <img
@@ -1175,7 +1186,7 @@ export const ApplicantForm = ({
           )}
           {formStep === "details" ? (
             <>
-              {isCampaign && job?.campaignTitle && (
+              {isCampaign && job?.campaignTitle && job.campaignTitle !== (activeRole?.title || job.title) && (
                 <div className="mb-6 flex items-center justify-center">
                   <div className="px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-bold border border-primary/20">
                     {job.campaignTitle}

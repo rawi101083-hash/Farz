@@ -3799,7 +3799,7 @@ export const ActiveJobs = ({
   jobs: Job[];
   subTab?: "active" | "inactive" | "drafts" | "paused";
   isNewUser?: boolean;
-  onManage: (job: Job) => void;
+  onManage: (job: Job, roleId?: string) => void;
   onCreateJob: () => void;
   onClone?: (job: Job) => void;
   onDeactivate?: (job: Job) => void;
@@ -3916,18 +3916,46 @@ export const ActiveJobs = ({
               >
                 {/* Top Row: Status badge & Action menu */}
                 <div className="flex items-center justify-between mb-3 w-full" onClick={(e) => e.stopPropagation()}>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${expired
-                      ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                      : job.status === "مسودة"
-                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                        : job.status === "مغلق مؤقتاً"
-                          ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                          : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                      }`}
-                  >
-                    {expired ? "مغلق دائم" : job.status}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(() => {
+                      if (job.recordType === 'campaign' && job.roles && job.roles.length > 0) {
+                        const uniqueStatuses = Array.from(new Set(job.roles.map(r => r.status || "نشط")));
+                        return uniqueStatuses.map(s => {
+                          const isExp = s === "مغلق";
+                          return (
+                            <span
+                              key={s}
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${isExp
+                                ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                                : s === "مسودة"
+                                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                                  : s === "مغلق مؤقتاً"
+                                    ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                                    : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                }`}
+                            >
+                              {isExp ? "مغلق دائم" : s}
+                            </span>
+                          );
+                        });
+                      }
+                      
+                      return (
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-black shadow-sm ${expired
+                            ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
+                            : job.status === "مسودة"
+                              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                              : job.status === "مغلق مؤقتاً"
+                                ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                                : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                            }`}
+                        >
+                          {expired ? "مغلق دائم" : job.status}
+                        </span>
+                      );
+                    })()}
+                  </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
                     {job.job_number && (
@@ -3935,16 +3963,18 @@ export const ActiveJobs = ({
                         رقم: {job.job_number}
                       </span>
                     )}
-                    <div className="relative">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpenDropdownId(openDropdownId === job.id ? null : job.id);
-                        }}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                    <div 
+                      className="relative p-3 -m-3 cursor-pointer z-10 flex items-center justify-center group"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpenDropdownId(openDropdownId === job.id ? null : job.id);
+                      }}
+                    >
+                      <div
+                        className="w-7 h-7 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 group-hover:bg-slate-50 dark:group-hover:bg-slate-700/50 transition-colors"
                       >
                         <MoreVertical size={14} />
-                      </button>
+                      </div>
                       {openDropdownId === job.id && (
                         <>
                           <div
@@ -3995,11 +4025,14 @@ export const ActiveJobs = ({
                                 تكرار الإعلان
                               </button>
                             )}
-                            {!expired && onDeactivate && (
+                            {job.status === "نشط" && onDeactivate && (
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
+                                  if (job.recordType === 'campaign') {
+                                    if (!window.confirm('تنبيه: سيؤدي هذا الإجراء إلى إغلاق الحملة وجميع الشواغر التابعة لها. هل أنت متأكد؟')) return;
+                                  }
                                   onDeactivate(job);
                                   setOpenDropdownId(null);
                                 }}
@@ -4009,11 +4042,14 @@ export const ActiveJobs = ({
                                 نقل إلى غير النشطة
                               </button>
                             )}
-                            {expired && onReactivate && (
+                            {job.status !== "نشط" && onReactivate && (
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
+                                  if (job.recordType === 'campaign') {
+                                    if (!window.confirm('تنبيه: سيؤدي هذا الإجراء إلى تنشيط الحملة وجميع الشواغر التابعة لها. هل أنت متأكد؟')) return;
+                                  }
                                   onReactivate(job);
                                   setOpenDropdownId(null);
                                 }}
@@ -4138,15 +4174,25 @@ export const ActiveJobs = ({
                     onManage(selectedCampaignForRoles, role.id);
                     setSelectedCampaignForRoles(null);
                   }}
-                  className="w-full text-right p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-primary dark:hover:border-primary bg-slate-50 dark:bg-slate-900/50 hover:bg-primary/5 transition-all group flex items-center justify-between"
+                  className="w-full text-right p-4 rounded-xl border-2 border-b-4 border-slate-200 dark:border-slate-700 hover:border-primary dark:hover:border-primary hover:border-b-primary bg-slate-50 dark:bg-slate-900/50 hover:bg-primary/5 hover:-translate-y-1 active:translate-y-[2px] active:border-b-2 active:mb-[2px] shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)] transition-all group flex items-center justify-between mb-2"
                 >
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-bold text-navy dark:text-white mb-1">{role.title}</h4>
                     <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                       {[role.type, role.location].filter(Boolean).join(" • ")}
                     </p>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0">
+                  <div className="flex flex-col items-end gap-1.5 ml-3">
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${(role.status || 'نشط') === 'مغلق' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400' : (role.status || 'نشط') === 'مغلق مؤقتاً' ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
+                      {role.status || 'نشط'}
+                    </span>
+                    {role.createdAt && (
+                      <span className="text-[10px] text-slate-400 font-medium">
+                        نُشر في {role.createdAt}
+                      </span>
+                    )}
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 transition-opacity mr-3 shrink-0 translate-x-2 group-hover:translate-x-0">
                     <ArrowLeft size={16} />
                   </div>
                 </button>

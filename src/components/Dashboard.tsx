@@ -248,7 +248,7 @@ export const Dashboard = ({
 }: {
   onViewDetails: (app: Applicant) => void;
   onCreateJob: () => void;
-  onManageJob: (job: Job) => void;
+  onManageJob: (job: Job, roleId?: string) => void;
   onCloneJob: (job: Job) => void;
   onDeactivateJob: (job: Job) => void;
   onReactivateJob?: (job: Job) => void;
@@ -586,7 +586,11 @@ export const Dashboard = ({
             const matchedJob = jobs.find(j => j.id === raw.job_id);
             let actualAskExpectedSalary = matchedJob?.askExpectedSalary;
             if (matchedJob) {
-              if (matchedJob.recordType === 'campaign' && raw.role_index !== undefined) {
+              if (matchedJob.recordType === 'campaign' && raw.job_context?.jobTitle) {
+                actualJobTitle = raw.job_context.jobTitle;
+                const matchedRole = matchedJob.roles?.find((r: any) => r.title === raw.job_context.jobTitle);
+                actualAskExpectedSalary = matchedRole?.askExpectedSalary || matchedJob.askExpectedSalary;
+              } else if (matchedJob.recordType === 'campaign' && raw.role_index !== undefined) {
                 actualJobTitle = matchedJob.roles?.[raw.role_index]?.title || matchedJob.title || "طلب غير محدد";
                 actualAskExpectedSalary = matchedJob.roles?.[raw.role_index]?.askExpectedSalary || matchedJob.askExpectedSalary;
               } else {
@@ -606,6 +610,7 @@ export const Dashboard = ({
 
             return {
               id: raw.id,
+              job_id: raw.job_id,
               name: raw.full_name || "متقدم جديد",
               photoUrl: parsedAnswers.find((a: any) => a.question?.includes("الصورة الشخصية"))?.answer || "",
               job: actualJobTitle,
@@ -1216,7 +1221,7 @@ export const Dashboard = ({
     if (!job.endDate) return false;
     return new Date() > new Date(job.endDate);
   };
-  const syncedJobs = jobs.map(j => ({ ...j, company: j.company || userProfile?.companyName || userProfile?.name || "", applicants: applicants.filter(a => (a.job || "").includes(j.title || "")).length }));
+  const syncedJobs = jobs.map(j => ({ ...j, company: j.company || userProfile?.companyName || userProfile?.name || "", applicants: applicants.filter(a => a.job_id === j.id).length }));
   const filteredSearchJobs = syncedJobs.filter((j) => {
     if (!jobSearchQuery) return true;
     const query = jobSearchQuery.toLowerCase();
@@ -2281,8 +2286,8 @@ export const Dashboard = ({
               onManage={onManageJob}
               onCreateJob={onCreateJob}
               onClone={onCloneJob}
-              onDeactivate={subTab === "active" ? onDeactivateJob : undefined}
-              onReactivate={subTab === "inactive" ? onReactivateJob : undefined}
+              onDeactivate={onDeactivateJob}
+              onReactivate={onReactivateJob}
               onDelete={(id) => setDraftToDelete(id)}
               cvLimitReached={cvsRemaining <= 0 && cvLimit > 0}
               plan={plan}
