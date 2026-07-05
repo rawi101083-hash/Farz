@@ -112,10 +112,16 @@ export const ManageJob = ({
   const fetchLockedApplicants = async () => {
     setIsLoadingLocked(true);
     try {
-      const { data, error } = await supabase.from('applicants')
+      let query = supabase.from('applicants')
         .select('id, full_name, email, decision, created_at, is_cooldown_bypassed')
         .eq('job_id', job.id)
         .neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW');
+      
+      if (job.recordType === 'campaign' && title) {
+        query = query.eq('job_context->>jobTitle', title);
+      }
+
+      const { data, error } = await query;
       if (data) setLockedApplicants(data);
     } catch(e) {
       console.error(e);
@@ -1094,7 +1100,16 @@ export const ManageJob = ({
                     <button
                       onClick={async () => {
                         try {
-                          const { data, error } = await supabase.from('applicants').update({ is_cooldown_bypassed: true }).eq('job_id', job.id).neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW').select('id');
+                          let updateQuery = supabase.from('applicants')
+                            .update({ is_cooldown_bypassed: true })
+                            .eq('job_id', job.id)
+                            .neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW');
+                          
+                          if (job.recordType === 'campaign' && title) {
+                            updateQuery = updateQuery.eq('job_context->>jobTitle', title);
+                          }
+
+                          const { data, error } = await updateQuery.select('id');
                           if (error) throw error;
                           if (data && data.length > 0) {
                             window.dispatchEvent(new CustomEvent('showToast', { detail: { message: `تم فك الحظر عن ${data.length} متقدمين بنجاح`, type: "success" }}));

@@ -282,7 +282,7 @@ export const CreateJob = ({
         voiceInterviewTemplate: editingRoleId ? (safeBaseRole?.voiceInterviewTemplate || "general") : (initialData?.voiceInterviewTemplate || "general"),
         voiceInterviewQuestionsLength: editingRoleId ? (safeBaseRole?.voiceInterviewQuestions?.length || 2) : (initialData?.voiceInterviewQuestions?.length || 2),
         directUpload: editingRoleId ? (safeBaseRole?.directUpload || false) : (initialData?.directUpload || false),
-        photoRequirement: editingRoleId ? (safeBaseRole?.photoRequirement || "none") : (initialData?.photoRequirement || "hidden"),
+        photoRequirement: editingRoleId ? (safeBaseRole?.photoRequirement || "hidden") : (initialData?.photoRequirement || "hidden"),
 
         ...(initialData ? {
           startDate: initialData.startDate || defaultStart,
@@ -984,6 +984,7 @@ export const CreateJob = ({
       setVoiceInterviewTemplate("general");
       setVoiceInterviewQuestions(["", ""]);
       setPhotoRequirement("hidden");
+      setPortfolioRequirement("optional");
       setType("دوام كامل");
       setLocation("");
       setExperience("");
@@ -996,6 +997,16 @@ export const CreateJob = ({
       setHideBenefits(false);
       setHideTargetMajors(false);
       setHideSkillsAndLanguages(false);
+      setAutoRejectCity(false);
+      setAutoRejectQualification(false);
+      setAutoRejectExperience(false);
+      setUseAiOverride(false);
+      setAiRoleSummary("");
+      setAiResponsibilities("");
+      setAiQualifications("");
+      setAiTargetMajors([]);
+      setAiTargetSkills([]);
+      setAiLanguages([]);
       return;
     }
 
@@ -1011,7 +1022,8 @@ export const CreateJob = ({
     setIsVoiceEnabled(role.requireVoiceInterview ?? false);
     setVoiceInterviewTemplate(role.voiceInterviewTemplate || "general");
     setVoiceInterviewQuestions(role.voiceInterviewQuestions || ["", ""]);
-    setPhotoRequirement(role.photoRequirement || "none");
+    setPhotoRequirement(role.photoRequirement || "hidden");
+    setPortfolioRequirement(role.portfolioRequirement || "optional");
     setSelectedSkills(role.skills || []);
     setSelectedLanguages(role.languages || []);
     setCustomQuestions(role.customQuestions || []);
@@ -1027,7 +1039,7 @@ export const CreateJob = ({
     if (role.isSalaryHidden !== undefined) setIsSalaryHidden(role.isSalaryHidden);
     if (role.askExpectedSalary !== undefined) setAskExpectedSalary(role.askExpectedSalary);
     if (role.expectedSalaryRanges !== undefined) setExpectedSalaryRanges(role.expectedSalaryRanges);
-    if (role.knockoutQuestions) setKnockoutQuestions(role.knockoutQuestions);
+    setKnockoutQuestions(role.knockoutQuestions || []);
     setLocations(role.locations && role.locations.length > 0 ? role.locations : (role.location ? [role.location] : []));
     setTargetMajors(role.targetMajors || []);
     setHideRoleSummary(role.hideRoleSummary || false);
@@ -1036,6 +1048,18 @@ export const CreateJob = ({
     setHideBenefits(role.hideBenefits || false);
     setHideTargetMajors(role.hideTargetMajors || false);
     setHideSkillsAndLanguages(role.hideSkillsAndLanguages || false);
+    setAutoRejectCity(role.autoRejectCity ?? false);
+    setAutoRejectQualification(role.autoRejectQualification ?? false);
+    setAutoRejectExperience(role.autoRejectExperience ?? false);
+
+    const isAiOverridden = !!role.aiOverrideFields && Object.keys(role.aiOverrideFields).length > 0;
+    setUseAiOverride(isAiOverridden);
+    setAiRoleSummary(role.aiOverrideFields?.roleSummary || "");
+    setAiResponsibilities(role.aiOverrideFields?.responsibilities || "");
+    setAiQualifications(role.aiOverrideFields?.qualifications || "");
+    setAiTargetMajors(role.aiOverrideFields?.targetMajors || []);
+    setAiTargetSkills(role.aiOverrideFields?.targetSkills || []);
+    setAiLanguages(role.aiOverrideFields?.languages || []);
 
     // Ensure we go back to step 1 and scroll to the form
     setCurrentStep(1);
@@ -1177,7 +1201,7 @@ export const CreateJob = ({
     setAiInstructions("");
     setDirectUpload(false);
     setIsVoiceEnabled(false);
-    setPhotoRequirement("none");
+    setPhotoRequirement("hidden");
     setSelectedSkills([]);
     setCustomQuestions([]);
     setRequiredAttachments(["سيرة ذاتية PDF"]);

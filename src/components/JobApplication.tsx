@@ -776,6 +776,10 @@ export const ApplicantForm = ({
             .eq('is_cooldown_bypassed', false)
             .gte('created_at', ninetyDaysAgo.toISOString());
 
+          if (isCampaign && activeRole?.title) {
+            query = query.eq('job_context->>jobTitle', activeRole.title);
+          }
+
           if (fileHash) {
             query = query.or(`device_fingerprint.eq.${deviceFingerprint},file_hash.eq.${fileHash}`);
           } else {
