@@ -726,7 +726,11 @@ export const Dashboard = ({
 
         try {
           console.log("Sending API Key starting with:", import.meta.env.VITE_FARZ_API_KEY ? import.meta.env.VITE_FARZ_API_KEY.substring(0, 3) + "***" : "undefined");
-          await fetch("https://farz-cv-processo-1.onrender.com/api/v1/extract-cv", {
+          
+          // const API_BASE_URL = "https://farz-cv-processo-1.onrender.com"; // Render API - Disabled (Fallback)
+          const API_BASE_URL = "https://farz-cv-gateway-production.up.railway.app";
+          
+          await fetch(`${API_BASE_URL}/api/v1/extract-cv`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

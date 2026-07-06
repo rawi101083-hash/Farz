@@ -1012,7 +1012,8 @@ export const ApplicantForm = ({
         return;
       }
 
-      const API_BASE_URL = "https://farz-cv-processo-1.onrender.com";
+      // const API_BASE_URL = "https://farz-cv-processo-1.onrender.com"; // Render API - Disabled (Fallback)
+      const API_BASE_URL = "https://farz-cv-gateway-production.up.railway.app";
 
       const pythonPayload = {
         applicant_id: applicant_db_id,
