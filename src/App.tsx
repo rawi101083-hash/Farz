@@ -2751,7 +2751,12 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("sahab_jobs_db_v1", JSON.stringify(jobs));
+    try {
+      const draftsOnly = jobs.filter(j => j.status === "مسودة");
+      localStorage.setItem("sahab_jobs_db_v1", JSON.stringify(draftsOnly));
+    } catch (e) {
+      console.warn("localStorage quota exceeded, could not save drafts.", e);
+    }
   }, [jobs]);
   const handleAutoSaveDraft = (
     jobData: Omit<Job, "id" | "applicants" | "status" | "createdAt" | "draftId">,
@@ -3161,7 +3166,6 @@ export default function App() {
                   onDeleteJob={async (id) => {
                     setJobs(prev => {
                       const newJobs = prev.filter(j => j.id !== id);
-                      localStorage.setItem("sahab_jobs_db_v1", JSON.stringify(newJobs));
                       return newJobs;
                     });
                     try {
