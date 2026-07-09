@@ -38,10 +38,25 @@ serve(async (req) => {
       return null;
     }
 
-    // Extract recording URL (usually in message.artifact.recordingUrl or message.call.recordingUrl)
+    // Extract recording URL and basic fields
     const recordingUrl = findKey(message, 'recordingUrl') || message?.artifact?.recordingUrl || message?.call?.recordingUrl
-    const transcript = findKey(message, 'transcript') || message?.artifact?.transcript || ''
-    const summary = findKey(message, 'summary') || message?.analysis?.summary || ''
+    let transcript = findKey(message, 'transcript') || message?.artifact?.transcript || ''
+    
+    // Fallback: build transcript from messages array if the single string is missing
+    if (!transcript) {
+      const messages = findKey(message, 'messages') || message?.artifact?.messages || []
+      if (Array.isArray(messages) && messages.length > 0) {
+        transcript = messages
+          .filter((m: any) => m.role === 'assistant' || m.role === 'user')
+          .map((m: any) => `${m.role === 'assistant' ? 'المقيم الآلي' : 'المتقدم'}: ${m.message}`)
+          .join('\n\n')
+      }
+    }
+    
+    // Extract structured data from Vapi's extraction block (handles nested UUIDs in Vapi's new format)
+    const finalSummary = findKey(message, 'final_summary') || ''
+    const extractedScore = findKey(message, 'score_out_of_10')
+    const scoreOutOf10 = extractedScore !== undefined ? extractedScore : null
 
     // Extract applicantId (we passed it in variableValues)
     const applicantId = findKey(message, 'applicantId') || message?.call?.variableValues?.applicantId
@@ -76,8 +91,11 @@ serve(async (req) => {
     if (transcript) {
       updateData.interview_transcript = transcript
     }
-    if (summary) {
-      updateData.interview_summary = summary
+    if (finalSummary) {
+      updateData.interview_summary = finalSummary
+    }
+    if (scoreOutOf10 !== null) {
+      updateData.interview_score = Number(scoreOutOf10)
     }
 
     const { error } = await supabase

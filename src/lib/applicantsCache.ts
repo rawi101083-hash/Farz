@@ -50,7 +50,6 @@ export const setGlobalApplicantsCache = (data: Applicant[], jobsStr: string) => 
   const lightWeightData = data.map(app => {
     const { 
       interview_transcript, 
-      interview_summary, 
       customAnswers, 
       ...rest 
     } = app as any;

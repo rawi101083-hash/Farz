@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, Target, FolderSync, Info } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, Pause, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, Target, FolderSync, Info, Brain } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import QuestionTemplatesManager from './QuestionTemplatesManager';
 
@@ -9,6 +9,106 @@ const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.888-.788-1.489-1.761-1.662-2.062-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.82 9.82 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.81 11.81 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.88 11.88 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.8 11.8 0 0 0-3.48-8.413Z" />
   </svg>
 );
+
+const CustomAudioPlayer = ({ src }: { src: string }) => {
+  const audioRef = React.useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) audioRef.current.pause();
+      else audioRef.current.play();
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setProgress(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = Number(e.target.value);
+      setProgress(Number(e.target.value));
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (!time || isNaN(time)) return "0:00";
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
+  return (
+    <div className="flex flex-col gap-2 w-full">
+      <audio
+        ref={audioRef}
+        src={src}
+        onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => setIsPlaying(false)}
+      />
+
+      <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-900/80 p-3 px-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <button
+          onClick={togglePlay}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-white hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all shadow-sm shrink-0"
+        >
+          {isPlaying ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="ml-1" />}
+        </button>
+
+        <div className="flex flex-col flex-1 gap-1.5 w-full overflow-hidden">
+          <div className="flex justify-between items-center px-1">
+            <span className="text-xs font-bold text-slate-400">
+              {formatTime(progress)}
+            </span>
+            <span className="text-xs font-bold text-slate-400">
+              {formatTime(duration)}
+            </span>
+          </div>
+
+          <div className="relative w-full h-2.5 bg-slate-200 dark:bg-slate-700/80 rounded-full group flex items-center">
+            <div
+              className="absolute right-0 h-full bg-primary rounded-full transition-all duration-75 ease-out pointer-events-none"
+              style={{ width: `${duration ? (progress / duration) * 100 : 0}%` }}
+            />
+            <div
+              className="absolute w-3.5 h-3.5 bg-white border-2 border-primary rounded-full shadow-md transition-all duration-75 ease-out opacity-0 group-hover:opacity-100 pointer-events-none"
+              style={{ right: `calc(${duration ? (progress / duration) * 100 : 0}% - 7px)` }}
+            />
+            <input
+              type="range"
+              min={0}
+              max={duration || 100}
+              step="any"
+              value={progress}
+              onChange={(e) => {
+                const newTime = Number(e.target.value);
+                if (audioRef.current) {
+                  audioRef.current.currentTime = newTime;
+                  setProgress(newTime);
+                }
+              }}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 m-0 p-0"
+              dir="rtl"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateApplicant, userProfile, isSharedView = false }: { onBack: () => void, applicant?: any, job?: any, onStatusUpdate?: (id: string, decision: string, isOffer?: boolean) => void, onUpdateApplicant?: (id: string, updates: any) => void, userProfile?: any, isSharedView?: boolean }) => {
   const [activeTab, setActiveTab] = useState<"analysis" | "requirements" | "interview" | "notes" | "ai_settings">("analysis");
@@ -35,11 +135,60 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
   // AI Interview Custom Questions State
   const [showInterviewQuestionsModal, setShowInterviewQuestionsModal] = useState(false);
   const [showTemplatesManager, setShowTemplatesManager] = useState(false);
-  const [customQuestions, setCustomQuestions] = useState<string[]>([]);
+  const [customQuestions, setCustomQuestions] = useState<any[]>([]);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [interviewSendMethod, setInterviewSendMethod] = useState<'whatsapp' | 'email' | null>(null);
   const [isSavingQuestions, setIsSavingQuestions] = useState(false);
   const [pendingInterviewsCount, setPendingInterviewsCount] = useState(0);
+
+  // Auto-sync applicant data in real-time to prevent AI results from disappearing or lagging
+  useEffect(() => {
+    if (!applicant?.id || !onUpdateApplicant) return;
+
+    let isMounted = true;
+
+    // 1. Fetch fresh data immediately on mount (bypasses stale Dashboard cache)
+    const fetchFreshData = async () => {
+      const { data, error } = await supabase.from('applicants').select('*').eq('id', applicant.id).single();
+      if (!error && data && isMounted) {
+        onUpdateApplicant(applicant.id, {
+          is_interview_completed: data.is_interview_completed,
+          has_started_interview: data.has_started_interview,
+          interview_transcript: data.interview_transcript || "",
+          interview_summary: data.interview_summary || "",
+          interview_score: data.interview_score || 0,
+          voiceEvalUrl: data.voice_eval || data.voice_eval_url || "",
+          aiSummary: data.ai_summary || data.ai_justification || applicant.aiSummary,
+        });
+      }
+    };
+
+    fetchFreshData();
+
+    // 2. Listen to live updates while the modal is open (so AI webhook updates appear instantly)
+    const channel = supabase
+      .channel(`applicant_fresh_${applicant.id}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'applicants', filter: `id=eq.${applicant.id}` }, (payload) => {
+        const data = payload.new as any;
+        if (data && isMounted) {
+          onUpdateApplicant(applicant.id, {
+            is_interview_completed: data.is_interview_completed,
+            has_started_interview: data.has_started_interview,
+            interview_transcript: data.interview_transcript || "",
+            interview_summary: data.interview_summary || "",
+            interview_score: data.interview_score || 0,
+            voiceEvalUrl: data.voice_eval || data.voice_eval_url || "",
+            aiSummary: data.ai_summary || data.ai_justification || applicant.aiSummary,
+          });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      isMounted = false;
+      supabase.removeChannel(channel);
+    };
+  }, [applicant?.id]);
 
   useEffect(() => {
     if (!userProfile?.id) return;
@@ -352,22 +501,27 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
   const redFlags = safeParseArray(applicant?.red_flags);
 
   const interviewQuestions = safeParseArray(
-    applicant?.interview_questions || 
-    applicant?.suggested_questions || 
+    applicant?.interview_questions ||
+    applicant?.suggested_questions ||
     applicant?.interview_plan
   );
 
   useEffect(() => {
     if (showInterviewQuestionsModal) {
       if (applicant?.client_interview_questions && Array.isArray(applicant.client_interview_questions) && applicant.client_interview_questions.length > 0) {
-        setCustomQuestions(applicant.client_interview_questions.slice(0, 4));
+        const mappedQs = applicant.client_interview_questions.slice(0, 4).map((q: any) => {
+          if (typeof q === 'string') return { question: q, goal: '' };
+          return { question: q.question || String(q), goal: q.goal || q.purpose || '' };
+        });
+        setCustomQuestions(mappedQs);
+      } else if (applicant?.interview_questions && Array.isArray(applicant.interview_questions) && applicant.interview_questions.length > 0) {
+        const strings = applicant.interview_questions.map((q: any) => {
+          if (typeof q === 'string') return { question: q, goal: '' };
+          return { question: q.question || String(q), goal: q.goal || q.purpose || '' };
+        });
+        setCustomQuestions(strings.slice(0, 4));
       } else {
-        if (interviewQuestions && Array.isArray(interviewQuestions) && interviewQuestions.length > 0) {
-          let strings = interviewQuestions.map(q => typeof q === 'string' ? q : q?.question || JSON.stringify(q)).filter(Boolean);
-          setCustomQuestions(strings.slice(0, 4));
-        } else {
-          setCustomQuestions([""]);
-        }
+        setCustomQuestions([{ question: "", goal: "" }]);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -476,15 +630,30 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
             {" "}
             <div className="bg-white dark:bg-slate-800 p-10 rounded-[40px] shadow-xl shadow-slate-200/50 border border-white dark:border-slate-700 relative overflow-hidden">
               {" "}
-              <div className="flex flex-col items-center justify-center text-center mb-8">
-                <h2 className="text-4xl font-black text-navy dark:text-white mb-3 tracking-tight">
-                  {actualName}
-                </h2>
-                <div className="flex items-center justify-center gap-3">
-                  <p className="text-primary font-bold text-base px-5 py-2 bg-primary/10 border border-primary/20 rounded-full shadow-sm">
-                    {actualJob}
-                  </p>
+              <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between text-center sm:text-right mb-8 gap-6 w-full">
+                <div className="flex flex-col items-center sm:items-start justify-center flex-1 order-2 sm:order-1 min-w-0">
+                  <h2 className="text-2xl sm:text-3xl font-black text-navy dark:text-white mb-2 tracking-tight leading-snug break-words w-full">
+                    {actualName}
+                  </h2>
+                  <div className="flex items-center justify-center sm:justify-start gap-3 w-full">
+                    <p className="text-navy dark:text-white font-black text-sm px-4 py-1.5 bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-[2px] border-slate-200 border-b-[4px] border-b-slate-300 dark:border-slate-700 dark:border-b-slate-900 rounded-full shadow-sm">
+                      {actualJob}
+                    </p>
+                  </div>
                 </div>
+                {applicant?.photoUrl && (
+                  <div
+                    className="shrink-0 order-1 sm:order-2 mb-4 sm:mb-0 cursor-pointer hover:opacity-90 hover:scale-105 transition-all"
+                    onClick={() => window.open(applicant.photoUrl, '_blank')}
+                    title="عرض الصورة الأصلية"
+                  >
+                    <img
+                      src={applicant.photoUrl}
+                      alt={actualName}
+                      className="w-20 h-20 rounded-2xl object-cover shadow-md border-2 border-slate-100 dark:border-slate-700 mx-auto sm:mx-0"
+                    />
+                  </div>
+                )}
               </div>{" "}
               {!isAutoRejected && (
                 <div className="bg-slate-50/50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-[32px] p-8 mb-8 flex flex-col items-center relative overflow-hidden">
@@ -652,22 +821,65 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                     )}
 
                     {applicant?.is_interview_completed && (
-                      <div className="bg-emerald-50 dark:bg-emerald-900/10 border-2 border-b-[6px] border-emerald-200 dark:border-emerald-800/50 p-6 rounded-[32px] mb-6 shadow-md transition-all hover:shadow-lg hover:-translate-y-1">
-                        <h3 className="text-lg font-bold text-emerald-700 dark:text-emerald-400 mb-4 flex items-center gap-2 drop-shadow-sm">
-                          <Mic size={20} className="text-emerald-600 dark:text-emerald-400" /> التسجيل الصوتي للمقابلة
-                        </h3>
-                        <div className="flex flex-col gap-4">
-                          {applicant?.voiceEvalUrl ? (
-                            <div className="w-full bg-white dark:bg-slate-800 p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.1)]">
-                              <span className="block text-sm font-bold text-emerald-700 dark:text-emerald-300 mb-3">استمع للمقابلة الصوتية:</span>
-                              <audio controls src={applicant.voiceEvalUrl} className="w-full outline-none rounded-lg drop-shadow-sm" />
+                      <div className="bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 p-5 rounded-[24px] mb-4 shadow-sm hover:border-slate-300 transition-colors">
+
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                          <h3 className="text-sm sm:text-base font-bold text-navy dark:text-white flex items-center gap-2 whitespace-nowrap">
+                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                              <Brain size={18} />
                             </div>
-                          ) : (
-                            <div className="w-full bg-slate-100 dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 text-center shadow-inner">
-                              <span className="block text-sm medium text-slate-500 dark:text-slate-400">جاري معالجة التسجيل الصوتي، يرجى الانتظار...</span>
+                            تسجيل مقابلة الذكاء الاصطناعي
+                          </h3>
+
+                          {applicant?.interview_score !== undefined && (
+                            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm shrink-0 whitespace-nowrap">
+                              <span className="font-bold text-slate-600 dark:text-slate-300 text-xs">تقييم المقابلة:</span>
+                              <div className="text-lg font-black text-primary flex items-baseline gap-1">
+                                <span>{applicant.interview_score}</span>
+                                <span className="text-xs text-slate-400">/ 10</span>
+                              </div>
                             </div>
                           )}
                         </div>
+
+                        <div className="flex flex-col gap-3 relative z-10">
+                          {applicant?.voiceEvalUrl ? (
+                            <div className="w-full">
+                              <span className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">استمع للمقابلة الصوتية:</span>
+                              <CustomAudioPlayer src={applicant.voiceEvalUrl} />
+                            </div>
+                          ) : (
+                            <div className="w-full bg-slate-100 dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-center shadow-inner">
+                              <span className="block text-xs font-medium text-slate-500 dark:text-slate-400">جاري معالجة التسجيل الصوتي، يرجى الانتظار...</span>
+                            </div>
+                          )}
+
+                          {applicant?.interview_transcript && (
+                            <details className="group/transcript cursor-pointer mt-1">
+                              <summary className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700/50 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold transition-all duration-300 list-none [&::-webkit-details-marker]:hidden outline-none w-fit border border-transparent hover:border-slate-300 dark:hover:border-slate-600">
+                                <Mic size={14} className="text-primary" /> عرض التفريغ النصي للمقابلة
+                                <svg className="w-3.5 h-3.5 group-open/transcript:rotate-180 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                              </summary>
+                              <div className="mt-2 bg-white dark:bg-slate-900 p-4 rounded-xl max-h-60 overflow-y-auto whitespace-pre-wrap text-[13px] text-slate-600 dark:text-slate-300 leading-relaxed border border-slate-100 dark:border-slate-800 shadow-inner">
+                                {applicant.interview_transcript}
+                              </div>
+                            </details>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {applicant?.is_interview_completed && applicant?.interview_summary && (
+                      <div className="bg-slate-50 dark:bg-slate-800/80 p-5 rounded-[24px] border border-slate-200 dark:border-slate-700/80 shadow-sm mb-4">
+                        <h3 className="text-base font-bold text-navy dark:text-white mb-4 flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                            <Brain size={18} />
+                          </div>
+                          نتيجة مقابلة الذكاء الاصطناعي
+                        </h3>
+                        <p className="text-[13px] text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                          {applicant.interview_summary}
+                        </p>
                       </div>
                     )}
 
@@ -680,10 +892,11 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                       </p>
                     </div>
 
+
                     {redFlags && redFlags.length > 0 && (
                       <div className="bg-red-50 dark:bg-red-900/10 border-2 border-b-[6px] border-red-200 dark:border-red-800/50 p-6 rounded-[32px] shadow-sm">
                         <h4 className="font-bold text-red-700 dark:text-red-400 mb-3 flex items-center gap-2">
-                          رادار التحذيرات
+                          التحذيرات
                         </h4>
                         <ul className="space-y-2">
                           {redFlags.map((flagObj: any, i: number) => {
@@ -1390,12 +1603,12 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-white/40 dark:border-slate-700/60 shadow-[0_0_40px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[0_0_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)] rounded-[32px] p-8 max-w-lg w-full relative overflow-hidden ring-1 ring-slate-900/5 dark:ring-white/10"
+              className="bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border border-white/40 dark:border-slate-700/60 shadow-[0_0_40px_rgba(0,0,0,0.1),inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[0_0_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.05)] rounded-[32px] p-8 max-w-lg w-full relative overflow-hidden ring-1 ring-slate-900/5 dark:ring-white/10 flex flex-col max-h-[90vh]"
             >
               {/* Decorative blobs */}
               <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-              
+
               <button
                 onClick={() => setShowInterviewQuestionsModal(false)}
                 className="absolute top-6 left-6 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
@@ -1407,162 +1620,177 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                 <Mic size={32} />
               </div>
 
-              <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-l from-primary to-emerald-500 mb-2 drop-shadow-sm">
+              <h3 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-l from-primary to-emerald-500 mb-6 drop-shadow-sm shrink-0">
                 أسئلة مقابلة الذكاء الاصطناعي
               </h3>
 
-              {/* Overbooking Warning */}
-              {interviewsRemaining === 0 && (
-                <div className="mb-6 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/40 p-5 rounded-[24px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-rose-850 dark:text-rose-350">
-                  <div className="flex gap-3">
-                    <Ban size={20} className="shrink-0 mt-0.5 text-rose-550" />
-                    <p className="text-sm font-bold leading-relaxed">
-                      تنبيه: رصيد المقابلات المتاح لديك (صفر). يمكنك إرسال الروابط، لكنها لن تعمل مع المتقدمين ولن يتمكنوا من بدء المقابلة حتى تقوم بترقية الباقة أو شحن الرصيد.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (onBack) onBack();
-                      setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('changeTab', { detail: 'الحساب' }));
+              <div className="overflow-y-auto custom-scrollbar pr-2 -mr-2 flex-1 mb-2">
+                {/* Overbooking Warning */}
+                {interviewsRemaining === 0 && (
+                  <div className="mb-6 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/40 p-5 rounded-[24px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-rose-850 dark:text-rose-350">
+                    <div className="flex gap-3">
+                      <Ban size={20} className="shrink-0 mt-0.5 text-rose-550" />
+                      <p className="text-sm font-bold leading-relaxed">
+                        تنبيه: رصيد المقابلات المتاح لديك (صفر). يمكنك إرسال الروابط، لكنها لن تعمل مع المتقدمين ولن يتمكنوا من بدء المقابلة حتى تقوم بترقية الباقة أو شحن الرصيد.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (onBack) onBack();
                         setTimeout(() => {
-                          window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' }));
+                          window.dispatchEvent(new CustomEvent('changeTab', { detail: 'الحساب' }));
+                          setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' }));
+                          }, 50);
                         }, 50);
-                      }, 50);
-                    }}
-                    className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shrink-0 transition-all shadow-md shadow-rose-550/15"
-                  >
-                    شحن الرصيد / ترقية الباقة
-                  </button>
-                </div>
-              )}
-              {overbooked && (
-                <div className="mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 p-5 rounded-[24px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-amber-850 dark:text-amber-350">
-                  <div className="flex gap-3">
-                    <AlertTriangle size={20} className="shrink-0 mt-0.5 text-amber-550" />
-                    <p className="text-sm font-bold leading-relaxed">
-                      تنبيه: رصيدك المتبقي ({interviewsRemaining}) مقابلات، ولديك ({pendingInterviewsCount}) دعوات معلقة لم تُستخدم بعد. أول ({interviewsRemaining}) متقدمين سيدخلون سيتم قبولهم، وسيُعطل الرابط تلقائياً عن البقية.
-                    </p>
+                      }}
+                      className="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-black shrink-0 transition-all shadow-md shadow-rose-550/15"
+                    >
+                      شحن الرصيد / ترقية الباقة
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (onBack) onBack();
-                      setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('changeTab', { detail: 'الحساب' }));
-                        setTimeout(() => {
-                          window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' }));
-                        }, 50);
-                      }, 50);
-                    }}
-                    className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black shrink-0 transition-all shadow-md shadow-amber-550/15"
-                  >
-                    ترقية الباقة
-                  </button>
-                </div>
-              )}
-              <p className="text-slate-500 dark:text-slate-400 mb-6 text-[15px] leading-relaxed font-medium">
-                قمنا بتجهيز هذه الأسئلة المخصصة باستخدام محرك الفرز بناءً على السيرة الذاتية للمتقدم. يمكنك مراجعتها، تعديلها، أو إضافة أسئلتك الخاصة - بحد أقصى 4 أسئلة:
-              </p>
-
-              <div className="mb-6">
-                <button
-                  onClick={() => setShowTemplatesManager(true)}
-                  className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 hover:bg-primary/5 hover:border-primary/30 dark:hover:bg-primary/10 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm group"
-                >
-                  <MessageCircle size={18} className="text-primary group-hover:scale-110 transition-transform" /> 
-                  اختيار من قوالب الأسئلة
-                </button>
-              </div>
-
-              {showTemplatesManager && (
-                <QuestionTemplatesManager 
-                  mode="select"
-                  onClose={() => setShowTemplatesManager(false)}
-                  onSelectTemplate={(t) => {
-                    setCustomQuestions(t.questions.slice(0, 4));
-                    setShowTemplatesManager(false);
-                  }}
-                />
-              )}
-
-              {interviewLang === 'en' && (
-                <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-xl p-4 mb-8 flex gap-3">
-                  <AlertTriangle size={20} className="text-orange-500 shrink-0 mt-0.5" />
-                  <p className="text-sm font-bold text-orange-700 dark:text-orange-400 leading-relaxed">
-                    تنبيه: الذكاء الاصطناعي سيطرح هذه الأسئلة باللغة الإنجليزية حتى لو كانت مكتوبة بالعربية.
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-4 mb-8">
-                {customQuestions.map((q, idx) => (
-                  <div key={idx} className="group relative z-10">
-                    <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2.5 flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-xs">0{idx + 1}</span>
-                      السؤال
-                    </label>
-                    {editingIndex === idx ? (
-                      <div className="relative">
-                        <textarea
-                          rows={3}
-                          autoFocus
-                          value={q}
-                          onChange={(e) => {
-                            const newQs = [...customQuestions];
-                            newQs[idx] = e.target.value;
-                            setCustomQuestions(newQs);
-                          }}
-                          onBlur={() => setEditingIndex(null)}
-                          className="w-full bg-white dark:bg-slate-900 border-[3px] border-primary/50 dark:border-primary/50 rounded-2xl px-5 py-4 pl-14 text-sm font-medium outline-none focus:ring-4 focus:ring-primary/20 focus:border-primary text-slate-900 dark:text-white resize-none shadow-[inset_0_2px_8px_rgba(0,0,0,0.05)] dark:shadow-[inset_0_2px_8px_rgba(0,0,0,0.2)] transition-all"
-                        />
-                        <button 
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            const newQs = [...customQuestions];
-                            newQs.splice(idx, 1);
-                            setCustomQuestions(newQs);
-                            setEditingIndex(null);
-                          }}
-                          className="absolute top-4 left-4 text-red-500 hover:text-white dark:text-red-400 dark:hover:text-white bg-red-50 dark:bg-red-500/10 hover:bg-red-500 dark:hover:bg-red-600 p-2 rounded-xl transition-all shadow-sm active:scale-95"
-                          title="حذف السؤال"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="relative bg-white dark:bg-slate-800 border-[2px] border-b-[6px] border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] transition-all hover:-translate-y-1 hover:border-primary hover:border-b-primary hover:shadow-[0_12px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_12px_24px_rgba(0,0,0,0.3)] cursor-pointer group-hover:border-slate-300" onClick={() => setEditingIndex(idx)}>
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 leading-relaxed pl-10 pr-2">
-                          {q || "اضغط للتعديل وإضافة نص السؤال..."}
-                        </p>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingIndex(idx);
-                          }}
-                          className="absolute top-1/2 -translate-y-1/2 left-4 text-emerald-500 hover:text-white dark:text-emerald-400 dark:hover:text-white bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-500 dark:hover:bg-emerald-600 p-2.5 rounded-xl transition-all shadow-sm active:scale-95"
-                          title="تعديل السؤال"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                
-                {customQuestions.length < 4 && (
-                  <button
-                    onClick={() => {
-                      setCustomQuestions([...customQuestions, ""]);
-                      setEditingIndex(customQuestions.length);
-                    }}
-                    className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 hover:text-primary hover:border-primary hover:bg-primary/5 transition-all font-bold text-sm relative z-10"
-                  >
-                    + إضافة سؤال إضافي
-                  </button>
                 )}
+                {overbooked && (
+                  <div className="mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 p-5 rounded-[24px] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-amber-850 dark:text-amber-350">
+                    <div className="flex gap-3">
+                      <AlertTriangle size={20} className="shrink-0 mt-0.5 text-amber-550" />
+                      <p className="text-sm font-bold leading-relaxed">
+                        تنبيه: رصيدك المتبقي ({interviewsRemaining}) مقابلات، ولديك ({pendingInterviewsCount}) دعوات معلقة لم تُستخدم بعد. أول ({interviewsRemaining}) متقدمين سيدخلون سيتم قبولهم، وسيُعطل الرابط تلقائياً عن البقية.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (onBack) onBack();
+                        setTimeout(() => {
+                          window.dispatchEvent(new CustomEvent('changeTab', { detail: 'الحساب' }));
+                          setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('changeSettingsTab', { detail: 'باقات فرز' }));
+                          }, 50);
+                        }, 50);
+                      }}
+                      className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-black shrink-0 transition-all shadow-md shadow-amber-550/15"
+                    >
+                      ترقية الباقة
+                    </button>
+                  </div>
+                )}
+                <p className="text-slate-500 dark:text-slate-400 mb-6 text-[15px] leading-relaxed font-medium">
+                  قمنا بتجهيز هذه الأسئلة المخصصة باستخدام محرك الفرز بناءً على السيرة الذاتية للمتقدم. يمكنك مراجعتها، تعديلها، أو إضافة أسئلتك الخاصة - بحد أقصى 4 أسئلة:
+                </p>
+
+                <div className="mb-6">
+                  <button
+                    onClick={() => setShowTemplatesManager(true)}
+                    className="w-full bg-slate-50 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 hover:bg-primary/5 hover:border-primary/30 dark:hover:bg-primary/10 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm group"
+                  >
+                    <MessageCircle size={18} className="text-primary group-hover:scale-110 transition-transform" />
+                    اختيار من قوالب الأسئلة
+                  </button>
+                </div>
+
+                {showTemplatesManager && (
+                  <QuestionTemplatesManager
+                    mode="select"
+                    onClose={() => setShowTemplatesManager(false)}
+                    onSelectTemplate={(t) => {
+                      const mapped = t.questions.slice(0, 4).map((q: any) => {
+                        if (typeof q === 'string') return { question: q, goal: '' };
+                        return { question: q.question || String(q), goal: q.goal || '' };
+                      });
+                      setCustomQuestions(mapped);
+                      setShowTemplatesManager(false);
+                    }}
+                  />
+                )}
+
+                {interviewLang === 'en' && (
+                  <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-xl p-4 mb-8 flex gap-3">
+                    <AlertTriangle size={20} className="text-orange-500 shrink-0 mt-0.5" />
+                    <p className="text-sm font-bold text-orange-700 dark:text-orange-400 leading-relaxed">
+                      تنبيه: الذكاء الاصطناعي سيطرح هذه الأسئلة باللغة الإنجليزية حتى لو كانت مكتوبة بالعربية.
+                    </p>
+                  </div>
+                )}
+
+                <div className="space-y-4 mb-8">
+                  {customQuestions.map((qObj, idx) => (
+                    <div key={idx} className="group relative z-10 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mb-4">
+                      <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2.5 flex items-center gap-2">
+                        <span className="w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-xs">0{idx + 1}</span>
+                        السؤال
+                      </label>
+                      {editingIndex === idx ? (
+                        <div className="relative space-y-3">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">السؤال</label>
+                            <textarea
+                              rows={2}
+                              autoFocus
+                              value={qObj.question || ''}
+                              onChange={(e) => {
+                                const newQs = [...customQuestions];
+                                newQs[idx] = { ...newQs[idx], question: e.target.value };
+                                setCustomQuestions(newQs);
+                              }}
+                              className="w-full px-4 py-3 rounded-xl border-[2px] border-b-[4px] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:border-primary focus:border-b-primary outline-none transition-all font-bold resize-none text-sm shadow-sm"
+                              placeholder="اكتب السؤال هنا..."
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">الهدف من السؤال (اختياري، يوجه الذكاء الاصطناعي)</label>
+                            <input
+                              type="text"
+                              value={qObj.goal || ''}
+                              onChange={(e) => {
+                                const newQs = [...customQuestions];
+                                newQs[idx] = { ...newQs[idx], goal: e.target.value };
+                                setCustomQuestions(newQs);
+                              }}
+                              className="w-full px-4 py-3 rounded-xl border-[2px] border-b-[4px] border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:border-b-primary outline-none transition-all font-bold text-sm shadow-sm"
+                              placeholder="مثال: اختبار القدرة على التعامل مع الضغط"
+                            />
+                          </div>
+                          <button onClick={() => setEditingIndex(null)} className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-sm transition-colors mt-2">
+                            تم التعديل
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="relative pl-12 pr-4 py-3 rounded-xl border-2 border-transparent bg-slate-50 dark:bg-slate-900 group-hover:border-slate-200 dark:group-hover:border-slate-700 transition-all cursor-text" onClick={() => setEditingIndex(idx)}>
+                          <p className="text-[15px] font-bold text-navy dark:text-white leading-relaxed mb-2">{qObj.question || "سؤال جديد"}</p>
+                          {qObj.goal && (
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20">
+                              <Target size={12} className="text-primary" />
+                              <span className="text-xs font-bold text-primary">الهدف: {qObj.goal}</span>
+                            </div>
+                          )}
+                          <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={(e) => { e.stopPropagation(); setEditingIndex(idx); }} className="p-2 w-8 h-8 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-500 transition-colors bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700" title="تعديل">
+                              <Edit2 size={14} />
+                            </button>
+                            <button onClick={(e) => { e.stopPropagation(); const newQs = customQuestions.filter((_, i) => i !== idx); setCustomQuestions(newQs); }} className="p-2 w-8 h-8 flex items-center justify-center hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/30 dark:hover:text-rose-400 rounded-lg text-slate-500 transition-colors bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700" title="حذف">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {customQuestions.length < 4 && (
+                    <button
+                      onClick={() => {
+                        setCustomQuestions([...customQuestions, { question: "", goal: "" }]);
+                        setEditingIndex(customQuestions.length);
+                      }}
+                      className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-slate-500 hover:text-primary hover:border-primary hover:bg-primary/5 transition-all font-bold text-sm relative z-10"
+                    >
+                      + إضافة سؤال إضافي
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="flex gap-4">
+              <div className="flex gap-4 shrink-0 mt-auto pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   onClick={() => {
                     setShowInterviewQuestionsModal(false);
@@ -1576,7 +1804,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                   onClick={async () => {
                     setIsSavingQuestions(true);
                     try {
-                      const q = customQuestions.filter(item => item.trim() !== "");
+                      const q = customQuestions.filter((item: any) => item && (typeof item === 'string' ? item.trim() !== "" : item.question?.trim() !== ""));
 
                       if (q.length > 0) {
                         await supabase

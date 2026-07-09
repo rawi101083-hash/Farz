@@ -48,6 +48,7 @@ import {
   Eye,
   Download,
   ChevronDown, ChevronLeft, ChevronRight,
+  Brain,
   Mic,
   Square,
   RotateCcw,
@@ -627,7 +628,7 @@ export const Dashboard = ({
               voiceEval: raw.voice_eval || "",
               voiceEvalUrl: raw.voice_eval || raw.voice_eval_url || "",
               customAnswers: parsedAnswers,
-              city: parsedAnswers.find((a: any) => a.question === "المدينة")?.answer || "",
+              city: raw.city || raw.location || parsedAnswers.find((a: any) => a.question === "المدينة")?.answer || "-",
               decision: (raw.decision === 'evaluated' ? 'pending' : raw.decision) || latestDecisions[raw.id] || "pending",
               rejection_reason: raw.rejection_reason || "",
               hr_notes: raw.hr_notes || "",
@@ -726,10 +727,10 @@ export const Dashboard = ({
 
         try {
           console.log("Sending API Key starting with:", import.meta.env.VITE_FARZ_API_KEY ? import.meta.env.VITE_FARZ_API_KEY.substring(0, 3) + "***" : "undefined");
-          
+
           // const API_BASE_URL = "https://farz-cv-processo-1.onrender.com"; // Render API - Disabled (Fallback)
           const API_BASE_URL = "https://farz-cv-gateway-production.up.railway.app";
-          
+
           await fetch(`${API_BASE_URL}/api/v1/extract-cv`, {
             method: "POST",
             headers: {
@@ -1244,7 +1245,7 @@ export const Dashboard = ({
         return FEATURE_FLAGS.enable_fast_sorting ? <div className="p-8 text-center">صفحة الفرز السريع غير متاحة حالياً</div> : null;
       case "الرئيسية":
         return (
-          <div className="max-w-6xl mx-auto space-y-8">
+          <div className="max-w-[1600px] w-full min-w-0 px-2 mx-auto space-y-8">
             <header className="relative flex justify-between items-center w-full mb-8">
               <div className="flex items-center">
               </div>
@@ -1353,12 +1354,12 @@ export const Dashboard = ({
                       {/* Decorative Background Blur */}
                       <div className={`absolute -left-6 -top-6 w-20 h-20 ${stat.blurClass} rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700`} />
 
-                      <div className="flex items-center gap-3 relative z-10">
+                      <div className="flex items-center gap-3 relative z-10 min-w-0">
                         <div className={`w-10 h-10 ${stat.iconBg} rounded-lg flex items-center justify-center shadow-inner`}>
                           {stat.icon}
                         </div>
-                        <div>
-                          <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold mb-0.5">
+                        <div className="min-w-0">
+                          <p className="text-slate-500 dark:text-slate-400 text-[11px] font-bold mb-0.5 truncate">
                             {stat.label}
                           </p>
                           <div className="text-xl font-black text-slate-800 dark:text-white leading-none drop-shadow-sm">
@@ -1385,9 +1386,9 @@ export const Dashboard = ({
                 </div>
               );
             })()}
-            {/* Data Table */}{" "}
-            <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-white dark:border-slate-700 shadow-2xl shadow-slate-200/50 overflow-hidden">
-              <div className="p-8 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50 dark:bg-slate-800/50">
+            {/* Data Table */}
+            <div className="bg-white dark:bg-slate-800 rounded-[32px] border border-white dark:border-slate-700 shadow-2xl shadow-slate-200/50 overflow-hidden w-full min-w-0 flex flex-col">
+              <div className="p-8 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-slate-50 dark:bg-slate-800/50 w-full min-w-0">
                 <h3 className="font-bold text-lg text-navy dark:text-white whitespace-nowrap">
                   قائمة المرشحين
                 </h3>{" "}
@@ -1485,11 +1486,11 @@ export const Dashboard = ({
                         if (tab.id === "rejected") return d === "rejected" || d === "deleted";
                         return d === tab.id;
                       }).length;
-                      
+
                       return (
                         <button
                           key={tab.id}
-                          onClick={() => startTransition(() => setDecisionFilter(tab.id as any))}
+                          onClick={() => setDecisionFilter(tab.id as any)}
                           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${isActive ? `bg-white dark:bg-slate-700 shadow-md border border-slate-100 dark:border-slate-600 transform -translate-y-0.5 text-slate-800 dark:text-slate-200` : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 border border-transparent hover:bg-slate-200/50 dark:hover:bg-slate-700/50'}`}
                         >
                           <span className={`w-2 h-2 rounded-full border transition-all duration-300 ${isActive ? tab.dotActive + ' scale-110' : tab.dotInactive}`}></span>
@@ -1699,12 +1700,20 @@ export const Dashboard = ({
                             </th>
                           )}
                           <th className="px-2 pr-14 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">اسم المتقدم</th>
-                          <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الوظيفة المقدم إليها</th>
+                          <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الوظيفة</th>
                           <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">التقييم الآلي</th>
                           <th className="px-2 py-4 font-bold text-navy dark:text-white text-right whitespace-nowrap">الجاهزية</th>
-                          <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">معلومات التواصل</th>
+                          <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">المدينة</th>
+                          <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">التواصل</th>
                           {decisionFilter === "interview" && (
-                            <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">حالة المقابلة</th>
+                            <>
+                              <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">حالة المقابلة</th>
+                              <th className="px-2 py-4 font-bold text-navy dark:text-white text-center whitespace-nowrap">
+                                <div className="flex items-center justify-center gap-1">
+                                  <Brain size={16} className="text-primary" /> تقييم المقابلة
+                                </div>
+                              </th>
+                            </>
                           )}
                           <th className="px-2 py-4 font-bold text-navy dark:text-white whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5 w-full pl-4">
@@ -1721,7 +1730,7 @@ export const Dashboard = ({
                       <tbody>
                         {isLoadingApplicants && applicants.length === 0 ? (
                           <tr>
-                            <td colSpan={6 + (isSelectionMode ? 1 : 0) + (decisionFilter === "interview" ? 1 : 0)} className="p-8">
+                            <td colSpan={7 + (isSelectionMode ? 1 : 0) + (decisionFilter === "interview" ? 2 : 0)} className="p-8">
                               <div className="flex flex-col items-center justify-center min-h-[400px] text-center bg-white dark:bg-slate-800/50">
                                 <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
                                 <h3 className="text-xl font-bold text-navy dark:text-white mb-2">
@@ -1734,17 +1743,16 @@ export const Dashboard = ({
                             </td>
                           </tr>
                         ) : (
-                          <AnimatePresence>
+                          <>
                             {rowsToRender.map((originalRow, index) => {
                               const row = originalRow;
                               const isFomoLocked = row.decision === "locked_fomo" || (plan === 'free' && row.decision === "pending" && (!row.rating || row.rating === 0) && cvsRemaining <= 0);
-                              const isEvaluating = (row.decision === "pending" && row.rating === 0) || row.decision === "analyzing" || row.decision === "evaluating" || row.decision === "processing";
+                              const isAutoRejected = row.rejection_reason && row.rejection_reason.includes("مرفوض آلياً");
+                              const isEvaluating = !isAutoRejected && ((row.decision === "pending" && row.rating === 0) || row.decision === "analyzing" || row.decision === "evaluating" || row.decision === "processing");
                               return (
                                 <motion.tr
-                                  layout
                                   initial={{ opacity: 0, y: 10 }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, scale: 0.9 }}
                                   key={row.id}
                                   onClick={() => {
                                     if (!isFomoLocked && !isEvaluating) {
@@ -1830,7 +1838,7 @@ export const Dashboard = ({
                                   <td className="px-2 py-3">
                                     <div className="flex justify-start">
                                       <span
-                                        className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-700 dark:border-b-slate-950 text-slate-700 dark:text-white px-3 py-1.5 rounded-xl text-[11px] font-black inline-flex items-center justify-center whitespace-nowrap w-fit max-w-[140px] truncate shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
+                                        className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-700 dark:border-b-slate-950 text-slate-700 dark:text-white px-3 py-1.5 rounded-xl text-[11px] font-black inline-flex items-center justify-center whitespace-nowrap w-fit max-w-[110px] truncate shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
                                         title={row.job}
                                       >
                                         {row.job}
@@ -1838,7 +1846,7 @@ export const Dashboard = ({
                                     </div>
                                   </td>
                                   <td className="px-2 py-3">
-                                    {row.rejection_reason && row.rejection_reason.includes("مرفوض آلياً") ? (
+                                    {isAutoRejected ? (
                                       <span className="text-[11px] font-black text-rose-600 dark:text-rose-400 bg-gradient-to-b from-rose-50 to-rose-100 dark:from-rose-900/30 dark:to-rose-900/50 px-3 py-1.5 rounded-xl border-[2px] border-rose-100 border-b-[4px] border-b-rose-200 dark:border-rose-800 dark:border-b-rose-950 whitespace-nowrap inline-flex shadow-sm">
                                         مستبعد آلياً
                                       </span>
@@ -1867,6 +1875,15 @@ export const Dashboard = ({
                                     ) : (
                                       <span className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-700 dark:border-b-slate-950 text-slate-700 dark:text-white px-3 py-1.5 rounded-xl text-[11px] font-black inline-flex items-center justify-center whitespace-nowrap shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]">
                                         {row.status}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="px-2 py-3 text-center cursor-default" onClick={(e) => e.stopPropagation()}>
+                                    {isFomoLocked ? (
+                                      <span className="filter blur-[4px] select-none text-xs font-bold text-slate-400">مقفل</span>
+                                    ) : (
+                                      <span className="text-[13px] font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                        {row.city && row.city.trim() !== "" && row.city !== "غير محدد" ? row.city : "-"}
                                       </span>
                                     )}
                                   </td>
@@ -1905,7 +1922,7 @@ export const Dashboard = ({
                                       <a
                                         href={`tel:${row.phone}`}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 rounded-lg flex items-center justify-center hover:bg-blue-500 dark:hover:bg-blue-500/60 dark:hover:text-blue-100 hover:text-white transition-all border-b-[3px] border-blue-200 dark:border-blue-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
+                                        className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:blue-300 rounded-lg flex items-center justify-center hover:bg-blue-500 dark:hover:bg-blue-500/60 dark:hover:text-blue-100 hover:text-white transition-all border-b-[3px] border-blue-200 dark:border-blue-800 hover:-translate-y-0.5 active:translate-y-[2px] active:border-b-0 active:mb-[3px] shadow-sm"
                                         title="اتصال"
                                       >
                                         <Phone size={15} />{" "}
@@ -1913,29 +1930,44 @@ export const Dashboard = ({
                                     </div>{" "}
                                   </td>
                                   {decisionFilter === "interview" && (
-                                    <td className="px-2 py-3 cursor-default" onClick={(e) => e.stopPropagation()}>
-                                      <div className="flex justify-center">
-                                        {isFomoLocked ? (
-                                          <span className="filter blur-[4px] select-none text-xs text-slate-400 font-bold">مقفل</span>
-                                        ) : row.is_interview_completed ? (
-                                          <span className="bg-green-50 text-green-600 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
-                                            <Mic size={13} /> تمت المقابلة
-                                          </span>
-                                        ) : (row.has_started_interview && !row.is_interview_completed) ? (
-                                          <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
-                                            <Clock size={13} /> جاري المقابلة
-                                          </span>
-                                        ) : (!row.interview_revoked && (!row.interview_sent_at || (Date.now() - new Date(row.interview_sent_at).getTime() <= 72 * 60 * 60 * 1000)) && (row.interview_sent || row.decision === "interviewing")) ? (
-                                          <span className="bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
-                                            <Clock size={13} /> بانتظار المتقدم
-                                          </span>
-                                        ) : (
-                                          <span className="text-slate-400 dark:text-slate-500 font-bold flex justify-center w-full">
-                                            -
-                                          </span>
-                                        )}
-                                      </div>
-                                    </td>
+                                    <>
+                                      <td className="px-2 py-3 cursor-default" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex justify-center">
+                                          {isFomoLocked ? (
+                                            <span className="filter blur-[4px] select-none text-xs text-slate-400 font-bold">مقفل</span>
+                                          ) : row.is_interview_completed ? (
+                                            <span className="bg-green-50 text-green-600 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                              <Mic size={13} /> تمت المقابلة
+                                            </span>
+                                          ) : (row.has_started_interview && !row.is_interview_completed) ? (
+                                            <span className="bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-400 border border-purple-200 dark:border-purple-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                              <Clock size={13} /> جاري المقابلة
+                                            </span>
+                                          ) : (!row.interview_revoked && (!row.interview_sent_at || (Date.now() - new Date(row.interview_sent_at).getTime() <= 72 * 60 * 60 * 1000)) && (row.interview_sent || row.decision === "interviewing")) ? (
+                                            <span className="bg-orange-50 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400 border border-orange-200 dark:border-orange-800/30 px-3 py-1.5 rounded-xl text-[11px] font-bold inline-flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                                              <Clock size={13} /> بانتظار المتقدم
+                                            </span>
+                                          ) : (
+                                            <span className="text-slate-400 dark:text-slate-500 font-bold flex justify-center w-full">
+                                              -
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+                                      <td className="px-2 py-3 text-center cursor-default" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex justify-center items-center h-full">
+                                          {isFomoLocked ? (
+                                            <span className="filter blur-[4px] select-none text-xs text-slate-400 font-bold">مقفل</span>
+                                          ) : row.is_interview_completed && row.interview_score !== undefined && row.interview_score !== null ? (
+                                            <span className="font-black text-navy dark:text-white text-[15px]">
+                                              {row.interview_score}<span className="text-slate-400 dark:text-slate-500 text-xs font-bold">/10</span>
+                                            </span>
+                                          ) : (
+                                            <span className="text-slate-400 dark:text-slate-500 font-bold flex justify-center w-full">-</span>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </>
                                   )}
                                   <td className="px-2 py-3 cursor-default" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex items-center justify-end gap-1.5 w-full pl-4">
@@ -2105,7 +2137,7 @@ export const Dashboard = ({
                                 </td>
                               </tr>
                             )}
-                          </AnimatePresence>
+                          </>
                         )}
                       </tbody>
                     </table>

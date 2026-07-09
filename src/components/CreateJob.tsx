@@ -3036,8 +3036,58 @@ export const CreateJob = ({
 
 
                         {createJobType !== "quick_link" && (
-                          <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
-                            <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20">التالي <ArrowLeft size={18} /></button>
+                          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 items-center gap-4 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
+                            <div className="flex justify-start order-3 md:order-1"></div>
+                            <div className="flex justify-center w-full order-2 md:order-2">
+                              {adType === "campaign" && (
+                                <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                                  {roles.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setIsAddingRole(false);
+                                        setEditingRoleId(null);
+                                        setRoleTitle("");
+                                        setRoleDesc("");
+                                        setRoleSummary("");
+                                        setResponsibilities("");
+                                        setQualifications("");
+                                        setBenefits("");
+                                        setAiInstructions("");
+                                        setSelectedSkills([]);
+                                        setCustomQuestions([]);
+                                        setRequiredAttachments(["سيرة ذاتية PDF"]);
+                                        setCustomAttachments([]);
+                                        setKnockoutQuestions([]);
+                                        setIsVoiceEnabled(true);
+                                        setPhotoRequirement("hidden");
+                                      }}
+                                      className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-8 py-3.5 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center gap-2 transition-all w-full md:w-auto shrink-0"
+                                    >
+                                      <X size={18} /> إلغاء
+                                    </button>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={handleSaveRole}
+                                    className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold shadow-md hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors w-full md:w-auto shrink-0"
+                                  >
+                                    {editingRoleId ? (
+                                      <>
+                                        <Pencil size={18} /> حفظ التعديلات
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Plus size={18} /> حفظ الشاغر وإضافة شاغر آخر
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex justify-end order-1 md:order-3">
+                              <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20 w-full md:w-auto shrink-0">التالي <ArrowLeft size={18} /></button>
+                            </div>
                           </div>
                         )}
                       </>
@@ -3848,9 +3898,60 @@ export const CreateJob = ({
               </div>
 
               {createJobType !== "quick_link" && currentStep === 2 && (
-                <div className="mt-8 flex justify-between gap-3 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
-                  <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">السابق <ArrowLeft size={18} className="rotate-180" /></button>
-                  <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20"><ArrowLeft size={18} /> التالي</button>
+                <div className="mt-8 grid grid-cols-1 md:grid-cols-3 items-center gap-4 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
+                  <div className="flex justify-start order-3 md:order-1">
+                    <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors w-full md:w-auto shrink-0">السابق <ArrowLeft size={18} className="rotate-180" /></button>
+                  </div>
+                  <div className="flex justify-center w-full order-2 md:order-2">
+                    {adType === "campaign" && (
+                      <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                        {roles.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingRole(false);
+                              setEditingRoleId(null);
+                              setRoleTitle("");
+                              setRoleDesc("");
+                              setRoleSummary("");
+                              setResponsibilities("");
+                              setQualifications("");
+                              setBenefits("");
+                              setAiInstructions("");
+                              setSelectedSkills([]);
+                              setCustomQuestions([]);
+                              setRequiredAttachments(["سيرة ذاتية PDF"]);
+                              setCustomAttachments([]);
+                              setKnockoutQuestions([]);
+                              setIsVoiceEnabled(true);
+                              setPhotoRequirement("hidden");
+                            }}
+                            className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-8 py-3.5 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center gap-2 transition-all w-full md:w-auto shrink-0"
+                          >
+                            <X size={18} /> إلغاء
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleSaveRole}
+                          className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold shadow-md hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors w-full md:w-auto shrink-0"
+                        >
+                          {editingRoleId ? (
+                            <>
+                              <Pencil size={18} /> حفظ التعديلات
+                            </>
+                          ) : (
+                            <>
+                              <Plus size={18} /> حفظ الشاغر وإضافة شاغر آخر
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end order-1 md:order-3">
+                    <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(3); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors shadow-md shadow-primary/20 w-full md:w-auto shrink-0"><ArrowLeft size={18} /> التالي</button>
+                  </div>
                 </div>
               )}
 
@@ -3935,53 +4036,58 @@ export const CreateJob = ({
               </div>
 
               {createJobType !== "quick_link" && currentStep === 3 && (
-                <div className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
-                  <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors w-full md:w-auto shrink-0">السابق <ArrowLeft size={18} className="rotate-180" /></button>
-                  {adType === "campaign" && (
-                    <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
-                      {roles.length > 0 && (
+                <div className="mt-8 grid grid-cols-1 md:grid-cols-3 items-center gap-4 pt-6 border-t border-slate-100 dark:border-slate-800 mb-8">
+                  <div className="flex justify-start order-3 md:order-1">
+                    <button type="button" onClick={(e) => { e.preventDefault(); setCurrentStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700 px-8 py-3.5 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors w-full md:w-auto shrink-0">السابق <ArrowLeft size={18} className="rotate-180" /></button>
+                  </div>
+                  <div className="flex justify-center w-full order-2 md:order-2">
+                    {adType === "campaign" && (
+                      <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+                        {roles.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsAddingRole(false);
+                              setEditingRoleId(null);
+                              setRoleTitle("");
+                              setRoleDesc("");
+                              setRoleSummary("");
+                              setResponsibilities("");
+                              setQualifications("");
+                              setBenefits("");
+                              setAiInstructions("");
+                              setSelectedSkills([]);
+                              setCustomQuestions([]);
+                              setRequiredAttachments(["سيرة ذاتية PDF"]);
+                              setCustomAttachments([]);
+                              setKnockoutQuestions([]);
+                              setIsVoiceEnabled(true);
+                              setPhotoRequirement("hidden");
+                            }}
+                            className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-8 py-3.5 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center gap-2 transition-all w-full md:w-auto shrink-0"
+                          >
+                            <X size={18} /> إلغاء
+                          </button>
+                        )}
                         <button
                           type="button"
-                          onClick={() => {
-                            setIsAddingRole(false);
-                            setEditingRoleId(null);
-                            setRoleTitle("");
-                            setRoleDesc("");
-                            setRoleSummary("");
-                            setResponsibilities("");
-                            setQualifications("");
-                            setBenefits("");
-                            setAiInstructions("");
-                            setSelectedSkills([]);
-                            setCustomQuestions([]);
-                            setRequiredAttachments(["سيرة ذاتية PDF"]);
-                            setCustomAttachments([]);
-                            setKnockoutQuestions([]);
-                            setIsVoiceEnabled(true);
-                            setPhotoRequirement("hidden");
-                          }}
-                          className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-8 py-3.5 rounded-xl font-bold hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center gap-2 transition-all w-full md:w-auto shrink-0"
+                          onClick={handleSaveRole}
+                          className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold shadow-md hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors w-full md:w-auto shrink-0"
                         >
-                          <X size={18} /> إلغاء
+                          {editingRoleId ? (
+                            <>
+                              <Pencil size={18} /> حفظ التعديلات
+                            </>
+                          ) : (
+                            <>
+                              <Plus size={18} /> حفظ الشاغر وإضافة شاغر آخر
+                            </>
+                          )}
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={handleSaveRole}
-                        className="bg-primary text-white px-8 py-3.5 rounded-xl font-bold shadow-md hover:bg-primary/90 flex items-center justify-center gap-2 transition-colors w-full md:w-auto shrink-0"
-                      >
-                        {editingRoleId ? (
-                          <>
-                            <Pencil size={18} /> حفظ التعديلات
-                          </>
-                        ) : (
-                          <>
-                            <Plus size={18} /> حفظ الشاغر وإضافة شاغر آخر
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end order-1 md:order-3"></div>
                 </div>
               )}
               {adType === "campaign" && roles.length > 0 && (

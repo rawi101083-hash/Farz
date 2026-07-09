@@ -217,7 +217,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
         return;
       }
 
-      const { data: jobData, error: jobError } = await supabase.from('jobs').select('company_id').eq('id', appData.job_id).single();
+      const { data: jobData, error: jobError } = await supabase.from('jobs').select('company_id, title').eq('id', appData.job_id).single();
       if (jobError) throw new Error("لم يتم العثور على تفاصيل الوظيفة");
 
       const { data: hasCredit, error: rpcError } = await supabase.rpc('deduct_interview_credit', { p_company_id: jobData.company_id });
@@ -226,7 +226,7 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
       }
 
       // --- Prepare Interview Questions to Send to Vapi ---
-      const safeParseArray = (val: any): string[] => {
+      const safeParseQuestions = (val: any): {question: string, goal: string}[] => {
         if (!val) return [];
         let arr: any[] = [];
         if (Array.isArray(val)) {
@@ -238,34 +238,75 @@ export const InterviewRoom = ({ applicantId, onBack }: { applicantId: string, on
           } catch { }
         }
         return arr.map(item => {
-          if (typeof item === 'string') return item;
+          if (typeof item === 'string') return { question: item, goal: "" };
           if (item && typeof item === 'object') {
-            return item.q || item.question || item.text || String(item);
+            return {
+              question: item.q || item.question || item.text || String(item),
+              goal: item.goal || ""
+            };
           }
-          return String(item);
-        }).filter(Boolean);
+          return { question: String(item), goal: "" };
+        }).filter(q => Boolean(q.question));
       };
 
-      const clientQs = safeParseArray(appData.client_interview_questions);
-      const aiQs = safeParseArray(appData.interview_questions);
+      const clientQs = safeParseQuestions(appData.client_interview_questions);
+      const aiQs = safeParseQuestions(appData.interview_questions);
       
       // نعتمد أسئلة العميل أولاً، وإذا لم توجد نعتمد أسئلة الذكاء الاصطناعي. ولا نقوم بدمجهم أبداً
-      let finalQs: string[] = clientQs.length > 0 ? clientQs : aiQs;
+      let finalQs = clientQs.length > 0 ? clientQs : aiQs;
       
       finalQs = finalQs.slice(0, 4);
 
-      // --- 2. Start Vapi Call with Limiter ---
+      let questionsString = "";
+      finalQs.forEach((q, idx) => {
+        questionsString += `Question ${idx + 1}: ${q.question}\n`;
+        if (q.goal) questionsString += `Goal: ${q.goal}\n`;
+        questionsString += "\n";
+      });
+
+      // --- 2. Start Vapi Call with Context ---
       const assistantId = lang === 'en' ? ENGLISH_ASSISTANT_ID : ARABIC_ASSISTANT_ID;
-      
       const firstName = appData.full_name ? appData.full_name.trim().split(' ')[0] : "عزيزي المتقدم";
       
+      // Format strengths, weaknesses, red flags for Vapi context
+      const parseArrayField = (field: any, textKey: string) => {
+        try {
+          let arr = typeof field === 'string' ? JSON.parse(field) : field;
+          if (Array.isArray(arr) && arr.length > 0) {
+            return arr.map((item: any) => {
+              let parsedItem = item;
+              if (typeof item === 'string') {
+                try { parsedItem = JSON.parse(item); } catch(e) { return item; }
+              }
+              if (typeof parsedItem === 'object' && parsedItem) {
+                return parsedItem[textKey] || parsedItem.point || parsedItem.flag || JSON.stringify(parsedItem);
+              }
+              return String(parsedItem);
+            }).join("، ");
+          }
+        } catch(e) {}
+        return "لا يوجد";
+      };
+
+      const topStrengths = parseArrayField(appData.top_strengths, 'point');
+      const topWeaknesses = parseArrayField(appData.top_weaknesses, 'point');
+      const redFlags = parseArrayField(appData.red_flags, 'flag');
+        
+      const matchSummary = appData.ai_summary || appData.ai_justification || "لا يوجد ملخص";
+      const jobTitleContext = `المسمى الوظيفي الذي قدم عليه المتقدم: ${jobData.title || "غير محدد"}`;
+
       await vapiRef.current.start(assistantId, {
         maxDurationSeconds: 600, // SaaS Guardrail: 10 minutes max limit
         serverUrl: "https://zpcooectdwokmvbgttsf.supabase.co/functions/v1/vapi-webhook",
         variableValues: {
           applicantId: applicantId,
-          applicantName: firstName, // إرسال الاسم الأول فقط
-          interview_questions: finalQs.join("\n")
+          applicantName: firstName,
+          interview_questions: questionsString.trim(),
+          top_strengths: topStrengths,
+          top_weaknesses: topWeaknesses,
+          red_flags: redFlags,
+          match_summary: matchSummary,
+          job_title: jobTitleContext
         }
       });
 

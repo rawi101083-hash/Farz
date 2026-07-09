@@ -64,11 +64,11 @@ export const WelcomeSlidesModal = ({ isOpen, onClose }: { isOpen: boolean; onClo
                 </div>
               ) : slides[currentStep].useImage ? (
                 <div className="my-6 flex items-center justify-center">
-                   <img src={slides[currentStep].imageSrc} alt="" className="w-44 h-44 object-cover rounded-3xl shadow-2xl border-[4px] border-white/50 dark:border-slate-700/50" />
+                  <img src={slides[currentStep].imageSrc} alt="" className="w-44 h-44 object-cover rounded-3xl shadow-2xl border-[4px] border-white/50 dark:border-slate-700/50" />
                 </div>
               ) : slides[currentStep].useIcon ? (
                 <div className="my-10 flex items-center justify-center">
-                   {slides[currentStep].icon}
+                  {slides[currentStep].icon}
                 </div>
               ) : null}
             </motion.div>
@@ -78,11 +78,10 @@ export const WelcomeSlidesModal = ({ isOpen, onClose }: { isOpen: boolean; onClo
         <div className="p-8 text-center bg-white dark:bg-slate-800 relative z-10">
           <div className="flex justify-center gap-2 mb-6" dir="ltr">
             {slides.map((_, idx) => (
-               <div
+              <div
                 key={idx}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  idx === currentStep ? 'w-8 bg-primary' : 'w-2 bg-slate-200 dark:bg-slate-700'
-                }`}
+                className={`h-2 rounded-full transition-all duration-300 ${idx === currentStep ? 'w-8 bg-primary' : 'w-2 bg-slate-200 dark:bg-slate-700'
+                  }`}
               />
             ))}
           </div>

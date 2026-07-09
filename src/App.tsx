@@ -2707,7 +2707,7 @@ export default function App() {
           };
           setSelectedJob(fetchedJob as Job);
           const isMultiRoleCampaign = fetchedJob.recordType === 'campaign' && (fetchedJob.roles?.length || 0) > 1;
-          
+
           if (isMultiRoleCampaign) {
             setStep('publicJob');
           } else {
