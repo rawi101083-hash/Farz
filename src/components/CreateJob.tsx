@@ -516,6 +516,15 @@ export const CreateJob = ({
     initialData?.aiChatHistory || [{ role: "assistant", content: "أهلاً بك! أنا مستشار التوظيف الذكي الخاص بمنصة فرز. يسعدني مساعدتك في صياغة الإعلان الوظيفي. أخبرني باختصار عن الشاغر الذي تبحث عنه." }]
   );
   const [chatInput, setChatInput] = useState("");
+  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(() => {
+    const saved = localStorage.getItem('isAiSidebarOpen');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('isAiSidebarOpen', JSON.stringify(isAiSidebarOpen));
+  }, [isAiSidebarOpen]);
+
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [chatError, setChatError] = useState<string | null>(null);
@@ -783,6 +792,7 @@ export const CreateJob = ({
 
       window.dispatchEvent(new CustomEvent("showToast", { detail: { message: "تم تطبيق التفاصيل المقترحة بنجاح!", type: "success" } }));
     } finally {
+      setChatInput("");
       setIsApplyingAi(false);
     }
   };
@@ -1837,15 +1847,24 @@ export const CreateJob = ({
       <div className="w-full max-w-[1400px] mx-auto pb-32 flex flex-col lg:flex-row gap-8 px-4 items-start relative">
 
         {/* Smart Assistant Sidebar */}
-        <div className="order-2 lg:order-2 w-full lg:w-[400px] shrink-0 lg:sticky lg:top-8 lg:mt-[68px] bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col h-[500px] lg:h-[650px] z-40">
-          <div className="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
-            <div>
-              <h3 className="font-bold text-navy dark:text-white flex items-center gap-2">
-                <Sparkles className="text-primary" size={18} /> مستشار التوظيف الذكي
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">يساعدك في صياغة الإعلان و استخراج التفاصيل</p>
+        {isAiSidebarOpen ? (
+          <div className="order-2 lg:order-2 w-full lg:w-[400px] shrink-0 lg:sticky lg:top-8 lg:mt-[68px] bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col h-[500px] lg:h-[650px] z-40 transition-all duration-300">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-navy dark:text-white flex items-center gap-2">
+                  <Sparkles className="text-primary" size={18} /> مستشار التوظيف الذكي
+                </h3>
+                <p className="text-xs text-slate-500 mt-1">يساعدك في صياغة الإعلان و استخراج التفاصيل</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setIsAiSidebarOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-200/50 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors text-slate-600 dark:text-slate-300"
+                title="تصغير المستشار الذكي"
+              >
+                <X size={16} />
+              </button>
             </div>
-          </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={chatScrollRef}>
             {chatMessages.map((msg, i) => (
               <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-start' : 'items-end'}`} dir="ltr">
@@ -1892,7 +1911,7 @@ export const CreateJob = ({
             <button
               type="button"
               onClick={async () => { await handleApplyChatToForm(); }}
-              disabled={chatMessages.length < 2 || isApplyingAi || isChatLoading}
+              disabled={(chatMessages.length < 2 && chatInput.trim().length < 10) || isApplyingAi || isChatLoading}
               className="w-full py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-navy font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90 transition-opacity shadow-md"
             >
               {isApplyingAi ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <Download size={16} />}
@@ -1900,6 +1919,16 @@ export const CreateJob = ({
             </button>
           </div>
         </div>
+        ) : (
+          <button 
+            type="button"
+            onClick={() => setIsAiSidebarOpen(true)}
+            className="order-2 lg:order-2 lg:sticky lg:top-8 lg:mt-[68px] z-40 w-14 h-14 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:scale-105 hover:shadow-2xl hover:border-primary/50 transition-all duration-300 group"
+            title="فتح مستشار التوظيف الذكي"
+          >
+            <Sparkles className="text-primary group-hover:animate-pulse" size={24} />
+          </button>
+        )}
         {/* Main Form Content */}
         <div className="order-1 flex-1 min-w-0 w-full lg:max-w-[900px] bg-transparent">
           <button

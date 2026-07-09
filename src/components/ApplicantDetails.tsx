@@ -1425,6 +1425,12 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                 {applicant?.cv_file_url ? (
                   applicant.cv_file_url.match(/\.(jpeg|jpg|gif|png|webp)(\?.*)?$/i) ? (
                     <img src={applicant.cv_file_url} className="absolute inset-0 w-full h-full object-contain bg-slate-50/50 dark:bg-slate-800 rounded-[30px] p-4" alt="CV" />
+                  ) : /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 1) ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500 font-bold bg-slate-50 dark:bg-slate-800 rounded-[30px] p-6 text-center border-2 border-dashed border-slate-200 dark:border-slate-700">
+                      <FileText size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
+                      <p>لا يمكن عرض ملف الـ PDF مباشرة داخل المتصفح في هذا الجهاز.</p>
+                      <p className="text-sm mt-2">اضغط على زر (عرض المستند بالحجم الكامل) بالأسفل لفتحه.</p>
+                    </div>
                   ) : (
                     <iframe src={applicant.cv_file_url + "#toolbar=0&view=FitH"} className="absolute inset-0 w-full h-full border-none bg-white rounded-[30px]" />
                   )
@@ -1436,7 +1442,14 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
               </div>
               <div className="flex justify-center mb-6">
                 {applicant?.cv_file_url ? (
-                  <button onClick={() => setIsFullscreenCV(true)} className="bg-slate-800 dark:bg-slate-700 text-white border-b-[4px] border-slate-950 dark:border-slate-900 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-900 hover:border-black transition-all shadow-md active:translate-y-[4px] active:border-b-0 active:shadow-none cursor-pointer">
+                  <button onClick={() => {
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes("Mac") && navigator.maxTouchPoints > 1);
+                    if (isIOS) {
+                      window.open(applicant.cv_file_url, '_blank');
+                    } else {
+                      setIsFullscreenCV(true);
+                    }
+                  }} className="bg-slate-800 dark:bg-slate-700 text-white border-b-[4px] border-slate-950 dark:border-slate-900 px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-slate-900 hover:border-black transition-all shadow-md active:translate-y-[4px] active:border-b-0 active:shadow-none cursor-pointer">
                     <FileText size={18} /> عرض المستند بالحجم الكامل
                   </button>
                 ) : (

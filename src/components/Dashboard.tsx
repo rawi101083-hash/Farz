@@ -1676,7 +1676,7 @@ export const Dashboard = ({
                         </div>
                       </div>
                     )}
-                    <table className={`w-full text-right transition-all ${shouldShowMockTable ? 'filter blur-[6px] opacity-50 pointer-events-none select-none' : ''}`}>
+                    <table className={`w-full min-w-[1100px] text-right transition-all ${shouldShowMockTable ? 'filter blur-[6px] opacity-50 pointer-events-none select-none' : ''}`}>
                       <thead className="bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-200 text-xs uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
                         <tr>
                           {isSelectionMode && (
@@ -1691,7 +1691,7 @@ export const Dashboard = ({
                                       setSelectedApplicantIds(visibleApplicants.map(a => a.id));
                                     }
                                   }}
-                                  className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${visibleApplicants.length > 0 && selectedApplicantIds.length === visibleApplicants.length ? "bg-primary border-primary text-white" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 opacity-50 hover:opacity-100 hover:border-slate-400"}`}
+                                  className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${visibleApplicants.length > 0 && selectedApplicantIds.length === visibleApplicants.length ? "bg-primary border-primary text-white" : "border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-700/50 opacity-100 hover:border-slate-400 dark:hover:border-slate-400"}`}
                                 >
                                   {visibleApplicants.length > 0 && selectedApplicantIds.length === visibleApplicants.length && <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
                                 </div>
@@ -1774,7 +1774,7 @@ export const Dashboard = ({
                                       }}
                                     >
                                       <div
-                                        className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${selectedApplicantIds.includes(row.id) ? "bg-primary border-primary text-white opacity-100" : "border-slate-300 dark:border-slate-600 bg-slate-100/50 dark:bg-slate-800 opacity-0 group-hover:opacity-100 hover:border-slate-400"}`}
+                                        className={`w-5 h-5 mx-auto rounded-[6px] border flex items-center justify-center cursor-pointer transition-all ${selectedApplicantIds.includes(row.id) ? "bg-primary border-primary text-white opacity-100" : "border-slate-300 dark:border-slate-500 bg-slate-100/50 dark:bg-slate-700/50 opacity-100 hover:border-slate-400 dark:hover:border-slate-400"}`}
                                       >
                                         {selectedApplicantIds.includes(row.id) && (
                                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-3 h-3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
@@ -2569,151 +2569,153 @@ export const Dashboard = ({
 
 
         {/* Sidebar */}{" "}
-        <aside className={`${isSidebarOpen ? 'w-80 p-8' : 'w-20 p-4'} bg-navy text-white hidden lg:flex flex-col fixed h-full right-0 shadow-2xl z-20 transition-all duration-300`}>
-          <div className="flex flex-col gap-6 mb-12">
-            <div className={`flex ${isSidebarOpen ? 'items-center gap-4' : 'flex-col items-center gap-5'} px-2`}>
-              <LogoIcon />{" "}
-              {isSidebarOpen && (
-                <span className="text-3xl font-black tracking-tighter text-white flex-1">
-                  فرز
-                </span>
-              )}{" "}
-              <button
-                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                title={isSidebarOpen ? 'تصغير القائمة' : 'توسيع القائمة'}
-                className={`w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all shrink-0 ${isSidebarOpen ? 'ml-auto' : ''}`}
-              >
-                {isSidebarOpen ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
-              </button>
-            </div>
-
-            <div className={`flex px-2 ${isSidebarOpen ? 'justify-end' : 'justify-center'}`}>
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
-                className="w-11 h-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white flex items-center justify-center transition-all shadow-sm"
-              >
-                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-              </button>
-            </div>
-          </div>{" "}
-          <nav className="space-y-1.5 flex-1 pb-2">
-            {[
-              { name: "الحساب", icon: <User size={22} /> },
-              FEATURE_FLAGS.enable_fast_sorting ? { name: "الفرز السريع", icon: <Zap size={22} /> } : null,
-              { name: "الرئيسية", icon: <LayoutDashboard size={22} /> },
-              { name: "إدارة الوظائف", icon: <Briefcase size={22} /> },
-              { name: "بنك الكفاءات", icon: <Database size={22} /> },
-              { name: "التقارير", icon: <BarChartIcon size={22} /> },
-            ].filter(Boolean).map((item: any) => (
-              <button
-                key={item.name}
-                onClick={() => setActiveTab(item.name)}
-                className={`w-full flex items-center ${isSidebarOpen ? "gap-4 px-5 py-2.5 justify-start" : "justify-center p-3"} rounded-2xl transition-all font-semibold ${activeTab === item.name ? "bg-mint text-employer-green shadow-xl shadow-mint/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-200 hover:bg-slate-700/50"}`}
-              >
-                <div className={`transition-transform duration-300 ${isSidebarOpen ? "" : "scale-110"}`}>{item.icon}</div> {isSidebarOpen && <span>{item.name}</span>}{" "}
-              </button>
-            ))}{" "}
-          </nav>{" "}
-          <div className="mt-auto flex flex-col gap-4 pt-6 shrink-0">
-            {!isSidebarOpen && (
-              <button
-                onClick={async () => await supabase.auth.signOut()}
-                className="w-10 h-10 mx-auto flex items-center justify-center rounded-xl transition-all text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20 hover:text-red-300"
-                title="تسجيل الخروج"
-              >
-                <LogOut size={18} className="shrink-0" />
-              </button>
-            )}
-
-            <div className="border-t border-white/10 dark:border-slate-700/10 w-full my-1" />
-
-            <div className={`flex items-center ${isSidebarOpen ? 'gap-3 p-3 bg-white/5 dark:bg-slate-800/30 rounded-2xl border border-white/10 dark:border-slate-700' : 'justify-center w-full'} transition-all duration-300`}>
-              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-primary overflow-hidden shrink-0 flex items-center justify-center">
-                {userProfile?.avatar || userProfile?.companyLogo ? (
-                  <img src={userProfile?.avatar || userProfile?.companyLogo} alt="Admin" referrerPolicy="no-referrer" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"; }} />
-                ) : (
-                  <User className="text-slate-400" size={20} />
-                )}
+        <aside className={`${isSidebarOpen ? 'w-80' : 'w-20'} bg-navy text-white hidden lg:flex flex-col shrink-0 shadow-2xl z-20 transition-all duration-300`}>
+          <div className={`sticky top-0 h-screen w-full flex flex-col ${isSidebarOpen ? 'p-8' : 'p-4'} overflow-y-auto hide-scrollbar`}>
+            <div className="flex flex-col gap-6 mb-12">
+              <div className={`flex ${isSidebarOpen ? 'items-center gap-4' : 'flex-col items-center gap-5'} px-2`}>
+                <LogoIcon />{" "}
+                {isSidebarOpen && (
+                  <span className="text-3xl font-black tracking-tighter text-white flex-1">
+                    فرز
+                  </span>
+                )}{" "}
+                <button
+                  onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                  title={isSidebarOpen ? 'تصغير القائمة' : 'توسيع القائمة'}
+                  className={`w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all shrink-0 ${isSidebarOpen ? 'ml-auto' : ''}`}
+                >
+                  {isSidebarOpen ? <ChevronRight size={17} /> : <ChevronLeft size={17} />}
+                </button>
               </div>
-              {isSidebarOpen && (<div className="overflow-hidden flex-1">
-                <p className="text-sm font-bold text-white">
-                  {(userProfile?.name || "مستخدم جديد").length > 25 ? (userProfile?.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile?.name || "مستخدم جديد")}
-                </p>
-                {userProfile?.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile?.title}</p>}
-              </div>)}
-              {isSidebarOpen && (
+
+              <div className={`flex px-2 ${isSidebarOpen ? 'justify-end' : 'justify-center'}`}>
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  title={darkMode ? 'الوضع النهاري' : 'الوضع الليلي'}
+                  className="w-11 h-11 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white flex items-center justify-center transition-all shadow-sm"
+                >
+                  {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+                </button>
+              </div>
+            </div>{" "}
+            <nav className="space-y-1.5 flex-1 pb-2">
+              {[
+                { name: "الحساب", icon: <User size={22} /> },
+                FEATURE_FLAGS.enable_fast_sorting ? { name: "الفرز السريع", icon: <Zap size={22} /> } : null,
+                { name: "الرئيسية", icon: <LayoutDashboard size={22} /> },
+                { name: "إدارة الوظائف", icon: <Briefcase size={22} /> },
+                { name: "بنك الكفاءات", icon: <Database size={22} /> },
+                { name: "التقارير", icon: <BarChartIcon size={22} /> },
+              ].filter(Boolean).map((item: any) => (
+                <button
+                  key={item.name}
+                  onClick={() => setActiveTab(item.name)}
+                  className={`w-full flex items-center ${isSidebarOpen ? "gap-4 px-5 py-2.5 justify-start" : "justify-center p-3"} rounded-2xl transition-all font-semibold ${activeTab === item.name ? "bg-mint text-employer-green shadow-xl shadow-mint/30" : "text-slate-400 dark:text-slate-500 hover:text-slate-200 hover:bg-slate-700/50"}`}
+                >
+                  <div className={`transition-transform duration-300 ${isSidebarOpen ? "" : "scale-110"}`}>{item.icon}</div> {isSidebarOpen && <span>{item.name}</span>}{" "}
+                </button>
+              ))}{" "}
+            </nav>{" "}
+            <div className="mt-auto flex flex-col gap-4 pt-6 shrink-0">
+              {!isSidebarOpen && (
                 <button
                   onClick={async () => await supabase.auth.signOut()}
-                  className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shrink-0"
+                  className="w-10 h-10 mx-auto flex items-center justify-center rounded-xl transition-all text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20 hover:text-red-300"
                   title="تسجيل الخروج"
                 >
-                  <LogOut size={16} />
+                  <LogOut size={18} className="shrink-0" />
                 </button>
               )}
-            </div>
+
+              <div className="border-t border-white/10 dark:border-slate-700/10 w-full my-1" />
+
+              <div className={`flex items-center ${isSidebarOpen ? 'gap-3 p-3 bg-white/5 dark:bg-slate-800/30 rounded-2xl border border-white/10 dark:border-slate-700' : 'justify-center w-full'} transition-all duration-300`}>
+                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-primary overflow-hidden shrink-0 flex items-center justify-center">
+                  {userProfile?.avatar || userProfile?.companyLogo ? (
+                    <img src={userProfile?.avatar || userProfile?.companyLogo} alt="Admin" referrerPolicy="no-referrer" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E"; }} />
+                  ) : (
+                    <User className="text-slate-400" size={20} />
+                  )}
+                </div>
+                {isSidebarOpen && (<div className="overflow-hidden flex-1">
+                  <p className="text-sm font-bold text-white">
+                    {(userProfile?.name || "مستخدم جديد").length > 25 ? (userProfile?.name || "مستخدم جديد").substring(0, 25) + "..." : (userProfile?.name || "مستخدم جديد")}
+                  </p>
+                  {userProfile?.title && <p className="text-[10px] text-slate-400 truncate mt-0.5">{userProfile?.title}</p>}
+                </div>)}
+                {isSidebarOpen && (
+                  <button
+                    onClick={async () => await supabase.auth.signOut()}
+                    className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shrink-0"
+                    title="تسجيل الخروج"
+                  >
+                    <LogOut size={16} />
+                  </button>
+                )}
+              </div>
 
 
-            {/* Usage Widget */}
-            {isSidebarOpen && (<div className="bg-slate-800/40 rounded-2xl p-4 pt-5 border border-slate-700/50 space-y-4 relative mt-3">
-              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#1b2537] border border-slate-700 px-3 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1.5 shadow-md whitespace-nowrap">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_5px_rgba(13,148,136,0.8)]"></div>
-                {plan === 'startup' || plan === 'growth' ? 'نمو' : plan === 'business' ? 'أعمال' : plan === 'enterprise' ? 'الشركات الكبرى' : plan === 'single_job' || plan === 'one-time' ? 'التوظيف الفوري' : 'المجانية'}
-              </div>
-              <div className="flex justify-between items-center text-xs font-bold text-slate-300">
-                <span>الوظائف النشطة</span>
-                <span dir="ltr">{plan === 'enterprise' ? '∞' : `${jobLimit} / ${activeCount}`}</span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 bg-primary`}
-                  style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (activeCount / (jobLimit || 1)) * 100)}%` }}
-                />
-              </div>
+              {/* Usage Widget */}
+              {isSidebarOpen && (<div className="bg-slate-800/40 rounded-2xl p-4 pt-5 border border-slate-700/50 space-y-4 relative mt-3">
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#1b2537] border border-slate-700 px-3 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1.5 shadow-md whitespace-nowrap">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_5px_rgba(13,148,136,0.8)]"></div>
+                  {plan === 'startup' || plan === 'growth' ? 'نمو' : plan === 'business' ? 'أعمال' : plan === 'enterprise' ? 'الشركات الكبرى' : plan === 'single_job' || plan === 'one-time' ? 'التوظيف الفوري' : 'المجانية'}
+                </div>
+                <div className="flex justify-between items-center text-xs font-bold text-slate-300">
+                  <span>الوظائف النشطة</span>
+                  <span dir="ltr">{plan === 'enterprise' ? '∞' : `${jobLimit} / ${activeCount}`}</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 bg-primary`}
+                    style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (activeCount / (jobLimit || 1)) * 100)}%` }}
+                  />
+                </div>
 
-              <div className={`flex justify-between items-center text-xs font-bold text-slate-300 pt-2 ${plan === 'free' && cvsRemaining <= 0 ? 'mt-2' : 'border-t border-slate-700/50'}`}>
-                {plan === 'free' ? (
-                  cvsRemaining <= 0 ? (
-                    <div
-                      onClick={() => setActiveTab('باقات فرز')}
-                      className="w-full flex items-center justify-center gap-2 bg-primary/10 border border-primary/20 text-primary py-2.5 px-3 rounded-xl cursor-pointer hover:bg-primary hover:text-white transition-all active:scale-95 shadow-sm group"
-                    >
-                      <Lock size={14} className="group-hover:scale-110 transition-transform" />
-                      <span className="text-xs font-bold whitespace-nowrap">الباقة منتهية - اضغط للترقية</span>
-                    </div>
+                <div className={`flex justify-between items-center text-xs font-bold text-slate-300 pt-2 ${plan === 'free' && cvsRemaining <= 0 ? 'mt-2' : 'border-t border-slate-700/50'}`}>
+                  {plan === 'free' ? (
+                    cvsRemaining <= 0 ? (
+                      <div
+                        onClick={() => setActiveTab('باقات فرز')}
+                        className="w-full flex items-center justify-center gap-2 bg-primary/10 border border-primary/20 text-primary py-2.5 px-3 rounded-xl cursor-pointer hover:bg-primary hover:text-white transition-all active:scale-95 shadow-sm group"
+                      >
+                        <Lock size={14} className="group-hover:scale-110 transition-transform" />
+                        <span className="text-xs font-bold whitespace-nowrap">الباقة منتهية - اضغط للترقية</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span>رصيد السير الذاتية</span>
+                        <span dir="ltr">{cvLimit} / {cvsRemaining}</span>
+                      </>
+                    )
                   ) : (
                     <>
                       <span>رصيد السير الذاتية</span>
-                      <span dir="ltr">{cvLimit} / {cvsRemaining}</span>
+                      <span dir="ltr">{plan === 'enterprise' ? '∞' : `${cvLimit} / ${cvsRemaining}`}</span>
                     </>
-                  )
-                ) : (
-                  <>
-                    <span>رصيد السير الذاتية</span>
-                    <span dir="ltr">{plan === 'enterprise' ? '∞' : `${cvLimit} / ${cvsRemaining}`}</span>
-                  </>
-                )}
-              </div>
-              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${cvsRemaining <= 0 && cvLimit > 0 ? 'bg-red-500' : cvColor}`}
-                  style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (cvsRemaining / (cvLimit || 1)) * 100)}%` }}
-                />
-              </div>
+                  )}
+                </div>
+                <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${cvsRemaining <= 0 && cvLimit > 0 ? 'bg-red-500' : cvColor}`}
+                    style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (cvsRemaining / (cvLimit || 1)) * 100)}%` }}
+                  />
+                </div>
 
-              {/* Interviews Balance */}
-              <div className="flex justify-between items-center text-xs font-bold text-slate-300 pt-2 border-t border-slate-700/50">
-                <span>رصيد المقابلات</span>
-                <span dir="ltr">{plan === 'enterprise' ? '∞' : `${interviewsLimit} / ${interviewsRemaining}`}</span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${interviewsRemaining <= 0 && interviewsLimit > 0 ? 'bg-red-500' : interviewColor}`}
-                  style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (interviewsRemaining / (interviewsLimit || 1)) * 100)}%` }}
-                />
-              </div>
-            </div>)}
+                {/* Interviews Balance */}
+                <div className="flex justify-between items-center text-xs font-bold text-slate-300 pt-2 border-t border-slate-700/50">
+                  <span>رصيد المقابلات</span>
+                  <span dir="ltr">{plan === 'enterprise' ? '∞' : `${interviewsLimit} / ${interviewsRemaining}`}</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${interviewsRemaining <= 0 && interviewsLimit > 0 ? 'bg-red-500' : interviewColor}`}
+                    style={{ width: plan === 'enterprise' ? '100%' : `${Math.min(100, (interviewsRemaining / (interviewsLimit || 1)) * 100)}%` }}
+                  />
+                </div>
+              </div>)}
 
+            </div>
           </div>
         </aside>{" "}
         {/* Main Content */}{" "}
@@ -2738,7 +2740,7 @@ export const Dashboard = ({
           )}
 
 
-          <div className={`flex-1 p-10 pt-24 lg:pt-10 w-full min-w-0 max-w-full ${isSidebarOpen ? 'sidebar-padding-open' : 'sidebar-padding-closed'}`}>
+          <div className="flex-1 p-10 pt-24 lg:pt-10 w-full min-w-0 max-w-full">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}

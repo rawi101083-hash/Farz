@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { Job, Applicant, ImageLightbox, EmptyState } from "../Shared";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowLeft, Search, FileText, X, Phone, Mail, Building2, Save, Sparkles, Database } from "lucide-react";
+import { ArrowLeft, Search, FileText, X, Phone, Mail, Building2, Save, Sparkles, Database, Users } from "lucide-react";
 import ApplicantDetails from "./ApplicantDetails";
 
 export const SharedManagementView = ({ jobId }: { jobId: string }) => {
@@ -53,6 +53,8 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
           .select('*')
           .eq('job_id', jobId)
           .neq('decision', 'CORRUPT_FILE_DO_NOT_SHOW')
+          .neq('decision', 'processing')
+          .neq('decision', 'failed')
           .order('created_at', { ascending: false });
 
         if (appData && !appError) {
@@ -69,7 +71,14 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
             phone: raw.phone || "",
             email: raw.email || "",
             skills: Array.isArray(raw.skills) ? raw.skills : [],
-            aiSummary: raw.ai_justification || "قيد التحليل...",
+            aiSummary: raw.ai_summary || raw.ai_justification || "لم يقم الذكاء الاصطناعي بتقييم...",
+            voiceEval: raw.voice_eval || "",
+            voiceEvalUrl: raw.voice_eval || raw.voice_eval_url || "",
+            decision: (raw.decision === 'evaluated' ? 'pending' : raw.decision) || "pending",
+            rejection_reason: raw.rejection_reason || "",
+            is_favorite: raw.is_favorite || false,
+            in_talent_pool: raw.in_talent_pool || false,
+            ai_justification: raw.ai_summary || raw.ai_justification,
             cv_file_url: raw.cv_file_url,
             hr_notes: raw.hr_notes || "",
             attachments: raw.attachments,
@@ -84,7 +93,20 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
             interview_plan: raw.interview_plan,
             suggested_questions: raw.suggested_questions,
             customAnswers: parsedAnswers,
-            linkedin: (parsedAnswers.find((a: any) => a.question === "رابط لينكد إن")?.answer) || raw.linkedin || ""
+            linkedin: (parsedAnswers.find((a: any) => a.question === "رابط لينكد إن")?.answer) || raw.linkedin || "",
+            interview_sent: raw.interview_sent || false,
+            is_interview_completed: raw.is_interview_completed || false,
+            has_started_interview: raw.has_started_interview || false,
+            interview_revoked: raw.interview_revoked || false,
+            interview_transcript: raw.interview_transcript || "",
+            interview_summary: raw.interview_summary || "",
+            interview_score: raw.interview_score || 0,
+            job_id: raw.job_id || jobId,
+            raw_cv_file_url: raw.cv_file_url,
+            raw_job_context: raw.job_context,
+            expectedSalary: raw.expected_salary || "",
+            source: raw.source || "غير محدد",
+            city: raw.city || raw.location || "-"
           } as any});
           
           setApplicants(mappedList);
@@ -199,10 +221,8 @@ export const SharedManagementView = ({ jobId }: { jobId: string }) => {
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-slate-900/10 dark:bg-slate-900/50 backdrop-blur-[6px] px-4">
                   <div className="pointer-events-auto w-full max-w-xl">
                     <EmptyState
-                      title="بنك الكفاءات بانتظارك! لم تقم بإضافة أي مرشحين حتى الآن."
-                      actionLabel="العودة لإدارة الوظائف"
-                      onAction={() => window.history.back()}
-                      icon={<Database size={32} className="text-emerald-400 drop-shadow-md" />}
+                      title="لا يوجد متقدمين بانتظارك! لم يتقدم أي شخص لهذه الوظيفة حتى الآن."
+                      icon={<Users size={32} className="text-emerald-400 drop-shadow-md" />}
                       className="bg-white/95 dark:bg-slate-800/95 shadow-2xl border-white/50"
                     />
                   </div>
