@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Sparkles, CheckCircle, Zap, Play, Pause, MessageCircle, FileText, Linkedin, Mail, Phone, Send, X, Trash2, Edit2, Calendar, DollarSign, Ban, AlertTriangle, FileDigit, ImageIcon, Video, Paperclip, ExternalLink, Mic, RefreshCw, Target, FolderSync, Info, Brain } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
+import { ImageLightbox } from "../Shared";
 import QuestionTemplatesManager from './QuestionTemplatesManager';
 
 const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
@@ -114,6 +115,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
   const [activeTab, setActiveTab] = useState<"analysis" | "requirements" | "interview" | "notes" | "ai_settings">("analysis");
   const [isAILoading, setIsAILoading] = useState(false);
   const [isFullscreenCV, setIsFullscreenCV] = useState(false);
+  const [lightboxPhoto, setLightboxPhoto] = useState<string | null>(null);
 
   const [showOfferModal, setShowOfferModal] = useState(false);
   const [showAcceptOptions, setShowAcceptOptions] = useState(false);
@@ -644,7 +646,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                 {applicant?.photoUrl && (
                   <div
                     className="shrink-0 order-1 sm:order-2 mb-4 sm:mb-0 cursor-pointer hover:opacity-90 hover:scale-105 transition-all"
-                    onClick={() => window.open(applicant.photoUrl, '_blank')}
+                    onClick={() => setLightboxPhoto(applicant.photoUrl)}
                     title="عرض الصورة الأصلية"
                   >
                     <img
@@ -1885,7 +1887,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
           </div>
         )}
       </AnimatePresence>
-
+      <ImageLightbox url={lightboxPhoto} onClose={() => setLightboxPhoto(null)} />
     </div>
   );
 };

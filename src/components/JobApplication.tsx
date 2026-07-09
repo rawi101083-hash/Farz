@@ -462,16 +462,63 @@ export const ApplicantForm = ({
     const formData = new FormData(e.currentTarget);
     const formValues = Object.fromEntries(formData.entries());
 
+    const fullNameVal = formValues.fullName as string;
+    const emailVal = formValues.email as string;
+    const phoneVal = formValues.phone as string;
+    const nationalityVal = formDataState.nationality as string;
+    const cityVal = formValues.city as string;
+    const availabilityVal = formValues.availability as string;
+    const expectedSalaryVal = formValues.expectedSalary as string;
+
+    let isMissingFields = false;
+    if (!fullNameVal || !fullNameVal.trim()) isMissingFields = true;
+    if (!emailVal || !emailVal.trim()) isMissingFields = true;
+    if (!phoneVal || !phoneVal.trim()) isMissingFields = true;
+    if (!nationalityVal || !nationalityVal.trim() || nationalityVal === "غير محدد") isMissingFields = true;
+    if (!cityVal || !cityVal.trim() || cityVal === "غير محدد") isMissingFields = true;
+    if (!availabilityVal || !availabilityVal.trim() || availabilityVal === "اختر المدة") isMissingFields = true;
+
+    const askExpectedSalary = activeRole?.askExpectedSalary || (!activeRole?.askExpectedSalary && job?.askExpectedSalary);
+    if ((askExpectedSalary === "open" || askExpectedSalary === "ranges") && (!expectedSalaryVal || !expectedSalaryVal.trim())) {
+      isMissingFields = true;
+    }
+
+    if (photoReq === "required" && !photoFile) isMissingFields = true;
+    if (job?.portfolioRequirement === "required" && (!portfolioLinksState[0] || !portfolioLinksState[0].trim())) isMissingFields = true;
+
+    customQuestions.forEach((q: any, idx: number) => {
+      if (q.required || q.isRequired) {
+        const val = formValues[`customQuestion_${idx}`] as string;
+        if (!val || !val.trim()) isMissingFields = true;
+      }
+    });
+
+    customAttachments.forEach((att: any, idx: number) => {
+      if (att.required || att.isRequired) {
+        const isFile = att.attachment_type !== "link";
+        if (isFile) {
+          const fileInput = document.getElementsByName(`customAttachment_${idx}`)[0] as HTMLInputElement;
+          if (!fileInput || !fileInput.files || fileInput.files.length === 0) isMissingFields = true;
+        } else {
+          const val = formValues[`customAttachment_${idx}`] as string;
+          if (!val || !val.trim()) isMissingFields = true;
+        }
+      }
+    });
+
+    if (isMissingFields) {
+      alert("الرجاء إكمال جميع الحقول الإلزامية التي تحتوي على علامة النجمة الحمراء (*) قبل الإرسال.");
+      return;
+    }
+
     let hasErrors = false;
     const newErrors: Record<string, string> = {};
 
-    const fullNameVal = formValues.fullName as string;
     if (fullNameVal) {
       const words = fullNameVal.trim().split(/\s+/);
       if (words.length < 3) {
         alert("يرجى إدخال الاسم الثلاثي (3 أسماء على الأقل)");
         hasErrors = true;
-        // Optionally focus the field or return early
         return;
       }
     }

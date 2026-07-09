@@ -274,6 +274,7 @@ export const Dashboard = ({
   clearPendingAction?: () => void;
 }) => {
   const [isPending, startTransition] = useTransition();
+  const pendingPoolUpdates = useRef(new Map<string, boolean>());
   const markInterviewSent = async (id: string) => {
     setApplicants(prev => prev.map(a => a.id === id ? { ...a, interview_sent: true } : a));
     const { error } = await supabase.from('applicants').update({ interview_sent: true }).eq('id', id);
@@ -634,7 +635,7 @@ export const Dashboard = ({
               hr_notes: raw.hr_notes || "",
               cv_file_url: raw.cv_file_url,
               is_favorite: raw.is_favorite || false,
-              in_talent_pool: raw.in_talent_pool || false,
+              in_talent_pool: pendingPoolUpdates.current.has(raw.id) ? pendingPoolUpdates.current.get(raw.id) : (raw.in_talent_pool || false),
               nominatedTo: raw.nominated_to,
               skills_match: raw.skills_match || 0,
               experience_match: raw.experience_match || 0,
@@ -1081,8 +1082,18 @@ export const Dashboard = ({
   };
 
   const handleMoveToPool = async (applicant: Applicant) => {
+    pendingPoolUpdates.current.set(applicant.id, true);
     // Optimistic UI update
     setApplicants(prev => prev.map(a => a.id === applicant.id ? { ...a, in_talent_pool: true } : a));
+    
+    // Optimistic cache update
+    import('../lib/applicantsCache').then(({ globalApplicantsCache, setGlobalApplicantsCache }) => {
+       if (globalApplicantsCache) {
+          const nextCache = globalApplicantsCache.map(a => a.id === applicant.id ? { ...a, in_talent_pool: true } : a);
+          setGlobalApplicantsCache(nextCache, JSON.stringify(jobs.map(j => j.id).sort()));
+       }
+    });
+
     setToastMessage("تم نقل المرشح لبنك الكفاءات بنجاح!");
     setTimeout(() => setToastMessage(null), 3000);
     setOpenDropdownId(null);
@@ -1093,13 +1104,25 @@ export const Dashboard = ({
         await supabase.from('applicants').update({ in_talent_pool: true }).eq('id', applicant.id);
       } catch (error) {
         console.warn("Could not sync talent pool state to backend:", error);
+      } finally {
+        setTimeout(() => pendingPoolUpdates.current.delete(applicant.id), 5000);
       }
     }
   };
 
   const handleRemoveFromPool = async (id: string) => {
+    pendingPoolUpdates.current.set(id, false);
     // Optimistic UI update
     setApplicants(prev => prev.map(a => a.id === id ? { ...a, in_talent_pool: false } : a));
+    
+    // Optimistic cache update
+    import('../lib/applicantsCache').then(({ globalApplicantsCache, setGlobalApplicantsCache }) => {
+       if (globalApplicantsCache) {
+          const nextCache = globalApplicantsCache.map(a => a.id === id ? { ...a, in_talent_pool: false } : a);
+          setGlobalApplicantsCache(nextCache, JSON.stringify(jobs.map(j => j.id).sort()));
+       }
+    });
+
     setToastMessage("تمت الإزالة من بنك الكفاءات.");
     setTimeout(() => setToastMessage(null), 3000);
     setOpenDropdownId(null);
@@ -1110,6 +1133,8 @@ export const Dashboard = ({
         await supabase.from('applicants').update({ in_talent_pool: false }).eq('id', id);
       } catch (error) {
         console.warn("Could not sync talent pool state to backend:", error);
+      } finally {
+        setTimeout(() => pendingPoolUpdates.current.delete(id), 5000);
       }
     }
   };
