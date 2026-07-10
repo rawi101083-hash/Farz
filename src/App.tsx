@@ -2169,6 +2169,7 @@ export default function App() {
     name: "",
     title: "",
     avatar: "",
+    companyName: "",
     companyLogo: "",
     commercialRegistration: "",
     freelanceDocument: "",
@@ -2184,6 +2185,7 @@ export default function App() {
     fields_locked: false,
     isLoaded: false,
     hasExplicitEntityType: false,
+    status: "",
   });
 
   const verifyCompanySession = async (currentSession: any, isInitial: boolean = false) => {
@@ -2400,7 +2402,7 @@ export default function App() {
       }
 
       // Check for pending accounts before logging them in
-      if (session?.user && (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED')) {
+      if (session?.user && (_event === 'INITIAL_SESSION' || _event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED')) {
         supabase
           .from('companies')
           .select('status')
@@ -2504,6 +2506,52 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const handleImmediateLogout = () => {
+      setSession(null);
+      sessionStorage.removeItem("sahab_active_step");
+      sessionStorage.removeItem("sahab_dashboard_tab");
+      sessionStorage.removeItem("sahab_selected_applicant");
+      sessionStorage.removeItem("sahab_selected_job");
+      sessionStorage.removeItem("sahab_decision_filter");
+      sessionStorage.removeItem("sahab_job_filter");
+      setStep(prev => (prev === 'registerCompany' || prev === 'login') ? prev : "landing");
+      localStorage.removeItem("sahab_jobs_db_v1");
+      localStorage.removeItem("sahab_applicants_fast_cache");
+      localStorage.removeItem("sahab_decisions");
+      setJobs([]);
+      setUserProfile({
+        id: "",
+        name: "",
+        title: "",
+        companyName: "",
+        entityType: "company",
+        commercialRegistration: "",
+        freelanceDocument: "",
+        taxNumber: "",
+        city: "",
+        companyLogo: "",
+        subscription_tier: "free",
+        subscription_end_date: null,
+        subscription_is_yearly: false,
+        used_cvs: 0,
+        fields_locked: false,
+        cv_limit: 0,
+        jobs_limit: 0,
+        interviews_limit: 0,
+        used_jobs: 0,
+        used_interviews: 0,
+        extra_cv_credits: 0,
+        extra_interview_credits: 0,
+        addons_bought_this_month: 0,
+        isLoaded: false,
+      });
+    };
+
+    window.addEventListener('sahab_logout_immediate', handleImmediateLogout);
+    return () => window.removeEventListener('sahab_logout_immediate', handleImmediateLogout);
+  }, []);
+
+  useEffect(() => {
     let handleOnline: () => void;
 
     if (user && user.id) {
@@ -2511,6 +2559,15 @@ export default function App() {
         try {
           const { data, error } = await supabase.from('companies').select('*').eq('id', user.id).single();
           if (data && !error) {
+            if (data.status === 'pending') {
+              console.warn("Profile fetched: Account is pending, forcing logout.");
+              supabase.auth.signOut().then(() => {
+                window.dispatchEvent(new Event("sahab_logout_immediate"));
+                alert("حسابك لا يزال قيد المراجعة ولم يتم تفعيله بعد.");
+              });
+              return;
+            }
+
             const isProfileComplete = !!(data.company_name && data.city);
 
             const rawPlan = data.subscription_plan || "free";
@@ -2547,6 +2604,7 @@ export default function App() {
               extra_cv_credits: data.extra_cv_credits || 0,
               extra_interview_credits: data.extra_interview_credits || 0,
               addons_bought_this_month: data.addons_bought_this_month || 0,
+              status: data.status || "",
               isLoaded: true,
             }));
 
@@ -3108,12 +3166,34 @@ export default function App() {
               <LandingPage onStart={() => setStep("registerCompany")} onOpenBookingModal={() => setShowBookingModal(true)} />
             )}{" "}
 
-            {step === "dashboard" && !userProfile.isLoaded ? (
+            {step === "dashboard" && (!userProfile.isLoaded || userProfile.status?.trim().toLowerCase() === 'pending') ? (
               <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
                 <div className="flex flex-col items-center">
-                  <div className="animate-spin [animation-duration:2s] scale-150 drop-shadow-xl">
-                    <LogoIcon />
-                  </div>
+                  {userProfile.status?.trim().toLowerCase() === 'pending' ? (
+                    <div className="text-center p-8 bg-white dark:bg-slate-800 rounded-3xl shadow-xl border-t-4 border-orange-500 max-w-md w-full mx-4">
+                      <div className="w-20 h-20 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Clock className="w-10 h-10 text-orange-500" />
+                      </div>
+                      <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-3 tracking-tight">حسابك قيد المراجعة</h2>
+                      <p className="text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
+                        يتم الآن مراجعة بيانات شركتك من قبل الإدارة. سيتم تفعيل حسابك قريباً لتتمكن من الوصول إلى لوحة التحكم واستخدام المنصة.
+                      </p>
+                      <button 
+                        onClick={() => {
+                          supabase.auth.signOut().then(() => {
+                            window.dispatchEvent(new Event("sahab_logout_immediate"));
+                          });
+                        }}
+                        className="mt-8 px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-xl font-bold transition-all w-full flex items-center justify-center"
+                      >
+                        حسناً
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="animate-spin [animation-duration:2s] scale-150 drop-shadow-xl">
+                      <LogoIcon />
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (step === "dashboard" || step === "applicantDetails") && (

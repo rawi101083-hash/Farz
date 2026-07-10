@@ -486,25 +486,8 @@ export const ApplicantForm = ({
     if (photoReq === "required" && !photoFile) isMissingFields = true;
     if (job?.portfolioRequirement === "required" && (!portfolioLinksState[0] || !portfolioLinksState[0].trim())) isMissingFields = true;
 
-    customQuestions.forEach((q: any, idx: number) => {
-      if (q.required || q.isRequired) {
-        const val = formValues[`customQuestion_${idx}`] as string;
-        if (!val || !val.trim()) isMissingFields = true;
-      }
-    });
-
-    customAttachments.forEach((att: any, idx: number) => {
-      if (att.required || att.isRequired) {
-        const isFile = att.attachment_type !== "link";
-        if (isFile) {
-          const fileInput = document.getElementsByName(`customAttachment_${idx}`)[0] as HTMLInputElement;
-          if (!fileInput || !fileInput.files || fileInput.files.length === 0) isMissingFields = true;
-        } else {
-          const val = formValues[`customAttachment_${idx}`] as string;
-          if (!val || !val.trim()) isMissingFields = true;
-        }
-      }
-    });
+    // Custom questions and attachments are handled by the detailed hasErrors block below
+    // which shows inline validation errors and scrolls to the missing field.
 
     if (isMissingFields) {
       alert("الرجاء إكمال جميع الحقول الإلزامية التي تحتوي على علامة النجمة الحمراء (*) قبل الإرسال.");
@@ -2054,7 +2037,6 @@ export const ApplicantForm = ({
                         ) : att.attachment_type === "mixed_file" ? (
                           <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
                             <input
-                              required={att.required || att.isRequired}
                               type="file"
                               name={`customAttachment_${idx}`}
                               accept=".pdf, image/jpeg, image/png, image/jpg"
@@ -2087,7 +2069,6 @@ export const ApplicantForm = ({
                         ) : (
                           <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-6 text-center hover:border-primary hover:bg-slate-50 dark:bg-slate-800/50 transition-all cursor-pointer group">
                             <input
-                              required={(att.required || att.isRequired) && !(att.attachment_name.includes("الصورة الشخصية") && userProfile?.profile_data?.personal_photo_url) && !(att.attachment_name.includes("الهوية") && userProfile?.id_file_url) && !(att.attachment_name.includes("رخصة القيادة") && userProfile?.license_file_url)}
                               type="file"
                               name={`customAttachment_${idx}`}
                               accept=".pdf"

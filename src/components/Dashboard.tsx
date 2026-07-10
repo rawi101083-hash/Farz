@@ -273,6 +273,22 @@ export const Dashboard = ({
   pendingAction?: { id: string; decision: string; isOffer?: boolean } | null;
   clearPendingAction?: () => void;
 }) => {
+  const handleLogout = () => {
+    // 1. Instantly clear Supabase local auth tokens
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+        localStorage.removeItem(key);
+      }
+    });
+    // 2. Clear our local state
+    sessionStorage.removeItem("sahab_active_step");
+    localStorage.removeItem("sahab_jobs_db_v1");
+    // 3. Sign out in background
+    supabase.auth.signOut().catch(() => {});
+    // 4. Instantly flip UI
+    window.dispatchEvent(new Event('sahab_logout_immediate'));
+  };
+
   const [isPending, startTransition] = useTransition();
   const pendingPoolUpdates = useRef(new Map<string, boolean>());
   const markInterviewSent = async (id: string) => {
@@ -1863,7 +1879,7 @@ export const Dashboard = ({
                                   <td className="px-2 py-3">
                                     <div className="flex justify-start">
                                       <span
-                                        className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-700 dark:border-b-slate-950 text-slate-700 dark:text-white px-3 py-1.5 rounded-xl text-[11px] font-black inline-flex items-center justify-center whitespace-nowrap w-fit max-w-[110px] truncate shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
+                                        className="bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-[2px] border-slate-100 border-b-[4px] border-b-slate-200 dark:border-slate-700 dark:border-b-slate-950 text-slate-700 dark:text-white px-3 py-1.5 rounded-xl text-[11px] font-black inline-flex items-center justify-center whitespace-normal break-words w-fit max-w-[250px] text-center leading-relaxed shadow-[0_4px_6px_-1px_rgba(0,0,0,0.05)]"
                                         title={row.job}
                                       >
                                         {row.job}
@@ -2644,7 +2660,7 @@ export const Dashboard = ({
             <div className="mt-auto flex flex-col gap-4 pt-6 shrink-0">
               {!isSidebarOpen && (
                 <button
-                  onClick={async () => await supabase.auth.signOut()}
+                  onClick={handleLogout}
                   className="w-10 h-10 mx-auto flex items-center justify-center rounded-xl transition-all text-red-400 hover:bg-red-500/10 dark:hover:bg-red-500/20 hover:text-red-300"
                   title="تسجيل الخروج"
                 >
@@ -2670,7 +2686,7 @@ export const Dashboard = ({
                 </div>)}
                 {isSidebarOpen && (
                   <button
-                    onClick={async () => await supabase.auth.signOut()}
+                    onClick={handleLogout}
                     className="w-10 h-10 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white flex items-center justify-center transition-all shrink-0"
                     title="تسجيل الخروج"
                   >
@@ -2684,7 +2700,16 @@ export const Dashboard = ({
               {isSidebarOpen && (<div className="bg-slate-800/40 rounded-2xl p-4 pt-5 border border-slate-700/50 space-y-4 relative mt-3">
                 <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-[#1b2537] border border-slate-700 px-3 py-1 rounded-full text-[10px] font-bold text-primary flex items-center gap-1.5 shadow-md whitespace-nowrap">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_5px_rgba(13,148,136,0.8)]"></div>
-                  {plan === 'startup' || plan === 'growth' ? 'نمو' : plan === 'business' ? 'أعمال' : plan === 'enterprise' ? 'الشركات الكبرى' : plan === 'single_job' || plan === 'one-time' ? 'التوظيف الفوري' : 'المجانية'}
+                  {plan === 'startup' || plan === 'growth' ? 'نمو' : plan === 'business' ? 'أعمال' : plan === 'enterprise' ? 'الشركات الكبرى' : plan === 'single_job' || plan === 'one-time' ? 'التوظيف الفوري' : (
+                    <span className="flex items-center gap-1">
+                      المجانية
+                      {userProfile?.subscription_end_date && (
+                        <span>
+                          متبقي {Math.max(0, Math.ceil((new Date(userProfile.subscription_end_date).getTime() - new Date().getTime()) / (1000 * 3600 * 24)))} يوم
+                        </span>
+                      )}
+                    </span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center text-xs font-bold text-slate-300">
                   <span>الوظائف النشطة</span>

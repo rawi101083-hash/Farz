@@ -42,7 +42,7 @@ export const prefetchQuestionTemplates = async () => {
 
 export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mode = 'manage' }: Props) {
   const [templates, setTemplates] = useState<QuestionTemplate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!globalTemplatesCache);
   const [editingTemplate, setEditingTemplate] = useState<QuestionTemplate | null>(null);
   const [newTitle, setNewTitle] = useState('');
   const [newQuestions, setNewQuestions] = useState<any[]>([
@@ -51,6 +51,7 @@ export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mo
     {question: '', goal: ''},
     {question: '', goal: ''}
   ]);
+  const [openGoals, setOpenGoals] = useState<number[]>([]);
 
   useEffect(() => {
     if (globalTemplatesCache) {
@@ -144,7 +145,13 @@ export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mo
       return { question: q.question || '', goal: q.goal || '' };
     });
     while (qs.length < 4) qs.push({question: '', goal: ''});
-    setNewQuestions(qs.slice(0, 4));
+    const finalQs = qs.slice(0, 4);
+    const openGs: number[] = [];
+    finalQs.forEach((q, idx) => {
+      if (q.goal && q.goal.trim() !== '') openGs.push(idx);
+    });
+    setOpenGoals(openGs);
+    setNewQuestions(finalQs);
   };
 
   const startNew = () => {
@@ -156,6 +163,7 @@ export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mo
       {question: '', goal: ''},
       {question: '', goal: ''}
     ]);
+    setOpenGoals([]);
   };
 
   return (
@@ -193,14 +201,24 @@ export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mo
               </div>
 
               <div className="space-y-4">
-                <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-4">الأسئلة (بحد أقصى 4)</label>
+                <div className="mb-4">
+                  <label className="block text-sm font-black text-slate-800 dark:text-slate-200 mb-2">الأسئلة (بحد أقصى 4)</label>
+                  <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-3 flex items-start gap-2">
+                    <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-700 dark:text-amber-400 font-bold leading-relaxed">
+                      تنبيه: يرجى التأكد من دقة المعلومات المدخلة هنا، لأن الذكاء الاصطناعي سيعتمد على هذه الأسئلة وأهدافها لإدارة وإجراء المقابلة الشخصية مع المتقدم.
+                    </p>
+                  </div>
+                </div>
                 {newQuestions.map((qObj, idx) => (
                   <div key={idx} className="relative group p-4 border-2 border-slate-100 dark:border-slate-800 rounded-2xl bg-slate-50 dark:bg-slate-800/50 space-y-3">
                     <div className="absolute left-4 top-4 w-6 h-6 rounded-md bg-primary/10 text-primary flex items-center justify-center text-xs font-black z-10">
                       0{idx + 1}
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">السؤال</label>
+                      <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
+                        السؤال {idx === 0 ? "الأول" : idx === 1 ? "الثاني" : idx === 2 ? "الثالث" : "الرابع"}
+                      </label>
                       <textarea
                         rows={2}
                         value={qObj.question || ''}
@@ -213,20 +231,46 @@ export default function QuestionTemplatesManager({ onClose, onSelectTemplate, mo
                         placeholder="اكتب السؤال هنا..."
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-500 mb-1">الهدف من السؤال (يتم تمريره للذكاء الاصطناعي)</label>
-                      <input
-                        type="text"
-                        value={qObj.goal || ''}
-                        onChange={(e) => {
-                          const qs = [...newQuestions];
-                          qs[idx] = { ...qs[idx], goal: e.target.value };
-                          setNewQuestions(qs);
-                        }}
-                        className="w-full px-4 py-3 rounded-xl border-[2px] border-b-[4px] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary focus:border-b-primary dark:focus:border-b-primary outline-none text-sm transition-all font-medium shadow-sm"
-                        placeholder="مثال: اختبار القدرة على القيادة"
-                      />
-                    </div>
+                    {(openGoals.includes(idx) || qObj.goal) ? (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="block text-xs font-black text-slate-700 dark:text-slate-300">الهدف من السؤال</label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const qs = [...newQuestions];
+                              qs[idx] = { ...qs[idx], goal: '' };
+                              setNewQuestions(qs);
+                              setOpenGoals(prev => prev.filter(i => i !== idx));
+                            }}
+                            className="text-[10px] text-red-500 hover:text-red-600 font-bold"
+                          >
+                            إلغاء الهدف
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={qObj.goal || ''}
+                          onChange={(e) => {
+                            const qs = [...newQuestions];
+                            qs[idx] = { ...qs[idx], goal: e.target.value };
+                            setNewQuestions(qs);
+                          }}
+                          className="w-full px-4 py-3 rounded-xl border-[2px] border-b-[4px] border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:border-primary dark:focus:border-primary focus:border-b-primary dark:focus:border-b-primary outline-none text-sm transition-all font-medium shadow-sm"
+                          placeholder="مثال: اختبار القدرة على القيادة"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setOpenGoals(prev => [...prev, idx])}
+                          className="text-xs text-primary font-bold hover:underline flex items-center gap-1"
+                        >
+                          <Plus size={14} /> إضافة هدف للسؤال (اختياري)
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

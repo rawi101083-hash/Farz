@@ -1,0 +1,1 @@
+CREATE OR REPLACE FUNCTION public.get_debug_statuses() RETURNS TABLE (id uuid, status text) SECURITY DEFINER AS $$ BEGIN RETURN QUERY SELECT c.id, c.status FROM public.companies c LIMIT 10; END; $$ LANGUAGE plpgsql;

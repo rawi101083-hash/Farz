@@ -7,16 +7,16 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function check() {
-  const jobIds = ['b27b61ac-d151-46a3-a99e-e6653df4dbf0', 'd3f3204d-fce0-498f-aeb0-677be85a84d6', 'be40cc27-06c5-46f9-b850-90af37ac95b6'];
   const { data, error } = await supabase
-    .from('jobs')
-    .select('id, title, company_id')
-    .in('id', jobIds);
+    .from('applicants')
+    .select('id, full_name, decision, created_at, rejection_reason')
+    .order('created_at', { ascending: false })
+    .limit(10);
   
   if (error) console.error(error);
   else {
-    console.log("Jobs:");
-    console.log(data);
+    console.log("Last 10 applicants:");
+    data.forEach(a => console.log(`${a.full_name} - Status: ${a.decision} - Created: ${a.created_at}`));
   }
 }
 check();
