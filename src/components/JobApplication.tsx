@@ -116,6 +116,7 @@ export const ApplicantForm = ({
   const [isParsed, setIsParsed] = useState(false);
   const [resumeFileName, setResumeFileName] = useState<string | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [preUploadedCvUrl, setPreUploadedCvUrl] = useState<string | null>(null);
   const [formDataState, setFormDataState] = useState({
     fullName: "",
     phone: "",
@@ -394,6 +395,23 @@ export const ApplicantForm = ({
       }
       setResumeFileName(file.name);
       setResumeFile(file);
+      
+      // Start background upload immediately to save time later
+      const fExt = file.name.split('.').pop() || "pdf";
+      const fName = `${Date.now()}_applicant.${fExt}`;
+      const fPath = `${job?.id || 'general'}/${fName}`;
+      supabase.storage
+        .from("cv_uploads")
+        .upload(fPath, file)
+        .then(({ data, error }) => {
+          if (!error && data) {
+            const { data: publicUrlData } = supabase.storage
+              .from("cv_uploads")
+              .getPublicUrl(data.path);
+            setPreUploadedCvUrl(publicUrlData.publicUrl);
+          }
+        })
+        .catch(console.error);
     } else {
       return;
     }
@@ -828,11 +846,11 @@ export const ApplicantForm = ({
       } catch (e) {
         console.error("Double Protection Shield Error:", e);
       }
-      let cv_file_url = (formDataState as any).cvUrl || "";
+      let cv_file_url = preUploadedCvUrl || (formDataState as any).cvUrl || "";
       let applicant_db_id = "";
 
       try {
-        if (cvFile && cvFile instanceof File) {
+        if ((cvFile && cvFile instanceof File) && !cv_file_url) {
           // 1. Upload CV to Supabase Storage
           const fileExt = cvFile.name.split('.').pop() || "pdf";
           const fileName = `${Date.now()}_applicant.${fileExt}`;
@@ -1027,6 +1045,7 @@ export const ApplicantForm = ({
 
       if (isAutoRejected) {
         console.log("Applicant Auto-Rejected. Saved to DB with status 'مرفوض آلياً' and skipped webhook.");
+        setFormStep("success");
         return;
       }
 
@@ -1041,8 +1060,7 @@ export const ApplicantForm = ({
         }
         return;
       }
-
-      // const API_BASE_URL = "https://farz-cv-processo-1.onrender.com"; // Render API - Disabled (Fallback)
+      
       const API_BASE_URL = "https://farz-cv-gateway-production.up.railway.app";
 
       const pythonPayload = {
