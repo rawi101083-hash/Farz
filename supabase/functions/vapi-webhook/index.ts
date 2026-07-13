@@ -69,15 +69,57 @@ serve(async (req) => {
       })
     }
 
-    if (!recordingUrl) {
-      console.error("Missing recordingUrl in payload!")
-      // We still update the status so the user doesn't get stuck
-    }
-
     // Initialize Supabase Admin Client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Extract ended reason
+    const endedReason = message.endedReason || message.call?.endedReason || '';
+    const isNetworkError = endedReason === 'customer-did-not-answer' || 
+                           endedReason === 'customer-did-not-give-microphone-permission' || 
+                           endedReason.includes('error');
+
+    // ONLY REFUND IF IT WAS A NETWORK ERROR OR TIMEOUT (candidate never connected)
+    if (isNetworkError) {
+      console.log(`Call rejected for ${applicantId} due to ${endedReason}. Likely a timeout or network issue. Refunding credit...`)
+      
+      // Fetch applicant to get company_id for refund
+      const { data: appData } = await supabase
+        .from('applicants')
+        .select('job_id, jobs ( company_id )')
+        .eq('id', applicantId)
+        .single()
+        
+      if (appData?.jobs?.company_id) {
+        const companyId = appData.jobs.company_id
+        // Refund credit manually
+        const { data: company } = await supabase
+          .from('companies')
+          .select('used_interviews')
+          .eq('id', companyId)
+          .single()
+          
+        if (company && company.used_interviews > 0) {
+          await supabase
+            .from('companies')
+            .update({ used_interviews: company.used_interviews - 1 })
+            .eq('id', companyId)
+          console.log(`Refunded 1 interview credit for company ${companyId}`)
+        }
+      }
+
+      // Reset applicant status so they can retry
+      await supabase
+        .from('applicants')
+        .update({ has_started_interview: false, is_interview_completed: false })
+        .eq('id', applicantId)
+
+      return new Response(JSON.stringify({ status: 'ignored', reason: `Call failed with reason: ${endedReason}` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      })
+    }
 
     // Update the applicant in the database
     const updateData: any = {
