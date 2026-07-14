@@ -1557,8 +1557,8 @@ export const Reports = ({ jobs, filterId, applicants = [], isLoading = false }: 
             gradientFrom: "from-emerald-500",
           },
           {
-            label: "السير الذاتية المفحوصة",
-            value: screenedCount.toString(),
+            label: "إجمالي المتقدمين",
+            value: totalApplicants.toString(),
             icon: <Users size={20} />,
             color: "text-primary dark:text-primary",
             bg: "bg-primary/10 dark:bg-primary/20",
@@ -3723,11 +3723,10 @@ export const SettingsPage = ({
               <div className="space-y-3">
                 <p className="text-xs font-black text-slate-400 uppercase tracking-wider">اختر طريقة الدفع</p>
 
-                {/* WhatsApp option (New Primary) */}
                 <button
                   onClick={() => {
                     const msg = encodeURIComponent(`مرحباً منصة فرز، أرغب بتفعيل "${checkoutPlan.name}" لحسابي المسجل بالإيميل: ${userProfile?.contactEmail || ''}`);
-                    window.open(`https://wa.me/966545517495?text=${msg}`, '_blank');
+                    window.open(`https://wa.me/966579543701?text=${msg}`, '_blank');
                     setCheckoutPlan(null);
                   }}
                   className="w-full p-4 rounded-2xl border-2 border-emerald-500/30 hover:border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-right flex justify-between items-center transition-all group font-bold shadow-sm relative overflow-hidden"

@@ -645,6 +645,7 @@ export const ApplicantForm = ({
       ...((formDataState.type || submitData.type) ? [{ question: "نوع العمل", answer: submitData.type || formDataState.type }] : []),
       ...(!hasKnockoutFn("availability") ? [{ question: "مدة الانضمام / الجاهزية للعمل", answer: submitData.availability || (formDataState as any).availability || "" }] : []),
       { question: "مصدر التقديم", answer: submitData.source || formDataState.source || "غير محدد" },
+      ...((submitData.linkedin || formDataState.linkedin) ? [{ question: "لينكد إن", answer: submitData.linkedin || formDataState.linkedin }] : []),
       ...(Array.isArray(customQuestions) ? customQuestions.map((q: any, idx: number) => ({
         question: q.text,
         answer: submitData[`customQuestion_${idx}`],

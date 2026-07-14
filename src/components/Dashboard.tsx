@@ -646,6 +646,7 @@ export const Dashboard = ({
               voiceEvalUrl: raw.voice_eval || raw.voice_eval_url || "",
               customAnswers: parsedAnswers,
               city: raw.city || raw.location || parsedAnswers.find((a: any) => a.question === "المدينة")?.answer || "-",
+              linkedin: raw.linkedin || parsedAnswers.find((a: any) => a.question?.includes("لينكد") || a.question?.toLowerCase().includes("linkedin"))?.answer || "",
               decision: (raw.decision === 'evaluated' ? 'pending' : raw.decision) || latestDecisions[raw.id] || "pending",
               rejection_reason: raw.rejection_reason || "",
               hr_notes: raw.hr_notes || "",

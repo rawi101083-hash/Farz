@@ -11,6 +11,73 @@ const WhatsAppIcon = ({ size = 16 }: { size?: number }) => (
   </svg>
 );
 
+const TikTokIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+  </svg>
+);
+
+const XIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/>
+  </svg>
+);
+
+const GoogleIcon = ({ size = 16 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M23.745 12.27c0-.827-.066-1.605-.189-2.355H12.24v4.492h6.505c-.27 1.485-1.11 2.76-2.385 3.63v3.015h3.81c2.25-2.07 3.57-5.13 3.57-8.782Z"/>
+    <path fill="#34A853" d="M12.24 24c3.24 0 5.955-1.08 7.95-2.91l-3.81-3.015c-1.08.735-2.475 1.17-3.99 1.17-3.09 0-5.715-2.085-6.645-4.89H1.815v3.135C3.81 21.465 7.74 24 12.24 24Z"/>
+    <path fill="#FBBC05" d="M5.595 14.355c-.24-.735-.375-1.515-.375-2.355s.135-1.62.375-2.355V6.51H1.815C.855 8.43 0 10.155 0 12s.855 3.57 1.815 5.49l3.78-3.135Z"/>
+    <path fill="#EA4335" d="M12.24 4.755c1.77 0 3.36.6 4.605 1.77l3.42-3.42C18.18 1.17 15.48 0 12.24 0 7.74 0 3.81 2.535 1.815 6.51l3.78 3.135c.93-2.805 3.555-4.89 6.645-4.89Z"/>
+  </svg>
+);
+
+const TelegramIcon = ({ size = 24 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.12.03-1.99 1.26-5.61 3.71-.53.36-1.01.54-1.44.53-.48-.01-1.38-.26-2.06-.48-.83-.27-1.48-.42-1.43-.88.03-.24.33-.48.91-.72 3.55-1.55 5.92-2.57 7.11-3.07 3.39-1.42 4.09-1.66 4.54-1.67.1 0 .32.02.46.14.12.1.15.24.16.35-.01.04-.01.14-.02.21z" fill="#0088cc"/>
+  </svg>
+);
+
+const LinkedInIcon = ({ size = 24 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" fill="#0A66C2"/>
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452z" fill="white"/>
+  </svg>
+);
+
+const renderAnswerText = (question: any, answer: any) => {
+  if (!question || !answer) return <>{answer}</>;
+  
+  const questionStr = String(question);
+  const answerStr = Array.isArray(answer) ? answer.join(" ") : String(answer);
+  
+  const isSourceQuestion = questionStr.includes("مصدر") || questionStr.includes("من أين");
+  if (!isSourceQuestion) return <>{answerStr}</>;
+
+  const ansLower = answerStr.toLowerCase();
+  
+  if (ansLower.includes("تيك توك") || ansLower.includes("tiktok")) {
+    return <div className="flex items-center gap-2" title={answerStr}><span className="text-black dark:text-white flex items-center justify-center"><TikTokIcon size={24} /></span></div>;
+  }
+  if (ansLower.includes("واتساب") || ansLower.includes("whatsapp") || ansLower.includes("واتس")) {
+    return <div className="flex items-center gap-2" title={answerStr}><span className="text-[#25D366] flex items-center justify-center"><WhatsAppIcon size={24} /></span></div>;
+  }
+  if (ansLower.includes("تويتر") || ansLower.includes("twitter") || ansLower.includes("x")) {
+    return <div className="flex items-center gap-2" title={answerStr}><span className="text-black dark:text-white flex items-center justify-center"><XIcon size={24} /></span></div>;
+  }
+  if (ansLower.includes("لينكد ان") || ansLower.includes("لينكدإن") || ansLower.includes("linkedin")) {
+    return <div className="flex items-center gap-2" title={answerStr}><span className="text-[#0A66C2] flex items-center justify-center"><LinkedInIcon size={24} /></span></div>;
+  }
+  if (ansLower.includes("جوجل") || ansLower.includes("google")) {
+    return <div className="flex items-center gap-2" title={answerStr}><span className="flex items-center justify-center"><GoogleIcon size={24} /></span></div>;
+  }
+  if (ansLower.includes("تيليجرام") || ansLower.includes("telegram") || ansLower.includes("تلغرام")) {
+    return <div className="flex items-center gap-2" title={answerStr}><span className="flex items-center justify-center"><TelegramIcon size={24} /></span></div>;
+  }
+  
+  return <>{answerStr}</>;
+};
+
 const CustomAudioPlayer = ({ src }: { src: string }) => {
   const audioRef = React.useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -161,6 +228,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
           interview_score: data.interview_score || 0,
           voiceEvalUrl: data.voice_eval || data.voice_eval_url || "",
           aiSummary: data.ai_summary || data.ai_justification || applicant.aiSummary,
+          custom_answers: data.custom_answers,
         });
       }
     };
@@ -181,6 +249,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
             interview_score: data.interview_score || 0,
             voiceEvalUrl: data.voice_eval || data.voice_eval_url || "",
             aiSummary: data.ai_summary || data.ai_justification || applicant.aiSummary,
+            custom_answers: data.custom_answers,
           });
         }
       })
@@ -464,13 +533,29 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
 
   const [offerText, setOfferText] = useState("");
   // Simulated candidate data for conditional rendering of contact info
+  const cleanPhone = (phone: string | undefined) => {
+    if (!phone || phone === "0500000000") return "";
+    let cleaned = phone.replace(/[^0-9+]/g, '');
+    if (cleaned.startsWith('05')) cleaned = '9665' + cleaned.slice(2);
+    else if (cleaned.startsWith('+')) cleaned = cleaned.slice(1);
+    return cleaned;
+  };
+
+  const cleanEmail = applicant?.email === "applicant@example.com" ? "" : applicant?.email || "";
+  const cleanApplicantPhone = applicant?.phone === "0500000000" ? "" : applicant?.phone || "";
+
   const candidate = {
-    linkedin: applicant?.linkedin || "",
-    whatsapp: applicant?.phone || "966500000000",
-    email: applicant?.email || "ahmed@example.com",
-    phone: applicant?.phone || "966500000000",
-    expectedSalary: "6000",
-    jobSalaryRange: "5000 إلى 8000"
+    linkedin: (() => {
+      let lnk = applicant?.linkedin || "";
+      if (!lnk || lnk.trim() === "" || lnk === "null" || lnk === "undefined") return "";
+      if (lnk.includes('.') && !lnk.includes(' ')) return lnk;
+      return "";
+    })(),
+    whatsapp: cleanPhone(cleanApplicantPhone),
+    email: cleanEmail,
+    phone: cleanApplicantPhone,
+    expectedSalary: applicant?.expectedSalary || "6000",
+    jobSalaryRange: applicant?.jobSalaryRange || "5000 إلى 8000"
   };
 
 
@@ -1054,7 +1139,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
                                         عرض المرفق / الرابط
                                       </a>
                                     ) : (
-                                      <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{ans.answer}</p>
+                                      <p className="text-sm font-bold text-navy dark:text-white leading-relaxed whitespace-pre-wrap">{renderAnswerText(ans.question, ans.answer)}</p>
                                     )}
                                   </div>
                                 ))}
@@ -1465,7 +1550,7 @@ const ApplicantDetails = ({ onBack, applicant, job, onStatusUpdate, onUpdateAppl
               <div className="flex items-center justify-center gap-3 px-8 pb-8">
                 {candidate.linkedin && typeof candidate.linkedin === 'string' && candidate.linkedin.trim() !== "" && candidate.linkedin !== "null" && candidate.linkedin !== "undefined" && (
                   <a href={candidate.linkedin.startsWith('http') ? candidate.linkedin : `https://${candidate.linkedin}`} target="_blank" rel="noreferrer" className="w-10 h-10 bg-[#0A66C2]/10 text-[#0A66C2] border-b-[4px] border-[#0A66C2]/30 rounded-xl flex items-center justify-center hover:bg-[#0A66C2] hover:border-[#0A66C2]/60 hover:text-white transition-all shadow-sm active:translate-y-[4px] active:border-b-0 active:shadow-none" title="لينكد إن">
-                    <Linkedin size={20} />
+                    <LinkedInIcon size={20} />
                   </a>
                 )}
                 {candidate.whatsapp && (

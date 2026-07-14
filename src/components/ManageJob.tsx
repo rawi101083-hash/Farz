@@ -81,7 +81,7 @@ export const ManageJob = ({
   const [salaryMin, setSalaryMin] = useState(job.salaryMin || "");
   const [salaryMax, setSalaryMax] = useState(job.salaryMax || "");
   const [isSalaryHidden, setIsSalaryHidden] = useState(job.isSalaryHidden || false);
-  const [askExpectedSalary, setAskExpectedSalary] = useState(job.askExpectedSalary || false);
+  const [askExpectedSalary, setAskExpectedSalary] = useState(singleRole?.askExpectedSalary || job.askExpectedSalary || false);
   
   const defaultStart = new Date().toISOString().slice(0, 16);
   const defaultEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
@@ -90,13 +90,14 @@ export const ManageJob = ({
   const [isOpenEnded, setIsOpenEnded] = useState(!job.endDate);
   
   // Custom Settings (Merged)
-  const [welcomeUIMessage, setWelcomeUIMessage] = useState(job.welcomeUIMessage || "");
-  const [portalTitle, setPortalTitle] = useState(job.portalTitle || "");
-  const [fontFamily, setFontFamily] = useState(job.fontFamily || "cairo");
-  const [aiInstructions, setAiInstructions] = useState(job.aiInstructions || (job as any).ai_instructions || "");
+  const [welcomeUIMessage, setWelcomeUIMessage] = useState(singleRole?.welcomeUIMessage || job.welcomeUIMessage || "");
+  const [portalTitle, setPortalTitle] = useState(singleRole?.portalTitle || job.portalTitle || "");
+  const [fontFamily, setFontFamily] = useState(singleRole?.fontFamily || job.fontFamily || "cairo");
+  const [aiInstructions, setAiInstructions] = useState(singleRole?.aiInstructions || job.aiInstructions || (job as any).ai_instructions || "");
+  const [showAiInstructions, setShowAiInstructions] = useState(false);
 
   // Status
-  const singleRoleStatus = selectedRoleId ? job.roles?.find(r => r.id === selectedRoleId)?.status : undefined;
+  const singleRoleStatus = singleRole?.status;
   const [status, setStatus] = useState(singleRoleStatus || job.status || "نشط");
   const isJobExpired = !job.isOpenEnded && job.endDate && new Date(job.endDate) < new Date();
   const effectiveStatus = isJobExpired && status === "نشط" ? "منتهي الوقت" : status;
@@ -131,10 +132,10 @@ export const ManageJob = ({
   };
 
   // Questions & Attachments
-  const [knockoutQuestions, setKnockoutQuestions] = useState<{ text: string; type: "yes_no" | "options"; options?: string[]; requiredAnswer: string }[]>(job.knockoutQuestions || []);
-  const [customQuestions, setCustomQuestions] = useState<{ text: string; type: string; options?: string[]; required?: boolean }[]>(job.customQuestions || []);
-  const [requiredAttachments, setRequiredAttachments] = useState<string[]>(job.requiredAttachments || ["السيرة الذاتية PDF"]);
-  const [customAttachments, setCustomAttachments] = useState<any[]>(job.customAttachments || []);
+  const [knockoutQuestions, setKnockoutQuestions] = useState<{ text: string; type: "yes_no" | "options"; options?: string[]; requiredAnswer: string }[]>(singleRole?.knockoutQuestions || job.knockoutQuestions || []);
+  const [customQuestions, setCustomQuestions] = useState<{ text: string; type: string; options?: string[]; required?: boolean }[]>(singleRole?.customQuestions || job.customQuestions || []);
+  const [requiredAttachments, setRequiredAttachments] = useState<string[]>(singleRole?.requiredAttachments || job.requiredAttachments || ["السيرة الذاتية PDF"]);
+  const [customAttachments, setCustomAttachments] = useState<any[]>(singleRole?.customAttachments || job.customAttachments || []);
 
   const [newCustomQuestion, setNewCustomQuestion] = useState("");
   const [newCustomQuestionType, setNewCustomQuestionType] = useState("نص");
@@ -258,12 +259,43 @@ export const ManageJob = ({
           salaryMin: updatedJob.salaryMin === "" ? undefined : Number(updatedJob.salaryMin) || undefined,
           salaryMax: updatedJob.salaryMax === "" ? undefined : Number(updatedJob.salaryMax) || undefined,
           isSalaryHidden: updatedJob.isSalaryHidden,
-          status: updatedJob.status
+          status: updatedJob.status,
+          askExpectedSalary: updatedJob.askExpectedSalary,
+          welcomeUIMessage: updatedJob.welcomeUIMessage,
+          portalTitle: updatedJob.portalTitle,
+          fontFamily: updatedJob.fontFamily,
+          aiInstructions: updatedJob.aiInstructions,
+          knockoutQuestions: updatedJob.knockoutQuestions,
+          customQuestions: updatedJob.customQuestions,
+          requiredAttachments: updatedJob.requiredAttachments,
+          customAttachments: updatedJob.customAttachments,
         } : r);
         const { error } = await supabase.from('jobs').update({ roles: updatedRoles }).eq('id', updatedJob.id);
         if (error) throw error;
         onUpdate({ ...updatedJob, roles: updatedRoles });
       } else {
+        let updatedRoles = job.roles || [];
+        if (updatedRoles.length > 0) {
+           updatedRoles[0] = {
+             ...updatedRoles[0],
+             location: updatedJob.location,
+             type: updatedJob.type,
+             salaryMin: updatedJob.salaryMin === "" ? undefined : Number(updatedJob.salaryMin) || undefined,
+             salaryMax: updatedJob.salaryMax === "" ? undefined : Number(updatedJob.salaryMax) || undefined,
+             isSalaryHidden: updatedJob.isSalaryHidden,
+             status: updatedJob.status,
+             askExpectedSalary: updatedJob.askExpectedSalary,
+             welcomeUIMessage: updatedJob.welcomeUIMessage,
+             portalTitle: updatedJob.portalTitle,
+             fontFamily: updatedJob.fontFamily,
+             aiInstructions: updatedJob.aiInstructions,
+             knockoutQuestions: updatedJob.knockoutQuestions,
+             customQuestions: updatedJob.customQuestions,
+             requiredAttachments: updatedJob.requiredAttachments,
+             customAttachments: updatedJob.customAttachments,
+           };
+        }
+
         const { error } = await supabase.from('jobs').update({
           location: updatedJob.location,
           type: updatedJob.type,
@@ -275,15 +307,12 @@ export const ManageJob = ({
           status: updatedJob.status,
           knockout_questions: updatedJob.knockoutQuestions,
           custom_questions: updatedJob.customQuestions,
-          required_attachments: updatedJob.requiredAttachments,
           custom_attachments: updatedJob.customAttachments,
-          welcome_ui_message: updatedJob.welcomeUIMessage,
-          portal_title: updatedJob.portalTitle,
-          font_family: updatedJob.fontFamily,
-          ai_instructions: updatedJob.aiInstructions
+          ai_instructions: updatedJob.aiInstructions,
+          roles: updatedRoles
         }).eq('id', updatedJob.id);
         if (error) throw error;
-        onUpdate(updatedJob);
+        onUpdate({ ...updatedJob, roles: updatedRoles });
       }
       setShowWarningModal(false);
       alert("تم حفظ التعديلات بنجاح!");
@@ -409,452 +438,311 @@ export const ManageJob = ({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* MAIN CONTENT AREA */}
-          <div className="lg:col-span-2 space-y-8">
+                                                  <div className="lg:col-span-2 space-y-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-xl shadow-slate-200/50"
             >
               
+              <div className="bg-amber-50 dark:bg-amber-900/20 border-r-4 border-amber-500 p-4 rounded-l-xl mb-8 flex items-start gap-3">
+                <Lock className="text-amber-500 shrink-0 mt-0.5" size={20} />
+                <p className="text-amber-800 dark:text-amber-400 font-bold text-sm leading-relaxed">
+                  البيانات في هذه الصفحة مقفلة للقراءة فقط. قم بتكرار هذه الوظيفة كإعلان جديد إذا أردت التعديل عليها.
+                </p>
+              </div>
+
               {/* TABS */}
               <div className="flex justify-center gap-4 border-b border-slate-200 dark:border-slate-700 mb-8 overflow-x-auto whitespace-nowrap hide-scrollbar pb-0">
-                {/* ملاحظة: تم إخفاء هذه المعلومات مؤقتاً (إعدادات الوظيفة، متطلبات التقديم) */}
-                {/* (["أرشيف الوصف الوظيفي", "إعدادات الوظيفة", "متطلبات التقديم"] as const).map(tab => ( */}
-                {(["أرشيف الوصف الوظيفي"] as const).map(tab => (
+                {(['أرشيف الوصف الوظيفي', 'نموذج التقديم', 'التاريخ والنشر'] as const).map(tab => (
                   <button
                     key={tab}
                     type="button"
                     onClick={() => setActiveTab(tab as any)}
-                    className={`pb-4 font-bold text-sm md:text-base px-4 border-b-4 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 ${activeTab === tab ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                    className={`pb-4 font-bold text-sm md:text-base px-4 border-b-4 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 ${activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
                   >
-                    {tab === "أرشيف الوصف الوظيفي" && <Lock size={14} className="inline-block ml-1 opacity-70" />}
-                    {tab === "إعدادات الوظيفة" && <Settings size={14} className="inline-block ml-1 opacity-70" />}
-                    {tab === "متطلبات التقديم" && <ClipboardList size={14} className="inline-block ml-1 opacity-70" />}
+                    {tab === 'أرشيف الوصف الوظيفي' && <Lock size={14} className="inline-block ml-1 opacity-70" />}
+                    {tab === 'نموذج التقديم' && <ClipboardList size={14} className="inline-block ml-1 opacity-70" />}
+                    {tab === 'التاريخ والنشر' && <Settings size={14} className="inline-block ml-1 opacity-70" />}
                     {tab}
                   </button>
                 ))}
               </div>
 
-              {/* TAB 1: ARCHIVE (READ ONLY) */}
-              {activeTab === "أرشيف الوصف الوظيفي" && (
+              {/* TAB 1: SECTION 1: Job Description Archive */}
+              {activeTab === 'أرشيف الوصف الوظيفي' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border-r-4 border-amber-500 p-4 rounded-l-xl mb-6 flex items-start gap-3">
-                    <Lock className="text-amber-500 shrink-0 mt-0.5" size={20} />
-                    <p className="text-amber-800 dark:text-amber-400 font-bold text-sm leading-relaxed">
-                      البيانات في هذا القسم مقفلة للقراءة، قم بتكرار هذه الوظيفة كإعلان جديد إذا أردت التعديل عليها.
-                    </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">المسمى الوظيفي</p>
+                    <p className="font-bold text-navy dark:text-white">{title || 'لم تُحدد'}</p>
                   </div>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الجهة / الشركة</p>
+                    <p className="font-bold text-navy dark:text-white">{company || 'لم تُحدد'}</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">سنوات الخبرة</p>
+                    <p className="font-bold text-navy dark:text-white">{experience}</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الحد الأدنى للمؤهل</p>
+                    <p className="font-bold text-navy dark:text-white">{qualification}</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">نوع العمل</p>
+                    <p className="font-bold text-navy dark:text-white">{jobType}</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">مقر العمل</p>
+                    <p className="font-bold text-navy dark:text-white">{jobLocation}</p>
+                  </div>
+                  {(job.salaryMin || job.salaryMax) && (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm md:col-span-2 text-center flex flex-col items-center justify-center">
+                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الراتب المتوقع</p>
+                      <p className="font-bold text-navy dark:text-white text-sm">
+                        {job.salaryMin && job.salaryMax 
+                          ? `${job.salaryMin} - ${job.salaryMax} ريال` 
+                          : job.salaryMin 
+                            ? `${job.salaryMin} ريال` 
+                            : `${job.salaryMax} ريال`}
+                      </p>
+                    </div>
+                  )}
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
-                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">المسمى الوظيفي</p>
-                      <p className="font-bold text-navy dark:text-white">{title || "لم تُحدد"}</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
-                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الجهة / الشركة</p>
-                      <p className="font-bold text-navy dark:text-white">{company || "لم تُحدد"}</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
-                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">سنوات الخبرة</p>
-                      <p className="font-bold text-navy dark:text-white">{experience}</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
-                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الحد الأدنى للمؤهل</p>
-                      <p className="font-bold text-navy dark:text-white">{qualification}</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
-                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">نوع العمل</p>
-                      <p className="font-bold text-navy dark:text-white">{jobType}</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
-                      <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">مقر العمل</p>
-                      <p className="font-bold text-navy dark:text-white">{jobLocation}</p>
-                    </div>
-                    {(job.salaryMin || job.salaryMax) ? (
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 md:col-span-2 text-center flex flex-col items-center justify-center shadow-sm">
-                        <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الراتب</p>
-                        <p className="font-bold text-navy dark:text-white">
-                          {job.salaryMin && job.salaryMax 
-                            ? `${job.salaryMin} - ${job.salaryMax} ريال` 
-                            : job.salaryMin 
-                              ? `${job.salaryMin} ريال` 
-                              : `${job.salaryMax} ريال`}
-                        </p>
+                {roleSummary ? (
+                  <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> نبذة عن الدور</h3>
+                    <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{roleSummary}</p>
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> نبذة عن الدور</h3>
+                    <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد</p>
+                  </div>
+                )}
+
+                {responsibilities ? (
+                  <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهام والمسؤوليات</h3>
+                    <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{responsibilities}</p>
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهام والمسؤوليات</h3>
+                    <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد</p>
+                  </div>
+                )}
+
+                {qualificationsText ? (
+                  <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المؤهلات والمتطلبات</h3>
+                    <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{qualificationsText}</p>
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المؤهلات والمتطلبات</h3>
+                    <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد</p>
+                  </div>
+                )}
+
+                {benefits ? (
+                  <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المميزات</h3>
+                    <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{benefits}</p>
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المميزات</h3>
+                    <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد</p>
+                  </div>
+                )}
+
+                <div className="space-y-6 mt-8">
+                  <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> التخصصات المستهدفة</h3>
+                    {targetMajors.length > 0 ? (
+                      <div className="flex flex-wrap gap-3">
+                        {targetMajors.map(major => <span key={major} className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-bold shadow-sm">{major}</span>)}
                       </div>
-                    ) : null}
+                    ) : (
+                      <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد</p>
+                    )}
                   </div>
+                  
+                  <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهارات</h3>
+                    {selectedSkills.length > 0 ? (
+                      <div className="flex flex-wrap gap-3">
+                        {selectedSkills.map(skill => <span key={skill} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm">{skill}</span>)}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد</p>
+                    )}
+                  </div>
+                  
+                  <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> اللغات المطلوبة</h3>
+                    {selectedLanguages.length > 0 ? (
+                      <div className="flex flex-wrap gap-3">
+                        {selectedLanguages.map(lang => <span key={lang} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm">{lang}</span>)}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد</p>
+                    )}
+                  </div>
+                </div>
 
-                  {roleSummary && (
-                    <div className="bg-white dark:bg-slate-800/50 mt-8">
-                      <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> نبذة عن الدور</h3>
-                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed px-4">{roleSummary}</p>
-                    </div>
-                  )}
-
-                  {responsibilities && (
-                    <div className="bg-white dark:bg-slate-800/50 mt-8">
-                      <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهام والمسؤوليات</h3>
-                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed px-4">{responsibilities}</p>
-                    </div>
-                  )}
-
-                  {qualificationsText && (
-                    <div className="bg-white dark:bg-slate-800/50 mt-8">
-                      <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المؤهلات والمتطلبات</h3>
-                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed px-4">{qualificationsText}</p>
-                    </div>
-                  )}
-
-                  {benefits && (
-                    <div className="bg-white dark:bg-slate-800/50 mt-8">
-                      <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المميزات</h3>
-                      <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed px-4">{benefits}</p>
-                    </div>
-                  )}
-
-                  <div className="space-y-8 mt-8">
-                    {targetMajors.length > 0 && (
-                      <div className="bg-white dark:bg-slate-800/50">
-                        <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> التخصصات المستهدفة</h3>
-                        <div className="flex flex-wrap gap-3 px-4">
-                          {targetMajors.map(major => <span key={major} className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-bold shadow-sm">{major}</span>)}
-                        </div>
+                {aiInstructions && (
+                  <div className="mt-8 border border-primary/20 rounded-2xl overflow-hidden bg-primary/5">
+                    <button 
+                      onClick={() => setShowAiInstructions(!showAiInstructions)}
+                      className="w-full flex items-center justify-between p-4 bg-primary/10 hover:bg-primary/20 transition-colors"
+                    >
+                      <h3 className="text-md font-bold text-primary flex items-center gap-2">
+                        <Sparkles size={18} /> توجيهات إضافية لمحرك الفرز (AI Instructions)
+                      </h3>
+                      <span className="text-primary font-bold text-xs bg-white/50 px-3 py-1 rounded-full">{showAiInstructions ? 'إخفاء' : 'عرض التفاصيل'}</span>
+                    </button>
+                    {showAiInstructions && (
+                      <div className="p-4 text-slate-700 dark:text-slate-300 font-medium text-sm leading-relaxed whitespace-pre-wrap">
+                        {aiInstructions}
                       </div>
                     )}
-                    {selectedSkills.length > 0 && (
-                      <div className="bg-white dark:bg-slate-800/50">
-                        <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهارات</h3>
-                        <div className="flex flex-wrap gap-3 px-4">
-                          {selectedSkills.map(skill => <span key={skill} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm">{skill}</span>)}
-                        </div>
-                      </div>
-                    )}
-                    {selectedLanguages.length > 0 && (
-                      <div className="bg-white dark:bg-slate-800/50">
-                        <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> اللغات المطلوبة</h3>
-                        <div className="flex flex-wrap gap-3 px-4">
-                          {selectedLanguages.map(lang => <span key={lang} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm">{lang}</span>)}
-                        </div>
-                      </div>
-                    )}
                   </div>
+                )}
                 </motion.div>
               )}
 
-              {/* TAB 2: SETTINGS (EDITABLE) */}
-              {activeTab === "إعدادات الوظيفة" && (
-                <motion.form initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6" onSubmit={handleUpdate}>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-2">نوع العمل</label>
-                      <select value={type} onChange={(e) => setType(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-primary font-bold text-navy dark:text-white">
-                        <option>دوام كامل</option><option>دوام جزئي</option><option>عن بعد</option><option>تدريب</option>
-                      </select>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-2">مقر العمل</label>
-                      <input type="text" value={location} onChange={e => setLocation(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-medium text-navy dark:text-white" required />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <label className="text-sm font-bold text-navy dark:text-white mr-2 block">ميزانية الراتب</label>
-                    <div className="flex items-center gap-4">
-                      <input type="number" placeholder="الحد الأدنى" value={salaryMin} onChange={e => setSalaryMin(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 outline-none rounded-xl border border-slate-200 dark:border-slate-700 text-navy dark:text-white font-medium" />
-                      <span className="font-bold text-slate-400">-</span>
-                      <input type="number" placeholder="الحد الأعلى" value={salaryMax} onChange={e => setSalaryMax(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 outline-none rounded-xl border border-slate-200 dark:border-slate-700 text-navy dark:text-white font-medium" />
-                    </div>
-                    <div className="flex flex-col gap-3 mt-4">
-                      <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">
-                        <input type="checkbox" checked={isSalaryHidden} onChange={(e) => setIsSalaryHidden(e.target.checked)} className="w-5 h-5 rounded text-primary focus:ring-primary" />
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">إخفاء الراتب عن المتقدمين (للفرز الآلي فقط)</span>
-                      </label>
-                      <label className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">
-                        <input type="checkbox" checked={askExpectedSalary} onChange={(e) => setAskExpectedSalary(e.target.checked)} className="w-5 h-5 rounded text-primary focus:ring-primary" />
-                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">سؤال المتقدم عن الراتب المتوقع</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-sm font-bold text-navy dark:text-white">جدولة الإعلان</label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <span className="text-xs font-bold text-slate-500">إعلان مستمر</span>
-                        <input type="checkbox" checked={isOpenEnded} onChange={(e) => setIsOpenEnded(e.target.checked)} className="w-4 h-4 rounded text-primary" />
-                      </label>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <input type="datetime-local" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 outline-none rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800/50 text-navy dark:text-white font-medium" />
-                      {!isOpenEnded && (
-                        <input type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 outline-none rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800/50 text-navy dark:text-white font-medium" />
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                     <h4 className="font-bold text-navy dark:text-white mb-2">تخصيص الواجهة والفرز الذكي</h4>
-                     <div className="space-y-2 mb-4 bg-primary/5 border border-primary/20 p-4 rounded-xl">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-2 flex items-center gap-2"><Sparkles size={16} className="text-primary"/> توجيهات إضافية لمحرك الفرز (AI Instructions)</label>
-                      <textarea value={aiInstructions} onChange={e => setAiInstructions(e.target.value)} placeholder="مثال: يرجى تقليل نسبة المتقدم إذا لم يكن يملك خبرة في برنامج فوتوشوب، أو ارفع نسبة المتقدم إذا كان يحمل شهادة PMP..." className="w-full px-4 py-3 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-medium text-navy dark:text-white min-h-[100px]"></textarea>
-                     </div>
-                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-2">رسالة الترحيب</label>
-                      <input type="text" value={welcomeUIMessage} onChange={e => setWelcomeUIMessage(e.target.value)} placeholder="مثال: يسعدنا انضمامك لفريقنا..." className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-medium text-navy dark:text-white" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-2">عنوان بوابة التقديم</label>
-                      <input type="text" value={portalTitle} onChange={e => setPortalTitle(e.target.value)} placeholder="مثال: بوابة التوظيف الموحدة" className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-medium text-navy dark:text-white" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-navy dark:text-white mr-2">نوع الخط</label>
-                      <select value={fontFamily} onChange={e => setFontFamily(e.target.value)} className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-medium text-navy dark:text-white">
-                        <option value="cairo">Cairo (الافتراضي)</option>
-                        <option value="tajawal">Tajawal</option>
-                        <option value="ibm">IBM Plex Sans Arabic</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <button type="submit" className="w-full bg-primary text-white py-4 mt-8 rounded-2xl text-lg font-bold hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                    <Save size={20} /> حفظ التحديثات
-                  </button>
-                </motion.form>
-              )}
-
-              {/* TAB 3: APPLICATION REQUIREMENTS (EDITABLE WITH WARNING) */}
-              {activeTab === "متطلبات التقديم" && (
+              {/* TAB 2: SECTION 2: Application Form Settings */}
+              {activeTab === 'نموذج التقديم' && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                  <div className="bg-primary/5 border border-primary/20 p-5 rounded-2xl flex gap-4">
-                    <Info className="text-primary shrink-0" />
-                    <div>
-                      <h4 className="font-bold text-navy dark:text-white mb-1">أسئلة الاستبعاد المباشر (Knockout)</h4>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                        يتم طرح هذه الأسئلة للمتقدم بصيغة (نعم/لا). إذا أجاب بخلاف "الإجابة المطلوبة"، سيتم استبعاده فوراً من المنافسة وتوفير تكلفة تحليله.
-                      </p>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">رسالة الترحيب</p>
+                    <p className="font-bold text-navy dark:text-white text-sm">{welcomeUIMessage || 'الافتراضية'}</p>
                   </div>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-bold mb-1">عنوان بوابة التقديم</p>
+                    <p className="font-bold text-navy dark:text-white text-sm">{portalTitle || 'الافتراضي'}</p>
+                  </div>
+                </div>
 
-                  <div className="space-y-3">
+                <div className="space-y-6">
+                  {/* Knockout Questions */}
+                  <div>
+                    <h3 className="text-md font-bold text-navy dark:text-white mb-3">أسئلة الاستبعاد المباشر (Knockout)</h3>
                     {knockoutQuestions.length === 0 ? (
-                      <p className="text-center py-8 text-slate-400 font-medium">لا توجد أسئلة استبعاد مضافة</p>
+                      <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد أسئلة استبعاد مباشر</p>
                     ) : (
-                      knockoutQuestions.map((kq, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 border-2 border-b-4 border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
-                          <div>
-                            <p className="font-bold text-sm text-navy dark:text-white mb-1">{kq.text}</p>
-                            <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">الشرط لاجتياز الفرز: {kq.requiredAnswer}</span>
+                      <div className="space-y-3">
+                        {knockoutQuestions.map((kq, idx) => (
+                          <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <p className="font-bold text-sm text-navy dark:text-white leading-relaxed">{kq.text}</p>
+                            <span className="text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/20 px-3 py-1.5 rounded-lg whitespace-nowrap">الشرط لاجتياز الفرز: {kq.requiredAnswer}</span>
                           </div>
-                          <button onClick={() => setKnockoutQuestions(knockoutQuestions.filter((_, i) => i !== idx))} className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 transition-colors">
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ))
+                        ))}
+                      </div>
                     )}
                   </div>
 
-                  <div className="flex flex-wrap sm:flex-nowrap gap-2">
-                    <input type="text" value={newKqText} onChange={e => setNewKqText(e.target.value)} placeholder="مثال: هل تمتلك رخصة قيادة سارية؟" className="flex-1 w-full sm:w-auto px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:border-primary text-sm font-medium dark:text-white" />
-                    <select value={newKqAnswer} onChange={e => setNewKqAnswer(e.target.value)} className="w-24 px-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none font-bold text-sm text-center dark:text-white">
-                      <option>نعم</option>
-                      <option>لا</option>
-                    </select>
-                    <button onClick={addKnockoutQuestion} className="bg-navy text-white px-4 py-3 rounded-xl hover:bg-slate-800 transition-colors flex items-center justify-center gap-1 font-bold text-sm">
-                      <Plus size={16} /> إضافة
-                    </button>
-                  </div>
-
                   {/* Required Attachments */}
-                  <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mt-6">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4">المرفقات الأساسية</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {["السيرة الذاتية PDF", "خطاب المقدمة/Cover Letter", "معرض الأعمال/Portfolio", "فيديو تعريفي قصير"].map((item) => (
-                        <label key={item} className="flex items-center gap-3 p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={requiredAttachments.includes(item)}
-                            onChange={() => item !== "السيرة الذاتية PDF" && toggleRequiredAttachment(item)}
-                            disabled={item === "السيرة الذاتية PDF"}
-                            className="w-5 h-5 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer disabled:opacity-50"
-                          />
-                          <span className={`font-medium text-sm ${item === "السيرة الذاتية PDF" ? "text-slate-400" : "text-navy dark:text-white"}`}>
-                            {item}
-                            {item === "السيرة الذاتية PDF" && <span className="text-xs text-red-500 mr-2">(إلزامي للفرز)</span>}
+                  <div>
+                    <h3 className="text-md font-bold text-navy dark:text-white mb-3">المرفقات الأساسية المطلوبة</h3>
+                    {requiredAttachments.length === 0 ? (
+                      <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد مرفقات أساسية</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-3">
+                        {requiredAttachments.map((item, idx) => (
+                          <span key={idx} className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-navy dark:text-white flex items-center gap-2">
+                            <CheckCircle size={16} className="text-primary" /> {item}
                           </span>
-                        </label>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Custom Questions */}
-                  <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mt-6">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4">الأسئلة الإضافية</h3>
-                    <div className="space-y-4">
-                      {customQuestions.map((q, idx) => (
-                        <div key={idx} className="flex flex-col md:flex-row p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl gap-4">
-                          <div className="space-y-1 flex-1">
-                            <p className="font-bold text-navy dark:text-white text-sm">{q.text}</p>
-                            <p className="text-xs text-primary font-medium flex items-center gap-1.5">
-                              نوع الإجابة: {q.type}
-                              <span className="text-slate-300">•</span>
-                              <span className={q.required ? "text-red-500" : "text-slate-400"}>
-                                {q.required ? "إلزامي" : "اختياري"}
-                              </span>
+                  <div>
+                    <h3 className="text-md font-bold text-navy dark:text-white mb-3">الأسئلة الإضافية المخصصة</h3>
+                    {customQuestions.length === 0 ? (
+                      <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد أسئلة إضافية</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {customQuestions.map((q, idx) => (
+                          <div key={idx} className="p-5 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+                            <p className="font-bold text-navy dark:text-white text-sm mb-2">{q.text}</p>
+                            <p className="text-xs text-slate-500 font-medium flex gap-2 items-center">
+                              <span className="bg-white dark:bg-slate-700 px-2 py-1 rounded shadow-sm border border-slate-100 dark:border-slate-600">نوع الإجابة: {q.type}</span>
+                              <span className={`px-2 py-1 rounded shadow-sm border ${q.required ? 'bg-red-50 text-red-600 border-red-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>{q.required ? 'إلزامي' : 'اختياري'}</span>
                             </p>
-                            {q.type === "خيارات متعددة" && q.options && (
-                              <div className="mt-2 flex flex-wrap gap-2">
+                            {q.type === 'خيارات متعددة' && q.options && (
+                              <div className="mt-3 flex flex-wrap gap-2">
                                 {q.options.map((opt, oIdx) => (
-                                  <span key={oIdx} className="text-xs bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-2 py-1 rounded-md text-slate-600 dark:text-slate-300">
+                                  <span key={oIdx} className="text-xs font-bold bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-3 py-1.5 rounded-lg text-slate-600 dark:text-white shadow-sm">
                                     {opt}
                                   </span>
                                 ))}
                               </div>
                             )}
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => removeCustomQuestion(idx)}
-                            className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ))}
-                      
-                      <div className="flex flex-col md:flex-row gap-4 items-center bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={newCustomQuestionRequired}
-                            onChange={(e) => setNewCustomQuestionRequired(e.target.checked)}
-                            className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer"
-                          />
-                          <span className="text-xs font-bold text-navy dark:text-white">إلزامي؟</span>
-                        </div>
-                        <input
-                          type="text"
-                          value={newCustomQuestion}
-                          onChange={(e) => setNewCustomQuestion(e.target.value)}
-                          placeholder="اكتب السؤال هنا..."
-                          className="flex-1 bg-slate-50 dark:bg-slate-700/50 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:text-white w-full"
-                        />
-                        <select
-                          value={newCustomQuestionType}
-                          onChange={(e) => setNewCustomQuestionType(e.target.value)}
-                          className="bg-slate-50 dark:bg-slate-700/50 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:text-white w-full md:w-[130px]"
-                        >
-                          <option value="نص">نص</option>
-                          <option value="نعم/لا">نعم/لا</option>
-                          <option value="خيارات متعددة">خيارات</option>
-                        </select>
-                        <button
-                          type="button"
-                          onClick={addCustomQuestion}
-                          disabled={!newCustomQuestion.trim()}
-                          className="px-6 py-3 w-full md:w-auto bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-dark hover:shadow-lg disabled:opacity-50 disabled:hover:shadow-none transition-all flex items-center justify-center gap-2"
-                        >
-                          <Plus size={16} /> إضافة
-                        </button>
+                        ))}
                       </div>
-                      {newCustomQuestionType === "خيارات متعددة" && (
-                        <div className="grid grid-cols-2 gap-4 mt-2">
-                          {newCustomQuestionOptions.map((opt, oIdx) => (
-                            <input
-                              key={oIdx}
-                              type="text"
-                              value={opt}
-                              onChange={(e) => {
-                                const newOpts = [...newCustomQuestionOptions];
-                                newOpts[oIdx] = e.target.value;
-                                if (oIdx === newOpts.length - 1 && e.target.value.trim() !== "") {
-                                  newOpts.push("");
-                                }
-                                setNewCustomQuestionOptions(newOpts);
-                              }}
-                              placeholder={`الخيار ${oIdx + 1}`}
-                              className="w-full bg-white dark:bg-slate-800 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-medium outline-none focus:border-primary dark:text-white"
-                            />
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    )}
                   </div>
 
                   {/* Custom Attachments */}
-                  <div className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mt-6 mb-8">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4">المرفقات المخصصة</h3>
-                    <div className="space-y-4">
-                      {customAttachments.map((att, idx) => (
-                        <div key={idx} className="flex flex-col md:flex-row p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl gap-4">
-                          <div className="space-y-1 flex-1">
-                            <p className="font-bold text-navy dark:text-white text-sm">{att.attachment_name}</p>
-                            <p className="text-xs text-primary font-medium flex items-center gap-1.5">
-                              نوع المرفق: {att.attachment_type === "file" ? "ملف (PDF/Doc)" : att.attachment_type === "image" ? "صورة" : att.attachment_type === "video" ? "فيديو" : att.attachment_type === "link" ? "رابط" : "أخرى"}
-                              <span className="text-slate-300">•</span>
-                              <span className={att.required ? "text-red-500" : "text-slate-400"}>
-                                {att.required ? "إلزامي" : "اختياري"}
-                              </span>
-                            </p>
+                  <div>
+                    <h3 className="text-md font-bold text-navy dark:text-white mb-3">المرفقات المخصصة الإضافية</h3>
+                    {customAttachments.length === 0 ? (
+                      <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد مرفقات مخصصة</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {customAttachments.map((att, idx) => (
+                          <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl flex justify-between items-center">
+                            <div>
+                              <p className="font-bold text-navy dark:text-white text-sm mb-1">{att.attachment_name}</p>
+                              <p className="text-xs text-slate-500 font-medium flex gap-2 items-center mt-2">
+                                <span className="bg-white dark:bg-slate-700 px-2 py-1 rounded shadow-sm border border-slate-100 dark:border-slate-600">نوع المرفق: {att.attachment_type === 'file' ? 'ملف' : att.attachment_type === 'link' ? 'رابط' : att.attachment_type}</span>
+                                <span className={`px-2 py-1 rounded shadow-sm border ${att.required ? 'bg-red-50 text-red-600 border-red-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>{att.required ? 'إلزامي' : 'اختياري'}</span>
+                              </p>
+                            </div>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => removeCustomAttachment(idx)}
-                            className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm shrink-0"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ))}
-
-                      <div className="flex flex-col md:flex-row gap-4 items-center bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                        <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-700/50 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={newAttachmentRequired}
-                            onChange={(e) => setNewAttachmentRequired(e.target.checked)}
-                            className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary/20 cursor-pointer"
-                          />
-                          <span className="text-xs font-bold text-navy dark:text-white">إلزامي؟</span>
-                        </div>
-                        <input
-                          type="text"
-                          value={newAttachmentName}
-                          onChange={(e) => setNewAttachmentName(e.target.value)}
-                          placeholder="اسم المرفق المطلوب..."
-                          className="flex-1 bg-slate-50 dark:bg-slate-700/50 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:text-white w-full"
-                        />
-                        <select
-                          value={newAttachmentType}
-                          onChange={(e) => setNewAttachmentType(e.target.value as any)}
-                          className="bg-slate-50 dark:bg-slate-700/50 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 text-sm font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:text-white w-full md:w-[130px]"
-                        >
-                          <option value="file">ملف</option>
-                          <option value="image">صورة</option>
-                          <option value="video">فيديو</option>
-                          <option value="link">رابط</option>
-                        </select>
-                        <button
-                          type="button"
-                          onClick={addCustomAttachment}
-                          disabled={!newAttachmentName.trim()}
-                          className="px-6 py-3 w-full md:w-auto bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary-dark hover:shadow-lg disabled:opacity-50 disabled:hover:shadow-none transition-all flex items-center justify-center gap-2"
-                        >
-                          <Plus size={16} /> إضافة
-                        </button>
+                        ))}
                       </div>
-                    </div>
+                    )}
                   </div>
 
-                  <button onClick={() => handleUpdate(undefined, false)} className="w-full bg-primary text-white py-4 mt-8 rounded-2xl text-lg font-bold hover:shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                    <Save size={20} /> حفظ التحديثات
-                  </button>
+                </div>
+                </motion.div>
+              )}
+
+              {/* TAB 3: SECTION 3: Dates & Publishing */}
+              {activeTab === 'التاريخ والنشر' && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm flex flex-col items-center text-center justify-center">
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">تاريخ النشر</p>
+                    <p className="font-bold text-navy dark:text-white text-sm" dir="ltr">
+                      {new Date(startDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm flex flex-col items-center text-center justify-center">
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">تاريخ الإغلاق</p>
+                    <p className="font-bold text-navy dark:text-white text-sm" dir="ltr">
+                      {isOpenEnded ? 'إعلان مستمر' : new Date(endDate).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                    </p>
+                  </div>
+                </div>
                 </motion.div>
               )}
 
             </motion.div>
           </div>
-
+          
           {/* SIDEBAR: DASHBOARD & ACTIONS */}
           <div className="space-y-6">
             
