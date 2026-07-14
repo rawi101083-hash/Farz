@@ -37,14 +37,16 @@ export const ManageJob = ({
     try {
       if (selectedRoleId && job.roles) {
         const updatedRoles = job.roles.map(r => r.id === selectedRoleId ? { ...r, createdAt: newDateStr.split("T")[0] } : r);
-        const { error } = await supabase.from('jobs').update({ roles: updatedRoles }).eq('id', job.id);
+        const { error } = await supabase.from('jobs').update({ roles: updatedRoles, start_date: newDateStr }).eq('id', job.id);
         if (error) throw error;
-        onUpdate({ ...job, roles: updatedRoles }, true);
+        setStartDate(newDateStr);
+        onUpdate({ ...job, roles: updatedRoles, startDate: newDateStr }, true);
         showToast("تم تحديث تاريخ النشر للشاغر بنجاح!", "success");
       } else {
-        const { error } = await supabase.from('jobs').update({ created_at: newDateStr }).eq('id', job.id);
+        const { error } = await supabase.from('jobs').update({ created_at: newDateStr, start_date: newDateStr }).eq('id', job.id);
         if (error) throw error;
-        onUpdate({ ...job, createdAt: newDateStr.split("T")[0] }, true);
+        setStartDate(newDateStr);
+        onUpdate({ ...job, createdAt: newDateStr.split("T")[0], startDate: newDateStr }, true);
         showToast("تم تحديث تاريخ النشر بنجاح!", "success");
       }
     } catch (err) {
@@ -95,6 +97,8 @@ export const ManageJob = ({
   const [fontFamily, setFontFamily] = useState(singleRole?.fontFamily || job.fontFamily || "cairo");
   const [aiInstructions, setAiInstructions] = useState(singleRole?.aiInstructions || job.aiInstructions || (job as any).ai_instructions || "");
   const [showAiInstructions, setShowAiInstructions] = useState(false);
+  const aiOverrideFields = singleRole?.aiOverrideFields || job.aiOverrideFields;
+  const [showAiOverrideFields, setShowAiOverrideFields] = useState(false);
 
   // Status
   const singleRoleStatus = singleRole?.status;
@@ -475,7 +479,7 @@ export const ManageJob = ({
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">المسمى الوظيفي</p>
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1 flex items-center gap-1.5">المسمى الوظيفي {!aiOverrideFields && <Sparkles size={12} className="text-primary/70" />}</p>
                     <p className="font-bold text-navy dark:text-white">{title || 'لم تُحدد'}</p>
                   </div>
                   <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
@@ -483,11 +487,11 @@ export const ManageJob = ({
                     <p className="font-bold text-navy dark:text-white">{company || 'لم تُحدد'}</p>
                   </div>
                   <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">سنوات الخبرة</p>
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1 flex items-center gap-1.5">سنوات الخبرة {!aiOverrideFields && <Sparkles size={12} className="text-primary/70" />}</p>
                     <p className="font-bold text-navy dark:text-white">{experience}</p>
                   </div>
                   <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
-                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الحد الأدنى للمؤهل</p>
+                    <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1 flex items-center gap-1.5">الحد الأدنى للمؤهل {!aiOverrideFields && <Sparkles size={12} className="text-primary/70" />}</p>
                     <p className="font-bold text-navy dark:text-white">{qualification}</p>
                   </div>
                   <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm">
@@ -498,7 +502,7 @@ export const ManageJob = ({
                     <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">مقر العمل</p>
                     <p className="font-bold text-navy dark:text-white">{jobLocation}</p>
                   </div>
-                  {(job.salaryMin || job.salaryMax) && (
+                  {(Number(job.salaryMin) > 0 || Number(job.salaryMax) > 0) && (
                     <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-b-4 border-slate-200 dark:border-slate-700 shadow-sm md:col-span-2 text-center flex flex-col items-center justify-center">
                       <p className="text-xs text-slate-800 dark:text-slate-300 font-bold mb-1">الراتب المتوقع</p>
                       <p className="font-bold text-navy dark:text-white text-sm">
@@ -514,36 +518,36 @@ export const ManageJob = ({
 
                 {roleSummary ? (
                   <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> نبذة عن الدور</h3>
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> نبذة عن الدور {!aiOverrideFields && <Sparkles size={16} className="text-primary/70" />}</h3>
                     <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{roleSummary}</p>
                   </div>
                 ) : (
                   <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> نبذة عن الدور</h3>
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> نبذة عن الدور {!aiOverrideFields && <Sparkles size={16} className="text-primary/70" />}</h3>
                     <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد</p>
                   </div>
                 )}
 
                 {responsibilities ? (
                   <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهام والمسؤوليات</h3>
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهام والمسؤوليات {!aiOverrideFields && <Sparkles size={16} className="text-primary/70" />}</h3>
                     <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{responsibilities}</p>
                   </div>
                 ) : (
                   <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهام والمسؤوليات</h3>
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهام والمسؤوليات {!aiOverrideFields && <Sparkles size={16} className="text-primary/70" />}</h3>
                     <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد</p>
                   </div>
                 )}
 
                 {qualificationsText ? (
                   <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المؤهلات والمتطلبات</h3>
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المؤهلات والمتطلبات {!aiOverrideFields && <Sparkles size={16} className="text-primary/70" />}</h3>
                     <p className="font-medium text-slate-700 dark:text-slate-300 whitespace-pre-wrap text-sm leading-relaxed">{qualificationsText}</p>
                   </div>
                 ) : (
                   <div className="bg-white dark:bg-slate-800/50 mt-8 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المؤهلات والمتطلبات</h3>
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المؤهلات والمتطلبات {!aiOverrideFields && <Sparkles size={16} className="text-primary/70" />}</h3>
                     <p className="text-sm text-slate-400 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">لا يوجد</p>
                   </div>
                 )}
@@ -562,7 +566,7 @@ export const ManageJob = ({
 
                 <div className="space-y-6 mt-8">
                   <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> التخصصات المستهدفة</h3>
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> التخصصات المستهدفة {!aiOverrideFields && <Sparkles size={16} className="text-primary/70" />}</h3>
                     {targetMajors.length > 0 ? (
                       <div className="flex flex-wrap gap-3">
                         {targetMajors.map(major => <span key={major} className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-slate-700 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-bold shadow-sm">{major}</span>)}
@@ -573,7 +577,7 @@ export const ManageJob = ({
                   </div>
                   
                   <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهارات</h3>
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> المهارات {!aiOverrideFields && <Sparkles size={16} className="text-primary/70" />}</h3>
                     {selectedSkills.length > 0 ? (
                       <div className="flex flex-wrap gap-3">
                         {selectedSkills.map(skill => <span key={skill} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm">{skill}</span>)}
@@ -584,7 +588,7 @@ export const ManageJob = ({
                   </div>
                   
                   <div className="bg-white dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> اللغات المطلوبة</h3>
+                    <h3 className="text-lg font-bold text-navy dark:text-white mb-4 flex items-center gap-3"><span className="w-1.5 h-6 bg-primary rounded-full"></span> اللغات المطلوبة {!aiOverrideFields && <Sparkles size={16} className="text-primary/70" />}</h3>
                     {selectedLanguages.length > 0 ? (
                       <div className="flex flex-wrap gap-3">
                         {selectedLanguages.map(lang => <span key={lang} className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm">{lang}</span>)}
@@ -602,13 +606,84 @@ export const ManageJob = ({
                       className="w-full flex items-center justify-between p-4 bg-primary/10 hover:bg-primary/20 transition-colors"
                     >
                       <h3 className="text-md font-bold text-primary flex items-center gap-2">
-                        <Sparkles size={18} /> توجيهات إضافية لمحرك الفرز (AI Instructions)
+                        <Sparkles size={18} /> توجيهات إضافية لمحرك الفرز
                       </h3>
                       <span className="text-primary font-bold text-xs bg-white/50 px-3 py-1 rounded-full">{showAiInstructions ? 'إخفاء' : 'عرض التفاصيل'}</span>
                     </button>
                     {showAiInstructions && (
                       <div className="p-4 text-slate-700 dark:text-slate-300 font-medium text-sm leading-relaxed whitespace-pre-wrap">
+                        <div className="bg-amber-50 dark:bg-amber-500/10 border-r-4 border-amber-500 p-3 rounded-xl mb-4">
+                          <p className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                            ⚠️ هذه المعايير مخفية عن المتقدمين وتُستخدم فقط لتوجيه محرك الفرز الذكي وتقييم السير الذاتية بناءً عليها بدلاً من الوصف العام للإعلان.
+                          </p>
+                        </div>
                         {aiInstructions}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {aiOverrideFields && (
+                  <div className="mt-8 border border-primary/20 rounded-2xl overflow-hidden bg-primary/5">
+                    <button 
+                      onClick={() => setShowAiOverrideFields(!showAiOverrideFields)}
+                      className="w-full flex items-center justify-between p-4 bg-primary/10 hover:bg-primary/20 transition-colors"
+                    >
+                      <h3 className="text-md font-bold text-primary flex items-center gap-2">
+                        <Sparkles size={18} /> معايير مخصصة لمحرك الفرز
+                      </h3>
+                      <span className="text-primary font-bold text-xs bg-white/50 px-3 py-1 rounded-full">{showAiOverrideFields ? 'إخفاء' : 'عرض التفاصيل'}</span>
+                    </button>
+                    {showAiOverrideFields && (
+                      <div className="p-5 text-slate-700 dark:text-slate-300 font-medium leading-relaxed whitespace-pre-wrap">
+                        <div className="bg-amber-50 dark:bg-amber-500/10 border-r-4 border-amber-500 p-3 rounded-xl mb-6">
+                          <p className="text-xs font-bold text-amber-700 dark:text-amber-400">
+                            ⚠️ هذه المعايير مخفية عن المتقدمين وتُستخدم فقط لتوجيه محرك الفرز الذكي وتقييم السير الذاتية بناءً عليها بدلاً من الوصف العام للإعلان.
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {aiOverrideFields.roleSummary && (
+                            <div className="bg-white/60 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                              <h4 className="font-bold text-navy dark:text-white mb-2 text-xs flex items-center gap-1.5">نبذة عن الدور <Sparkles size={16} className="text-primary"/></h4>
+                              <p className="text-xs text-slate-600 dark:text-slate-300">{aiOverrideFields.roleSummary}</p>
+                            </div>
+                          )}
+                          {aiOverrideFields.responsibilities && (
+                            <div className="bg-white/60 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                              <h4 className="font-bold text-navy dark:text-white mb-2 text-xs flex items-center gap-1.5">المهام والمسؤوليات <Sparkles size={16} className="text-primary"/></h4>
+                              <p className="text-xs text-slate-600 dark:text-slate-300">{aiOverrideFields.responsibilities}</p>
+                            </div>
+                          )}
+                          {aiOverrideFields.qualifications && (
+                            <div className="bg-white/60 dark:bg-slate-800/60 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                              <h4 className="font-bold text-navy dark:text-white mb-2 text-xs flex items-center gap-1.5">المؤهلات والمتطلبات <Sparkles size={16} className="text-primary"/></h4>
+                              <p className="text-xs text-slate-600 dark:text-slate-300">{aiOverrideFields.qualifications}</p>
+                            </div>
+                          )}
+                        </div>
+
+                        {(aiOverrideFields.targetMajors?.length > 0 || aiOverrideFields.targetSkills?.length > 0 || aiOverrideFields.languages?.length > 0) && (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 mt-6 border-t border-slate-200 dark:border-slate-700">
+                            {aiOverrideFields.targetMajors && aiOverrideFields.targetMajors.length > 0 && (
+                              <div>
+                                <h4 className="font-bold text-navy dark:text-white mb-3 text-xs flex items-center gap-1.5">التخصصات المستهدفة <Sparkles size={16} className="text-primary"/></h4>
+                                <div className="flex flex-wrap gap-1.5">{aiOverrideFields.targetMajors.map((m: string) => <span key={m} className="px-2 py-1 bg-primary/10 text-primary border border-primary/20 rounded-md text-[11px] font-bold">{m}</span>)}</div>
+                              </div>
+                            )}
+                            {aiOverrideFields.targetSkills && aiOverrideFields.targetSkills.length > 0 && (
+                              <div>
+                                <h4 className="font-bold text-navy dark:text-white mb-3 text-xs flex items-center gap-1.5">المهارات المستهدفة <Sparkles size={16} className="text-primary"/></h4>
+                                <div className="flex flex-wrap gap-1.5">{aiOverrideFields.targetSkills.map((s: string) => <span key={s} className="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-[11px] font-bold">{s}</span>)}</div>
+                              </div>
+                            )}
+                            {aiOverrideFields.languages && aiOverrideFields.languages.length > 0 && (
+                              <div>
+                                <h4 className="font-bold text-navy dark:text-white mb-3 text-xs flex items-center gap-1.5">اللغات المطلوبة <Sparkles size={16} className="text-primary"/></h4>
+                                <div className="flex flex-wrap gap-1.5">{aiOverrideFields.languages.map((l: string) => <span key={l} className="px-2 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-[11px] font-bold">{l}</span>)}</div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

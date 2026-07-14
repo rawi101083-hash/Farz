@@ -983,83 +983,99 @@ const LoginPage = ({
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return;
-    if (mode === "register" && !name) return;
+    
+    if (mode === "register") {
+      if (!name || !email || !password || !phone) {
+        setIsError(true);
+        setMessage("عذراً، يرجى تعبئة جميع المعلومات (الاسم/الشركة، الجوال، البريد، كلمة المرور) لتتمكن من إنشاء الحساب.");
+        return;
+      }
+    } else {
+      if (!email || !password) {
+        setIsError(true);
+        setMessage("يرجى إدخال البريد الإلكتروني وكلمة المرور.");
+        return;
+      }
+    }
     setIsLoading(true);
     setMessage("");
     setIsError(false);
 
     try {
       if (mode === "register") {
-        sessionStorage.setItem('is_signing_up', 'true');
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              name,
-              phone,
-              entity_type: entityType
-            }
-          }
-        });
-
-        if (error) {
-          if (error.message.includes("User already registered")) {
-            // Trick: User already exists. Verify their password instead of rejecting!
-            const { error: signInError } = await supabase.auth.signInWithPassword({
-              email,
-              password,
-            });
-            if (signInError) {
-              sessionStorage.removeItem('is_signing_up');
-              throw new Error("البريد الإلكتروني مسجل مسبقاً، وكلمة المرور غير صحيحة. يرجى إدخال كلمة المرور الصحيحة للربط الدخول.");
-            }
-            // Password is correct! Let them in.
-            await supabase.auth.updateUser({ data: { entity_type: entityType, name, phone } });
-            sessionStorage.removeItem('is_signing_up');
-            onLogin();
-            return;
-          }
-          sessionStorage.removeItem('is_signing_up');
-          throw error;
-        }
-
-        if (data?.user) {
-          try {
-            await supabase.rpc('create_pending_company', {
-              p_id: data.user.id,
-              p_name: name,
-              p_email: email,
-              p_phone: phone
-            });
-          } catch (rpcErr) {
-            console.error("RPC Error:", rpcErr);
-            // Ignore if RPC fails, we still want to show success to user
-          }
-
-          // Notify admin of the new signup
-          try {
-            await supabase.functions.invoke('notify-admin', {
-              body: {
-                companyName: name,
-                companyEmail: email,
-                companyPhone: phone,
-                createdDate: new Date().toLocaleString('ar-SA')
-              }
-            });
-          } catch (notifyErr) {
-            console.error("Failed to send notification to admin", notifyErr);
-          }
-        }
-
-        // Ensure user is signed out so they don't enter the dashboard
-        await supabase.auth.signOut();
-        sessionStorage.removeItem('is_signing_up');
-
         setAuthStep("signup_success");
+        setIsLoading(false);
         setMessage("");
         setIsError(false);
+
+        // Run in background
+        (async () => {
+          try {
+            sessionStorage.setItem('is_signing_up', 'true');
+            const { data, error } = await supabase.auth.signUp({
+              email,
+              password,
+              options: {
+                data: {
+                  name,
+                  phone,
+                  entity_type: entityType
+                }
+              }
+            });
+
+            if (error) {
+              if (error.message.includes("User already registered")) {
+                const { error: signInError } = await supabase.auth.signInWithPassword({
+                  email,
+                  password,
+                });
+                if (signInError) {
+                  sessionStorage.removeItem('is_signing_up');
+                  return;
+                }
+                await supabase.auth.updateUser({ data: { entity_type: entityType, name, phone } });
+                sessionStorage.removeItem('is_signing_up');
+                return;
+              }
+              sessionStorage.removeItem('is_signing_up');
+              throw error;
+            }
+
+            if (data?.user) {
+              try {
+                await supabase.rpc('create_pending_company', {
+                  p_id: data.user.id,
+                  p_name: name,
+                  p_email: email,
+                  p_phone: phone
+                });
+              } catch (rpcErr) {
+                console.error("RPC Error:", rpcErr);
+              }
+
+              try {
+                await supabase.functions.invoke('notify-admin', {
+                  body: {
+                    companyName: name,
+                    companyEmail: email,
+                    companyPhone: phone,
+                    createdDate: new Date().toLocaleString('ar-SA')
+                  }
+                });
+              } catch (notifyErr) {
+                console.error("Failed to send notification to admin", notifyErr);
+              }
+            }
+
+            await supabase.auth.signOut();
+            sessionStorage.removeItem('is_signing_up');
+          } catch (err) {
+            console.error("Background signup error:", err);
+          }
+        })();
+        
+        return;
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -1417,7 +1433,7 @@ const LoginPage = ({
 
               <button
                 type="submit"
-                disabled={isLoading || (authStep === "otp" && otp.length !== 6) || (authStep === "new_password" && !password) || (authStep === "initial" && (!email || (!isForgotPassword && !password) || (!isForgotPassword && mode === "register" && !name)))}
+                disabled={isLoading || (authStep === "otp" && otp.length !== 6) || (authStep === "new_password" && !password)}
                 className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold text-white bg-[#10857b] hover:bg-teal-700 transition-all shadow-sm disabled:opacity-70 disabled:cursor-default"
               >
                 {isLoading ? (
