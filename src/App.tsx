@@ -1083,15 +1083,38 @@ const LoginPage = ({
         });
         if (error) throw error;
 
-        // Check if account is still pending
+        // Check if account is deleted or pending
         if (data.user) {
-          const { data: compData, error: compErr } = await supabase
-            .from('companies')
-            .select('status')
-            .eq('id', data.user.id)
-            .single();
+          const entityType = data.user.user_metadata?.entity_type;
+          
+          let exists = false;
+          let isPending = false;
 
-          if (!compErr && compData?.status === 'pending') {
+          if (entityType === 'company') {
+            const { data: compData } = await supabase.from('companies').select('id, status').eq('id', data.user.id).maybeSingle();
+            if (compData) { exists = true; isPending = compData.status === 'pending'; }
+          } else if (entityType === 'seeker') {
+            const { data: seekerData } = await supabase.from('job_seekers').select('id').eq('id', data.user.id).maybeSingle();
+            if (seekerData) exists = true;
+          } else {
+            const { data: userData } = await supabase.from('users').select('id').eq('id', data.user.id).maybeSingle();
+            if (userData) exists = true;
+            if (!exists) {
+              const { data: compData } = await supabase.from('companies').select('id, status').eq('id', data.user.id).maybeSingle();
+              if (compData) { exists = true; isPending = compData.status === 'pending'; }
+            }
+            if (!exists) {
+              const { data: seekerData } = await supabase.from('job_seekers').select('id').eq('id', data.user.id).maybeSingle();
+              if (seekerData) exists = true;
+            }
+          }
+
+          if (!exists) {
+            await supabase.auth.signOut();
+            throw new Error("هذا الحساب محذوف أو غير موجود في قاعدة البيانات.");
+          }
+
+          if (isPending) {
             await supabase.auth.signOut();
             throw new Error("حسابك لا يزال قيد المراجعة ولم يتم تفعيله بعد.");
           }
