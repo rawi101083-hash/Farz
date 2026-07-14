@@ -1,4 +1,4 @@
-isLoading={isLoadingApplicants || !userProfile.isLoaded}import {
+import {
   BarChart as BarChartIcon,
   PieChart as PieChartIcon,
   LineChart as LineChartIcon,
